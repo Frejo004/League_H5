@@ -96,9 +96,22 @@ export function Sidebar() {
 
       {/* User footer */}
       <div className="px-3 py-4 border-t border-surface-border">
-        <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            {profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?'}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            clsx(
+              'flex items-center gap-3 px-3 py-2 mb-1 rounded-lg transition-colors',
+              isActive
+                ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
+                : 'hover:bg-surface-border/30'
+            )
+          }
+        >
+          <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden">
+            {profile?.avatar_url
+              ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              : (profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?')
+            }
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-200 truncate">
@@ -106,7 +119,7 @@ export function Sidebar() {
             </p>
             <p className="text-xs text-slate-500 truncate">{profile?.email}</p>
           </div>
-        </div>
+        </NavLink>
         <button
           onClick={signOut}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150"

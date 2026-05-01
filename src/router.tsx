@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { SignupPage } from '@/pages/auth/SignupPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { UpdatePasswordPage } from '@/pages/auth/UpdatePasswordPage'
+import { JoinPage } from '@/pages/auth/JoinPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { StandingsPage } from '@/pages/StandingsPage'
 import { MatchesPage } from '@/pages/MatchesPage'
@@ -13,6 +14,7 @@ import { PlayersPage } from '@/pages/PlayersPage'
 import { StatsPage } from '@/pages/StatsPage'
 import { BracketPage } from '@/pages/BracketPage'
 import { AdminPage } from '@/pages/AdminPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -33,6 +35,10 @@ export const router = createBrowserRouter([
     path: '/auth/update-password',
     element: <UpdatePasswordPage />,
   },
+  {
+    path: '/auth/join',
+    element: <JoinPage />,
+  },
 
   // App routes (protected)
   {
@@ -50,6 +56,7 @@ export const router = createBrowserRouter([
           { path: '/stats',     element: <StatsPage /> },
           { path: '/bracket',   element: <BracketPage /> },
           { path: '/admin',     element: <AdminPage /> },
+          { path: '/profile',   element: <ProfilePage /> },
         ],
       },
     ],

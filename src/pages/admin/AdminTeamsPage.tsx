@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useCreateTeam, useDeleteTeam } from '@/hooks/useTeams'
 import { usePlayersByTeam, useCreatePlayer, useDeletePlayer } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { InviteButton } from '@/components/ui/InviteButton'
 import type { PlayerPosition } from '@/types/database'
 
 const POSITIONS: PlayerPosition[] = ['goalkeeper', 'defender', 'midfielder', 'forward']
@@ -77,21 +78,28 @@ function TeamRow({ team, seasonId }: { team: { id: string; name: string; color: 
           ) : (
             <>
               {(players ?? []).map(p => (
-                <div key={p.id} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-500 font-mono w-6 text-right">{p.jersey_number ?? '—'}</span>
+                <div key={p.id} className="flex items-center justify-between text-sm py-1">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-slate-500 font-mono w-6 text-right flex-shrink-0">{p.jersey_number ?? '—'}</span>
                     <span className="text-white">{p.first_name} {p.last_name}</span>
                     {p.position && (
                       <span className="badge bg-surface-border text-slate-400">{POSITION_LABELS[p.position]}</span>
                     )}
                   </div>
-                  <button
-                    onClick={() => deletePlayer.mutate(p.id)}
-                    className="text-slate-500 hover:text-red-400 transition-colors p-1"
-                    title="Retirer le joueur"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                    <InviteButton
+                      playerId={p.id}
+                      playerName={`${p.first_name} ${p.last_name}`}
+                      hasAccount={!!p.user_id}
+                    />
+                    <button
+                      onClick={() => deletePlayer.mutate(p.id)}
+                      className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                      title="Retirer le joueur"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
 
