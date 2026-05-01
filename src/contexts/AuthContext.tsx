@@ -23,7 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
+    // Timeout de sécurité — isLoading ne peut pas rester true indéfiniment
+    const timeout = setTimeout(() => setIsLoading(false), 5000)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
@@ -33,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session)
@@ -46,7 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchProfile(userId: string) {
@@ -55,18 +59,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       setProfile(data)
     } catch (err) {
       console.error('Error fetching profile:', err)
+      setProfile(null)
     } finally {
       setIsLoading(false)
     }
   }
 
   async function signOut() {
+    setIsLoading(false)
+    setProfile(null)
+    setSession(null)
     await supabase.auth.signOut()
     navigateTo('/auth/login')
   }

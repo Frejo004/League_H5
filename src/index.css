@@ -1,7 +1,71 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary-50:  #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  --color-primary-950: #052e16;
+
+  --color-surface:        #080f1a;
+  --color-surface-card:   #0f1d2e;
+  --color-surface-border: #1e3448;
+  --color-surface-muted:  #2d4a63;
+
+  /* Font */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Shadows */
+  --shadow-glow-sm: 0 0 12px rgba(74,222,128,0.2);
+  --shadow-glow:    0 0 24px rgba(74,222,128,0.3);
+  --shadow-glow-lg: 0 0 48px rgba(74,222,128,0.25);
+
+  /* Keyframes */
+  --animate-fade-in-up:    fadeInUp 0.45s cubic-bezier(0.16,1,0.3,1) both;
+  --animate-fade-in:       fadeIn 0.3s ease both;
+  --animate-slide-in-left: slideInLeft 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  --animate-scale-in:      scaleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  --animate-glow-pulse:    glowPulse 2.5s ease-in-out infinite;
+  --animate-float:         float 4s ease-in-out infinite;
+  --animate-shimmer:       shimmer 1.8s linear infinite;
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.25); }
+    50%       { box-shadow: 0 0 28px rgba(74,222,128,0.6), 0 0 60px rgba(74,222,128,0.15); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════
    BASE
@@ -236,34 +300,4 @@ body::before {
 .animate-glow-pulse    { animation: glowPulse 2.5s ease-in-out infinite; }
 .animate-float         { animation: float 4s ease-in-out infinite; }
 
-/* ═══════════════════════════════════════════════════════════
-   KEYFRAMES
-   ═══════════════════════════════════════════════════════════ */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.25); }
-  50%       { box-shadow: 0 0 28px rgba(74,222,128,0.6), 0 0 60px rgba(74,222,128,0.15); }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
+
