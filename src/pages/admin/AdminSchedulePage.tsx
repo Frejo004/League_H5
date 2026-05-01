@@ -9,7 +9,6 @@ import { clsx } from 'clsx'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
   { value: 'scheduled', label: 'Programmé' },
-  { value: 'live', label: 'En cours' },
   { value: 'completed', label: 'Terminé' },
   { value: 'cancelled', label: 'Annulé' },
 ]

@@ -11,7 +11,6 @@ create type public.user_role as enum (
 
 create type public.match_status as enum (
   'scheduled',
-  'live',
   'completed',
   'cancelled'
 );

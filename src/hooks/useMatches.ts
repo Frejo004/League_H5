@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Match } from '@/types/database'
 
+// Extended type returned by useMatches (includes joined team data)
+export interface MatchWithTeams extends Match {
+  home_team: { id: string; name: string; color: string; logo_url: string | null }
+  away_team: { id: string; name: string; color: string; logo_url: string | null }
+}
+
 export function useMatches(seasonId?: string) {
   return useQuery({
     queryKey: ['matches', seasonId],
@@ -18,7 +24,7 @@ export function useMatches(seasonId?: string) {
         .order('matchday', { ascending: true })
         .order('scheduled_at', { ascending: true })
       if (error) throw error
-      return data
+      return data as unknown as MatchWithTeams[]
     },
   })
 }

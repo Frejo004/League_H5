@@ -1,18 +1,10 @@
 import { LayoutDashboard, Calendar, Trophy, Target, Users } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useMatches } from '@/hooks/useMatches'
+import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
-import type { MatchStatus } from '@/types/database'
-
-const STATUS_STYLES: Record<MatchStatus, string> = {
-  scheduled: 'bg-slate-700 text-slate-300',
-  live: 'bg-green-500/20 text-green-400 border border-green-500/30',
-  completed: 'bg-primary-600/20 text-primary-400',
-  cancelled: 'bg-red-500/20 text-red-400',
-}
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return 'À définir'
@@ -116,26 +108,22 @@ export function DashboardPage() {
                 <p className="text-slate-500 text-sm">Aucun match programmé.</p>
               ) : (
                 <div className="space-y-3">
-                  {upcomingMatches.slice(0, 2).map(match => {
-                    const home = match.home_team as unknown as { name: string; color: string }
-                    const away = match.away_team as unknown as { name: string; color: string }
-                    return (
+                  {upcomingMatches.slice(0, 2).map(match => (
                       <div key={match.id} className="flex items-center justify-between gap-2 text-sm">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: home?.color }} />
-                          <span className="text-white truncate">{home?.name}</span>
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: match.home_team.color }} />
+                          <span className="text-white truncate">{match.home_team.name}</span>
                         </div>
                         <div className="text-center flex-shrink-0 px-2">
                           <p className="text-slate-400 text-xs">{formatDate(match.scheduled_at)}</p>
                           <p className="text-slate-500 text-xs">J{match.matchday}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                          <span className="text-white truncate text-right">{away?.name}</span>
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: away?.color }} />
+                          <span className="text-white truncate text-right">{match.away_team.name}</span>
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: match.away_team.color }} />
                         </div>
                       </div>
-                    )
-                  })}
+                    ))}
                 </div>
               )}
             </div>
@@ -150,17 +138,14 @@ export function DashboardPage() {
                 <p className="text-slate-500 text-sm">Aucun résultat disponible.</p>
               ) : (
                 <div className="space-y-2">
-                  {recentMatches.map(match => {
-                    const home = match.home_team as unknown as { name: string; color: string }
-                    const away = match.away_team as unknown as { name: string; color: string }
-                    return (
+                  {recentMatches.map(match => (
                       <div key={match.id} className="flex items-center gap-2 text-sm">
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: home?.color }} />
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: match.home_team.color }} />
                           <span className={clsx(
                             'truncate',
                             match.home_score! > match.away_score! ? 'text-white font-semibold' : 'text-slate-400'
-                          )}>{home?.name}</span>
+                          )}>{match.home_team.name}</span>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0 font-bold text-white">
                           <span>{match.home_score}</span>
@@ -171,12 +156,11 @@ export function DashboardPage() {
                           <span className={clsx(
                             'truncate text-right',
                             match.away_score! > match.home_score! ? 'text-white font-semibold' : 'text-slate-400'
-                          )}>{away?.name}</span>
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: away?.color }} />
+                          )}>{match.away_team.name}</span>
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: match.away_team.color }} />
                         </div>
                       </div>
-                    )
-                  })}
+                    ))}
                 </div>
               )}
             </div>
