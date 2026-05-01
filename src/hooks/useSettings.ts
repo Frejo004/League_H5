@@ -11,9 +11,9 @@ export function useSettings(seasonId?: string) {
         .from('settings')
         .select('*')
         .eq('season_id', seasonId!)
-        .single()
+        .maybeSingle()
       if (error) throw error
-      return data as Settings
+      return data as Settings | null
     },
   })
 }

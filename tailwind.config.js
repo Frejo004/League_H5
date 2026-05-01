@@ -30,32 +30,51 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':  'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-      },
       boxShadow: {
-        'glow-sm':  '0 0 12px rgba(74,222,128,0.2)',
-        'glow':     '0 0 24px rgba(74,222,128,0.3)',
-        'glow-lg':  '0 0 48px rgba(74,222,128,0.25)',
-        'card':     '0 4px 24px rgba(0,0,0,0.4)',
-        'card-lg':  '0 8px 48px rgba(0,0,0,0.5)',
-      },
-      transitionTimingFunction: {
-        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'glow-sm': '0 0 12px rgba(74,222,128,0.2)',
+        'glow':    '0 0 24px rgba(74,222,128,0.3)',
+        'glow-lg': '0 0 48px rgba(74,222,128,0.25)',
       },
       keyframes: {
+        fadeInUp: {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          from: { opacity: '0' },
+          to:   { opacity: '1' },
+        },
+        slideInLeft: {
+          from: { opacity: '0', transform: 'translateX(-20px)' },
+          to:   { opacity: '1', transform: 'translateX(0)' },
+        },
+        scaleIn: {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to:   { opacity: '1', transform: 'scale(1)' },
+        },
+        glowPulse: {
+          '0%, 100%': { boxShadow: '0 0 8px rgba(74,222,128,0.25)' },
+          '50%':      { boxShadow: '0 0 28px rgba(74,222,128,0.6), 0 0 60px rgba(74,222,128,0.15)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%':      { transform: 'translateY(-8px)' },
+        },
         shimmer: {
           '0%':   { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
       },
       animation: {
-        shimmer: 'shimmer 2s linear infinite',
+        'fade-in-up':    'fadeInUp 0.45s cubic-bezier(0.16,1,0.3,1) both',
+        'fade-in':       'fadeIn 0.3s ease both',
+        'slide-in-left': 'slideInLeft 0.4s cubic-bezier(0.16,1,0.3,1) both',
+        'scale-in':      'scaleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
+        'glow-pulse':    'glowPulse 2.5s ease-in-out infinite',
+        'float':         'float 4s ease-in-out infinite',
+        'shimmer':       'shimmer 1.8s linear infinite',
       },
     },
   },
   plugins: [],
 }
-
-

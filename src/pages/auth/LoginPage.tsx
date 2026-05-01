@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Mail, Lock, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -15,14 +16,12 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
-
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       navigate('/')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erreur de connexion'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Erreur de connexion')
     } finally {
       setIsLoading(false)
     }
@@ -30,86 +29,112 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">⚽</span>
+      <div className="w-full max-w-sm animate-fade-in-up">
+
+        {/* Header */}
+        <div className="mb-8">
+          {/* Mobile logo only */}
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="relative w-10 h-10">
+              <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-60" />
+              <div className="relative w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center">
+                <span className="text-xl">⚽</span>
+              </div>
+            </div>
+            <span className="text-white font-bold text-lg">League H5</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">League H5</h1>
-          <p className="text-slate-300 mt-1">Connectez-vous à votre compte</p>
+
+          <h2 className="text-3xl font-black text-white tracking-tight">Bon retour 👋</h2>
+          <p className="text-slate-400 mt-2">Connectez-vous pour accéder à votre ligue</p>
         </div>
 
         {/* Form */}
-        <div className="card bg-surface-card/90 backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/25
+                            text-red-400 text-sm px-4 py-3 rounded-xl animate-scale-in">
+              <span className="mt-0.5 flex-shrink-0">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
 
-            <div>
-              <label htmlFor="email" className="label">Email</label>
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="label">Adresse email</label>
+            <div className="relative">
+              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="input"
-                placeholder="vous@entreprise.com"
+                className="input pl-10"
+                placeholder="vous@exemple.com"
                 required
                 autoComplete="email"
               />
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="password" className="label">Mot de passe</label>
+          {/* Password */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="label mb-0">Mot de passe</label>
+              <Link
+                to="/auth/reset-password"
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                Oublié ?
+              </Link>
+            </div>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="input"
+                className="input pl-10"
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
               />
             </div>
-
-            <div className="flex items-center justify-end">
-              <Link
-                to="/auth/reset-password"
-                className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
-              >
-                Mot de passe oublié ?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {isLoading ? <LoadingSpinner size="sm" /> : null}
-              {isLoading ? 'Connexion...' : 'Se connecter'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-surface-border text-center">
-            <p className="text-sm text-slate-400">
-              Pas encore de compte ?{' '}
-              <Link
-                to="/auth/signup"
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
-              >
-                S'inscrire
-              </Link>
-            </p>
           </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary w-full mt-2 py-3 text-base"
+          >
+            {isLoading ? (
+              <LoadingSpinner size="sm" />
+            ) : (
+              <>
+                Se connecter
+                <ArrowRight size={16} className="ml-1" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-surface-border/60" />
+          <span className="text-xs text-slate-600 font-medium">ou</span>
+          <div className="flex-1 h-px bg-surface-border/60" />
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
+        {/* Sign up link */}
+        <p className="text-center text-sm text-slate-400">
+          Pas encore de compte ?{' '}
+          <Link to="/auth/signup" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors">
+            Créer un compte
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-slate-600 mt-4">
           Accès spectateur ? Inscrivez-vous et attendez l'approbation de l'admin.
         </p>
       </div>

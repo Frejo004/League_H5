@@ -24,9 +24,9 @@ export function useActiveSeason() {
         .from('seasons')
         .select('*')
         .eq('is_active', true)
-        .single()
+        .maybeSingle()
       if (error) throw error
-      return data as Season
+      return data as Season | null
     },
   })
 }
