@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 
 export function UpdatePasswordPage() {
   const navigate = useNavigate()
@@ -37,17 +38,17 @@ export function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+    <AuthLayout>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
             <span className="text-3xl">⚽</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Nouveau mot de passe</h1>
-          <p className="text-slate-400 mt-1">Choisissez un nouveau mot de passe sécurisé</p>
+          <p className="text-slate-300 mt-1">Choisissez un nouveau mot de passe sécurisé</p>
         </div>
 
-        <div className="card">
+        <div className="card bg-surface-card/90 backdrop-blur-md">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
@@ -94,6 +95,6 @@ export function UpdatePasswordPage() {
           </form>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   )
 }

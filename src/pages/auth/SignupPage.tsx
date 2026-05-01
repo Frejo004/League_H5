@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 
 export function SignupPage() {
   const navigate = useNavigate()
@@ -48,39 +49,35 @@ export function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <AuthLayout>
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600/20 border border-primary-600/30 rounded-2xl mb-4">
             <span className="text-3xl">✅</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Inscription réussie !</h2>
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate-300 mb-6">
             Vérifiez votre email pour confirmer votre compte. Une fois confirmé, vous pourrez vous connecter.
           </p>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="btn-primary"
-          >
+          <button onClick={() => navigate('/auth/login')} className="btn-primary">
             Aller à la connexion
           </button>
         </div>
-      </div>
+      </AuthLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+    <AuthLayout>
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
             <span className="text-3xl">⚽</span>
           </div>
           <h1 className="text-2xl font-bold text-white">League H5</h1>
-          <p className="text-slate-400 mt-1">Créer votre compte</p>
+          <p className="text-slate-300 mt-1">Créer votre compte</p>
         </div>
 
-        <div className="card">
+        <div className="card bg-surface-card/90 backdrop-blur-md">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
@@ -167,6 +164,6 @@ export function SignupPage() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   )
 }

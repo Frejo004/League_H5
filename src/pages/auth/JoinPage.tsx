@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { resolveInviteToken, claimInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 import type { InvitePlayerInfo } from '@/hooks/usePlayerInvites'
 
 export function JoinPage() {
@@ -79,13 +80,13 @@ export function JoinPage() {
 
   if (tokenState === 'invalid') {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <AuthLayout>
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 border border-red-500/30 rounded-2xl mb-4">
             <span className="text-3xl">🔗</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Lien invalide</h2>
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate-300 mb-6">
             Ce lien d'invitation est invalide, expiré, ou a déjà été utilisé.
             Demandez un nouveau lien à votre admin ou capitaine.
           </p>
@@ -93,39 +94,39 @@ export function JoinPage() {
             Aller à la connexion
           </button>
         </div>
-      </div>
+      </AuthLayout>
     )
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <AuthLayout>
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600/20 border border-primary-600/30 rounded-2xl mb-4">
             <span className="text-3xl">✅</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Compte créé !</h2>
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate-300 mb-6">
             Vérifiez votre email pour confirmer votre compte, puis connectez-vous.
           </p>
           <button onClick={() => navigate('/auth/login')} className="btn-primary">
             Aller à la connexion
           </button>
         </div>
-      </div>
+      </AuthLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+    <AuthLayout>
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
             <span className="text-3xl">⚽</span>
           </div>
           <h1 className="text-2xl font-bold text-white">League H5</h1>
-          <p className="text-slate-400 mt-1">Créer votre compte joueur</p>
+          <p className="text-slate-300 mt-1">Créer votre compte joueur</p>
         </div>
 
         {/* Player info banner */}
@@ -226,6 +227,6 @@ export function JoinPage() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   )
 }
