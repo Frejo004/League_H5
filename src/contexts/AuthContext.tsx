@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { navigateTo } from '@/router'
 import type { Profile, UserRole } from '@/types/database'
 
 interface AuthContextValue {
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    navigateTo('/auth/login')
   }
 
   const role = profile?.role ?? null

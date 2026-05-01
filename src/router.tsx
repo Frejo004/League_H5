@@ -65,3 +65,8 @@ export const router = createBrowserRouter([
   // Fallback
   { path: '*', element: <Navigate to="/" replace /> },
 ])
+
+/** Use this outside React components (e.g. AuthContext) */
+export function navigateTo(path: string) {
+  router.navigate(path, { replace: true })
+}

@@ -2,54 +2,220 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   html {
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-surface text-slate-100 min-h-screen;
     margin: 0;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(22,163,74,0.12) 0%, transparent 60%);
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-surface-card;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-surface-border rounded-full;
-  }
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-surface-muted; }
 }
 
 @layer components {
+
+  /* ── Buttons ── */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative inline-flex items-center justify-center gap-2
+           bg-primary-600 hover:bg-primary-500 active:bg-primary-700
+           text-white font-semibold px-4 py-2 rounded-xl
+           transition-all duration-200
+           shadow-[0_0_0_0_rgba(22,163,74,0.4)]
+           hover:shadow-[0_0_20px_rgba(22,163,74,0.35)]
+           hover:-translate-y-0.5
+           disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:translate-y-0 disabled:hover:shadow-none
+           overflow-hidden;
   }
+  .btn-primary::after {
+    content: '';
+    @apply absolute inset-0 bg-white/0 hover:bg-white/5 transition-colors duration-200 rounded-xl;
+  }
+
   .btn-secondary {
-    @apply bg-surface-card hover:bg-surface-border text-slate-200 font-semibold px-4 py-2 rounded-lg border border-surface-border transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2
+           bg-surface-card hover:bg-surface-border/60
+           text-slate-200 font-semibold px-4 py-2 rounded-xl
+           border border-surface-border hover:border-slate-500
+           transition-all duration-200
+           hover:-translate-y-0.5
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
+
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2
+           bg-red-600/90 hover:bg-red-500 active:bg-red-700
+           text-white font-semibold px-4 py-2 rounded-xl
+           transition-all duration-200
+           hover:shadow-[0_0_16px_rgba(239,68,68,0.3)]
+           hover:-translate-y-0.5
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
+
+  /* ── Cards ── */
   .card {
-    @apply bg-surface-card border border-surface-border rounded-xl p-4;
+    @apply bg-surface-card/80 border border-surface-border/60
+           rounded-2xl p-4
+           backdrop-blur-sm
+           transition-all duration-200;
   }
+
+  .card-hover {
+    @apply card hover:border-primary-600/40
+           hover:shadow-[0_0_30px_rgba(22,163,74,0.08)]
+           hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  /* ── Inputs ── */
   .input {
-    @apply bg-surface border border-surface-border text-slate-100 placeholder-slate-500 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    @apply bg-surface/80 border border-surface-border
+           text-slate-100 placeholder-slate-500
+           rounded-xl px-3 py-2.5 w-full
+           focus:outline-none focus:ring-2 focus:ring-primary-500/60
+           focus:border-primary-500/60
+           transition-all duration-200
+           hover:border-slate-500;
   }
+
   .label {
-    @apply block text-sm font-medium text-slate-300 mb-1;
+    @apply block text-sm font-medium text-slate-300 mb-1.5;
   }
+
+  /* ── Badge ── */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
+
+  /* ── Stat card ── */
+  .stat-card {
+    @apply card relative overflow-hidden
+           hover:border-primary-600/30
+           hover:shadow-[0_8px_32px_rgba(22,163,74,0.1)]
+           transition-all duration-300
+           hover:-translate-y-1;
+  }
+  .stat-card::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-px
+           bg-gradient-to-r from-transparent via-primary-500/40 to-transparent
+           opacity-0 transition-opacity duration-300;
+  }
+  .stat-card:hover::before { @apply opacity-100; }
+
+  /* ── Nav link active glow ── */
+  .nav-active {
+    @apply bg-primary-600/15 text-primary-400
+           border border-primary-600/25
+           shadow-[inset_0_1px_0_rgba(74,222,128,0.1)];
+  }
+
+  /* ── Table row ── */
+  .table-row-hover {
+    @apply hover:bg-primary-600/5 transition-colors duration-150;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    @apply flex items-center gap-3 mb-6;
+  }
+  .page-title {
+    @apply text-2xl font-bold text-white tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-sm text-slate-400 mt-0.5;
+  }
+
+  /* ── Glow text ── */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+  }
+
+  /* ── Shimmer skeleton ── */
+  .skeleton {
+    @apply bg-surface-border rounded-lg animate-pulse;
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@layer utilities {
+
+  /* Fade in up */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease both;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease both;
+  }
+  .animate-slide-in-left {
+    animation: slideInLeft 0.35s ease both;
+  }
+  .animate-scale-in {
+    animation: scaleIn 0.25s ease both;
+  }
+
+  /* Stagger children */
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+  /* Glow pulse */
+  .animate-glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(74,222,128,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(74,222,128,0.6); }
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
 }

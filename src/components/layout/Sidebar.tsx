@@ -1,15 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  Trophy,
-  Calendar,
-  Target,
-  Users,
-  User,
-  BarChart2,
-  Settings,
-  LogOut,
-  Shield,
+  LayoutDashboard, Trophy, Calendar, Target,
+  Users, User, BarChart2, Settings, LogOut, Shield,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { clsx } from 'clsx'
@@ -25,28 +17,33 @@ const navItems = [
   { to: '/bracket',   icon: Shield,          label: 'Phase Finale' },
 ]
 
-const adminItems = [
-  { to: '/admin', icon: Settings, label: 'Admin' },
-]
-
 export function Sidebar() {
   const { profile, isAdmin, signOut } = useAuth()
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-surface-card border-r border-surface-border min-h-screen">
+    <aside className="hidden lg:flex flex-col w-64 min-h-screen relative
+                      bg-surface-card/60 backdrop-blur-xl
+                      border-r border-surface-border/50">
+
+      {/* Ambient glow top */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/30 to-transparent" />
+
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-surface-border">
-        <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-lg">⚽</span>
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-border/40">
+        <div className="relative w-9 h-9">
+          <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-40" />
+          <div className="relative w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-glow-sm">
+            <span className="text-lg">⚽</span>
+          </div>
         </div>
         <div>
-          <p className="font-bold text-white text-sm leading-tight">League H5</p>
-          <p className="text-xs text-slate-400">Ligue interne</p>
+          <p className="font-bold text-white text-sm leading-tight tracking-wide">League H5</p>
+          <p className="text-[10px] text-primary-400/70 font-medium uppercase tracking-widest">Ligue interne</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -54,80 +51,109 @@ export function Sidebar() {
             end={to === '/'}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
+                'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-surface-border/50'
+                  ? 'nav-active'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
               )
             }
           >
-            <Icon size={18} />
-            {label}
+            {({ isActive }) => (
+              <>
+                <span className={clsx(
+                  'flex-shrink-0 transition-all duration-200',
+                  isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'
+                )}>
+                  <Icon size={17} />
+                </span>
+                <span className="truncate">{label}</span>
+                {isActive && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-400 shadow-glow-sm" />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
 
         {isAdmin && (
           <>
-            <div className="pt-3 pb-1">
-              <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Administration
-              </p>
+            <div className="pt-4 pb-1.5 px-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-px bg-surface-border/60" />
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Admin</p>
+                <div className="flex-1 h-px bg-surface-border/60" />
+              </div>
             </div>
-            {adminItems.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  clsx(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
-                    isActive
-                      ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-surface-border/50'
-                  )
-                }
-              >
-                <Icon size={18} />
-                {label}
-              </NavLink>
-            ))}
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                clsx(
+                  'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'nav-active'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={clsx(
+                    'flex-shrink-0 transition-all duration-200',
+                    isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'
+                  )}>
+                    <Settings size={17} />
+                  </span>
+                  <span>Administration</span>
+                  {isActive && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-400 shadow-glow-sm" />
+                  )}
+                </>
+              )}
+            </NavLink>
           </>
         )}
       </nav>
 
       {/* User footer */}
-      <div className="px-3 py-4 border-t border-surface-border">
+      <div className="px-3 py-3 border-t border-surface-border/40 space-y-0.5">
         <NavLink
           to="/profile"
           className={({ isActive }) =>
             clsx(
-              'flex items-center gap-3 px-3 py-2 mb-1 rounded-lg transition-colors',
-              isActive
-                ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
-                : 'hover:bg-surface-border/30'
+              'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+              isActive ? 'nav-active' : 'hover:bg-white/5'
             )
           }
         >
-          <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden">
-            {profile?.avatar_url
-              ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              : (profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?')
-            }
+          <div className="relative w-8 h-8 flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white text-xs font-bold overflow-hidden ring-2 ring-surface-border">
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                : (profile?.full_name?.[0]?.toUpperCase() ?? '?')
+              }
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-surface-card" />
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-200 truncate leading-tight">
               {profile?.full_name ?? 'Utilisateur'}
             </p>
-            <p className="text-xs text-slate-500 truncate">{profile?.email}</p>
+            <p className="text-[11px] text-slate-500 truncate">{profile?.email}</p>
           </div>
         </NavLink>
+
         <button
           onClick={signOut}
-          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150"
+          className="group flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm text-slate-500
+                     hover:text-red-400 hover:bg-red-500/8 transition-all duration-200"
         >
-          <LogOut size={16} />
-          Déconnexion
+          <LogOut size={15} className="group-hover:rotate-12 transition-transform duration-200" />
+          <span>Déconnexion</span>
         </button>
       </div>
+
+      {/* Bottom ambient glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-surface-border/50 to-transparent" />
     </aside>
   )
 }
