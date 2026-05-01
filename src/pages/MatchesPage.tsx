@@ -85,8 +85,6 @@ export function MatchesPage() {
           {/* Match cards */}
           <div className="space-y-3">
             {filtered.map(match => {
-              const home = match.home_team as unknown as { id: string; name: string; color: string }
-              const away = match.away_team as unknown as { id: string; name: string; color: string }
               const isCompleted = match.status === 'completed'
 
               return (
@@ -96,9 +94,9 @@ export function MatchesPage() {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
                         className="w-8 h-8 rounded-lg flex-shrink-0"
-                        style={{ backgroundColor: home?.color || '#16a34a' }}
+                        style={{ backgroundColor: match.home_team.color || '#16a34a' }}
                       />
-                      <span className="font-medium text-white truncate">{home?.name}</span>
+                      <span className="font-medium text-white truncate">{match.home_team.name}</span>
                     </div>
 
                     {/* Score / time */}
@@ -121,10 +119,10 @@ export function MatchesPage() {
 
                     {/* Away team */}
                     <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                      <span className="font-medium text-white truncate text-right">{away?.name}</span>
+                      <span className="font-medium text-white truncate text-right">{match.away_team.name}</span>
                       <div
                         className="w-8 h-8 rounded-lg flex-shrink-0"
-                        style={{ backgroundColor: away?.color || '#334155' }}
+                        style={{ backgroundColor: match.away_team.color || '#334155' }}
                       />
                     </div>
                   </div>

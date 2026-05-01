@@ -1,6 +1,6 @@
 import { LayoutDashboard, Calendar, Trophy, Target, Users } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
+import { useMatches } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'

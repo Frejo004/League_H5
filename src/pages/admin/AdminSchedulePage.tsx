@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Plus, Pencil, Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
-import { useMatches, useCreateMatch, useUpdateMatch, useDeleteMatch } from '@/hooks/useMatches'
+import { useMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, type MatchWithTeams } from '@/hooks/useMatches'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { Match, MatchStatus } from '@/types/database'
+import type { MatchStatus } from '@/types/database'
 import { clsx } from 'clsx'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
@@ -13,15 +13,15 @@ const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
   { value: 'cancelled', label: 'Annulé' },
 ]
 
-function ScoreEditor({ match }: { match: Match & { home_team: unknown; away_team: unknown } }) {
+function ScoreEditor({ match }: { match: MatchWithTeams }) {
   const updateMatch = useUpdateMatch()
   const [editing, setEditing] = useState(false)
   const [homeScore, setHomeScore] = useState(String(match.home_score ?? ''))
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
   const [status, setStatus] = useState<MatchStatus>(match.status)
 
-  const home = match.home_team as { name: string; color: string }
-  const away = match.away_team as { name: string; color: string }
+  const home = match.home_team
+  const away = match.away_team
 
   async function handleSave() {
     await updateMatch.mutateAsync({
@@ -199,7 +199,7 @@ export function AdminSchedulePage() {
                 </h3>
                 <div className="divide-y divide-surface-border/50">
                   {dayMatches.map(match => (
-                    <ScoreEditor key={match.id} match={match as Match & { home_team: unknown; away_team: unknown }} />
+                    <ScoreEditor key={match.id} match={match} />
                   ))}
                 </div>
               </div>
