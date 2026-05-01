@@ -17,14 +17,11 @@ export function LoginPage() {
     setError(null)
     setIsLoading(true)
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      console.log('[Login] result:', { data, error })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      navigate('/')
+      // navigate is handled by onAuthStateChange in AuthContext
     } catch (err: unknown) {
-      console.error('[Login] caught:', err)
       setError(err instanceof Error ? err.message : 'Erreur de connexion')
-    } finally {
       setIsLoading(false)
     }
   }

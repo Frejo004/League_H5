@@ -3,6 +3,30 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
+import type { StandingRow } from '@/hooks/useStandings'
+
+function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
+  return (
+    <span className={clsx(
+      'inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold',
+      result === 'W' && 'bg-green-500',
+      result === 'D' && 'bg-slate-500',
+      result === 'L' && 'bg-red-500',
+    )}>
+      {result === 'W' ? '✓' : result === 'L' ? '✕' : '—'}
+    </span>
+  )
+}
+
+function RankIndicator({ rank }: { rank: number }) {
+  // Top 3 get a colored left border accent
+  const color =
+    rank === 1 ? 'bg-yellow-400' :
+    rank === 2 ? 'bg-slate-300' :
+    rank === 3 ? 'bg-amber-500' :
+    'bg-transparent'
+  return <span className={clsx('absolute left-0 top-1 bottom-1 w-0.5 rounded-r', color)} />
+}
 
 export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
@@ -11,7 +35,9 @@ export function StandingsPage() {
   const isLoading = seasonLoading || standingsLoading
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-w-5xl mx-auto">
+
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Trophy className="text-primary-400" size={24} />
         <h1 className="text-2xl font-bold text-white">Classement</h1>
@@ -39,71 +65,126 @@ export function StandingsPage() {
         <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+
+              {/* Column headers */}
               <thead>
-                <tr className="border-b border-surface-border">
-                  <th className="text-left px-4 py-3 text-slate-400 font-medium w-8">#</th>
-                  <th className="text-left px-4 py-3 text-slate-400 font-medium">Équipe</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium">MJ</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden sm:table-cell">V</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden sm:table-cell">N</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden sm:table-cell">D</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden md:table-cell">BP</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden md:table-cell">BC</th>
-                  <th className="text-center px-3 py-3 text-slate-400 font-medium hidden md:table-cell">Diff</th>
-                  <th className="text-center px-4 py-3 text-slate-400 font-medium">Pts</th>
+                <tr className="border-b border-surface-border/60">
+                  <th className="w-10 px-3 py-3 text-left text-xs text-slate-500 font-medium">#</th>
+                  <th className="px-3 py-3 text-left text-xs text-slate-500 font-medium">Club</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-500 font-medium">MP</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">W</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">D</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">L</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GF</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GA</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GD</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-200 font-bold">Pts</th>
+                  <th className="px-3 py-3 text-center text-xs text-slate-500 font-medium hidden lg:table-cell">Last 5</th>
                 </tr>
               </thead>
-              <tbody>
-                {standings.map((row, i) => (
+
+              <tbody className="divide-y divide-surface-border/30">
+                {standings.map((row: StandingRow, i: number) => (
                   <tr
                     key={row.team_id}
-                    className={clsx(
-                      'border-b border-surface-border/50 hover:bg-surface-border/20 transition-colors',
-                      i === standings.length - 1 && 'border-b-0'
-                    )}
+                    className="relative hover:bg-white/4 transition-colors duration-150 group"
                   >
-                    <td className="px-4 py-3">
+                    {/* Rank accent bar */}
+                    <td className="relative w-10 px-3 py-3.5">
+                      <RankIndicator rank={i + 1} />
                       <span className={clsx(
-                        'text-sm font-bold',
+                        'font-bold text-sm',
                         i === 0 && 'text-yellow-400',
                         i === 1 && 'text-slate-300',
-                        i === 2 && 'text-amber-600',
-                        i > 2 && 'text-slate-500'
+                        i === 2 && 'text-amber-500',
+                        i > 2 && 'text-slate-500',
                       )}>
                         {i + 1}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+
+                    {/* Club name + color dot */}
+                    <td className="px-3 py-3.5 min-w-[140px]">
+                      <div className="flex items-center gap-2.5">
                         <span
-                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-white/10"
                           style={{ backgroundColor: row.team_color || '#16a34a' }}
                         />
-                        <span className="text-white font-medium">{row.team_name}</span>
+                        <span className="text-white font-medium truncate">{row.team_name}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-center text-slate-300">{row.played}</td>
-                    <td className="px-3 py-3 text-center text-green-400 hidden sm:table-cell">{row.won}</td>
-                    <td className="px-3 py-3 text-center text-slate-400 hidden sm:table-cell">{row.drawn}</td>
-                    <td className="px-3 py-3 text-center text-red-400 hidden sm:table-cell">{row.lost}</td>
-                    <td className="px-3 py-3 text-center text-slate-300 hidden md:table-cell">{row.goals_for}</td>
-                    <td className="px-3 py-3 text-center text-slate-300 hidden md:table-cell">{row.goals_against}</td>
-                    <td className="px-3 py-3 text-center hidden md:table-cell">
+
+                    {/* MP */}
+                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums">{row.played}</td>
+
+                    {/* W */}
+                    <td className="px-3 py-3.5 text-center text-green-400 tabular-nums hidden sm:table-cell">{row.won}</td>
+
+                    {/* D */}
+                    <td className="px-3 py-3.5 text-center text-slate-400 tabular-nums hidden sm:table-cell">{row.drawn}</td>
+
+                    {/* L */}
+                    <td className="px-3 py-3.5 text-center text-red-400 tabular-nums hidden sm:table-cell">{row.lost}</td>
+
+                    {/* GF */}
+                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums hidden md:table-cell">{row.goals_for}</td>
+
+                    {/* GA */}
+                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums hidden md:table-cell">{row.goals_against}</td>
+
+                    {/* GD */}
+                    <td className="px-3 py-3.5 text-center tabular-nums hidden md:table-cell">
                       <span className={clsx(
+                        'font-medium',
                         row.goal_diff > 0 && 'text-green-400',
                         row.goal_diff < 0 && 'text-red-400',
-                        row.goal_diff === 0 && 'text-slate-400'
+                        row.goal_diff === 0 && 'text-slate-500',
                       )}>
                         {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="text-white font-bold text-base">{row.points}</span>
+
+                    {/* Pts — bold, prominent */}
+                    <td className="px-3 py-3.5 text-center">
+                      <span className="text-white font-black text-base tabular-nums">{row.points}</span>
+                    </td>
+
+                    {/* Last 5 form */}
+                    <td className="px-3 py-3.5 hidden lg:table-cell">
+                      <div className="flex items-center justify-center gap-1">
+                        {row.form.length === 0 ? (
+                          <span className="text-xs text-slate-600">—</span>
+                        ) : (
+                          row.form.map((r, idx) => <FormBadge key={idx} result={r} />)
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Legend */}
+          <div className="px-4 py-3 border-t border-surface-border/40 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+              <span className="text-xs text-slate-500">1er</span>
+            </div>
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[8px] font-bold">✓</span>
+                <span className="text-xs text-slate-500">Victoire</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-500 text-white text-[8px] font-bold">—</span>
+                <span className="text-xs text-slate-500">Nul</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold">✕</span>
+                <span className="text-xs text-slate-500">Défaite</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

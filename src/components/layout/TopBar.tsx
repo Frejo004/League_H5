@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom'
 import { clsx } from 'clsx'
 import {
   LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2, Shield,
+  Users, User, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -16,7 +16,6 @@ const navItems = [
   { to: '/teams',     icon: Users,           label: 'Équipes' },
   { to: '/players',   icon: User,            label: 'Joueurs' },
   { to: '/stats',     icon: BarChart2,       label: 'Stats' },
-  { to: '/bracket',   icon: Shield,          label: 'Phase Finale' },
 ]
 
 export function TopBar() {

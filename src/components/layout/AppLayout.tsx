@@ -2,16 +2,27 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { TopBar } from './TopBar'
+import bgImage from '@/assets/leagueH5-bg_login.jpg'
 
 export function AppLayout() {
   const location = useLocation()
 
   return (
     <div className="flex min-h-screen bg-surface">
-      {/* Ambient background gradients */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary-800/8 rounded-full blur-3xl" />
+
+      {/* Background image */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 30%',
+        }}
+      >
+        {/* Dark overlay to keep content readable */}
+        <div className="absolute inset-0 bg-black/75" />
+        {/* Subtle green tint at top */}
+        <div className="absolute inset-0 bg-linear-to-br from-primary-950/60 via-transparent to-transparent" />
       </div>
 
       {/* Desktop sidebar */}
