@@ -8,14 +8,12 @@ import { clsx } from 'clsx'
 
 const STATUS_LABELS: Record<MatchStatus, string> = {
   scheduled: 'Programmé',
-  live: 'En cours',
   completed: 'Terminé',
   cancelled: 'Annulé',
 }
 
 const STATUS_STYLES: Record<MatchStatus, string> = {
   scheduled: 'bg-slate-700 text-slate-300',
-  live: 'bg-green-500/20 text-green-400 border border-green-500/30 animate-pulse',
   completed: 'bg-primary-600/20 text-primary-400',
   cancelled: 'bg-red-500/20 text-red-400',
 }

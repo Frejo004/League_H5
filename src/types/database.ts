@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type UserRole = 'admin' | 'captain' | 'player' | 'spectator'
-export type MatchStatus = 'scheduled' | 'live' | 'completed' | 'cancelled'
+export type MatchStatus = 'scheduled' | 'completed' | 'cancelled'
 export type SpectatorStatus = 'pending' | 'approved' | 'rejected'
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
 
