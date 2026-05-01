@@ -12,7 +12,6 @@ import { ScorersPage } from '@/pages/ScorersPage'
 import { TeamsPage } from '@/pages/TeamsPage'
 import { PlayersPage } from '@/pages/PlayersPage'
 import { StatsPage } from '@/pages/StatsPage'
-import { BracketPage } from '@/pages/BracketPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -54,7 +53,6 @@ export const router = createBrowserRouter([
           { path: '/teams',     element: <TeamsPage /> },
           { path: '/players',   element: <PlayersPage /> },
           { path: '/stats',     element: <StatsPage /> },
-          { path: '/bracket',   element: <BracketPage /> },
           { path: '/admin',     element: <AdminPage /> },
           { path: '/profile',   element: <ProfilePage /> },
         ],

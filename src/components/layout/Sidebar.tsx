@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2, Settings, LogOut, Shield,
+  Users, User, BarChart2, Settings, LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { clsx } from 'clsx'
@@ -14,7 +14,6 @@ const navItems = [
   { to: '/teams',     icon: Users,           label: 'Équipes' },
   { to: '/players',   icon: User,            label: 'Joueurs' },
   { to: '/stats',     icon: BarChart2,       label: 'Stats' },
-  { to: '/bracket',   icon: Shield,          label: 'Phase Finale' },
 ]
 
 export function Sidebar() {
