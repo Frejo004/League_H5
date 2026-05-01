@@ -1,9 +1,27 @@
-import { Settings } from 'lucide-react'
+import { useState } from 'react'
+import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigate } from 'react-router-dom'
+import { AdminSeasonsPage } from './admin/AdminSeasonsPage'
+import { AdminTeamsPage } from './admin/AdminTeamsPage'
+import { AdminSchedulePage } from './admin/AdminSchedulePage'
+import { AdminSpectatorsPage } from './admin/AdminSpectatorsPage'
+import { AdminSettingsPage } from './admin/AdminSettingsPage'
+import { clsx } from 'clsx'
+
+const TABS = [
+  { id: 'seasons',    label: 'Saisons',     icon: Trophy },
+  { id: 'teams',      label: 'Équipes',     icon: Users },
+  { id: 'schedule',   label: 'Calendrier',  icon: Calendar },
+  { id: 'spectators', label: 'Spectateurs', icon: Eye },
+  { id: 'settings',   label: 'Paramètres',  icon: SlidersHorizontal },
+] as const
+
+type TabId = typeof TABS[number]['id']
 
 export function AdminPage() {
   const { isAdmin } = useAuth()
+  const [activeTab, setActiveTab] = useState<TabId>('seasons')
 
   if (!isAdmin) return <Navigate to="/" replace />
 
@@ -14,21 +32,32 @@ export function AdminPage() {
         <h1 className="text-2xl font-bold text-white">Administration</h1>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[
-          { icon: '👕', title: 'Équipes & Joueurs', desc: 'Gérer les équipes et les rosters', href: '/admin/teams' },
-          { icon: '📅', title: 'Calendrier', desc: 'Générer et gérer les matchs', href: '/admin/schedule' },
-          { icon: '🏆', title: 'Saisons', desc: 'Créer et gérer les saisons', href: '/admin/seasons' },
-          { icon: '🔒', title: 'Verrouillage', desc: 'Verrouiller la ligue', href: '/admin/settings' },
-          { icon: '👁️', title: 'Spectateurs', desc: 'Approuver les demandes d\'accès', href: '/admin/spectators' },
-          { icon: '⚙️', title: 'Paramètres', desc: 'Configuration générale', href: '/admin/settings' },
-        ].map(item => (
-          <div key={item.title} className="card hover:border-primary-600/50 transition-colors cursor-pointer">
-            <span className="text-3xl mb-3 block">{item.icon}</span>
-            <h3 className="font-semibold text-white mb-1">{item.title}</h3>
-            <p className="text-sm text-slate-400">{item.desc}</p>
-          </div>
+      {/* Tab navigation */}
+      <div className="flex gap-1 overflow-x-auto pb-1 border-b border-surface-border">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={clsx(
+              'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap flex-shrink-0',
+              activeTab === id
+                ? 'bg-primary-600/20 text-primary-400 border-b-2 border-primary-500'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-surface-border/30'
+            )}
+          >
+            <Icon size={15} />
+            {label}
+          </button>
         ))}
+      </div>
+
+      {/* Tab content */}
+      <div>
+        {activeTab === 'seasons'    && <AdminSeasonsPage />}
+        {activeTab === 'teams'      && <AdminTeamsPage />}
+        {activeTab === 'schedule'   && <AdminSchedulePage />}
+        {activeTab === 'spectators' && <AdminSpectatorsPage />}
+        {activeTab === 'settings'   && <AdminSettingsPage />}
       </div>
     </div>
   )

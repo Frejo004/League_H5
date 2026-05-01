@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { SignupPage } from '@/pages/auth/SignupPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+import { UpdatePasswordPage } from '@/pages/auth/UpdatePasswordPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { StandingsPage } from '@/pages/StandingsPage'
 import { MatchesPage } from '@/pages/MatchesPage'
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/reset-password',
     element: <ResetPasswordPage />,
+  },
+  {
+    path: '/auth/update-password',
+    element: <UpdatePasswordPage />,
   },
 
   // App routes (protected)
