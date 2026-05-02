@@ -41,6 +41,7 @@ export function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       // ✅ Pas de navigate() ici — onAuthStateChange dans AuthContext gère la redirection
+      // Le isLoading reste à true jusqu'à la redirection
     } catch (err: any) {
       setError(getErrorMessage(err))
       setIsLoading(false) // ✅ seulement en cas d'erreur

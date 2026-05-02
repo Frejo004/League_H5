@@ -23,17 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const timeout = setTimeout(() => setIsLoading(false), 5000)
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        setIsLoading(false)
-      }
-    })
-
+    // ✅ onAuthStateChange est la source de vérité unique
+    // Il se déclenche immédiatement avec la session existante (INITIAL_SESSION)
+    // puis à chaque changement (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED...)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session)
@@ -42,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fetchProfile(session.user.id)
 
           if (event === 'SIGNED_IN') {
-            // ✅ Ne rediriger que si on vient d'une page auth
             const currentPath = window.location.pathname
             if (currentPath.startsWith('/auth')) {
               navigateTo('/')
@@ -52,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null)
           setIsLoading(false)
 
-          // ✅ Rediriger vers login seulement si on est sur une route protégée
           if (event === 'SIGNED_OUT') {
             navigateTo('/auth/login')
           }
@@ -60,10 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
   async function fetchProfile(userId: string) {
@@ -80,15 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching profile:', err)
       setProfile(null)
     } finally {
-      setIsLoading(false) // ✅ toujours libéré
+      setIsLoading(false)
     }
   }
 
   async function signOut() {
-    // ✅ Laisser onAuthStateChange(SIGNED_OUT) gérer la navigation
-    setProfile(null)
-    setSession(null)
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+      // onAuthStateChange(SIGNED_OUT) gère setProfile, setSession et la navigation
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Fallback si Supabase ne répond pas
+      setProfile(null)
+      setSession(null)
+      setIsLoading(false)
+      navigateTo('/auth/login')
+    }
   }
 
   const role = profile?.role ?? null
