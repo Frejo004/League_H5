@@ -9,99 +9,150 @@ export function ScorersPage() {
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
 
   const isLoading = seasonLoading || scorersLoading
+  const maxGoals = scorers?.[0]?.goals ?? 1
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Target className="text-primary-400" size={24} />
-        <h1 className="text-2xl font-bold text-white">Buteurs & Passeurs</h1>
-        {season && (
-          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
-            {season.name}
-          </span>
-        )}
+    <div className="space-y-5 max-w-3xl mx-auto">
+
+      {/* Header */}
+      <div className="animate-fade-in-up">
+        <div className="page-header">
+          <Target className="text-primary-400" size={22} />
+          <h1 className="page-title">Buteurs & Passeurs</h1>
+          {season && (
+            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
+              {season.name}
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <LoadingSpinner size="lg" />
-        </div>
+        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : !season ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400">Aucune saison active.</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon"><Target size={22} /></div>
+            <p className="text-slate-400 font-medium">Aucune saison active</p>
+          </div>
         </div>
       ) : !scorers?.length ? (
-        <div className="card text-center py-12">
-          <Target size={40} className="mx-auto text-slate-600 mb-3" />
-          <p className="text-slate-400">Aucune statistique disponible pour le moment.</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon"><Target size={22} /></div>
+            <p className="text-slate-300 font-semibold">Aucune statistique</p>
+            <p className="text-slate-500 text-sm">Les stats apparaîtront après les premiers matchs.</p>
+          </div>
         </div>
       ) : (
-        <div className="card overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-surface-border">
-                  <th className="text-left px-4 py-3 text-slate-400 font-medium w-8">#</th>
-                  <th className="text-left px-4 py-3 text-slate-400 font-medium">Joueur</th>
-                  <th className="text-left px-4 py-3 text-slate-400 font-medium hidden sm:table-cell">Équipe</th>
-                  <th className="text-center px-4 py-3 text-slate-400 font-medium">⚽ Buts</th>
-                  <th className="text-center px-4 py-3 text-slate-400 font-medium hidden sm:table-cell">🎯 Passes</th>
-                  <th className="text-center px-4 py-3 text-slate-400 font-medium hidden md:table-cell">CSC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scorers.map((row, i) => (
-                  <tr
-                    key={row.player_id}
-                    className={clsx(
-                      'border-b border-surface-border/50 hover:bg-surface-border/20 transition-colors',
-                      i === scorers.length - 1 && 'border-b-0'
+        <div className="space-y-2 stagger">
+          {scorers.map((row, i) => {
+            const isTop3 = i < 3
+            const barWidth = Math.round((row.goals / maxGoals) * 100)
+
+            return (
+              <div
+                key={row.player_id}
+                className={clsx(
+                  'animate-fade-in-up relative overflow-hidden rounded-2xl border p-4 transition-all duration-200',
+                  i === 0
+                    ? 'bg-linear-to-r from-yellow-500/8 via-surface-card to-surface-card border-yellow-500/20'
+                    : i === 1
+                    ? 'bg-linear-to-r from-slate-400/5 via-surface-card to-surface-card border-slate-500/15'
+                    : i === 2
+                    ? 'bg-linear-to-r from-amber-500/6 via-surface-card to-surface-card border-amber-500/15'
+                    : 'bg-surface-card border-surface-border hover:border-surface-muted'
+                )}
+              >
+                {/* Progress bar background */}
+                <div
+                  className={clsx(
+                    'absolute left-0 top-0 bottom-0 opacity-[0.04] transition-all duration-700',
+                    i === 0 ? 'bg-yellow-400' : i === 1 ? 'bg-slate-300' : i === 2 ? 'bg-amber-500' : 'bg-primary-500'
+                  )}
+                  style={{ width: `${barWidth}%` }}
+                />
+
+                <div className="relative flex items-center gap-4">
+                  {/* Rank */}
+                  <div className="w-7 shrink-0 text-center">
+                    {i === 0 ? (
+                      <span className="text-lg">🥇</span>
+                    ) : i === 1 ? (
+                      <span className="text-lg">🥈</span>
+                    ) : i === 2 ? (
+                      <span className="text-lg">🥉</span>
+                    ) : (
+                      <span className="text-sm font-bold text-slate-600">{i + 1}</span>
                     )}
-                  >
-                    <td className="px-4 py-3">
-                      <span className={clsx(
-                        'text-sm font-bold',
-                        i === 0 && 'text-yellow-400',
-                        i === 1 && 'text-slate-300',
-                        i === 2 && 'text-amber-600',
-                        i > 2 && 'text-slate-500'
+                  </div>
+
+                  {/* Avatar */}
+                  <div className={clsx(
+                    'w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black shrink-0 ring-2',
+                    i === 0 ? 'bg-linear-to-br from-yellow-500 to-amber-600 ring-yellow-500/30' :
+                    i === 1 ? 'bg-linear-to-br from-slate-400 to-slate-600 ring-slate-400/20' :
+                    i === 2 ? 'bg-linear-to-br from-amber-500 to-orange-600 ring-amber-500/20' :
+                    'bg-linear-to-br from-primary-600 to-primary-800 ring-primary-600/20'
+                  )}>
+                    {row.first_name[0]}{row.last_name[0]}
+                  </div>
+
+                  {/* Name + team */}
+                  <div className="flex-1 min-w-0">
+                    <p className={clsx(
+                      'font-bold truncate',
+                      isTop3 ? 'text-white' : 'text-slate-200'
+                    )}>
+                      {row.first_name} {row.last_name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: row.team_color || '#16a34a' }}
+                      />
+                      <span className="text-xs text-slate-500 truncate">{row.team_name}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-center">
+                      <p className={clsx(
+                        'font-black text-2xl leading-none tabular-nums',
+                        i === 0 ? 'rank-gold text-glow-gold' :
+                        i === 1 ? 'rank-silver' :
+                        i === 2 ? 'rank-bronze' :
+                        'text-white'
                       )}>
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-surface-border flex items-center justify-center text-slate-300 text-xs font-bold flex-shrink-0">
-                          {row.first_name[0]}{row.last_name[0]}
-                        </div>
-                        <span className="text-white font-medium">
-                          {row.first_name} {row.last_name}
-                        </span>
+                        {row.goals}
+                      </p>
+                      <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">buts</p>
+                    </div>
+                    {row.assists > 0 && (
+                      <div className="text-center hidden sm:block">
+                        <p className="font-bold text-lg leading-none tabular-nums text-slate-400">{row.assists}</p>
+                        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">passes</p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: row.team_color || '#16a34a' }}
-                        />
-                        <span className="text-slate-300">{row.team_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="text-white font-bold text-base">{row.goals}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center hidden sm:table-cell text-slate-300">
-                      {row.assists}
-                    </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell text-slate-500">
-                      {row.own_goals || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom progress bar */}
+                {isTop3 && (
+                  <div className="relative mt-3 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className={clsx(
+                        'h-full rounded-full transition-all duration-1000',
+                        i === 0 ? 'bg-yellow-400' : i === 1 ? 'bg-slate-400' : 'bg-amber-500'
+                      )}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

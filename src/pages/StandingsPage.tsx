@@ -8,24 +8,21 @@ import type { StandingRow } from '@/hooks/useStandings'
 function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
   return (
     <span className={clsx(
-      'inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold',
-      result === 'W' && 'bg-green-500',
-      result === 'D' && 'bg-slate-500',
-      result === 'L' && 'bg-red-500',
+      'inline-flex items-center justify-center w-5 h-5 rounded-md text-white text-[9px] font-black',
+      result === 'W' && 'bg-green-500/80',
+      result === 'D' && 'bg-slate-600',
+      result === 'L' && 'bg-red-500/80',
     )}>
-      {result === 'W' ? '✓' : result === 'L' ? '✕' : '—'}
+      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
     </span>
   )
 }
 
-function RankIndicator({ rank }: { rank: number }) {
-  // Top 3 get a colored left border accent
-  const color =
-    rank === 1 ? 'bg-yellow-400' :
-    rank === 2 ? 'bg-slate-300' :
-    rank === 3 ? 'bg-amber-500' :
-    'bg-transparent'
-  return <span className={clsx('absolute left-0 top-1 bottom-1 w-0.5 rounded-r', color)} />
+function RankBadge({ rank }: { rank: number }) {
+  if (rank === 1) return <span className="text-sm font-black rank-gold text-glow-gold">1</span>
+  if (rank === 2) return <span className="text-sm font-black rank-silver">2</span>
+  if (rank === 3) return <span className="text-sm font-black rank-bronze">3</span>
+  return <span className="text-sm font-bold text-slate-600">{rank}</span>
 }
 
 export function StandingsPage() {
@@ -35,158 +32,233 @@ export function StandingsPage() {
   const isLoading = seasonLoading || standingsLoading
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Trophy className="text-primary-400" size={24} />
-        <h1 className="text-2xl font-bold text-white">Classement</h1>
-        {season && (
-          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
-            {season.name}
-          </span>
-        )}
+      <div className="animate-fade-in-up">
+        <div className="page-header">
+          <Trophy className="text-primary-400" size={22} />
+          <h1 className="page-title">Classement</h1>
+          {season && (
+            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
+              {season.name}
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <LoadingSpinner size="lg" />
-        </div>
+        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : !season ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400">Aucune saison active.</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon"><Trophy size={22} /></div>
+            <p className="text-slate-400 font-medium">Aucune saison active</p>
+          </div>
         </div>
       ) : !standings?.length ? (
-        <div className="card text-center py-12">
-          <Trophy size={40} className="mx-auto text-slate-600 mb-3" />
-          <p className="text-slate-400">Le classement sera disponible une fois les matchs joués.</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon"><Trophy size={22} /></div>
+            <p className="text-slate-300 font-semibold">Classement indisponible</p>
+            <p className="text-slate-500 text-sm">Disponible une fois les premiers matchs joués.</p>
+          </div>
         </div>
       ) : (
-        <div className="card overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-
-              {/* Column headers */}
-              <thead>
-                <tr className="border-b border-surface-border/60">
-                  <th className="w-10 px-3 py-3 text-left text-xs text-slate-500 font-medium">#</th>
-                  <th className="px-3 py-3 text-left text-xs text-slate-500 font-medium">Club</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-500 font-medium">MP</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">W</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">D</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden sm:table-cell">L</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GF</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GA</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-400 font-medium hidden md:table-cell">GD</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-200 font-bold">Pts</th>
-                  <th className="px-3 py-3 text-center text-xs text-slate-500 font-medium hidden lg:table-cell">Last 5</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-surface-border/30">
-                {standings.map((row: StandingRow, i: number) => (
-                  <tr
+        <>
+          {/* ── Podium top 3 (desktop) ── */}
+          {standings.length >= 3 && (
+            <div className="hidden md:grid grid-cols-3 gap-3 animate-fade-in-up">
+              {[standings[1], standings[0], standings[2]].map((row, podiumIdx) => {
+                const realRank = podiumIdx === 0 ? 2 : podiumIdx === 1 ? 1 : 3
+                const isFirst = realRank === 1
+                return (
+                  <div
                     key={row.team_id}
-                    className="relative hover:bg-white/4 transition-colors duration-150 group"
+                    className={clsx(
+                      'relative rounded-2xl p-4 text-center border transition-all',
+                      isFirst
+                        ? 'bg-linear-to-b from-yellow-500/10 to-surface-card border-yellow-500/25 shadow-[0_0_30px_rgba(251,191,36,0.08)] -mt-2'
+                        : 'bg-surface-card border-surface-border'
+                    )}
                   >
-                    {/* Rank accent bar */}
-                    <td className="relative w-10 px-3 py-3.5">
-                      <RankIndicator rank={i + 1} />
-                      <span className={clsx(
-                        'font-bold text-sm',
-                        i === 0 && 'text-yellow-400',
-                        i === 1 && 'text-slate-300',
-                        i === 2 && 'text-amber-500',
-                        i > 2 && 'text-slate-500',
+                    {isFirst && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xl">👑</div>
+                    )}
+                    <div className="flex flex-col items-center gap-2 pt-2">
+                      <div
+                        className="w-10 h-10 rounded-xl ring-2 ring-white/10"
+                        style={{ backgroundColor: row.team_color }}
+                      />
+                      <p className="text-white font-bold text-sm truncate w-full">{row.team_name}</p>
+                      <div className={clsx(
+                        'text-3xl font-black',
+                        realRank === 1 ? 'rank-gold text-glow-gold' :
+                        realRank === 2 ? 'rank-silver' : 'rank-bronze'
                       )}>
-                        {i + 1}
-                      </span>
-                    </td>
-
-                    {/* Club name + color dot */}
-                    <td className="px-3 py-3.5 min-w-[140px]">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-white/10"
-                          style={{ backgroundColor: row.team_color || '#16a34a' }}
-                        />
-                        <span className="text-white font-medium truncate">{row.team_name}</span>
+                        {row.points}
+                        <span className="text-xs font-semibold ml-1 opacity-60">pts</span>
                       </div>
-                    </td>
-
-                    {/* MP */}
-                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums">{row.played}</td>
-
-                    {/* W */}
-                    <td className="px-3 py-3.5 text-center text-green-400 tabular-nums hidden sm:table-cell">{row.won}</td>
-
-                    {/* D */}
-                    <td className="px-3 py-3.5 text-center text-slate-400 tabular-nums hidden sm:table-cell">{row.drawn}</td>
-
-                    {/* L */}
-                    <td className="px-3 py-3.5 text-center text-red-400 tabular-nums hidden sm:table-cell">{row.lost}</td>
-
-                    {/* GF */}
-                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums hidden md:table-cell">{row.goals_for}</td>
-
-                    {/* GA */}
-                    <td className="px-3 py-3.5 text-center text-slate-300 tabular-nums hidden md:table-cell">{row.goals_against}</td>
-
-                    {/* GD */}
-                    <td className="px-3 py-3.5 text-center tabular-nums hidden md:table-cell">
-                      <span className={clsx(
-                        'font-medium',
-                        row.goal_diff > 0 && 'text-green-400',
-                        row.goal_diff < 0 && 'text-red-400',
-                        row.goal_diff === 0 && 'text-slate-500',
-                      )}>
-                        {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
-                      </span>
-                    </td>
-
-                    {/* Pts — bold, prominent */}
-                    <td className="px-3 py-3.5 text-center">
-                      <span className="text-white font-black text-base tabular-nums">{row.points}</span>
-                    </td>
-
-                    {/* Last 5 form */}
-                    <td className="px-3 py-3.5 hidden lg:table-cell">
-                      <div className="flex items-center justify-center gap-1">
-                        {row.form.length === 0 ? (
-                          <span className="text-xs text-slate-600">—</span>
-                        ) : (
-                          row.form.map((r, idx) => <FormBadge key={idx} result={r} />)
-                        )}
+                      <div className="flex gap-1 text-xs text-slate-500">
+                        <span className="text-green-400 font-bold">{row.won}V</span>
+                        <span>·</span>
+                        <span>{row.drawn}N</span>
+                        <span>·</span>
+                        <span className="text-red-400">{row.lost}D</span>
                       </div>
-                    </td>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* ── Full table ── */}
+          <div className="card overflow-hidden p-0 animate-fade-in-up">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-surface-border/60">
+                    <th className="w-10 px-3 py-3 text-left">
+                      <span className="section-title">#</span>
+                    </th>
+                    <th className="px-3 py-3 text-left">
+                      <span className="section-title">Club</span>
+                    </th>
+                    <th className="px-3 py-3 text-center">
+                      <span className="section-title">MJ</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden sm:table-cell">
+                      <span className="section-title text-green-500/70">V</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden sm:table-cell">
+                      <span className="section-title">N</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden sm:table-cell">
+                      <span className="section-title text-red-500/70">D</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden md:table-cell">
+                      <span className="section-title">BP</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden md:table-cell">
+                      <span className="section-title">BC</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden md:table-cell">
+                      <span className="section-title">+/-</span>
+                    </th>
+                    <th className="px-3 py-3 text-center">
+                      <span className="section-title text-white/60">Pts</span>
+                    </th>
+                    <th className="px-3 py-3 text-center hidden lg:table-cell">
+                      <span className="section-title">Forme</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
 
-          {/* Legend */}
-          <div className="px-4 py-3 border-t border-surface-border/40 flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-yellow-400" />
-              <span className="text-xs text-slate-500">1er</span>
+                <tbody className="divide-y divide-surface-border/20">
+                  {standings.map((row: StandingRow, i: number) => {
+                    const isTop3 = i < 3
+                    return (
+                      <tr
+                        key={row.team_id}
+                        className={clsx(
+                          'relative transition-colors duration-150 group',
+                          i === 0 && 'bg-yellow-500/3',
+                          i > 0 && 'hover:bg-white/3'
+                        )}
+                      >
+                        {/* Left accent bar for top 3 */}
+                        <td className="relative w-10 px-3 py-3.5">
+                          {isTop3 && (
+                            <span className={clsx(
+                              'absolute left-0 top-2 bottom-2 w-0.5 rounded-r',
+                              i === 0 && 'bg-yellow-400',
+                              i === 1 && 'bg-slate-400',
+                              i === 2 && 'bg-amber-500',
+                            )} />
+                          )}
+                          <RankBadge rank={i + 1} />
+                        </td>
+
+                        {/* Club */}
+                        <td className="px-3 py-3.5 min-w-[140px]">
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className="w-3 h-3 rounded-sm shrink-0 ring-1 ring-white/10"
+                              style={{ backgroundColor: row.team_color || '#16a34a' }}
+                            />
+                            <span className={clsx(
+                              'font-semibold truncate',
+                              i === 0 ? 'text-white' : 'text-slate-200'
+                            )}>
+                              {row.team_name}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3.5 text-center text-slate-400 tabular-nums">{row.played}</td>
+                        <td className="px-3 py-3.5 text-center text-green-400 tabular-nums font-medium hidden sm:table-cell">{row.won}</td>
+                        <td className="px-3 py-3.5 text-center text-slate-500 tabular-nums hidden sm:table-cell">{row.drawn}</td>
+                        <td className="px-3 py-3.5 text-center text-red-400 tabular-nums hidden sm:table-cell">{row.lost}</td>
+                        <td className="px-3 py-3.5 text-center text-slate-400 tabular-nums hidden md:table-cell">{row.goals_for}</td>
+                        <td className="px-3 py-3.5 text-center text-slate-400 tabular-nums hidden md:table-cell">{row.goals_against}</td>
+                        <td className="px-3 py-3.5 text-center tabular-nums hidden md:table-cell">
+                          <span className={clsx(
+                            'font-semibold text-xs px-1.5 py-0.5 rounded',
+                            row.goal_diff > 0 && 'text-green-400 bg-green-500/10',
+                            row.goal_diff < 0 && 'text-red-400 bg-red-500/10',
+                            row.goal_diff === 0 && 'text-slate-500',
+                          )}>
+                            {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
+                          </span>
+                        </td>
+
+                        {/* Points — most prominent */}
+                        <td className="px-3 py-3.5 text-center">
+                          <span className={clsx(
+                            'font-black text-lg tabular-nums',
+                            i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : 'text-white'
+                          )}>
+                            {row.points}
+                          </span>
+                        </td>
+
+                        {/* Form */}
+                        <td className="px-3 py-3.5 hidden lg:table-cell">
+                          <div className="flex items-center justify-center gap-0.5">
+                            {row.form.length === 0 ? (
+                              <span className="text-xs text-slate-700">—</span>
+                            ) : (
+                              row.form.map((r, idx) => <FormBadge key={idx} result={r} />)
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div className="flex items-center gap-3 ml-auto">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[8px] font-bold">✓</span>
-                <span className="text-xs text-slate-500">Victoire</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-500 text-white text-[8px] font-bold">—</span>
-                <span className="text-xs text-slate-500">Nul</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold">✕</span>
-                <span className="text-xs text-slate-500">Défaite</span>
+
+            {/* Legend */}
+            <div className="px-4 py-3 border-t border-surface-border/30 flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-green-500/80 text-white text-[8px] font-black">V</span>
+                  <span className="text-xs text-slate-600">Victoire</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-slate-600 text-white text-[8px] font-black">N</span>
+                  <span className="text-xs text-slate-600">Nul</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-red-500/80 text-white text-[8px] font-black">D</span>
+                  <span className="text-xs text-slate-600">Défaite</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

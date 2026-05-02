@@ -63,7 +63,7 @@ export function SignupPage() {
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div className="relative w-10 h-10">
               <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-60" />
-              <div className="relative w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center">
+              <div className="relative w-10 h-10 bg-linear-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center">
                 <span className="text-xl">⚽</span>
               </div>
             </div>

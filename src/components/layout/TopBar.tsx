@@ -8,6 +8,18 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
+const PAGE_TITLES: Record<string, string> = {
+  '/':          'Accueil',
+  '/standings': 'Classement',
+  '/matches':   'Matchs',
+  '/scorers':   'Buteurs',
+  '/teams':     'Équipes',
+  '/players':   'Joueurs',
+  '/stats':     'Statistiques',
+  '/admin':     'Administration',
+  '/profile':   'Mon profil',
+}
+
 const navItems = [
   { to: '/',          icon: LayoutDashboard, label: 'Accueil' },
   { to: '/standings', icon: Trophy,          label: 'Classement' },
@@ -42,14 +54,16 @@ export function TopBar() {
     <>
       {/* Top header bar — mobile only */}
       <header className="lg:hidden sticky top-0 z-30
-                         bg-surface-card/90 backdrop-blur-xl
+                         bg-surface-card/95 backdrop-blur-xl
                          border-b border-surface-border/50
                          px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-linear-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center shadow-glow-sm">
             <span className="text-sm">⚽</span>
           </div>
-          <span className="font-bold text-white text-sm tracking-wide">League H5</span>
+          <span className="font-black text-white text-sm tracking-tight">
+            {PAGE_TITLES[location.pathname] ?? 'League H5'}
+          </span>
         </div>
         <button
           onClick={() => setMenuOpen(true)}
@@ -162,11 +176,13 @@ export function TopBar() {
                               ring-2 ring-surface-border shrink-0">
                 {profile?.avatar_url
                   ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                  : (profile?.full_name?.[0]?.toUpperCase() ?? '?')
+                  : (profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?')
                 }
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-200 truncate">{profile?.full_name ?? 'Utilisateur'}</p>
+                <p className="text-sm font-semibold text-slate-200 truncate">
+                  {profile?.full_name ?? profile?.email?.split('@')[0] ?? 'Utilisateur'}
+                </p>
                 <p className="text-[11px] text-slate-500 truncate">{profile?.email}</p>
               </div>
             </NavLink>

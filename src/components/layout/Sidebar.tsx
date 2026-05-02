@@ -128,14 +128,14 @@ export function Sidebar() {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white text-xs font-bold overflow-hidden ring-2 ring-surface-border">
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                : (profile?.full_name?.[0]?.toUpperCase() ?? '?')
+                : (profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?')
               }
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-surface-card" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-slate-200 truncate leading-tight">
-              {profile?.full_name ?? 'Utilisateur'}
+              {profile?.full_name ?? profile?.email?.split('@')[0] ?? 'Utilisateur'}
             </p>
             <p className="text-[11px] text-slate-500 truncate">{profile?.email}</p>
           </div>
