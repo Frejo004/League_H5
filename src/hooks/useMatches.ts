@@ -96,12 +96,12 @@ export function useUpdateMatch() {
 export function useDeleteMatch() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, seasonId }: { id: string; seasonId: string }) => {
       const { error } = await supabase.from('matches').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['matches'] })
+    onSuccess: (_data, { seasonId }) => {
+      qc.invalidateQueries({ queryKey: ['matches', seasonId] })
       qc.invalidateQueries({ queryKey: ['standings'] })
     },
   })

@@ -110,7 +110,10 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
 
       {invite && !isExpired && (
         <p className="text-xs text-slate-600">
-          Expire à {new Date(invite.expires_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          Expire le {new Date(invite.expires_at).toLocaleString('fr-FR', {
+            day: '2-digit', month: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+          })}
         </p>
       )}
     </div>

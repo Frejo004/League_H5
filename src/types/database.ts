@@ -389,7 +389,29 @@ export interface Database {
       }
       claim_player_invite: {
         Args: { p_token: string; p_user_id: string }
-        Returns: undefined // ✅ 'void' → 'undefined' (requis par supabase-js v2.39+)
+        Returns: undefined
+      }
+      set_active_season: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
+      get_standings: {
+        Args: { p_season_id: string }
+        Returns: {
+          team_id: string
+          team_name: string
+          team_color: string
+          team_logo: string | null
+          played: number
+          won: number
+          drawn: number
+          lost: number
+          goals_for: number
+          goals_against: number
+          goal_diff: number
+          points: number
+          form: string
+        }[]
       }
     }
     Enums: {

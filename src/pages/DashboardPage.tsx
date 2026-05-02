@@ -1,4 +1,5 @@
 import { Calendar, Trophy, Target, Users, TrendingUp, Zap, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
@@ -26,7 +27,8 @@ export function DashboardPage() {
     .filter(m => m.status === 'scheduled' && m.scheduled_at)
     .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())
   const recentMatches = [...completedMatches]
-    .sort((a, b) => new Date(b.played_at ?? b.updated_at).getTime() - new Date(a.played_at ?? a.updated_at).getTime())
+    .filter(m => m.played_at !== null)
+    .sort((a, b) => new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime())
     .slice(0, 5)
   const currentMatchday = completedMatches.length
     ? Math.max(...completedMatches.map(m => m.matchday))
@@ -197,9 +199,12 @@ export function DashboardPage() {
               Prochain match
             </h2>
             {upcomingMatches.length > 2 && (
-              <span className="text-xs text-slate-500 flex items-center gap-1 hover:text-slate-300 cursor-pointer transition-colors">
+              <Link
+                to="/matches"
+                className="text-xs text-slate-500 flex items-center gap-1 hover:text-slate-300 transition-colors"
+              >
                 Voir tout <ArrowRight size={11} />
-              </span>
+              </Link>
             )}
           </div>
 

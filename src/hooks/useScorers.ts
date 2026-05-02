@@ -18,24 +18,33 @@ export function useScorers(seasonId?: string) {
     queryKey: ['scorers', seasonId],
     enabled: !!seasonId,
     queryFn: async () => {
+      // Fetch match IDs for this season first, then filter goals/assists
+      const matchesRes = await supabase
+        .from('matches')
+        .select('id')
+        .eq('season_id', seasonId!)
+
+      if (matchesRes.error) throw matchesRes.error
+      const matchIds = (matchesRes.data ?? []).map(m => m.id)
+
+      if (matchIds.length === 0) return []
+
       const [goalsRes, assistsRes] = await Promise.all([
         supabase
           .from('goals')
           .select(`
             player_id, team_id, is_own_goal,
             players(id, first_name, last_name),
-            teams(id, name, color),
-            matches!inner(season_id)
+            teams(id, name, color)
           `)
-          .eq('matches.season_id', seasonId!),
+          .in('match_id', matchIds),
         supabase
           .from('assists')
           .select(`
             player_id,
-            players(id, first_name, last_name, team_id, teams(id, name, color)),
-            matches!inner(season_id)
+            players(id, first_name, last_name, team_id, teams(id, name, color))
           `)
-          .eq('matches.season_id', seasonId!),
+          .in('match_id', matchIds),
       ])
 
       if (goalsRes.error) throw goalsRes.error

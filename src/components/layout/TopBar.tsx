@@ -2,33 +2,8 @@ import { Menu, X, LogOut, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
-import {
-  LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2,
-} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-
-const PAGE_TITLES: Record<string, string> = {
-  '/':          'Accueil',
-  '/standings': 'Classement',
-  '/matches':   'Matchs',
-  '/scorers':   'Buteurs',
-  '/teams':     'Équipes',
-  '/players':   'Joueurs',
-  '/stats':     'Statistiques',
-  '/admin':     'Administration',
-  '/profile':   'Mon profil',
-}
-
-const navItems = [
-  { to: '/',          icon: LayoutDashboard, label: 'Accueil' },
-  { to: '/standings', icon: Trophy,          label: 'Classement' },
-  { to: '/matches',   icon: Calendar,        label: 'Matchs' },
-  { to: '/scorers',   icon: Target,          label: 'Buteurs' },
-  { to: '/teams',     icon: Users,           label: 'Équipes' },
-  { to: '/players',   icon: User,            label: 'Joueurs' },
-  { to: '/stats',     icon: BarChart2,       label: 'Stats' },
-]
+import { NAV_ITEMS, PAGE_TITLES } from '@/config/navigation'
 
 export function TopBar() {
   const { profile, isAdmin, signOut } = useAuth()
@@ -123,7 +98,7 @@ export function TopBar() {
 
           {/* Nav links */}
           <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-            {navItems.map(({ to, icon: Icon, label }) => (
+            {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}

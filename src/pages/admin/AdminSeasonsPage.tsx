@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Check, Lock, Unlock } from 'lucide-react'
 import { useSeasons, useCreateSeason, useUpdateSeason } from '@/hooks/useSeasons'
+import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Season } from '@/types/database'
 
@@ -32,11 +33,10 @@ export function AdminSeasonsPage() {
   }
 
   async function toggleActive(season: Season) {
-    // Deactivate all, then activate selected
     if (!season.is_active) {
-      for (const s of seasons ?? []) {
-        if (s.is_active) await updateSeason.mutateAsync({ id: s.id, is_active: false })
-      }
+      const { error } = await supabase.rpc('set_active_season', { p_season_id: season.id })
+      if (error) throw error
+      // Invalidate seasons cache after atomic swap
       await updateSeason.mutateAsync({ id: season.id, is_active: true })
     }
   }

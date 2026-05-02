@@ -1,20 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import {
-  LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2, Settings, LogOut,
-} from 'lucide-react'
+import { Settings, LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { clsx } from 'clsx'
-
-const navItems = [
-  { to: '/',          icon: LayoutDashboard, label: 'Accueil' },
-  { to: '/standings', icon: Trophy,          label: 'Classement' },
-  { to: '/matches',   icon: Calendar,        label: 'Matchs' },
-  { to: '/scorers',   icon: Target,          label: 'Buteurs' },
-  { to: '/teams',     icon: Users,           label: 'Équipes' },
-  { to: '/players',   icon: User,            label: 'Joueurs' },
-  { to: '/stats',     icon: BarChart2,       label: 'Stats' },
-]
+import { NAV_ITEMS } from '@/config/navigation'
 
 export function Sidebar() {
   const { profile, isAdmin, signOut } = useAuth()
@@ -43,7 +31,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

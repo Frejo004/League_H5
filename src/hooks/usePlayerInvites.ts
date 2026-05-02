@@ -53,12 +53,13 @@ export function useCreateInvite() {
       playerId: string
       createdBy: string
     }) => {
-      // Delete any existing invite first (enforce one-per-player)
-      await supabase.from('player_invites').delete().eq('player_id', playerId)
-
+      // Upsert is atomic — replaces existing invite in a single operation
       const { data, error } = await supabase
         .from('player_invites')
-        .insert({ player_id: playerId, created_by: createdBy })
+        .upsert(
+          { player_id: playerId, created_by: createdBy },
+          { onConflict: 'player_id' }
+        )
         .select('token')
         .single()
       if (error) throw error

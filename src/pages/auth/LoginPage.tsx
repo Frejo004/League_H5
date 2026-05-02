@@ -11,8 +11,8 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const getErrorMessage = (error: any) => {
-    const message = error.message?.toLowerCase() || ''
+  const getErrorMessage = (error: unknown) => {
+    const message = (error instanceof Error ? error.message : '').toLowerCase()
     if (message.includes('invalid login credentials')) {
       return 'Email ou mot de passe incorrect'
     }
@@ -40,11 +40,12 @@ export function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      // ✅ Pas de navigate() ici — onAuthStateChange dans AuthContext gère la redirection
-      // Le isLoading reste à true jusqu'à la redirection
-    } catch (err: any) {
+      // onAuthStateChange dans AuthContext gère la redirection
+      // Fallback si la redirection ne se déclenche pas dans les 10s
+      setTimeout(() => setIsLoading(false), 10000)
+    } catch (err: unknown) {
       setError(getErrorMessage(err))
-      setIsLoading(false) // ✅ seulement en cas d'erreur
+      setIsLoading(false)
     }
   }
 

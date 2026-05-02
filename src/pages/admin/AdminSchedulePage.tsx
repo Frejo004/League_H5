@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Pencil, Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
@@ -18,6 +18,15 @@ function ScoreEditor({ match }: { match: MatchWithTeams }) {
   const [homeScore, setHomeScore] = useState(String(match.home_score ?? ''))
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
   const [status, setStatus] = useState<MatchStatus>(match.status)
+
+  // Sync local state when match data changes (e.g. after cache invalidation)
+  useEffect(() => {
+    if (!editing) {
+      setHomeScore(String(match.home_score ?? ''))
+      setAwayScore(String(match.away_score ?? ''))
+      setStatus(match.status)
+    }
+  }, [match.home_score, match.away_score, match.status, editing])
 
   const home = match.home_team as { id: string; name: string; color: string; logo_url: string | null }
   const away = match.away_team as { id: string; name: string; color: string; logo_url: string | null }

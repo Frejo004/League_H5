@@ -1,15 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Trophy, Calendar, Target, Users, BarChart2 } from 'lucide-react'
 import { clsx } from 'clsx'
-
-const navItems = [
-  { to: '/',          icon: LayoutDashboard, label: 'Accueil' },
-  { to: '/standings', icon: Trophy,          label: 'Classement' },
-  { to: '/matches',   icon: Calendar,        label: 'Matchs' },
-  { to: '/scorers',   icon: Target,          label: 'Buteurs' },
-  { to: '/teams',     icon: Users,           label: 'Équipes' },
-  { to: '/stats',     icon: BarChart2,       label: 'Stats' },
-]
+import { MOBILE_NAV_ITEMS } from '@/config/navigation'
 
 export function MobileNav() {
   return (
@@ -21,7 +12,7 @@ export function MobileNav() {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
 
       <div className="flex items-center justify-around px-1 py-2">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {MOBILE_NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Safety net : si onAuthStateChange ne se déclenche pas dans les 8s
-    const safetyTimeout = setTimeout(() => setIsLoading(false), 8000)
+    // Safety net : si onAuthStateChange ne se déclenche pas dans les 4s
+    const safetyTimeout = setTimeout(() => setIsLoading(false), 4000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
