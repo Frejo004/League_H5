@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { Plus, Pencil, Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
-import { useMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, type MatchWithTeams } from '@/hooks/useMatches'
+import { useMatches, useCreateMatch, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchStatus } from '@/types/database'
-import { clsx } from 'clsx'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
   { value: 'scheduled', label: 'Programmé' },
@@ -86,7 +85,6 @@ export function AdminSchedulePage() {
   const { data: teams } = useTeams(season?.id)
   const { data: matches, isLoading } = useMatches(season?.id)
   const createMatch = useCreateMatch()
-  const deleteMatch = useDeleteMatch()
 
   const [showForm, setShowForm] = useState(false)
   const [homeTeam, setHomeTeam] = useState('')

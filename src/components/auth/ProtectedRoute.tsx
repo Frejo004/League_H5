@@ -5,8 +5,10 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 export function ProtectedRoute() {
   const { session, isLoading } = useAuth()
 
-  // Si on a une session, on laisse passer même si le profil charge encore
-  if (isLoading && !session) return <PageLoader />
+  // ✅ 1. Attendre la fin de l'initialisation
+  if (isLoading) return <PageLoader />
+
+  // ✅ 2. Seulement ensuite vérifier la session
   if (!session) return <Navigate to="/auth/login" replace />
 
   return <Outlet />

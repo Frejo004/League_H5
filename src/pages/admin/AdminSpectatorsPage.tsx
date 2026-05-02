@@ -1,4 +1,4 @@
-import { Check, X, Clock } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSpectators, useUpdateSpectatorStatus } from '@/hooks/useSpectators'
 import { useAuth } from '@/contexts/AuthContext'

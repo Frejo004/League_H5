@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Timeout de sécurité — isLoading ne peut pas rester true indéfiniment
     const timeout = setTimeout(() => setIsLoading(false), 5000)
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -38,14 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session)
+
         if (session?.user) {
           await fetchProfile(session.user.id)
+
           if (event === 'SIGNED_IN') {
-            navigateTo('/')
+            // ✅ Ne rediriger que si on vient d'une page auth
+            const currentPath = window.location.pathname
+            if (currentPath.startsWith('/auth')) {
+              navigateTo('/')
+            }
           }
         } else {
           setProfile(null)
           setIsLoading(false)
+
+          // ✅ Rediriger vers login seulement si on est sur une route protégée
+          if (event === 'SIGNED_OUT') {
+            navigateTo('/auth/login')
+          }
         }
       }
     )
@@ -70,16 +80,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching profile:', err)
       setProfile(null)
     } finally {
-      setIsLoading(false)
+      setIsLoading(false) // ✅ toujours libéré
     }
   }
 
   async function signOut() {
-    setIsLoading(false)
+    // ✅ Laisser onAuthStateChange(SIGNED_OUT) gérer la navigation
     setProfile(null)
     setSession(null)
     await supabase.auth.signOut()
-    navigateTo('/auth/login')
   }
 
   const role = profile?.role ?? null

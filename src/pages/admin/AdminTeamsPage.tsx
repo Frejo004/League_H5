@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useTeams, useCreateTeam, useDeleteTeam } from '@/hooks/useTeams'
+import { useTeams, useCreateTeam } from '@/hooks/useTeams'
 import { usePlayersByTeam, useCreatePlayer, useDeletePlayer } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { InviteButton } from '@/components/ui/InviteButton'
@@ -164,7 +164,6 @@ export function AdminTeamsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: teams, isLoading: teamsLoading } = useTeams(season?.id)
   const createTeam = useCreateTeam()
-  const deleteTeam = useDeleteTeam()
 
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')

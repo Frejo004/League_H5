@@ -305,6 +305,34 @@ export interface Database {
           reviewed_by?: string | null
         }
       }
+      player_invites: {
+        Row: {
+          id: string
+          player_id: string
+          token: string
+          created_by: string
+          used_at: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          token?: string
+          created_by: string
+          used_at?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          token?: string
+          created_by?: string
+          used_at?: string | null
+          expires_at?: string
+        }
+      }
       profiles: {
         Row: {
           id: string
@@ -338,7 +366,20 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_invite_player: {
+        Args: { p_token: string }
+        Returns: {
+          player_id: string
+          first_name: string
+          last_name: string
+          team_name: string
+          is_valid: boolean
+        }[]
+      }
+      claim_player_invite: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: void
+      }
     }
     Enums: {
       user_role: UserRole
