@@ -41,18 +41,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Safety net : si onAuthStateChange ne se déclenche pas dans les 4s
-    const safetyTimeout = setTimeout(() => setIsLoading(false), 4000)
+    const safetyTimeout = setTimeout(() => setIsLoading(false), 5000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        clearTimeout(safetyTimeout)
         setSession(newSession)
 
         if (newSession?.user) {
           await fetchProfile(newSession.user.id)
+          clearTimeout(safetyTimeout)
 
-          // Rediriger vers l'app seulement depuis une page auth
           if (event === 'SIGNED_IN') {
             const path = window.location.pathname
             if (path.startsWith('/auth')) {
@@ -62,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null)
           setIsLoading(false)
+          clearTimeout(safetyTimeout)
 
           if (event === 'SIGNED_OUT') {
             navigateTo('/auth/login')
@@ -82,18 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchProfile(userId)
   }, [session?.user?.id, fetchProfile])
 
-  // ✅ Ne pas toucher à l'état local — laisser onAuthStateChange tout gérer
   async function signOut() {
-    try {
-      await supabase.auth.signOut()
-    } catch (err) {
-      console.error('Error signing out:', err)
-      // Fallback manuel si Supabase ne répond pas
-      setProfile(null)
-      setSession(null)
-      setIsLoading(false)
-      navigateTo('/auth/login')
-    }
+    setProfile(null)
+    setSession(null)
+    setIsLoading(false)
+    navigateTo('/auth/login')
+    await supabase.auth.signOut().catch(console.error)
   }
 
   const role = profile?.role ?? null

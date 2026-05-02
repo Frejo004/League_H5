@@ -28,6 +28,8 @@ export function useActiveSeason() {
       if (error) throw error
       return data as Season | null
     },
+    retry: 1,
+    staleTime: 1000 * 60,
   })
 }
 

@@ -108,10 +108,12 @@ export function ProfilePage() {
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarUrl, setAvatarUrl]     = useState(profile?.avatar_url ?? null)
+  const [avatarBroken, setAvatarBroken] = useState(false)
 
   useEffect(() => {
     setDisplayName(profile?.full_name ?? '')
     setAvatarUrl(profile?.avatar_url ?? null)
+    setAvatarBroken(false)
   }, [profile])
 
   const initials = displayName
@@ -126,26 +128,34 @@ export function ProfilePage() {
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !user) return
-    if (file.size > 2 * 1024 * 1024)           { setAvatarError('Max 2 Mo.'); return }
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+    if (file.size > 2 * 1024 * 1024) { setAvatarError('Max 2 Mo.'); return }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       setAvatarError('Format accepté : JPG, PNG ou WebP.'); return
     }
     setAvatarError(null); setAvatarUploading(true)
     try {
-      const ext  = file.name.split('.').pop()
-      const path = `${user.id}.${ext}`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      // Fixed filename (no extension) avoids orphaned files on format change
+      const path = `${user.id}/avatar`
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type })
       if (upErr) throw upErr
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const url = `${data.publicUrl}?t=${Date.now()}`
-      const { error: prErr } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
+      const { error: prErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', user.id)
       if (prErr) throw prErr
       setAvatarUrl(url)
+      setAvatarBroken(false)
       await refreshProfile()
     } catch (err: unknown) {
       setAvatarError(err instanceof Error ? err.message : 'Erreur upload')
     } finally {
       setAvatarUploading(false)
+      // Reset input so the same file can be re-selected if needed
+      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
@@ -202,14 +212,16 @@ export function ProfilePage() {
   async function handlePasswordChange(e: FormEvent) {
     e.preventDefault()
     setPwdError(null); setPwdSuccess(false)
-    if (newPwd !== confirmPwd)  { setPwdError('Les mots de passe ne correspondent pas.'); return }
-    if (newPwd.length < 8)      { setPwdError('Minimum 8 caractères.'); return }
+    if (newPwd !== confirmPwd) { setPwdError('Les mots de passe ne correspondent pas.'); return }
+    if (newPwd.length < 8)     { setPwdError('Minimum 8 caractères.'); return }
     setPwdLoading(true)
     try {
+      // Re-authenticate to verify current password before allowing the change
       const { error: siErr } = await supabase.auth.signInWithPassword({
-        email: user!.email!, password: currentPwd,
+        email: user!.email!,
+        password: currentPwd,
       })
-      if (siErr) throw new Error('Mot de passe actuel incorrect.')
+      if (siErr) { setPwdError('Mot de passe actuel incorrect.'); return }
       const { error } = await supabase.auth.updateUser({ password: newPwd })
       if (error) throw error
       setPwdSuccess(true)
@@ -237,8 +249,13 @@ export function ProfilePage() {
             <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-slate-700
                             bg-gradient-to-br from-primary-600 to-primary-900
                             flex items-center justify-center text-white text-2xl font-black">
-              {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              {avatarUrl && !avatarBroken
+                ? <img
+                    src={avatarUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={() => setAvatarBroken(true)}
+                  />
                 : initials
               }
             </div>
