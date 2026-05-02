@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useSpectators, useUpdateSpectatorStatus } from '@/hooks/useSpectators'
+import { useSpectators, useUpdateSpectatorStatus, type SpectatorWithProfile } from '@/hooks/useSpectators'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { SpectatorStatus } from '@/types/database'
@@ -29,8 +29,8 @@ export function AdminSpectatorsPage() {
     await updateStatus.mutateAsync({ id, status, reviewedBy: user.id })
   }
 
-  const pending = (spectators ?? []).filter(s => s.status === 'pending')
-  const reviewed = (spectators ?? []).filter(s => s.status !== 'pending')
+  const pending = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status === 'pending')
+  const reviewed = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status !== 'pending')
 
   return (
     <div className="space-y-6">
@@ -56,16 +56,16 @@ export function AdminSpectatorsPage() {
               <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-3">En attente</h3>
               <div className="space-y-2">
                 {pending.map(s => {
-                  const profile = s.profiles as unknown as { full_name: string | null; email: string }
+                  const profile = s.profiles
                   return (
                     <div key={s.id} className="card flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-full bg-surface-border flex items-center justify-center text-slate-300 text-sm font-bold flex-shrink-0">
-                          {(profile?.full_name ?? profile?.email ?? '?')[0].toUpperCase()}
+                          {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-white font-medium truncate">{profile?.full_name ?? 'Inconnu'}</p>
-                          <p className="text-sm text-slate-400 truncate">{profile?.email}</p>
+                          <p className="text-white font-medium truncate">{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-sm text-slate-400 truncate">{profile.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -98,20 +98,20 @@ export function AdminSpectatorsPage() {
               <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-3">Traités</h3>
               <div className="space-y-2">
                 {reviewed.map(s => {
-                  const profile = s.profiles as unknown as { full_name: string | null; email: string }
+                  const profile = s.profiles
                   return (
                     <div key={s.id} className="card flex items-center justify-between gap-4 opacity-75">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-full bg-surface-border flex items-center justify-center text-slate-300 text-sm font-bold flex-shrink-0">
-                          {(profile?.full_name ?? profile?.email ?? '?')[0].toUpperCase()}
+                          {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-white font-medium truncate">{profile?.full_name ?? 'Inconnu'}</p>
-                          <p className="text-sm text-slate-400 truncate">{profile?.email}</p>
+                          <p className="text-white font-medium truncate">{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-sm text-slate-400 truncate">{profile.email}</p>
                         </div>
                       </div>
-                      <span className={clsx('badge', STATUS_STYLES[s.status as SpectatorStatus])}>
-                        {STATUS_LABELS[s.status as SpectatorStatus]}
+                      <span className={clsx('badge', STATUS_STYLES[s.status])}>
+                        {STATUS_LABELS[s.status]}
                       </span>
                     </div>
                   )

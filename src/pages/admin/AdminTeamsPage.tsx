@@ -77,7 +77,7 @@ function TeamRow({ team, seasonId }: { team: { id: string; name: string; color: 
             <div className="flex justify-center py-4"><LoadingSpinner /></div>
           ) : (
             <>
-              {(players ?? []).map(p => (
+              {(players ?? []).map((p: { id: string; first_name: string; last_name: string; jersey_number: number | null; position: PlayerPosition | null; user_id: string | null }) => (
                 <div key={p.id} className="flex items-center justify-between text-sm py-1">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-slate-500 font-mono w-6 text-right flex-shrink-0">{p.jersey_number ?? '—'}</span>

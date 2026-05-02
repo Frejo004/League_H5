@@ -19,8 +19,8 @@ function ScoreEditor({ match }: { match: MatchWithTeams }) {
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
   const [status, setStatus] = useState<MatchStatus>(match.status)
 
-  const home = match.home_team
-  const away = match.away_team
+  const home = match.home_team as { id: string; name: string; color: string; logo_url: string | null }
+  const away = match.away_team as { id: string; name: string; color: string; logo_url: string | null }
 
   async function handleSave() {
     await updateMatch.mutateAsync({

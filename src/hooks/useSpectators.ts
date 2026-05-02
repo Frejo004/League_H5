@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { SpectatorStatus } from '@/types/database'
+import type { Spectator, SpectatorStatus } from '@/types/database'
+
+// Extended type returned by useSpectators (includes joined profile data)
+export interface SpectatorWithProfile extends Spectator {
+  profiles: { id: string; full_name: string | null; email: string; avatar_url: string | null }
+}
 
 export function useSpectators(seasonId?: string) {
   return useQuery({
@@ -13,7 +18,7 @@ export function useSpectators(seasonId?: string) {
         .eq('season_id', seasonId!)
         .order('requested_at', { ascending: false })
       if (error) throw error
-      return data
+      return data as unknown as SpectatorWithProfile[]
     },
   })
 }

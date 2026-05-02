@@ -44,6 +44,7 @@ export interface Database {
           is_locked?: boolean
           updated_at?: string
         }
+        Relationships: []
       }
       teams: {
         Row: {
@@ -75,6 +76,7 @@ export interface Database {
           captain_id?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       players: {
         Row: {
@@ -118,6 +120,7 @@ export interface Database {
           is_active?: boolean
           updated_at?: string
         }
+        Relationships: []
       }
       matches: {
         Row: {
@@ -164,6 +167,7 @@ export interface Database {
           venue?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       goals: {
         Row: {
@@ -192,6 +196,7 @@ export interface Database {
           minute?: number | null
           is_own_goal?: boolean
         }
+        Relationships: []
       }
       assists: {
         Row: {
@@ -214,6 +219,7 @@ export interface Database {
           goal_id?: string
           player_id?: string
         }
+        Relationships: []
       }
       mvp_votes: {
         Row: {
@@ -236,6 +242,7 @@ export interface Database {
           player_id?: string
           voted_by?: string
         }
+        Relationships: []
       }
       settings: {
         Row: {
@@ -276,6 +283,7 @@ export interface Database {
           points_loss?: number
           updated_at?: string
         }
+        Relationships: []
       }
       spectators: {
         Row: {
@@ -304,6 +312,7 @@ export interface Database {
           reviewed_at?: string | null
           reviewed_by?: string | null
         }
+        Relationships: []
       }
       player_invites: {
         Row: {
@@ -332,6 +341,7 @@ export interface Database {
           used_at?: string | null
           expires_at?: string
         }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -360,6 +370,7 @@ export interface Database {
           role?: UserRole
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: {
@@ -378,7 +389,7 @@ export interface Database {
       }
       claim_player_invite: {
         Args: { p_token: string; p_user_id: string }
-        Returns: void
+        Returns: undefined // ✅ 'void' → 'undefined' (requis par supabase-js v2.39+)
       }
     }
     Enums: {
@@ -386,6 +397,10 @@ export interface Database {
       match_status: MatchStatus
       spectator_status: SpectatorStatus
       player_position: PlayerPosition
+    }
+    // ✅ Champ requis par supabase-js v2.39+
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
@@ -401,3 +416,4 @@ export type MvpVote = Database['public']['Tables']['mvp_votes']['Row']
 export type Settings = Database['public']['Tables']['settings']['Row']
 export type Spectator = Database['public']['Tables']['spectators']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
