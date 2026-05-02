@@ -19,4 +19,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       eventsPerSecond: 10,
     },
   },
+  db: {
+    schema: 'public',
+  },
 })
