@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { User, Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useTeams } from '@/hooks/useTeams'
@@ -99,8 +100,9 @@ export function PlayersPage() {
           {filtered.map((player, i) => {
             const team = player.teams as unknown as { id: string; name: string; color: string } | null
             return (
-              <div
+              <Link
                 key={player.id}
+                to={`/players/${player.id}`}
                 className={`grid grid-cols-[2.5rem_1fr_auto_auto] gap-2 items-center px-4 py-2.5
                             hover:bg-surface-raised transition-colors
                             ${i < filtered.length - 1 ? 'border-b border-surface-border/50' : ''}`}
@@ -129,7 +131,7 @@ export function PlayersPage() {
                 <span className="text-xs text-slate-500 hidden md:block">
                   {player.position ? POSITION_LABELS[player.position] : '—'}
                 </span>
-              </div>
+              </Link>
             )
           })}
         </div>
