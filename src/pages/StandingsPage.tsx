@@ -3,6 +3,7 @@ import { Trophy } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
+import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 import type { StandingRow } from '@/hooks/useStandings'
@@ -117,7 +118,9 @@ export function StandingsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <div className="space-y-2 animate-fade-in">
+          <SkeletonStandingsTable rows={6} />
+        </div>
       ) : !season ? (
         <div className="card">
           <div className="empty-state">
@@ -191,7 +194,7 @@ export function StandingsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="stagger-fast">
                 {(filteredStandings ?? []).map((row: StandingRow, i: number) => (
                   <tr
                     key={row.team_id}

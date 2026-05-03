@@ -3,6 +3,7 @@ import { ArrowLeft, Target, Zap, Calendar, Shield } from 'lucide-react'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useScorers } from '@/hooks/useScorers'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { SkeletonPlayerProfile } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
@@ -40,7 +41,7 @@ export function PlayerProfilePage() {
   const { data: scorers } = useScorers(season?.id)
 
   if (isLoading) {
-    return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>
+    return <SkeletonPlayerProfile />
   }
 
   if (!player) {
@@ -57,7 +58,7 @@ export function PlayerProfilePage() {
   const rankDisplay = scorerRank !== undefined && scorerRank >= 0 ? scorerRank + 1 : null
 
   return (
-    <div className="space-y-3 pb-10">
+    <div className="space-y-3 pb-10 animate-fade-in-up">
 
       {/* Back */}
       <Link to="/players"

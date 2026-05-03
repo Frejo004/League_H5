@@ -44,7 +44,7 @@ export function ScorersPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="card p-0 overflow-hidden stagger-fast">
           {/* Table header */}
           <div className="grid grid-cols-[2rem_1fr_3rem_3rem] gap-2 px-4 py-2 border-b border-surface-border">
             <span className="section-title">#</span>

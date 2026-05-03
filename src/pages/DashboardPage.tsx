@@ -6,7 +6,7 @@ import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 
 function formatTime(dateStr: string) {
@@ -138,8 +138,26 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-3 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1.5">
+            <div className="skeleton-text w-40 h-5" />
+            <div className="skeleton-text w-24 h-3" />
+          </div>
+        </div>
+        <SkeletonKpiGrid count={4} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="card p-0 overflow-hidden lg:col-span-2">
+            <div className="px-4 py-2.5 border-b border-surface-border">
+              <div className="skeleton-text w-32 h-3" />
+            </div>
+            {[1,2,3].map(i => <SkeletonMatchCard key={i} />)}
+          </div>
+          <div className="space-y-3">
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
+          </div>
+        </div>
       </div>
     )
   }

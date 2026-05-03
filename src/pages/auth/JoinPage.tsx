@@ -1,8 +1,10 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { Mail, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { resolveInviteToken, claimInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import type { InvitePlayerInfo } from '@/hooks/usePlayerInvites'
 
@@ -11,63 +13,38 @@ export function JoinPage() {
   const navigate = useNavigate()
   const token = searchParams.get('token') ?? ''
 
-  const [playerInfo, setPlayerInfo] = useState<InvitePlayerInfo | null>(null)
-  const [tokenState, setTokenState] = useState<'loading' | 'valid' | 'invalid'>('loading')
+  const [playerInfo, setPlayerInfo]   = useState<InvitePlayerInfo | null>(null)
+  const [tokenState, setTokenState]   = useState<'loading' | 'valid' | 'invalid'>('loading')
+  const [email, setEmail]             = useState('')
+  const [password, setPassword]       = useState('')
+  const [confirmPassword, setConfirm] = useState('')
+  const [error, setError]             = useState<string | null>(null)
+  const [isLoading, setIsLoading]     = useState(false)
+  const [success, setSuccess]         = useState(false)
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  // Resolve token on mount
   useEffect(() => {
     if (!token) { setTokenState('invalid'); return }
-
     resolveInviteToken(token).then(info => {
-      if (!info || !info.is_valid) {
-        setTokenState('invalid')
-      } else {
-        setPlayerInfo(info)
-        setTokenState('valid')
-      }
+      if (!info || !info.is_valid) setTokenState('invalid')
+      else { setPlayerInfo(info); setTokenState('valid') }
     })
   }, [token])
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.')
-      return
-    }
-    if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères.')
-      return
-    }
-
+    if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas.'); return }
+    if (password.length < 8)          { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
     setIsLoading(true)
     try {
-      // Sign up — name comes from player record, not user input
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: `${playerInfo!.first_name} ${playerInfo!.last_name}`,
-          },
-        },
+        email, password,
+        options: { data: { full_name: `${playerInfo!.first_name} ${playerInfo!.last_name}` } },
       })
       if (signUpError) throw signUpError
-
       const userId = data.user?.id
-      if (!userId) throw new Error("Erreur lors de la création du compte.")
-
-      // Link user to player and set role
+      if (!userId) throw new Error('Erreur lors de la création du compte.')
       await claimInvite(token, userId)
-
       setSuccess(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'inscription")
@@ -81,16 +58,17 @@ export function JoinPage() {
   if (tokenState === 'invalid') {
     return (
       <AuthLayout>
-        <div className="w-full max-w-md text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 border border-red-500/30 rounded-2xl mb-4">
-            <span className="text-3xl">🔗</span>
+        <div className="w-full max-w-sm text-center animate-scale-in">
+          <div className="w-14 h-14 rounded-xl bg-red-500/15 border border-red-500/25
+                          flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">🔗</span>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Lien invalide</h2>
-          <p className="text-slate-300 mb-6">
+          <h2 className="text-lg font-bold text-white mb-2">Lien invalide</h2>
+          <p className="text-slate-400 text-sm mb-5 leading-relaxed">
             Ce lien d'invitation est invalide, expiré, ou a déjà été utilisé.
             Demandez un nouveau lien à votre admin ou capitaine.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-secondary">
+          <button onClick={() => navigate('/auth/login')} className="btn-secondary w-full">
             Aller à la connexion
           </button>
         </div>
@@ -101,16 +79,17 @@ export function JoinPage() {
   if (success) {
     return (
       <AuthLayout>
-        <div className="w-full max-w-md text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600/20 border border-primary-600/30 rounded-2xl mb-4">
-            <span className="text-3xl">✅</span>
+        <div className="w-full max-w-sm text-center animate-scale-in">
+          <div className="w-14 h-14 rounded-xl bg-green-500/15 border border-green-500/25
+                          flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">✅</span>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Compte créé !</h2>
-          <p className="text-slate-300 mb-6">
-            Vérifiez votre email pour confirmer votre compte, puis connectez-vous.
+          <h2 className="text-lg font-bold text-white mb-2">Compte créé !</h2>
+          <p className="text-slate-400 text-sm mb-5">
+            Connectez-vous pour accéder à votre ligue.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-primary">
-            Aller à la connexion
+          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5">
+            Se connecter <ArrowRight size={15} />
           </button>
         </div>
       </AuthLayout>
@@ -119,113 +98,99 @@ export function JoinPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm animate-fade-in-up">
+
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">⚽</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white">League H5</h1>
-          <p className="text-slate-300 mt-1">Créer votre compte joueur</p>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white tracking-tight">Créer votre compte joueur</h2>
+          <p className="text-slate-400 mt-1.5 text-sm">League H5 — Ligue interne</p>
         </div>
 
-        {/* Player info banner */}
-        <div className="bg-primary-600/10 border border-primary-600/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-600/30 flex items-center justify-center text-white font-bold flex-shrink-0">
+        {/* Player banner */}
+        <div className="flex items-center gap-3 bg-primary-600/10 border border-primary-600/25
+                        rounded-lg px-3.5 py-3 mb-5">
+          <div className="w-9 h-9 rounded-full bg-primary-600/30 flex items-center justify-center
+                          text-white text-sm font-bold shrink-0">
             {playerInfo!.first_name[0]}{playerInfo!.last_name[0]}
           </div>
-          <div>
-            <p className="text-white font-semibold">
+          <div className="min-w-0 flex-1">
+            <p className="text-white font-semibold text-sm truncate">
               {playerInfo!.first_name} {playerInfo!.last_name}
             </p>
-            <p className="text-sm text-primary-400">{playerInfo!.team_name}</p>
+            <p className="text-xs text-primary-400">{playerInfo!.team_name}</p>
           </div>
-          <span className="ml-auto badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-xs">
+          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 shrink-0">
             Joueur
           </span>
         </div>
 
-        <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {/* Name — read-only, comes from player record */}
-            <div>
-              <label className="label">Nom complet</label>
-              <div className="input bg-surface-border/30 text-slate-400 cursor-not-allowed select-none flex items-center justify-between">
-                <span>{playerInfo!.first_name} {playerInfo!.last_name}</span>
-                <span className="text-xs text-slate-500 ml-2">🔒 Défini par l'admin</span>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
+                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in">
+              <span className="shrink-0 mt-0.5">⚠️</span>
+              <span>{error}</span>
             </div>
+          )}
 
-            <div>
-              <label htmlFor="email" className="label">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input"
-                placeholder="vous@exemple.com"
-                required
-                autoComplete="email"
-              />
+          {/* Nom — lecture seule */}
+          <div className="space-y-1.5">
+            <label className="label">Nom complet</label>
+            <div className="input bg-surface-raised text-slate-400 cursor-not-allowed
+                            flex items-center justify-between select-none">
+              <span>{playerInfo!.first_name} {playerInfo!.last_name}</span>
+              <span className="text-xs text-slate-600 ml-2 shrink-0">🔒 Défini par l'admin</span>
             </div>
-
-            <div>
-              <label htmlFor="password" className="label">Mot de passe</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input"
-                placeholder="Minimum 8 caractères"
-                required
-                autoComplete="new-password"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="input"
-                placeholder="••••••••"
-                required
-                autoComplete="new-password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {isLoading ? <LoadingSpinner size="sm" /> : null}
-              {isLoading ? 'Création...' : 'Créer mon compte'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-surface-border text-center">
-            <p className="text-sm text-slate-400">
-              Déjà un compte ?{' '}
-              <button
-                onClick={() => navigate('/auth/login')}
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
-              >
-                Se connecter
-              </button>
-            </p>
           </div>
-        </div>
+
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="label">Email</label>
+            <div className="relative">
+              <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input id="email" type="email" value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="input pl-9" placeholder="vous@exemple.com"
+                required autoComplete="email" />
+            </div>
+          </div>
+
+          {/* Mot de passe */}
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="label">Mot de passe</label>
+            <PasswordInput
+              id="password" value={password} onChange={setPassword}
+              placeholder="Minimum 8 caractères"
+              autoComplete="new-password" required
+              showStrength
+            />
+          </div>
+
+          {/* Confirmation */}
+          <div className="space-y-1.5">
+            <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
+            <PasswordInput
+              id="confirmPassword" value={confirmPassword} onChange={setConfirm}
+              autoComplete="new-password" required
+              showMatch={password}
+            />
+          </div>
+
+          <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 text-sm mt-1">
+            {isLoading
+              ? <><LoadingSpinner size="sm" /><span>Création...</span></>
+              : <><span>Créer mon compte</span><ArrowRight size={15} /></>
+            }
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-slate-500 mt-5">
+          Déjà un compte ?{' '}
+          <button onClick={() => navigate('/auth/login')}
+            className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+            Se connecter
+          </button>
+        </p>
       </div>
     </AuthLayout>
   )

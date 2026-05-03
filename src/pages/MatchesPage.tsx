@@ -3,6 +3,7 @@ import { Calendar, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
+import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
@@ -171,7 +172,9 @@ export function MatchesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <div className="card p-0 overflow-hidden animate-fade-in">
+          {[1,2,3,4].map(i => <SkeletonMatchCard key={i} />)}
+        </div>
       ) : !season ? (
         <div className="card">
           <div className="empty-state">

@@ -1,10 +1,11 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import {
-  Camera, Check, Pencil, Mail, Lock,
+  Camera, Check, Pencil, Mail,
   ShieldCheck, AlertCircle, Loader2
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -378,25 +379,40 @@ export function ProfilePage() {
       </SectionCard>
 
       {/* ── Mot de passe ── */}
-      <SectionCard icon={<Lock size={14} />} title="Changer le mot de passe">
+      <SectionCard icon={<Pencil size={14} />} title="Changer le mot de passe">
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {pwdError && <Alert type="error">{pwdError}</Alert>}
           {pwdSuccess && <Alert type="success">Mot de passe mis à jour.</Alert>}
-          <FormField
-            id="currentPwd" label="Mot de passe actuel" type="password"
-            value={currentPwd} onChange={setCurrentPwd}
-            placeholder="••••••••" autoComplete="current-password" required
-          />
-          <FormField
-            id="newPwd" label="Nouveau mot de passe" type="password"
-            value={newPwd} onChange={setNewPwd}
-            placeholder="Minimum 8 caractères" autoComplete="new-password" required
-          />
-          <FormField
-            id="confirmPwd" label="Confirmer" type="password"
-            value={confirmPwd} onChange={setConfirmPwd}
-            placeholder="••••••••" autoComplete="new-password" required
-          />
+          <div className="space-y-1.5">
+            <label htmlFor="currentPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Mot de passe actuel
+            </label>
+            <PasswordInput
+              id="currentPwd" value={currentPwd} onChange={setCurrentPwd}
+              autoComplete="current-password" required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="newPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Nouveau mot de passe
+            </label>
+            <PasswordInput
+              id="newPwd" value={newPwd} onChange={setNewPwd}
+              placeholder="Minimum 8 caractères"
+              autoComplete="new-password" required
+              showStrength
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="confirmPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Confirmer
+            </label>
+            <PasswordInput
+              id="confirmPwd" value={confirmPwd} onChange={setConfirmPwd}
+              autoComplete="new-password" required
+              showMatch={newPwd}
+            />
+          </div>
           <SubmitButton loading={pwdLoading} label="Changer le mot de passe" loadingLabel="Mise à jour…" />
         </form>
       </SectionCard>
