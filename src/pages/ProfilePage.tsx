@@ -144,28 +144,42 @@ export function ProfilePage() {
     }
     setAvatarError(null); setAvatarUploading(true)
     try {
-      // Nom de fichier fixe (sans extension) pour éviter les fichiers orphelins
+      // Chemin fixe dans le dossier de l'utilisateur — compatible avec la RLS
+      // qui autorise name like auth.uid() || '/%'
       const path = `${user.id}/avatar`
-      const { error: upErr } = await supabase.storage
+
+      // Tenter un update d'abord (fichier existant), sinon insert
+      const { error: updateErr } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (upErr) throw upErr
+        .update(path, file, { contentType: file.type, upsert: false })
+
+      if (updateErr) {
+        // Fichier inexistant → premier upload
+        const { error: insertErr } = await supabase.storage
+          .from('avatars')
+          .upload(path, file, { contentType: file.type, upsert: false })
+        if (insertErr) throw insertErr
+      }
+
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-      // Stocker l'URL propre en base (sans timestamp) pour éviter les URLs obsolètes
-      const cleanUrl = data.publicUrl
       const { error: dbErr } = await supabase
         .from('profiles')
-        .update({ avatar_url: cleanUrl })
+        .update({ avatar_url: data.publicUrl })
         .eq('id', user.id)
       if (dbErr) throw dbErr
+
       setAvatarBroken(false)
       setAvatarCacheBust(Date.now())
       await refreshProfile()
     } catch (err: unknown) {
-      setAvatarError(err instanceof Error ? err.message : 'Erreur upload avatar')
+      const msg = err instanceof Error ? err.message : 'Erreur upload avatar'
+      // Message lisible si c'est une erreur RLS Supabase
+      setAvatarError(msg.includes('row-level') || msg.includes('policy')
+        ? 'Permission refusée. Vérifiez les politiques du bucket dans Supabase.'
+        : msg
+      )
     } finally {
       setAvatarUploading(false)
-      // Réinitialise l'input pour permettre de re-sélectionner le même fichier
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -177,13 +191,27 @@ export function ProfilePage() {
 
   async function handleNameChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!user || !displayName.trim()) return
+    const trimmed = displayName.trim()
+    if (!trimmed) return
+
+    // Récupère l'utilisateur courant directement depuis Supabase auth
+    // pour éviter un timing issue avec le state React (user peut être null
+    // brièvement après un refresh de session)
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) {
+      setNameError('Session expirée. Veuillez vous reconnecter.')
+      return
+    }
+
     setNameError(null); setNameSuccess(false); setNameLoading(true)
     try {
-      const { error } = await supabase.from('profiles')
-        .update({ full_name: displayName.trim() }).eq('id', user.id)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: trimmed })
+        .eq('id', currentUser.id)
       if (error) throw error
-      setNameSuccess(true); setHasEditedName(false)
+      setNameSuccess(true)
+      setHasEditedName(false)
       await refreshProfile()
     } catch (err: unknown) {
       setNameError(err instanceof Error ? err.message : 'Erreur mise à jour')

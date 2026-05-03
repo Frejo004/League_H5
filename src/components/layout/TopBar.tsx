@@ -97,7 +97,7 @@ export function TopBar() {
           </div>
 
           {/* Nav links */}
-          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto pb-2">
             {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
@@ -140,8 +140,8 @@ export function TopBar() {
             )}
           </nav>
 
-          {/* Footer — user + logout */}
-          <div className="px-3 py-3 border-t border-surface-border/40 space-y-0.5">
+          {/* Footer — user + logout — padding-bottom pour ne pas être masqué par la bottom nav mobile */}
+          <div className="px-3 pt-3 pb-20 border-t border-surface-border/40 space-y-0.5">
             <NavLink
               to="/profile"
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200"

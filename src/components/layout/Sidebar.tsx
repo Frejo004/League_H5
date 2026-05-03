@@ -13,13 +13,13 @@ export function Sidebar() {
                       border-r border-surface-border/50">
 
       {/* Ambient glow top */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/30 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary-500/30 to-transparent" />
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-border/40">
         <div className="relative w-9 h-9">
           <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-40" />
-          <div className="relative w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-glow-sm">
+          <div className="relative w-9 h-9 bg-linear-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-glow-sm">
             <span className="text-lg">⚽</span>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function Sidebar() {
             {({ isActive }) => (
               <>
                 <span className={clsx(
-                  'flex-shrink-0 transition-all duration-200',
+                  'shrink-0 transition-all duration-200',
                   isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'
                 )}>
                   <Icon size={17} />
@@ -85,7 +85,7 @@ export function Sidebar() {
               {({ isActive }) => (
                 <>
                   <span className={clsx(
-                    'flex-shrink-0 transition-all duration-200',
+                    'shrink-0 transition-all duration-200',
                     isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'
                   )}>
                     <Settings size={17} />
@@ -112,8 +112,8 @@ export function Sidebar() {
             )
           }
         >
-          <div className="relative w-8 h-8 flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white text-xs font-bold overflow-hidden ring-2 ring-surface-border">
+          <div className="relative w-8 h-8 shrink-0">
+            <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white text-xs font-bold overflow-hidden ring-2 ring-surface-border">
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 : (profile?.full_name?.[0]?.toUpperCase() ?? profile?.email?.[0]?.toUpperCase() ?? '?')
@@ -140,7 +140,7 @@ export function Sidebar() {
       </div>
 
       {/* Bottom ambient glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-surface-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-surface-border/50 to-transparent" />
     </aside>
   )
 }

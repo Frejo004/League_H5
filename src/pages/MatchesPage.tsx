@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Calendar, MapPin } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches } from '@/hooks/useMatches'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -115,7 +116,7 @@ export function MatchesPage() {
               const awayWon = isCompleted && match.away_score! > match.home_score!
 
               return (
-                <div key={match.id} className="card animate-fade-in-up">
+                <Link key={match.id} to={`/matches/${match.id}`} className="card animate-fade-in-up block hover:border-primary-600/30 transition-colors">
                   <div className="flex items-center gap-3">
 
                     {/* Home team */}
@@ -183,7 +184,7 @@ export function MatchesPage() {
                       <p className="text-xs text-slate-600">{match.venue}</p>
                     </div>
                   )}
-                </div>
+                </Link>
               )
             })}
           </div>

@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -48,9 +49,10 @@ export function TeamsPage() {
           {teams.map(team => {
             const playerCount = (team.players as unknown as { count: number }[])?.[0]?.count ?? 0
             return (
-              <div
+              <Link
                 key={team.id}
-                className="card-hover animate-fade-in-up group"
+                to={`/teams/${team.id}`}
+                className="card-hover animate-fade-in-up group block"
               >
                 {/* Color banner */}
                 <div
@@ -90,7 +92,7 @@ export function TeamsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>

@@ -8,8 +8,10 @@ import { JoinPage } from '@/pages/auth/JoinPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { StandingsPage } from '@/pages/StandingsPage'
 import { MatchesPage } from '@/pages/MatchesPage'
+import { MatchDetailPage } from '@/pages/MatchDetailPage'
 import { ScorersPage } from '@/pages/ScorersPage'
 import { TeamsPage } from '@/pages/TeamsPage'
+import { TeamDetailPage } from '@/pages/TeamDetailPage'
 import { PlayersPage } from '@/pages/PlayersPage'
 import { StatsPage } from '@/pages/StatsPage'
 import { AdminPage } from '@/pages/AdminPage'
@@ -18,26 +20,11 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const router = createBrowserRouter([
   // Auth routes (public)
-  {
-    path: '/auth/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/auth/signup',
-    element: <SignupPage />,
-  },
-  {
-    path: '/auth/reset-password',
-    element: <ResetPasswordPage />,
-  },
-  {
-    path: '/auth/update-password',
-    element: <UpdatePasswordPage />,
-  },
-  {
-    path: '/auth/join',
-    element: <JoinPage />,
-  },
+  { path: '/auth/login',           element: <LoginPage /> },
+  { path: '/auth/signup',          element: <SignupPage /> },
+  { path: '/auth/reset-password',  element: <ResetPasswordPage /> },
+  { path: '/auth/update-password', element: <UpdatePasswordPage /> },
+  { path: '/auth/join',            element: <JoinPage /> },
 
   // App routes (protected)
   {
@@ -46,15 +33,17 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/',          element: <DashboardPage /> },
-          { path: '/standings', element: <StandingsPage /> },
-          { path: '/matches',   element: <MatchesPage /> },
-          { path: '/scorers',   element: <ScorersPage /> },
-          { path: '/teams',     element: <TeamsPage /> },
-          { path: '/players',   element: <PlayersPage /> },
-          { path: '/stats',     element: <StatsPage /> },
-          { path: '/admin',     element: <AdminPage /> },
-          { path: '/profile',   element: <ProfilePage /> },
+          { path: '/',              element: <DashboardPage /> },
+          { path: '/standings',     element: <StandingsPage /> },
+          { path: '/matches',       element: <MatchesPage /> },
+          { path: '/matches/:id',   element: <MatchDetailPage /> },
+          { path: '/scorers',       element: <ScorersPage /> },
+          { path: '/teams',         element: <TeamsPage /> },
+          { path: '/teams/:id',     element: <TeamDetailPage /> },
+          { path: '/players',       element: <PlayersPage /> },
+          { path: '/stats',         element: <StatsPage /> },
+          { path: '/admin',         element: <AdminPage /> },
+          { path: '/profile',       element: <ProfilePage /> },
         ],
       },
     ],
