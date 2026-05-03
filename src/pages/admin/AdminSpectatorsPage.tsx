@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSpectators, useUpdateSpectatorStatus, type SpectatorWithProfile } from '@/hooks/useSpectators'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { SpectatorStatus } from '@/types/database'
 import { clsx } from 'clsx'

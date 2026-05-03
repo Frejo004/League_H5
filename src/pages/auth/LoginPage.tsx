@@ -40,9 +40,10 @@ export function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      // onAuthStateChange dans AuthContext gère la redirection
-      // Fallback si la redirection ne se déclenche pas dans les 10s
-      setTimeout(() => setIsLoading(false), 10000)
+      // onAuthStateChange dans AuthContext va gérer la redirection.
+      // On remet isLoading à false immédiatement pour ne pas bloquer
+      // le formulaire si la navigation tarde ou si le composant reste monté.
+      setIsLoading(false)
     } catch (err: unknown) {
       setError(getErrorMessage(err))
       setIsLoading(false)

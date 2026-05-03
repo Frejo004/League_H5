@@ -2,7 +2,7 @@ import { Menu, X, LogOut, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { NAV_ITEMS, PAGE_TITLES } from '@/config/navigation'
 
 export function TopBar() {

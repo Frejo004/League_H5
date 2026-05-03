@@ -29,26 +29,53 @@ export function useScorers(seasonId?: string) {
 
       if (matchIds.length === 0) return []
 
-      const [goalsRes, assistsRes] = await Promise.all([
-        supabase
-          .from('goals')
-          .select(`
-            player_id, team_id, is_own_goal,
-            players(id, first_name, last_name),
-            teams(id, name, color)
-          `)
-          .in('match_id', matchIds),
-        supabase
-          .from('assists')
-          .select(`
-            player_id,
-            players(id, first_name, last_name, team_id, teams(id, name, color))
-          `)
-          .in('match_id', matchIds),
+      // Supabase/PostgreSQL has a limit on IN clause (typically ~65k values)
+      // For safety, we'll use chunks if there are too many matches
+      const CHUNK_SIZE = 500
+      const chunks: string[][] = []
+      for (let i = 0; i < matchIds.length; i += CHUNK_SIZE) {
+        chunks.push(matchIds.slice(i, i + CHUNK_SIZE))
+      }
+
+      let allGoals: Array<{
+        player_id: string
+        team_id: string
+        is_own_goal: boolean
+      }> = []
+      let allAssists: Array<{
+        player_id: string
+      }> = []
+
+      for (const chunk of chunks) {
+        const [goalsRes, assistsRes] = await Promise.all([
+          supabase
+            .from('goals')
+            .select('player_id, team_id, is_own_goal')
+            .in('match_id', chunk),
+          supabase
+            .from('assists')
+            .select('player_id')
+            .in('match_id', chunk),
+        ])
+
+        if (goalsRes.error) throw goalsRes.error
+        if (assistsRes.error) throw assistsRes.error
+
+        allGoals = allGoals.concat(goalsRes.data ?? [])
+        allAssists = allAssists.concat(assistsRes.data ?? [])
+      }
+
+      // Fetch all players and teams for this season
+      const [playersRes, teamsRes] = await Promise.all([
+        supabase.from('players').select('id, first_name, last_name, team_id').eq('season_id', seasonId!),
+        supabase.from('teams').select('id, name, color').eq('season_id', seasonId!),
       ])
 
-      if (goalsRes.error) throw goalsRes.error
-      if (assistsRes.error) throw assistsRes.error
+      if (playersRes.error) throw playersRes.error
+      if (teamsRes.error) throw teamsRes.error
+
+      const playersMap = new Map(playersRes.data?.map(p => [p.id, p]) ?? [])
+      const teamsMap = new Map(teamsRes.data?.map(t => [t.id, t]) ?? [])
 
       const map = new Map<string, ScorerRow>()
 
@@ -76,20 +103,21 @@ export function useScorers(seasonId?: string) {
         return map.get(playerId)!
       }
 
-      for (const g of goalsRes.data ?? []) {
-        const p = g.players as { id: string; first_name: string; last_name: string }
-        const t = g.teams as { id: string; name: string; color: string }
-        const row = ensure(p.id, p.first_name, p.last_name, t.id, t.name, t.color)
+      for (const g of allGoals) {
+        const player = playersMap.get(g.player_id)
+        const team = teamsMap.get(g.team_id)
+        if (!player || !team) continue
+        const row = ensure(player.id, player.first_name, player.last_name, team.id, team.name, team.color)
         if (g.is_own_goal) row.own_goals++
         else row.goals++
       }
 
-      for (const a of assistsRes.data ?? []) {
-        const p = a.players as {
-          id: string; first_name: string; last_name: string; team_id: string
-          teams: { id: string; name: string; color: string }
-        }
-        const row = ensure(p.id, p.first_name, p.last_name, p.team_id, p.teams.name, p.teams.color)
+      for (const a of allAssists) {
+        const player = playersMap.get(a.player_id)
+        if (!player) continue
+        const team = teamsMap.get(player.team_id)
+        if (!team) continue
+        const row = ensure(player.id, player.first_name, player.last_name, team.id, team.name, team.color)
         row.assists++
       }
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { navigateTo } from '@/router'
@@ -35,8 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error fetching profile:', err)
       setProfile(null)
-    } finally {
-      setIsLoading(false)
     }
   }, [])
 
@@ -49,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (newSession?.user) {
           await fetchProfile(newSession.user.id)
+          setIsLoading(false)
           clearTimeout(safetyTimeout)
 
           if (event === 'SIGNED_IN') {
@@ -82,10 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id, fetchProfile])
 
   async function signOut() {
-    setProfile(null)
-    setSession(null)
-    setIsLoading(false)
-    navigateTo('/auth/login')
+    // Laisser onAuthStateChange (SIGNED_OUT) gérer la navigation
+    // pour éviter une double redirection et un état isLoading incohérent
     await supabase.auth.signOut().catch(console.error)
   }
 
@@ -110,8 +107,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
-}
+export { AuthContext }

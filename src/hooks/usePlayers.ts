@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Player } from '@/types/database'
+import type { Player, Database } from '@/types/database'
 
 export function usePlayers(seasonId?: string) {
   return useQuery({
@@ -62,7 +62,7 @@ export function useCreatePlayer() {
 export function useUpdatePlayer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...values }: Partial<Player> & { id: string }) => {
+    mutationFn: async ({ id, ...values }: { id: string } & Database['public']['Tables']['players']['Update']) => {
       const { data, error } = await supabase
         .from('players')
         .update(values)
@@ -79,7 +79,7 @@ export function useUpdatePlayer() {
   })
 }
 
-export function useDeletePlayer() {
+export function useDeactivatePlayer() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useCreateTeam } from '@/hooks/useTeams'
-import { usePlayersByTeam, useCreatePlayer, useDeletePlayer } from '@/hooks/usePlayers'
+import { usePlayersByTeam, useCreatePlayer, useDeactivatePlayer } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { InviteButton } from '@/components/ui/InviteButton'
 import type { PlayerPosition } from '@/types/database'
@@ -25,7 +25,7 @@ function TeamRow({ team, seasonId }: { team: { id: string; name: string; color: 
   const [showPlayerForm, setShowPlayerForm] = useState(false)
   const { data: players, isLoading } = usePlayersByTeam(expanded ? team.id : undefined)
   const createPlayer = useCreatePlayer()
-  const deletePlayer = useDeletePlayer()
+  const deactivatePlayer = useDeactivatePlayer()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -93,7 +93,7 @@ function TeamRow({ team, seasonId }: { team: { id: string; name: string; color: 
                       hasAccount={!!p.user_id}
                     />
                     <button
-                      onClick={() => deletePlayer.mutate(p.id)}
+                      onClick={() => deactivatePlayer.mutate(p.id)}
                       className="text-slate-500 hover:text-red-400 transition-colors p-1"
                       title="Retirer le joueur"
                     >

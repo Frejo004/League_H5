@@ -410,7 +410,7 @@ export interface Database {
           goals_against: number
           goal_diff: number
           points: number
-          form: string
+          form: string // Format: "W,D,L,W,W" (comma-separated)
         }[]
       }
     }

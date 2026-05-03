@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Settings, LogOut } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { clsx } from 'clsx'
 import { NAV_ITEMS } from '@/config/navigation'
 

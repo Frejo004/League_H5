@@ -1,19 +1,19 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react'
+import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
 import {
   Camera, Check, Pencil, Mail, Lock,
   ShieldCheck, AlertCircle, Loader2
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ role }: { role: string }) {
   const map: Record<string, { label: string; color: string }> = {
-    admin:    { label: 'Admin',     color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    captain:  { label: 'Capitaine', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    player:   { label: 'Joueur',    color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    spectator:{ label: 'Spectateur',color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+    admin: { label: 'Admin', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+    captain: { label: 'Capitaine', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
+    player: { label: 'Joueur', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    spectator: { label: 'Spectateur', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
   }
   const cfg = map[role] ?? { label: role, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
   return (
@@ -107,23 +107,27 @@ export function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth()
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
-  const [avatarUrl, setAvatarUrl]     = useState(profile?.avatar_url ?? null)
   const [avatarBroken, setAvatarBroken] = useState(false)
+  const [hasEditedName, setHasEditedName] = useState(false)
 
   useEffect(() => {
-    setDisplayName(profile?.full_name ?? '')
-    setAvatarUrl(profile?.avatar_url ?? null)
-    setAvatarBroken(false)
-  }, [profile])
+    if (!hasEditedName) setDisplayName(profile?.full_name ?? '')
+  }, [profile?.full_name]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const initials = displayName
-    ? displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() ?? '?'
+
+  const avatarUrl = profile?.avatar_url ?? null
+
+  const initials = useMemo(() => {
+    const name = displayName || profile?.full_name
+    return name
+      ? name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+      : user?.email?.[0]?.toUpperCase() ?? '?'
+  }, [displayName, profile?.full_name, user?.email])
 
   // ── Avatar ────────────────────────────────────────────────
   const fileRef = useRef<HTMLInputElement>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
-  const [avatarError, setAvatarError]         = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -142,12 +146,10 @@ export function ProfilePage() {
       if (upErr) throw upErr
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const url = `${data.publicUrl}?t=${Date.now()}`
-      const { error: prErr } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: url })
         .eq('id', user.id)
-      if (prErr) throw prErr
-      setAvatarUrl(url)
       setAvatarBroken(false)
       await refreshProfile()
     } catch (err: unknown) {
@@ -161,7 +163,7 @@ export function ProfilePage() {
 
   // ── Nom ──────────────────────────────────────────────────
   const [nameLoading, setNameLoading] = useState(false)
-  const [nameError,   setNameError]   = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState(false)
 
   async function handleNameChange(e: FormEvent) {
@@ -172,7 +174,7 @@ export function ProfilePage() {
       const { error } = await supabase.from('profiles')
         .update({ full_name: displayName.trim() }).eq('id', user.id)
       if (error) throw error
-      setNameSuccess(true)
+      setNameSuccess(true); setHasEditedName(false)
       await refreshProfile()
     } catch (err: unknown) {
       setNameError(err instanceof Error ? err.message : 'Erreur mise à jour')
@@ -182,10 +184,10 @@ export function ProfilePage() {
   }
 
   // ── Email ────────────────────────────────────────────────
-  const [newEmail,      setNewEmail]      = useState('')
-  const [emailLoading,  setEmailLoading]  = useState(false)
-  const [emailError,    setEmailError]    = useState<string | null>(null)
-  const [emailSuccess,  setEmailSuccess]  = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailSuccess, setEmailSuccess] = useState(false)
 
   async function handleEmailChange(e: FormEvent) {
     e.preventDefault()
@@ -202,18 +204,18 @@ export function ProfilePage() {
   }
 
   // ── Mot de passe ─────────────────────────────────────────
-  const [currentPwd,     setCurrentPwd]     = useState('')
-  const [newPwd,         setNewPwd]         = useState('')
-  const [confirmPwd,     setConfirmPwd]     = useState('')
-  const [pwdLoading,     setPwdLoading]     = useState(false)
-  const [pwdError,       setPwdError]       = useState<string | null>(null)
-  const [pwdSuccess,     setPwdSuccess]     = useState(false)
+  const [currentPwd, setCurrentPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [pwdLoading, setPwdLoading] = useState(false)
+  const [pwdError, setPwdError] = useState<string | null>(null)
+  const [pwdSuccess, setPwdSuccess] = useState(false)
 
   async function handlePasswordChange(e: FormEvent) {
     e.preventDefault()
     setPwdError(null); setPwdSuccess(false)
     if (newPwd !== confirmPwd) { setPwdError('Les mots de passe ne correspondent pas.'); return }
-    if (newPwd.length < 8)     { setPwdError('Minimum 8 caractères.'); return }
+    if (newPwd.length < 8) { setPwdError('Minimum 8 caractères.'); return }
     setPwdLoading(true)
     try {
       // Re-authenticate to verify current password before allowing the change
@@ -251,11 +253,11 @@ export function ProfilePage() {
                             flex items-center justify-center text-white text-2xl font-black">
               {avatarUrl && !avatarBroken
                 ? <img
-                    src={avatarUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarBroken(true)}
-                  />
+                  src={avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarBroken(true)}
+                />
                 : initials
               }
             </div>
@@ -298,11 +300,11 @@ export function ProfilePage() {
       {/* ── Nom affiché ── */}
       <SectionCard icon={<Pencil size={14} />} title="Nom affiché">
         <form onSubmit={handleNameChange} className="space-y-4">
-          {nameError   && <Alert type="error">{nameError}</Alert>}
+          {nameError && <Alert type="error">{nameError}</Alert>}
           {nameSuccess && <Alert type="success">Nom mis à jour avec succès.</Alert>}
           <FormField
             id="displayName" label="Nom complet"
-            value={displayName} onChange={v => { setDisplayName(v); setNameSuccess(false) }}
+            value={displayName} onChange={v => { setDisplayName(v); setHasEditedName(true); setNameSuccess(false) }}
             placeholder="Jean Dupont" required
           />
           <SubmitButton loading={nameLoading} label="Enregistrer" loadingLabel="Enregistrement…" />
@@ -312,7 +314,7 @@ export function ProfilePage() {
       {/* ── Email ── */}
       <SectionCard icon={<Mail size={14} />} title="Changer l'adresse email">
         <form onSubmit={handleEmailChange} className="space-y-4">
-          {emailError   && <Alert type="error">{emailError}</Alert>}
+          {emailError && <Alert type="error">{emailError}</Alert>}
           {emailSuccess && <Alert type="success">Email de confirmation envoyé.</Alert>}
           <div className="text-xs text-slate-500">
             Adresse actuelle : <span className="text-slate-300">{user?.email}</span>
@@ -329,7 +331,7 @@ export function ProfilePage() {
       {/* ── Mot de passe ── */}
       <SectionCard icon={<Lock size={14} />} title="Changer le mot de passe">
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          {pwdError   && <Alert type="error">{pwdError}</Alert>}
+          {pwdError && <Alert type="error">{pwdError}</Alert>}
           {pwdSuccess && <Alert type="success">Mot de passe mis à jour.</Alert>}
           <FormField
             id="currentPwd" label="Mot de passe actuel" type="password"

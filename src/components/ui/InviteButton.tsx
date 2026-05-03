@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link2, Copy, Check, RefreshCw, X } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { usePlayerInvite, useCreateInvite, useRevokeInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner } from './LoadingSpinner'
 

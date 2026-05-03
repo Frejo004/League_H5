@@ -109,6 +109,18 @@ export function AdminSchedulePage() {
     e.preventDefault()
     if (!season) return
     if (homeTeam === awayTeam) { setError("L'équipe domicile et extérieure doivent être différentes."); return }
+
+    // Vérifier si le match existe déjà
+    const existingMatch = (matches ?? []).find(
+      m => m.home_team_id === homeTeam &&
+           m.away_team_id === awayTeam &&
+           m.matchday === parseInt(matchday)
+    )
+    if (existingMatch) {
+      setError('Ce match existe déjà pour cette journée.')
+      return
+    }
+
     setError(null)
     try {
       await createMatch.mutateAsync({

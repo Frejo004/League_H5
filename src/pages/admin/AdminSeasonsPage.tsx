@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Check, Lock, Unlock } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useSeasons, useCreateSeason, useUpdateSeason } from '@/hooks/useSeasons'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -9,6 +10,7 @@ export function AdminSeasonsPage() {
   const { data: seasons, isLoading } = useSeasons()
   const createSeason = useCreateSeason()
   const updateSeason = useUpdateSeason()
+  const qc = useQueryClient()
 
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
@@ -37,7 +39,7 @@ export function AdminSeasonsPage() {
       const { error } = await supabase.rpc('set_active_season', { p_season_id: season.id })
       if (error) throw error
       // Invalidate seasons cache after atomic swap
-      await updateSeason.mutateAsync({ id: season.id, is_active: true })
+      qc.invalidateQueries({ queryKey: ['seasons'] })
     }
   }
 
