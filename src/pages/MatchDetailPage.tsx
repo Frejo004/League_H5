@@ -65,7 +65,7 @@ function GoalEvent({
       'flex items-start gap-0 py-2.5 border-b border-surface-border/40 last:border-b-0',
     )}>
       {/* Home side */}
-      <div className={clsx('flex-1 flex items-start gap-2', isHome ? 'justify-end' : '')}>
+      <div className={clsx('flex-1 flex items-start', isHome ? 'justify-end pr-2' : '')}>
         {isHome && (
           <div className="text-right">
             <p className="text-sm font-semibold text-white leading-tight">{playerName}</p>
@@ -79,13 +79,13 @@ function GoalEvent({
       </div>
 
       {/* Center — icon + minute */}
-      <div className="flex flex-col items-center gap-0.5 px-3 shrink-0 w-20">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col items-center gap-0.5 shrink-0 w-16">
+        <div className="flex items-center gap-1">
           <span
             className="w-2 h-2 rounded-sm shrink-0"
             style={{ backgroundColor: teamColor }}
           />
-          <span className="text-base leading-none">⚽</span>
+          <span className="text-sm leading-none">⚽</span>
         </div>
         {minute && (
           <span className="text-[10px] text-slate-600 font-mono">{minute}'</span>
@@ -93,7 +93,7 @@ function GoalEvent({
       </div>
 
       {/* Away side */}
-      <div className={clsx('flex-1 flex items-start gap-2', !isHome ? '' : 'justify-end')}>
+      <div className={clsx('flex-1 flex items-start', !isHome ? 'pl-2' : 'justify-end')}>
         {!isHome && (
           <div>
             <p className="text-sm font-semibold text-white leading-tight">{playerName}</p>
@@ -163,7 +163,7 @@ export function MatchDetailPage() {
   )
 
   return (
-    <div className="max-w-xl space-y-3 pb-10">
+    <div className="space-y-3 pb-10">
 
       {/* Back */}
       <Link to="/matches"

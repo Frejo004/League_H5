@@ -57,7 +57,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-3 max-w-5xl">
+    <div className="space-y-3">
 
       {/* Season header */}
       <div className="flex items-center justify-between">

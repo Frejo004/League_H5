@@ -32,7 +32,7 @@ export function MatchesPage() {
   const filtered = (matches ?? []).filter(m => m.matchday === currentMatchday)
 
   return (
-    <div className="max-w-2xl space-y-3">
+    <div className="space-y-3">
 
       {/* Header */}
       <div className="flex items-center justify-between">

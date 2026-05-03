@@ -25,7 +25,7 @@ export function StandingsPage() {
   const isLoading = seasonLoading || standingsLoading
 
   return (
-    <div className="max-w-3xl space-y-3">
+    <div className="space-y-3">
 
       {/* Header */}
       <div className="flex items-center justify-between">

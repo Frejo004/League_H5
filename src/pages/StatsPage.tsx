@@ -38,7 +38,7 @@ export function StatsPage() {
   const topScorers = (scorers ?? []).filter(s => s.goals > 0).slice(0, 5)
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="animate-fade-in-up">
