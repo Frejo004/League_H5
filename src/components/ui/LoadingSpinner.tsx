@@ -10,9 +10,9 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
     <div
       className={clsx(
         'animate-spin rounded-full border-2 border-surface-border border-t-primary-500',
-        size === 'sm' && 'w-4 h-4',
-        size === 'md' && 'w-8 h-8',
-        size === 'lg' && 'w-12 h-12',
+        size === 'sm' && 'w-3.5 h-3.5',
+        size === 'md' && 'w-6 h-6',
+        size === 'lg' && 'w-10 h-10',
         className
       )}
     />
@@ -22,9 +22,9 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
 export function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-surface">
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
         <LoadingSpinner size="lg" />
-        <p className="text-slate-400 text-sm">Chargement...</p>
+        <p className="text-slate-500 text-sm">Chargement...</p>
       </div>
     </div>
   )

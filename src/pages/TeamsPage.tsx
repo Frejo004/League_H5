@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { clsx } from 'clsx'
 
 export function TeamsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
@@ -12,19 +11,19 @@ export function TeamsPage() {
   const isLoading = seasonLoading || teamsLoading
 
   return (
-    <div className="space-y-5">
+    <div className="max-w-2xl space-y-3">
 
       {/* Header */}
-      <div className="animate-fade-in-up">
+      <div className="flex items-center justify-between">
         <div className="page-header">
-          <Users className="text-primary-400" size={22} />
+          <Users size={18} className="text-primary-400" />
           <h1 className="page-title">Équipes</h1>
-          {season && (
-            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
-              {season.name}
-            </span>
-          )}
         </div>
+        {season && (
+          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
+            {season.name}
+          </span>
+        )}
       </div>
 
       {isLoading ? (
@@ -32,66 +31,49 @@ export function TeamsPage() {
       ) : !season ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon"><Users size={22} /></div>
-            <p className="text-slate-400 font-medium">Aucune saison active</p>
+            <div className="empty-state-icon"><Users size={20} /></div>
+            <p className="text-slate-400">Aucune saison active</p>
           </div>
         </div>
       ) : !teams?.length ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon"><Users size={22} /></div>
-            <p className="text-slate-300 font-semibold">Aucune équipe enregistrée</p>
-            <p className="text-slate-500 text-sm">Les équipes apparaîtront ici une fois créées.</p>
+            <div className="empty-state-icon"><Users size={20} /></div>
+            <p className="text-slate-300 font-medium">Aucune équipe enregistrée</p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
-          {teams.map(team => {
+        <div className="card p-0 overflow-hidden">
+          {teams.map((team, i) => {
             const playerCount = (team.players as unknown as { count: number }[])?.[0]?.count ?? 0
             return (
               <Link
                 key={team.id}
                 to={`/teams/${team.id}`}
-                className="card-hover animate-fade-in-up group block"
+                className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors
+                            ${i < teams.length - 1 ? 'border-b border-surface-border/50' : ''}`}
               >
-                {/* Color banner */}
+                {/* Color swatch */}
                 <div
-                  className="h-1.5 rounded-full mb-4 opacity-80"
-                  style={{ backgroundColor: team.color || '#16a34a' }}
-                />
-
-                <div className="flex items-center gap-4">
-                  {/* Logo / color swatch */}
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center
-                               text-white font-black text-xl shrink-0
-                               ring-2 ring-white/10 shadow-lg"
-                    style={{ backgroundColor: team.color || '#16a34a' }}
-                  >
-                    {team.logo_url ? (
-                      <img src={team.logo_url} alt={team.name}
-                        className="w-12 h-12 object-contain rounded-xl" />
-                    ) : (
-                      team.name[0].toUpperCase()
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-black text-white text-base truncate tracking-tight">
-                      {team.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={clsx(
-                        'badge border',
-                        playerCount > 0
-                          ? 'bg-primary-600/15 text-primary-400 border-primary-600/25'
-                          : 'bg-surface-border/50 text-slate-500 border-surface-border'
-                      )}>
-                        {playerCount} joueur{playerCount !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </div>
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
+                  style={{ backgroundColor: team.color }}
+                >
+                  {team.logo_url
+                    ? <img src={team.logo_url} alt={team.name} className="w-8 h-8 object-contain rounded-md" />
+                    : team.name[0].toUpperCase()
+                  }
                 </div>
+
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-200 truncate">{team.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {playerCount} joueur{playerCount !== 1 ? 's' : ''}
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <span className="text-slate-600 text-xs">›</span>
               </Link>
             )
           })}
