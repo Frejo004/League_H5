@@ -1,4 +1,4 @@
-import { Menu, X, LogOut, Settings, User, Crown } from 'lucide-react'
+import { Menu, X, LogOut, Settings, User, Crown, Trophy } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -24,8 +24,8 @@ export function TopBar() {
                          bg-surface-card border-b border-surface-border
                          px-4 h-12 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center">
-            <span className="text-xs">⚽</span>
+          <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center shrink-0">
+            <Trophy size={13} className="text-white" />
           </div>
           <span className="font-bold text-white text-sm">
             {PAGE_TITLES[location.pathname] ?? 'League H5'}
@@ -65,8 +65,8 @@ export function TopBar() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 h-12 border-b border-surface-border shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center">
-                <span className="text-xs">⚽</span>
+              <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center shrink-0">
+                <Trophy size={13} className="text-white" />
               </div>
               <p className="font-bold text-white text-sm">League H5</p>
             </div>

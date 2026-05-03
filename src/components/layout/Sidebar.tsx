@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Settings, LogOut, User, Crown } from 'lucide-react'
+import { Settings, LogOut, User, Crown, Trophy } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { clsx } from 'clsx'
 import { NAV_ITEMS } from '@/config/navigation'
@@ -14,7 +14,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-surface-border">
         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shrink-0">
-          <span className="text-base">⚽</span>
+          <Trophy size={16} className="text-white" />
         </div>
         <div>
           <p className="font-bold text-white text-sm leading-tight">League H5</p>

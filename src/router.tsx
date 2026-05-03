@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { SignupPage } from '@/pages/auth/SignupPage'
@@ -18,6 +18,7 @@ import { AdminPage } from '@/pages/AdminPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { CaptainPage } from '@/pages/CaptainPage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -54,7 +55,7 @@ export const router = createBrowserRouter([
   },
 
   // Fallback
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <NotFoundPage /> },
 ])
 
 /** Use this outside React components (e.g. AuthContext) */

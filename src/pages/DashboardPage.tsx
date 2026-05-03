@@ -102,12 +102,12 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
 
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
-  const { data: matches, isLoading: matchesLoading } = useMatches(season?.id)
+  const { data: matches } = useMatches(season?.id)
   const { data: teams } = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
 
-  const isLoading = seasonLoading || (!!season?.id && matchesLoading)
+  const isLoading = seasonLoading
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
   const upcomingMatches = (matches ?? [])
