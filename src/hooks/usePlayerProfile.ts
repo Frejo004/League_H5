@@ -37,15 +37,22 @@ export function usePlayerProfile(playerId?: string) {
     queryKey: ['player_profile', playerId],
     enabled: !!playerId,
     queryFn: async () => {
-      // 1. Fetch player + team
+      // 1. Fetch player + team (deux requêtes séparées pour éviter les problèmes de FK)
       const { data: player, error: playerErr } = await supabase
         .from('players')
-        .select('*, teams(id, name, color)')
+        .select('*')
         .eq('id', playerId!)
         .single()
       if (playerErr) throw playerErr
 
-      const team = player.teams as unknown as { id: string; name: string; color: string }
+      const { data: teamData, error: teamErr } = await supabase
+        .from('teams')
+        .select('id, name, color')
+        .eq('id', player.team_id)
+        .single()
+      if (teamErr) throw teamErr
+
+      const team = teamData as { id: string; name: string; color: string }
 
       // 2. Fetch all completed matches for this season involving this team
       const { data: matches, error: matchErr } = await supabase

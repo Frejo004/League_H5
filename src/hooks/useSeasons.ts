@@ -31,11 +31,12 @@ export function useActiveSeason() {
       if (error) throw error
       return data as Season | null
     },
-    retry: 1,
-    staleTime: 1000 * 60 * 5,       // 5 min avant de considérer les données périmées
-    gcTime: 1000 * 60 * 10,          // 10 min en cache après démontage
-    refetchOnWindowFocus: false,     // ne pas relancer au changement d'onglet
-    refetchOnReconnect: false,       // ne pas relancer à la reconnexion réseau
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 }
 

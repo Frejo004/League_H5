@@ -7,14 +7,30 @@ export function usePlayers(seasonId?: string) {
     queryKey: ['players', seasonId],
     enabled: !!seasonId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Requête séparée pour éviter les problèmes de FK imbriquée
+      const { data: players, error: playersErr } = await supabase
         .from('players')
-        .select('*, teams(id, name, color)')
+        .select('*')
         .eq('season_id', seasonId!)
         .eq('is_active', true)
         .order('last_name')
-      if (error) throw error
-      return data
+      if (playersErr) throw playersErr
+
+      if (!players?.length) return []
+
+      // Fetch les équipes séparément
+      const teamIds = [...new Set(players.map(p => p.team_id))]
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('id, name, color')
+        .in('id', teamIds)
+
+      const teamsMap = new Map((teams ?? []).map(t => [t.id, t]))
+
+      return players.map(p => ({
+        ...p,
+        teams: teamsMap.get(p.team_id) ?? null,
+      }))
     },
   })
 }

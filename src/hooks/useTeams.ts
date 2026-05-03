@@ -32,13 +32,24 @@ export function useTeam(teamId?: string) {
     queryKey: ['teams', 'detail', teamId],
     enabled: !!teamId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Requête 1 : l'équipe seule
+      const { data: team, error: teamErr } = await supabase
         .from('teams')
-        .select('*, players(*)')
+        .select('*')
         .eq('id', teamId!)
         .single()
-      if (error) throw error
-      return data
+      if (teamErr) throw teamErr
+
+      // Requête 2 : les joueurs actifs de l'équipe
+      const { data: players, error: playersErr } = await supabase
+        .from('players')
+        .select('*')
+        .eq('team_id', teamId!)
+        .eq('is_active', true)
+        .order('jersey_number', { ascending: true })
+      if (playersErr) throw playersErr
+
+      return { ...team, players: players ?? [] }
     },
   })
 }

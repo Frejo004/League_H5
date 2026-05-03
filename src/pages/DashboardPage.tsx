@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Calendar, Trophy, Target, Users, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -101,13 +102,21 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
 }
 
 export function DashboardPage() {
-  const { data: season, isLoading: seasonLoading } = useActiveSeason()
+  const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
   const { data: teams } = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
 
-  const isLoading = seasonLoading
+  // N'affiche le spinner que les 3 premières secondes max
+  // Après, on affiche le contenu même si la saison n'est pas encore chargée
+  const [timedOut, setTimedOut] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), 3000)
+    return () => clearTimeout(t)
+  }, [])
+
+  const isLoading = seasonLoading && !timedOut && !isFetched
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
   const upcomingMatches = (matches ?? [])
