@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Settings, LogOut, User } from 'lucide-react'
+import { Settings, LogOut, User, Crown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { clsx } from 'clsx'
 import { NAV_ITEMS } from '@/config/navigation'
 
 export function Sidebar() {
-  const { profile, isAdmin, signOut } = useAuth()
+  const { profile, isAdmin, isCaptain, signOut } = useAuth()
 
   return (
     <aside className="hidden lg:flex flex-col w-56 min-h-screen shrink-0
@@ -52,6 +52,36 @@ export function Sidebar() {
             )}
           </NavLink>
         ))}
+
+        {isCaptain && !isAdmin && (
+          <>
+            <div className="mx-4 my-2 border-t border-surface-border" />
+            <p className="px-4 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+              Capitaine
+            </p>
+            <NavLink
+              to="/captain"
+              className={({ isActive }) =>
+                clsx(
+                  'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors duration-150 border-l-2',
+                  isActive
+                    ? 'nav-active'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-surface-raised border-l-transparent'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Crown
+                    size={16}
+                    className={clsx('shrink-0', isActive ? 'text-amber-400' : 'text-slate-500')}
+                  />
+                  <span>Mon équipe</span>
+                </>
+              )}
+            </NavLink>
+          </>
+        )}
 
         {isAdmin && (
           <>

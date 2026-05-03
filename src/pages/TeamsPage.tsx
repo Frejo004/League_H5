@@ -45,7 +45,7 @@ export function TeamsPage() {
       ) : (
         <div className="card p-0 overflow-hidden">
           {teams.map((team, i) => {
-            const playerCount = (team.players as unknown as { count: number }[])?.[0]?.count ?? 0
+            const playerCount = (team as unknown as { players?: { count: number }[] }).players?.[0]?.count ?? 0
             return (
               <Link
                 key={team.id}

@@ -1,4 +1,4 @@
-import { Menu, X, LogOut, Settings, User } from 'lucide-react'
+import { Menu, X, LogOut, Settings, User, Crown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { NAV_ITEMS, PAGE_TITLES } from '@/config/navigation'
 
 export function TopBar() {
-  const { profile, isAdmin, signOut } = useAuth()
+  const { profile, isAdmin, isCaptain, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
 
@@ -99,6 +99,27 @@ export function TopBar() {
                 {label}
               </NavLink>
             ))}
+
+            {isCaptain && !isAdmin && (
+              <>
+                <div className="mx-4 my-2 border-t border-surface-border" />
+                <p className="px-4 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Capitaine</p>
+                <NavLink
+                  to="/captain"
+                  className={({ isActive }) =>
+                    clsx(
+                      'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors border-l-2',
+                      isActive
+                        ? 'bg-amber-500/10 text-amber-400 border-l-amber-500'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-surface-raised border-l-transparent'
+                    )
+                  }
+                >
+                  <Crown size={16} className="shrink-0" />
+                  Mon équipe
+                </NavLink>
+              </>
+            )}
 
             {isAdmin && (
               <>

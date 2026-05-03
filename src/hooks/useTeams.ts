@@ -9,10 +9,19 @@ export function useTeams(seasonId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('*, players(count)')
+        .select('*, players!players_team_id_fkey(count)')
         .eq('season_id', seasonId!)
         .order('name')
-      if (error) throw error
+      if (error) {
+        // Fallback sans le count si la relation échoue
+        const { data: fallback, error: fallbackErr } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('season_id', seasonId!)
+          .order('name')
+        if (fallbackErr) throw fallbackErr
+        return fallback
+      }
       return data
     },
   })
@@ -66,6 +75,48 @@ export function useUpdateTeam() {
       return data as Team
     },
     onSuccess: (data) => qc.invalidateQueries({ queryKey: ['teams', data.season_id] }),
+  })
+}
+
+// Définir le capitaine d'une équipe (admin uniquement)
+// Utilise captain_id pour stocker le player_id du capitaine désigné.
+// Quand le joueur crée son compte, son rôle sera mis à 'captain' via
+// la logique de claim_player_invite.
+export function useSetCaptain() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      teamId,
+      captainPlayerId,
+      captainUserId,
+      seasonId,
+    }: {
+      teamId: string
+      captainPlayerId: string | null
+      captainUserId: string | null
+      seasonId: string
+    }) => {
+      // Met à jour captain_id avec le user_id si disponible, sinon null
+      // (le joueur sans compte sera mis à jour quand il créera son compte)
+      const { error: teamErr } = await supabase
+        .from('teams')
+        .update({ captain_id: captainUserId })
+        .eq('id', teamId)
+      if (teamErr) throw teamErr
+
+      // Si le joueur a déjà un compte, mettre son rôle à 'captain'
+      if (captainUserId) {
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({ role: 'captain' })
+          .eq('id', captainUserId)
+        if (profileErr) throw profileErr
+      }
+    },
+    onSuccess: (_data, { seasonId }) => {
+      qc.invalidateQueries({ queryKey: ['teams', seasonId] })
+      qc.invalidateQueries({ queryKey: ['teams', 'detail'] })
+    },
   })
 }
 

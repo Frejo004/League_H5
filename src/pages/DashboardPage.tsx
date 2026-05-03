@@ -1,19 +1,103 @@
 import { Calendar, Trophy, Target, Users, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useMatches } from '@/hooks/useMatches'
+import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return 'À définir'
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric', month: 'short',
-    hour: '2-digit', minute: '2-digit',
-  }).format(new Date(dateStr))
+function formatTime(dateStr: string) {
+  return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr))
+}
+
+function formatDay(dateStr: string) {
+  const d = new Date(dateStr)
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(today.getDate() + 1)
+  if (d.toDateString() === today.toDateString()) return "Aujourd'hui"
+  if (d.toDateString() === tomorrow.toDateString()) return 'Demain'
+  return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
+}
+
+// ── Mini match card style Sofascore ──────────────────────────────────────────
+function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'upcoming' | 'result' }) {
+  const homeWon = match.home_score! > match.away_score!
+  const awayWon = match.away_score! > match.home_score!
+  const isDraw  = match.home_score === match.away_score
+
+  return (
+    <Link
+      to={`/matches/${match.id}`}
+      className="flex items-center gap-2 px-3 py-3 hover:bg-surface-raised
+                 transition-colors border-b border-surface-border/40 last:border-b-0"
+    >
+      {/* Home */}
+      <div className="flex flex-col items-center gap-1 w-16 shrink-0">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+          style={{ backgroundColor: match.home_team.color }}>
+          {match.home_team.logo_url
+            ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
+            : match.home_team.name[0]
+          }
+        </div>
+        <span className={clsx(
+          'text-[10px] font-medium text-center leading-tight truncate w-full',
+          variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-300'
+        )}>
+          {match.home_team.name}
+        </span>
+      </div>
+
+      {/* Center */}
+      <div className="flex-1 flex flex-col items-center gap-0.5">
+        {variant === 'result' ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className={clsx('text-lg font-bold tabular-nums',
+                homeWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-500')}>
+                {match.home_score}
+              </span>
+              <span className="text-slate-600 text-sm">-</span>
+              <span className={clsx('text-lg font-bold tabular-nums',
+                awayWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-500')}>
+                {match.away_score}
+              </span>
+            </div>
+            <span className="text-[9px] text-primary-500 font-bold uppercase">Terminé</span>
+          </>
+        ) : match.scheduled_at ? (
+          <>
+            <span className="text-base font-bold text-white tabular-nums">
+              {formatTime(match.scheduled_at)}
+            </span>
+            <span className="text-[10px] text-slate-500">{formatDay(match.scheduled_at)}</span>
+          </>
+        ) : (
+          <span className="text-xs text-slate-600 font-medium">À venir</span>
+        )}
+      </div>
+
+      {/* Away */}
+      <div className="flex flex-col items-center gap-1 w-16 shrink-0">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+          style={{ backgroundColor: match.away_team.color }}>
+          {match.away_team.logo_url
+            ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
+            : match.away_team.name[0]
+          }
+        </div>
+        <span className={clsx(
+          'text-[10px] font-medium text-center leading-tight truncate w-full',
+          variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-300'
+        )}>
+          {match.away_team.name}
+        </span>
+      </div>
+    </Link>
+  )
 }
 
 export function DashboardPage() {
@@ -27,8 +111,15 @@ export function DashboardPage() {
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
   const upcomingMatches = (matches ?? [])
-    .filter(m => m.status === 'scheduled' && m.scheduled_at)
-    .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())
+    .filter(m => m.status === 'scheduled')
+    .sort((a, b) => {
+      // Matchs avec date en premier, triés par date
+      if (a.scheduled_at && b.scheduled_at)
+        return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+      if (a.scheduled_at) return -1
+      if (b.scheduled_at) return 1
+      return a.matchday - b.matchday
+    })
   const recentMatches = [...completedMatches]
     .filter(m => m.played_at)
     .sort((a, b) => new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime())
@@ -93,8 +184,8 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         {/* Next matches */}
-        <div className="card lg:col-span-2">
-          <div className="flex items-center justify-between mb-3">
+        <div className="card p-0 overflow-hidden lg:col-span-2">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface-border">
             <p className="section-title">Prochains matchs</p>
             <Link to="/matches" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
               Voir tout <ArrowRight size={11} />
@@ -107,25 +198,9 @@ export function DashboardPage() {
               <p className="text-slate-500 text-sm">Aucun match programmé</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div>
               {upcomingMatches.slice(0, 3).map(match => (
-                <Link key={match.id} to={`/matches/${match.id}`}
-                  className="sf-row rounded-md hover:bg-surface-raised transition-colors">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: match.home_team.color }} />
-                    <span className="text-sm text-slate-200 truncate font-medium">{match.home_team.name}</span>
-                  </div>
-                  <div className="px-3 text-center shrink-0">
-                    <p className="text-xs text-slate-400 font-medium">{formatDate(match.scheduled_at)}</p>
-                    <p className="text-[10px] text-slate-600 font-bold">J{match.matchday}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                    <span className="text-sm text-slate-200 truncate font-medium text-right">{match.away_team.name}</span>
-                    <span className="w-2.5 h-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: match.away_team.color }} />
-                  </div>
-                </Link>
+                <MiniMatchCard key={match.id} match={match} variant="upcoming" />
               ))}
             </div>
           )}
@@ -190,50 +265,17 @@ export function DashboardPage() {
 
       {/* Recent results */}
       {recentMatches.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-3">
+        <div className="card p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface-border">
             <p className="section-title">Derniers résultats</p>
             <Link to="/matches" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
               Voir tout <ArrowRight size={11} />
             </Link>
           </div>
           <div>
-            {recentMatches.map(match => {
-              const homeWon = match.home_score! > match.away_score!
-              const awayWon = match.away_score! > match.home_score!
-              return (
-                <Link key={match.id} to={`/matches/${match.id}`}
-                  className="sf-row hover:bg-surface-raised transition-colors">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="w-2 h-2 rounded-sm shrink-0"
-                      style={{ backgroundColor: match.home_team.color }} />
-                    <span className={clsx(
-                      'text-sm truncate',
-                      homeWon ? 'text-white font-semibold' : 'text-slate-500'
-                    )}>
-                      {match.home_team.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 shrink-0">
-                    <span className={clsx('text-sm font-bold tabular-nums',
-                      homeWon ? 'text-white' : 'text-slate-400')}>{match.home_score}</span>
-                    <span className="text-slate-600 text-xs">–</span>
-                    <span className={clsx('text-sm font-bold tabular-nums',
-                      awayWon ? 'text-white' : 'text-slate-400')}>{match.away_score}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                    <span className={clsx(
-                      'text-sm truncate text-right',
-                      awayWon ? 'text-white font-semibold' : 'text-slate-500'
-                    )}>
-                      {match.away_team.name}
-                    </span>
-                    <span className="w-2 h-2 rounded-sm shrink-0"
-                      style={{ backgroundColor: match.away_team.color }} />
-                  </div>
-                </Link>
-              )
-            })}
+            {recentMatches.map(match => (
+              <MiniMatchCard key={match.id} match={match} variant="result" />
+            ))}
           </div>
         </div>
       )}
