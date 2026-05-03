@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import {
   Camera, Check, Pencil, Mail, Lock,
   ShieldCheck, AlertCircle, Loader2
@@ -50,7 +50,7 @@ function SectionCard({
     <div className="group relative bg-slate-900/60 border border-slate-800/70 rounded-2xl overflow-hidden
                     transition-all duration-300 hover:border-slate-700/70">
       {/* top accent line */}
-      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary-500/30 to-transparent" />
+      <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-primary-500/30 to-transparent" />
       <div className="p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <span className="p-1.5 rounded-lg bg-primary-500/10 text-primary-400">{icon}</span>
@@ -109,13 +109,19 @@ export function ProfilePage() {
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
   const [hasEditedName, setHasEditedName] = useState(false)
+  // Cache-bust local : mis à jour après chaque upload pour forcer le rechargement de l'image
+  const [avatarCacheBust, setAvatarCacheBust] = useState(() => Date.now())
 
   useEffect(() => {
+    // Ne réinitialise le nom que si l'utilisateur n'est pas en train d'éditer
+    // (hasEditedName est mis à true dès la première frappe, remis à false après sauvegarde)
     if (!hasEditedName) setDisplayName(profile?.full_name ?? '')
-  }, [profile?.full_name]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.full_name, hasEditedName])
 
 
-  const avatarUrl = profile?.avatar_url ?? null
+  const avatarUrl = profile?.avatar_url
+    ? `${profile.avatar_url}?t=${avatarCacheBust}`
+    : null
 
   const initials = useMemo(() => {
     const name = displayName || profile?.full_name
@@ -138,25 +144,28 @@ export function ProfilePage() {
     }
     setAvatarError(null); setAvatarUploading(true)
     try {
-      // Fixed filename (no extension) avoids orphaned files on format change
+      // Nom de fichier fixe (sans extension) pour éviter les fichiers orphelins
       const path = `${user.id}/avatar`
       const { error: upErr } = await supabase.storage
         .from('avatars')
         .upload(path, file, { upsert: true, contentType: file.type })
       if (upErr) throw upErr
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-      const url = `${data.publicUrl}?t=${Date.now()}`
-      const { error } = await supabase
+      // Stocker l'URL propre en base (sans timestamp) pour éviter les URLs obsolètes
+      const cleanUrl = data.publicUrl
+      const { error: dbErr } = await supabase
         .from('profiles')
-        .update({ avatar_url: url })
+        .update({ avatar_url: cleanUrl })
         .eq('id', user.id)
+      if (dbErr) throw dbErr
       setAvatarBroken(false)
+      setAvatarCacheBust(Date.now())
       await refreshProfile()
     } catch (err: unknown) {
-      setAvatarError(err instanceof Error ? err.message : 'Erreur upload')
+      setAvatarError(err instanceof Error ? err.message : 'Erreur upload avatar')
     } finally {
       setAvatarUploading(false)
-      // Reset input so the same file can be re-selected if needed
+      // Réinitialise l'input pour permettre de re-sélectionner le même fichier
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -166,7 +175,7 @@ export function ProfilePage() {
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState(false)
 
-  async function handleNameChange(e: FormEvent) {
+  async function handleNameChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user || !displayName.trim()) return
     setNameError(null); setNameSuccess(false); setNameLoading(true)
@@ -189,7 +198,7 @@ export function ProfilePage() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [emailSuccess, setEmailSuccess] = useState(false)
 
-  async function handleEmailChange(e: FormEvent) {
+  async function handleEmailChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setEmailError(null); setEmailSuccess(false); setEmailLoading(true)
     try {
@@ -211,21 +220,33 @@ export function ProfilePage() {
   const [pwdError, setPwdError] = useState<string | null>(null)
   const [pwdSuccess, setPwdSuccess] = useState(false)
 
-  async function handlePasswordChange(e: FormEvent) {
+  async function handlePasswordChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setPwdError(null); setPwdSuccess(false)
     if (newPwd !== confirmPwd) { setPwdError('Les mots de passe ne correspondent pas.'); return }
     if (newPwd.length < 8) { setPwdError('Minimum 8 caractères.'); return }
+    if (!currentPwd) { setPwdError('Veuillez saisir votre mot de passe actuel.'); return }
     setPwdLoading(true)
     try {
-      // Re-authenticate to verify current password before allowing the change
+      // Étape 1 : vérifier le mot de passe actuel.
+      // ✅ Sûr ici car AuthContext ne redirige plus quand on est déjà sur
+      // une page protégée (SIGNED_IN n'est géré que depuis /auth/*).
       const { error: siErr } = await supabase.auth.signInWithPassword({
-        email: user!.email!,
+        email: user?.email ?? '',
         password: currentPwd,
       })
       if (siErr) { setPwdError('Mot de passe actuel incorrect.'); return }
+
+      // Étape 2 : appliquer le nouveau mot de passe
       const { error } = await supabase.auth.updateUser({ password: newPwd })
-      if (error) throw error
+      if (error) {
+        if (error.message.toLowerCase().includes('same password')) {
+          setPwdError('Le nouveau mot de passe doit être différent de l\'ancien.')
+        } else {
+          throw error
+        }
+        return
+      }
       setPwdSuccess(true)
       setCurrentPwd(''); setNewPwd(''); setConfirmPwd('')
     } catch (err: unknown) {
@@ -242,14 +263,14 @@ export function ProfilePage() {
       {/* ── Hero card ── */}
       <div className="relative bg-slate-900/80 border border-slate-800/70 rounded-2xl overflow-hidden">
         {/* background stripe */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary-500/40 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary-900/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-primary-500/40 to-transparent" />
 
         <div className="relative p-6 flex items-center gap-5">
           {/* Avatar */}
           <div className="relative shrink-0">
             <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-slate-700
-                            bg-gradient-to-br from-primary-600 to-primary-900
+                            bg-linear-to-br from-primary-600 to-primary-900
                             flex items-center justify-center text-white text-2xl font-black">
               {avatarUrl && !avatarBroken
                 ? <img

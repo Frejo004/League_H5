@@ -15,12 +15,12 @@ function formatDate(dateStr: string | null) {
 }
 
 export function DashboardPage() {
-  const { data: season, isLoading: seasonLoading, isError: seasonError, status: seasonStatus } = useActiveSeason()
+  const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: matches, isLoading: matchesLoading } = useMatches(season?.id)
   const { data: teams } = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
 
-  console.log('[Dashboard]', { seasonStatus, seasonLoading, seasonError, season })
+
 
   const isLoading = seasonLoading || (!!season?.id && matchesLoading)
 

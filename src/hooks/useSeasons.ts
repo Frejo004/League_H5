@@ -13,6 +13,9 @@ export function useSeasons() {
       if (error) throw error
       return data as Season[]
     },
+    staleTime: 1000 * 60 * 5,       // 5 min avant de considérer les données périmées
+    gcTime: 1000 * 60 * 10,          // 10 min avant de vider le cache
+    refetchOnWindowFocus: false,     // ne pas refetch au retour sur l'onglet
   })
 }
 
@@ -29,7 +32,10 @@ export function useActiveSeason() {
       return data as Season | null
     },
     retry: 1,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 5,       // 5 min avant de considérer les données périmées
+    gcTime: 1000 * 60 * 10,          // 10 min en cache après démontage
+    refetchOnWindowFocus: false,     // ne pas relancer au changement d'onglet
+    refetchOnReconnect: false,       // ne pas relancer à la reconnexion réseau
   })
 }
 
@@ -48,7 +54,7 @@ export function useCreateSeason() {
 export function useUpdateSeason() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...values }: Partial<Season> & { id: string }) => {
+    mutationFn: async ({ id, ...values }: Omit<Partial<Season>, 'created_at'> & { id: string }) => {
       const { data, error } = await supabase
         .from('seasons')
         .update(values)

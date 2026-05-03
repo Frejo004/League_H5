@@ -72,10 +72,11 @@ export function useUpdateTeam() {
 export function useDeleteTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, seasonId }: { id: string; seasonId: string }) => {
       const { error } = await supabase.from('teams').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['teams'] }),
+    onSuccess: (_data, { seasonId }) =>
+      qc.invalidateQueries({ queryKey: ['teams', seasonId] }),
   })
 }

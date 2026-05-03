@@ -13,6 +13,11 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    // Désactive le Web Lock en dev pour éviter les conflits HMR / StrictMode.
+    // En production (NODE_ENV === 'production') le lock reste actif.
+    lock: import.meta.env.DEV
+      ? async (_name, _acquireTimeout, fn) => fn()
+      : undefined,
   },
   realtime: {
     params: {

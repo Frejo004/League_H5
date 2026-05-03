@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Lock, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -22,7 +22,7 @@ export function LoginPage() {
     return 'Erreur de connexion. Veuillez réessayer.'
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
 
@@ -77,7 +77,7 @@ export function LoginPage() {
               role="alert"
               aria-live="polite"
             >
-              <span className="mt-0.5 flex-shrink-0">⚠️</span>
+              <span className="mt-0.5 shrink-0">⚠️</span>
               <span>{error}</span>
             </div>
           )}

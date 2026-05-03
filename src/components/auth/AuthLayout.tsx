@@ -10,7 +10,7 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-950 to-slate-900">
+    <div className="min-h-screen flex bg-linear-to-br from-slate-950 to-slate-900">
 
       {/* ── Left hero panel (desktop) ── */}
       <div
@@ -22,9 +22,9 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
           backgroundColor: '#0f172a',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-slate-900/60" />
+        <div className="absolute inset-0 bg-linear-to-br from-black/70 via-black/40 to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-slate-900/60" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[...Array(6)].map((_, i) => (
@@ -47,7 +47,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10">
               <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-60" />
-              <div className="relative w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="relative w-10 h-10 bg-linear-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl drop-shadow-md">⚽</span>
               </div>
             </div>
@@ -67,7 +67,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
             </div>
             <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight mb-4">
               <span className="text-white drop-shadow-lg">La ligue</span><br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-300 drop-shadow-md">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 to-primary-300 drop-shadow-md">
                 interne H5
               </span>
             </h1>
@@ -101,7 +101,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-col w-full lg:w-[480px] xl:w-[35%] 2xl:w-[30%] flex-shrink-0 relative">
+      <div className="flex flex-col w-full lg:w-[480px] xl:w-[35%] 2xl:w-[30%] shrink-0 relative">
         {/* ✅ Mobile background — réutilise bgImage, pas d'import séparé */}
         <div
           className="lg:hidden absolute inset-0"
@@ -116,7 +116,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
 
         <div className="hidden lg:block absolute inset-0 bg-slate-900/95 backdrop-blur-sm border-l border-slate-800/30" />
 
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary-500/20 to-transparent" />
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-600/8 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col flex-1 items-center justify-center p-6 sm:p-8 lg:p-10">

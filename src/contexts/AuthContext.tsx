@@ -39,27 +39,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const safetyTimeout = setTimeout(() => setIsLoading(false), 5000)
+    let isMounted = true
 
+    // Safety timeout : garantit que isLoading passe à false même si
+    // onAuthStateChange ne fire pas (réseau coupé, erreur inattendue…)
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setIsLoading(false)
+    }, 3000)
+
+    // Pattern officiel Supabase pour React 18+ :
+    // INITIAL_SESSION est émis synchroniquement au premier abonnement,
+    // qu'une session existe ou non en storage. C'est le seul endroit
+    // où on hydrate l'état — pas de getSession() séparé qui créerait
+    // un second lock concurrent.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        if (!isMounted) return
+
+        if (event === 'INITIAL_SESSION') {
+          setSession(newSession)
+          if (newSession?.user) {
+            await fetchProfile(newSession.user.id)
+          }
+          clearTimeout(safetyTimer)
+          setIsLoading(false)
+          return
+        }
+
         setSession(newSession)
 
         if (newSession?.user) {
           await fetchProfile(newSession.user.id)
-          setIsLoading(false)
-          clearTimeout(safetyTimeout)
 
           if (event === 'SIGNED_IN') {
             const path = window.location.pathname
+            // Ne rediriger que si l'utilisateur vient d'une page /auth
             if (path.startsWith('/auth')) {
               navigateTo('/')
             }
           }
         } else {
           setProfile(null)
-          setIsLoading(false)
-          clearTimeout(safetyTimeout)
 
           if (event === 'SIGNED_OUT') {
             navigateTo('/auth/login')
@@ -69,7 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 
     return () => {
-      clearTimeout(safetyTimeout)
+      isMounted = false
+      clearTimeout(safetyTimer)
       subscription.unsubscribe()
     }
   }, [fetchProfile])
@@ -81,9 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id, fetchProfile])
 
   async function signOut() {
-    // Laisser onAuthStateChange (SIGNED_OUT) gérer la navigation
-    // pour éviter une double redirection et un état isLoading incohérent
-    await supabase.auth.signOut().catch(console.error)
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Fallback local si le réseau est indisponible ou le token déjà expiré
+      await supabase.auth.signOut({ scope: 'local' })
+    }
   }
 
   const role = profile?.role ?? null
