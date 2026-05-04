@@ -1,12 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Match } from '@/types/database'
+import type { Match, MatchWithTeams, MatchDetail } from '@/types/database'
 
-// Extended type returned by useMatches (includes joined team data)
-export interface MatchWithTeams extends Match {
-  home_team: { id: string; name: string; color: string; logo_url: string | null }
-  away_team: { id: string; name: string; color: string; logo_url: string | null }
-}
+// Re-export pour les imports existants qui importent depuis ce fichier
+export type { MatchWithTeams } from '@/types/database'
 
 export function useMatches(seasonId?: string) {
   return useQuery({
@@ -46,7 +43,7 @@ export function useMatch(matchId?: string) {
         .eq('id', matchId!)
         .single()
       if (error) throw error
-      return data
+      return data as unknown as MatchDetail
     },
   })
 }
@@ -87,8 +84,7 @@ export function useUpdateMatch() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['matches', data.season_id] })
       qc.invalidateQueries({ queryKey: ['matches', 'detail', data.id] })
-      // Standings depend on match results
-      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['standings', data.season_id] })
     },
   })
 }
@@ -102,7 +98,7 @@ export function useDeleteMatch() {
     },
     onSuccess: (_data, { seasonId }) => {
       qc.invalidateQueries({ queryKey: ['matches', seasonId] })
-      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['standings', seasonId] })
     },
   })
 }

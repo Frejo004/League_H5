@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { TeamRef } from '@/types/database'
 
 export interface PlayerProfileData {
   id: string
@@ -46,7 +47,7 @@ export function usePlayerProfile(playerId?: string) {
         .single()
       if (playerErr) throw playerErr
 
-      const team = playerRaw.team as unknown as { id: string; name: string; color: string }
+      const team = playerRaw.team as TeamRef
 
       // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
       const [matchesRes, goalsRes, assistsRes] = await Promise.all([
@@ -94,6 +95,9 @@ export function usePlayerProfile(playerId?: string) {
       const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
       const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
       const totalAssists  = seasonAssists.length
+      // matchesPlayed = tous les matchs de l'équipe où le joueur a participé
+      // (marqué OU passé). Pour un comptage exact incluant les matchs sans
+      // contribution, il faudrait une table match_players — non implémentée.
       const matchesPlayed = new Set([
         ...seasonGoals.map(g => g.match_id),
         ...seasonAssists.map(a => a.match_id),
@@ -120,8 +124,8 @@ export function usePlayerProfile(playerId?: string) {
           match_id:        m.id,
           matchday:        m.matchday,
           played_at:       m.played_at,
-          home_team:       m.home_team as unknown as { id: string; name: string; color: string },
-          away_team:       m.away_team as unknown as { id: string; name: string; color: string },
+          home_team:       m.home_team as TeamRef,
+          away_team:       m.away_team as TeamRef,
           home_score:      m.home_score!,
           away_score:      m.away_score!,
           player_team_id:  playerRaw.team_id,

@@ -6,7 +6,7 @@ import { usePlayersByTeam, usePlayers } from '@/hooks/usePlayers'
 import { InviteButton } from '@/components/ui/InviteButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Navigate } from 'react-router-dom'
-import type { Team } from '@/types/database'
+import type { TeamWithCaptain } from '@/types/database'
 
 function TeamInvitePanel({ teamId }: { teamId: string }) {
   const { data: players, isLoading } = usePlayersByTeam(teamId)
@@ -120,7 +120,7 @@ export function CaptainPage() {
   //      (cas où le capitaine a été désigné par player_id avant d'avoir un compte)
   const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
 
-  type TeamWithCaptainPlayer = Team & { captain_player_id: string | null }
+  type TeamWithCaptainPlayer = TeamWithCaptain
 
   const myTeam = (teams ?? []).find(t => {
     const team = t as unknown as TeamWithCaptainPlayer
@@ -130,7 +130,6 @@ export function CaptainPage() {
     )
   })
 
-  // Typage étendu pour accéder aux champs non présents dans le type Team de base
   const myTeamTyped = myTeam as unknown as TeamWithCaptainPlayer | undefined
 
   return (

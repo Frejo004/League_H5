@@ -6,7 +6,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
-import type { Player, PlayerPosition } from '@/types/database'
+import type { Player, PlayerPosition, TeamRef } from '@/types/database'
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   goalkeeper: 'Gardien',
@@ -48,7 +48,7 @@ export function TeamDetailPage() {
     )
   }
 
-  const players = (team.players ?? []) as unknown as Player[]
+  const players = (team.players ?? []) as Player[]
   const standing = standings?.find(s => s.team_id === id)
   const form = standing?.form ?? []
 
@@ -185,7 +185,7 @@ export function TeamDetailPage() {
               const isHome = m.home_team_id === id
               const myScore = isHome ? m.home_score! : m.away_score!
               const oppScore = isHome ? m.away_score! : m.home_score!
-              const opponent = isHome ? m.away_team : m.home_team
+              const opponent = (isHome ? m.away_team : m.home_team) as TeamRef
               const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
 
               return (
@@ -196,8 +196,8 @@ export function TeamDetailPage() {
                 >
                   <FormBadge result={result} />
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: (opponent as { color: string }).color }} />
-                    <span className="text-slate-300 text-sm truncate">{(opponent as { name: string }).name}</span>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: opponent.color }} />
+                    <span className="text-slate-300 text-sm truncate">{opponent.name}</span>
                   </div>
                   <span className="text-white font-bold text-sm tabular-nums shrink-0">
                     {isHome ? `${myScore} – ${oppScore}` : `${oppScore} – ${myScore}`}

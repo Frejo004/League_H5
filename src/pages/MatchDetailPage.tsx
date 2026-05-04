@@ -2,9 +2,11 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Calendar, Star } from 'lucide-react'
 import { useMatch } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
+import { useRealtimeMatch } from '@/hooks/useRealtime'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
+import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return 'Date inconnue'
@@ -12,20 +14,6 @@ function formatDate(dateStr: string | null) {
     weekday: 'long', day: 'numeric', month: 'long',
     hour: '2-digit', minute: '2-digit',
   }).format(new Date(dateStr))
-}
-
-interface GoalEntry {
-  id: string
-  minute: number | null
-  is_own_goal: boolean
-  team_id: string
-  players: { id: string; first_name: string; last_name: string; jersey_number: number | null } | null
-}
-
-interface AssistEntry {
-  id: string
-  goal_id: string
-  players: { id: string; first_name: string; last_name: string } | null
 }
 
 // ── Timeline event — style Sofascore ─────────────────────────────────────────
@@ -118,6 +106,9 @@ export function MatchDetailPage() {
   const { data: myVote } = useMyMvpVote(id, user?.id)
   const voteMvp = useVoteMvp()
 
+  // Abonnement Realtime — met à jour score, buts, passes et votes MVP en direct
+  useRealtimeMatch(id)
+
   if (isLoading) {
     return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>
   }
@@ -131,10 +122,10 @@ export function MatchDetailPage() {
     )
   }
 
-  const home = match.home_team as { id: string; name: string; color: string }
-  const away = match.away_team as { id: string; name: string; color: string }
-  const goals = (match.goals ?? []) as unknown as GoalEntry[]
-  const assists = (match.assists ?? []) as unknown as AssistEntry[]
+  const home = match.home_team as TeamRef
+  const away = match.away_team as TeamRef
+  const goals   = match.goals   as GoalWithPlayer[]
+  const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const homeWon = isCompleted && match.home_score! > match.away_score!
   const awayWon = isCompleted && match.away_score! > match.home_score!
@@ -149,8 +140,7 @@ export function MatchDetailPage() {
   // MVP
   const voteMap = new Map<string, number>()
   for (const v of votes ?? []) {
-    const pid = (v as unknown as { player_id: string }).player_id
-    voteMap.set(pid, (voteMap.get(pid) ?? 0) + 1)
+    voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
   }
   const topMvpId = voteMap.size > 0
     ? [...voteMap.entries()].sort((a, b) => b[1] - a[1])[0][0]
@@ -335,7 +325,7 @@ export function MatchDetailPage() {
           <div className="grid grid-cols-2 gap-2">
             {allMatchPlayers.map(p => {
               const voteCount = voteMap.get(p.id) ?? 0
-              const isMyVote = (myVote as unknown as { player_id: string } | null)?.player_id === p.id
+              const isMyVote = myVote?.player_id === p.id
               const isTop = p.id === topMvpId && voteCount > 0
 
               return (

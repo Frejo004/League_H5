@@ -5,7 +5,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useTeams } from '@/hooks/useTeams'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { PlayerPosition } from '@/types/database'
+import type { PlayerPosition, PlayerWithTeam } from '@/types/database'
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   goalkeeper: 'Gardien',
@@ -98,25 +98,26 @@ export function PlayersPage() {
           </div>
 
           {filtered.map((player, i) => {
-            const team = player.teams as unknown as { id: string; name: string; color: string } | null
+            const p = player as PlayerWithTeam
+            const team = p.teams
             return (
               <Link
-                key={player.id}
-                to={`/players/${player.id}`}
+                key={p.id}
+                to={`/players/${p.id}`}
                 className={`grid grid-cols-[2.5rem_1fr_auto_auto] gap-2 items-center px-4 py-2.5
                             hover:bg-surface-raised transition-colors
                             ${i < filtered.length - 1 ? 'border-b border-surface-border/50' : ''}`}
               >
                 <span className="text-sm text-slate-600 font-mono text-center">
-                  {player.jersey_number ?? '—'}
+                  {p.jersey_number ?? '—'}
                 </span>
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 rounded-full bg-surface-raised flex items-center justify-center
                                   text-slate-300 text-xs font-bold shrink-0">
-                    {player.first_name[0]}{player.last_name[0]}
+                    {p.first_name[0]}{p.last_name[0]}
                   </div>
                   <span className="text-sm text-slate-200 font-medium truncate">
-                    {player.first_name} {player.last_name}
+                    {p.first_name} {p.last_name}
                   </span>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5">
@@ -129,7 +130,7 @@ export function PlayersPage() {
                   )}
                 </div>
                 <span className="text-xs text-slate-500 hidden md:block">
-                  {player.position ? POSITION_LABELS[player.position] : '—'}
+                  {p.position ? POSITION_LABELS[p.position] : '—'}
                 </span>
               </Link>
             )

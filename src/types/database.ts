@@ -461,3 +461,49 @@ export type Settings = Database['public']['Tables']['settings']['Row']
 export type Spectator = Database['public']['Tables']['spectators']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types de jointure — utilisés partout où Supabase retourne des relations
+// imbriquées. Évite les casts `as unknown as` dans les composants.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Sous-type équipe retourné dans les jointures (select partiel) */
+export type TeamRef = Pick<Team, 'id' | 'name' | 'color' | 'logo_url'>
+
+/** Sous-type joueur retourné dans les jointures (select partiel) */
+export type PlayerRef = Pick<Player, 'id' | 'first_name' | 'last_name' | 'jersey_number'>
+
+/** Sous-type joueur pour les passes décisives (sans jersey_number) */
+export type PlayerRefSlim = Pick<Player, 'id' | 'first_name' | 'last_name'>
+
+/** But avec joueur imbriqué — retourné par useMatch (détail) */
+export type GoalWithPlayer = Goal & {
+  players: (PlayerRef) | null
+}
+
+/** Passe avec joueur imbriqué — retourné par useMatch (détail) */
+export type AssistWithPlayer = Assist & {
+  players: PlayerRefSlim | null
+}
+
+/** Match avec équipes imbriquées — retourné par useMatches */
+export type MatchWithTeams = Match & {
+  home_team: TeamRef
+  away_team: TeamRef
+}
+
+/** Match détaillé avec équipes + buts + passes — retourné par useMatch */
+export type MatchDetail = MatchWithTeams & {
+  goals: GoalWithPlayer[]
+  assists: AssistWithPlayer[]
+}
+
+/** Équipe avec captain_player_id — retourné par useTeams (migration 022) */
+export type TeamWithCaptain = Team & {
+  captain_player_id: string | null
+}
+
+/** Joueur avec équipe imbriquée — retourné par usePlayers */
+export type PlayerWithTeam = Player & {
+  teams: TeamRef | null
+}

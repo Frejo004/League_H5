@@ -6,19 +6,7 @@ import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useAddGoal, useDeleteGoal, useAddAssist, useDeleteAssist } from '@/hooks/useGoals'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchWithTeams } from '@/hooks/useMatches'
-
-interface GoalEntry {
-  id: string
-  minute: number | null
-  is_own_goal: boolean
-  team_id: string
-  players: { id: string; first_name: string; last_name: string } | null
-}
-interface AssistEntry {
-  id: string
-  goal_id: string
-  players: { id: string; first_name: string; last_name: string } | null
-}
+import type { GoalWithPlayer, AssistWithPlayer } from '@/types/database'
 
 function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   const [expanded, setExpanded] = useState(false)
@@ -48,8 +36,8 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   useEffect(() => { setGoalPlayer('') }, [goalTeam, isOwnGoal])
 
   // ── Derived data ────────────────────────────────────────────────────────────
-  const goals   = (detail?.goals   ?? []) as unknown as GoalEntry[]
-  const assists = (detail?.assists  ?? []) as unknown as AssistEntry[]
+  const goals   = (detail?.goals   ?? []) as GoalWithPlayer[]
+  const assists = (detail?.assists  ?? []) as AssistWithPlayer[]
   const assistMap = new Map(assists.map(a => [a.goal_id, a]))
 
   // Buts par équipe déjà enregistrés

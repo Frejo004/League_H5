@@ -6,6 +6,7 @@ import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
+import { useRealtimeMatches } from '@/hooks/useRealtime'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 
@@ -107,6 +108,9 @@ export function DashboardPage() {
   const { data: teams } = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
+
+  // Abonnement Realtime — scores et classement mis à jour en direct
+  useRealtimeMatches(season?.id)
 
   // N'affiche le spinner que les 3 premières secondes max
   // Après, on affiche le contenu même si la saison n'est pas encore chargée

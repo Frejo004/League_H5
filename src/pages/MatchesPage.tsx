@@ -3,6 +3,7 @@ import { Calendar, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
+import { useRealtimeMatches } from '@/hooks/useRealtime'
 import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
@@ -149,6 +150,9 @@ export function MatchesPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: matches, isLoading: matchesLoading } = useMatches(season?.id)
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
+
+  // Abonnement Realtime — scores mis à jour en direct
+  useRealtimeMatches(season?.id)
 
   const isLoading = seasonLoading || matchesLoading
   const matchdays = [...new Set((matches ?? []).map(m => m.matchday))].sort((a, b) => a - b)

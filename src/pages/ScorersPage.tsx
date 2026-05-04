@@ -1,12 +1,16 @@
 import { Target } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
+import { useRealtimeMatches } from '@/hooks/useRealtime'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
 export function ScorersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
+
+  // Abonnement Realtime — buteurs mis à jour en direct
+  useRealtimeMatches(season?.id)
 
   const isLoading = seasonLoading || scorersLoading
 

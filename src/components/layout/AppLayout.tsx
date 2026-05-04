@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { TopBar } from './TopBar'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export function AppLayout() {
   const location = useLocation()
@@ -19,7 +20,10 @@ export function AppLayout() {
           key={location.pathname}
           className="flex-1 p-3 lg:p-5 pb-20 lg:pb-5 overflow-auto animate-fade-in-up"
         >
-          <Outlet />
+          {/* ErrorBoundary par page — reset automatique à chaque navigation */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 
