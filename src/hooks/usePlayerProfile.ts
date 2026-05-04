@@ -36,110 +36,114 @@ export function usePlayerProfile(playerId?: string) {
   return useQuery({
     queryKey: ['player_profile', playerId],
     enabled: !!playerId,
+    staleTime: 1000 * 60 * 5,
     queryFn: async () => {
-      // 1. Fetch player + team (deux requêtes séparées pour éviter les problèmes de FK)
-      const { data: player, error: playerErr } = await supabase
+      // ── Requête 1 : player + team en une seule jointure ──────────────────────
+      const { data: playerRaw, error: playerErr } = await supabase
         .from('players')
-        .select('*')
+        .select('*, team:teams!team_id(id, name, color)')
         .eq('id', playerId!)
         .single()
       if (playerErr) throw playerErr
 
-      const { data: teamData, error: teamErr } = await supabase
-        .from('teams')
-        .select('id, name, color')
-        .eq('id', player.team_id)
-        .single()
-      if (teamErr) throw teamErr
+      const team = playerRaw.team as unknown as { id: string; name: string; color: string }
 
-      const team = teamData as { id: string; name: string; color: string }
+      // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
+      const [matchesRes, goalsRes, assistsRes] = await Promise.all([
+        // Matchs terminés de la saison impliquant l'équipe du joueur
+        supabase
+          .from('matches')
+          .select(`
+            id, matchday, played_at, home_score, away_score,
+            home_team_id, away_team_id,
+            home_team:teams!home_team_id(id, name, color),
+            away_team:teams!away_team_id(id, name, color)
+          `)
+          .eq('season_id', playerRaw.season_id)
+          .eq('status', 'completed')
+          .or(`home_team_id.eq.${playerRaw.team_id},away_team_id.eq.${playerRaw.team_id}`)
+          .order('played_at', { ascending: false }),
 
-      // 2. Fetch all completed matches for this season involving this team
-      const { data: matches, error: matchErr } = await supabase
-        .from('matches')
-        .select(`
-          id, matchday, played_at, home_score, away_score,
-          home_team_id, away_team_id,
-          home_team:teams!home_team_id(id, name, color),
-          away_team:teams!away_team_id(id, name, color)
-        `)
-        .eq('season_id', player.season_id)
-        .eq('status', 'completed')
-        .or(`home_team_id.eq.${player.team_id},away_team_id.eq.${player.team_id}`)
-        .order('played_at', { ascending: false })
-      if (matchErr) throw matchErr
+        // Buts du joueur dans la saison
+        supabase
+          .from('goals')
+          .select('match_id, is_own_goal')
+          .eq('player_id', playerId!),
 
-      const matchIds = (matches ?? []).map(m => m.id)
-
-      // 3. Fetch goals & assists for this player
-      const [goalsRes, assistsRes] = await Promise.all([
-        matchIds.length > 0
-          ? supabase.from('goals').select('match_id, is_own_goal').eq('player_id', playerId!).in('match_id', matchIds)
-          : Promise.resolve({ data: [], error: null }),
-        matchIds.length > 0
-          ? supabase.from('assists').select('match_id').eq('player_id', playerId!).in('match_id', matchIds)
-          : Promise.resolve({ data: [], error: null }),
+        // Passes du joueur dans la saison
+        supabase
+          .from('assists')
+          .select('match_id')
+          .eq('player_id', playerId!),
       ])
-      if (goalsRes.error) throw goalsRes.error
+
+      if (matchesRes.error) throw matchesRes.error
+      if (goalsRes.error)   throw goalsRes.error
       if (assistsRes.error) throw assistsRes.error
 
+      const matches = matchesRes.data ?? []
       const goals   = goalsRes.data ?? []
       const assists = assistsRes.data ?? []
 
-      // Aggregate stats
-      const totalGoals   = goals.filter(g => !g.is_own_goal).length
-      const totalOwnGoals = goals.filter(g => g.is_own_goal).length
-      const totalAssists = assists.length
+      // Filtrer goals/assists sur les matchs de la saison uniquement
+      const matchIdSet = new Set(matches.map(m => m.id))
+      const seasonGoals   = goals.filter(g => matchIdSet.has(g.match_id))
+      const seasonAssists = assists.filter(a => matchIdSet.has(a.match_id))
+
+      // ── Agrégation des stats ─────────────────────────────────────────────────
+      const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
+      const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
+      const totalAssists  = seasonAssists.length
       const matchesPlayed = new Set([
-        ...goals.map(g => g.match_id),
-        ...assists.map(a => a.match_id),
+        ...seasonGoals.map(g => g.match_id),
+        ...seasonAssists.map(a => a.match_id),
       ]).size
 
-      // Goals/assists per match
+      // Goals/assists par match pour l'affichage
       const goalsByMatch   = new Map<string, number>()
       const assistsByMatch = new Map<string, number>()
-      for (const g of goals.filter(g => !g.is_own_goal)) {
+      for (const g of seasonGoals.filter(g => !g.is_own_goal)) {
         goalsByMatch.set(g.match_id, (goalsByMatch.get(g.match_id) ?? 0) + 1)
       }
-      for (const a of assists) {
+      for (const a of seasonAssists) {
         assistsByMatch.set(a.match_id, (assistsByMatch.get(a.match_id) ?? 0) + 1)
       }
 
-      // Build recent matches
-      const recentMatches = (matches ?? []).slice(0, 10).map(m => {
-        const isHome = m.home_team_id === player.team_id
+      // ── Construction des derniers matchs ─────────────────────────────────────
+      const recentMatches = matches.slice(0, 10).map(m => {
+        const isHome   = m.home_team_id === playerRaw.team_id
         const myScore  = isHome ? m.home_score! : m.away_score!
         const oppScore = isHome ? m.away_score! : m.home_score!
         const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
 
         return {
-          match_id: m.id,
-          matchday: m.matchday,
-          played_at: m.played_at,
-          home_team: m.home_team as unknown as { id: string; name: string; color: string },
-          away_team: m.away_team as unknown as { id: string; name: string; color: string },
-          home_score: m.home_score!,
-          away_score: m.away_score!,
-          player_team_id: player.team_id,
-          goals_in_match: goalsByMatch.get(m.id) ?? 0,
+          match_id:        m.id,
+          matchday:        m.matchday,
+          played_at:       m.played_at,
+          home_team:       m.home_team as unknown as { id: string; name: string; color: string },
+          away_team:       m.away_team as unknown as { id: string; name: string; color: string },
+          home_score:      m.home_score!,
+          away_score:      m.away_score!,
+          player_team_id:  playerRaw.team_id,
+          goals_in_match:  goalsByMatch.get(m.id) ?? 0,
           assists_in_match: assistsByMatch.get(m.id) ?? 0,
           result,
         }
       })
 
       return {
-        id: player.id,
-        first_name: player.first_name,
-        last_name: player.last_name,
-        jersey_number: player.jersey_number,
-        position: player.position,
-        avatar_url: player.avatar_url,
-        team_id: player.team_id,
-        season_id: player.season_id,
+        id:            playerRaw.id,
+        first_name:    playerRaw.first_name,
+        last_name:     playerRaw.last_name,
+        jersey_number: playerRaw.jersey_number,
+        position:      playerRaw.position,
+        avatar_url:    playerRaw.avatar_url,
+        team_id:       playerRaw.team_id,
+        season_id:     playerRaw.season_id,
         team,
-        goals: totalGoals,
-        assists: totalAssists,
-        own_goals: totalOwnGoals,
+        goals:         totalGoals,
+        assists:       totalAssists,
+        own_goals:     totalOwnGoals,
         matches_played: matchesPlayed,
         recent_matches: recentMatches,
       } as PlayerProfileData

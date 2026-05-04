@@ -32,6 +32,11 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
     ? `${window.location.origin}/auth/join?token=${invite.token}`
     : null
 
+  // Affichage masqué : garde les 6 premiers et 6 derniers caractères du token
+  const inviteUrlDisplay = invite?.token
+    ? `${window.location.origin}/auth/join?token=${invite.token.slice(0, 6)}…${invite.token.slice(-6)}`
+    : null
+
   const isExpired = invite?.expires_at
     ? new Date(invite.expires_at) < new Date()
     : false
@@ -96,12 +101,12 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
       {showLink && inviteUrl && !isExpired && (
         <div className="flex items-center gap-1.5 bg-surface rounded-lg px-2 py-1.5 border border-surface-border">
           <span className="text-xs text-slate-400 truncate flex-1 font-mono" style={{ maxWidth: 200 }}>
-            {inviteUrl}
+            {inviteUrlDisplay}
           </span>
           <button
             onClick={handleCopy}
             className="flex-shrink-0 text-slate-400 hover:text-primary-400 transition-colors"
-            title="Copier"
+            title="Copier le lien complet"
           >
             {copied ? <Check size={13} className="text-primary-400" /> : <Copy size={13} />}
           </button>

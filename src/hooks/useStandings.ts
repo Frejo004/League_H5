@@ -21,6 +21,7 @@ export function useStandings(seasonId?: string) {
   return useQuery({
     queryKey: ['standings', seasonId],
     enabled: !!seasonId,
+    staleTime: 1000 * 60 * 10, // 10 min — ne change qu'après une mise à jour de match
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_standings', {
         p_season_id: seasonId!,

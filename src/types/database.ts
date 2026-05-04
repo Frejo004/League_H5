@@ -421,6 +421,20 @@ export interface Database {
         }
         Returns: undefined
       }
+      get_scorers: {
+        Args: { p_season_id: string }
+        Returns: {
+          player_id: string
+          first_name: string
+          last_name: string
+          team_id: string
+          team_name: string
+          team_color: string
+          goals: number
+          assists: number
+          own_goals: number
+        }[]
+      }
     }
     Enums: {
       user_role: UserRole

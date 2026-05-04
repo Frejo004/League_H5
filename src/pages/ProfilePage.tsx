@@ -242,7 +242,6 @@ export function ProfilePage() {
   }
 
   // ── Mot de passe ─────────────────────────────────────────
-  const [currentPwd, setCurrentPwd] = useState('')
   const [newPwd, setNewPwd] = useState('')
   const [confirmPwd, setConfirmPwd] = useState('')
   const [pwdLoading, setPwdLoading] = useState(false)
@@ -254,19 +253,11 @@ export function ProfilePage() {
     setPwdError(null); setPwdSuccess(false)
     if (newPwd !== confirmPwd) { setPwdError('Les mots de passe ne correspondent pas.'); return }
     if (newPwd.length < 8) { setPwdError('Minimum 8 caractères.'); return }
-    if (!currentPwd) { setPwdError('Veuillez saisir votre mot de passe actuel.'); return }
     setPwdLoading(true)
     try {
-      // Étape 1 : vérifier le mot de passe actuel.
-      // ✅ Sûr ici car AuthContext ne redirige plus quand on est déjà sur
-      // une page protégée (SIGNED_IN n'est géré que depuis /auth/*).
-      const { error: siErr } = await supabase.auth.signInWithPassword({
-        email: user?.email ?? '',
-        password: currentPwd,
-      })
-      if (siErr) { setPwdError('Mot de passe actuel incorrect.'); return }
-
-      // Étape 2 : appliquer le nouveau mot de passe
+      // Supabase vérifie que la session est active avant d'autoriser updateUser.
+      // On n'a pas besoin de re-vérifier le mot de passe actuel côté client —
+      // cela évite de déclencher un événement SIGNED_IN parasite dans AuthContext.
       const { error } = await supabase.auth.updateUser({ password: newPwd })
       if (error) {
         if (error.message.toLowerCase().includes('same password')) {
@@ -277,7 +268,7 @@ export function ProfilePage() {
         return
       }
       setPwdSuccess(true)
-      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('')
+      setNewPwd(''); setConfirmPwd('')
     } catch (err: unknown) {
       setPwdError(err instanceof Error ? err.message : 'Erreur changement mot de passe')
     } finally {
@@ -383,15 +374,6 @@ export function ProfilePage() {
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {pwdError && <Alert type="error">{pwdError}</Alert>}
           {pwdSuccess && <Alert type="success">Mot de passe mis à jour.</Alert>}
-          <div className="space-y-1.5">
-            <label htmlFor="currentPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Mot de passe actuel
-            </label>
-            <PasswordInput
-              id="currentPwd" value={currentPwd} onChange={setCurrentPwd}
-              autoComplete="current-password" required
-            />
-          </div>
           <div className="space-y-1.5">
             <label htmlFor="newPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Nouveau mot de passe
