@@ -46,7 +46,8 @@ export function SignupPage() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Inscription réussie !</h2>
           <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-            Vérifiez votre email pour confirmer votre compte.
+            Vérifiez votre email pour confirmer votre compte, puis connectez-vous.
+            L'administrateur devra approuver votre accès.
           </p>
           <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5">
             Aller à la connexion <ArrowRight size={15} />

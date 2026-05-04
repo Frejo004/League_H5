@@ -15,6 +15,7 @@ export type NotifType =
   | 'mvp_vote_open'
   | 'invite_pending'
   | 'invite_expiring'
+  | 'spectator_request'  // nouvelle demande d'accès spectateur (admin)
 
 export interface Notification {
   id: string
@@ -72,6 +73,25 @@ function useActiveInvites(enabled: boolean) {
   })
 }
 
+// Demandes spectateurs en attente (admin uniquement)
+function usePendingSpectators(enabled: boolean) {
+  return useQuery({
+    queryKey: ['notifications_spectators'],
+    enabled,
+    staleTime: 1000 * 30,
+    refetchInterval: 15000, // poll toutes les 15s
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('spectators')
+        .select('id, requested_at, user_id, profiles(full_name, email)')
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false })
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
 function useMyVotedMatches(userId?: string, matchIds?: string[]) {
   return useQuery({
     queryKey: ['notifications_my_votes', userId, matchIds],
@@ -100,6 +120,7 @@ export function useNotifications() {
 
   const isPrivileged = isAdmin || isCaptain
   const { data: invites } = useActiveInvites(isPrivileged)
+  const { data: pendingSpectators } = usePendingSpectators(isAdmin)
 
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
@@ -118,8 +139,7 @@ export function useNotifications() {
   const { data: votedMatchIds } = useMyVotedMatches(user?.id, recentCompletedIds)
 
   // Toutes les notifications (non filtrées)
-  const allNotifications = useMemo<Notification[]>(() => {
-    const notifs: Notification[] = []
+  const allNotifications = useMemo<Notification[]>(() => {    const notifs: Notification[] = []
     const now = Date.now()
 
     // ── 1. Matchs à venir (< 24h) ──────────────────────────────────────────
@@ -199,12 +219,29 @@ export function useNotifications() {
       }
     }
 
+    // ── 5. Demandes d'accès spectateurs (admin uniquement) ─────────────────
+    if (isAdmin && pendingSpectators) {
+      for (const s of pendingSpectators) {
+        const p = s.profiles as unknown as { full_name: string | null; email: string } | null
+        const name = p?.full_name ?? p?.email ?? 'Utilisateur inconnu'
+        notifs.push({
+          id:        `spectator-${s.id}`,
+          type:      'spectator_request',
+          title:     'Demande d\'accès',
+          message:   `${name} souhaite accéder à la ligue`,
+          href:      '/admin',
+          createdAt: new Date(s.requested_at),
+          urgent:    true,
+        })
+      }
+    }
+
     return notifs.sort((a, b) => {
       if (a.urgent && !b.urgent) return -1
       if (!a.urgent && b.urgent) return 1
       return b.createdAt.getTime() - a.createdAt.getTime()
     })
-  }, [matches, invites, votedMatchIds, user, isPrivileged])
+  }, [matches, invites, pendingSpectators, votedMatchIds, user, isAdmin, isPrivileged])
 
   // Notifications non lues
   const notifications = useMemo(

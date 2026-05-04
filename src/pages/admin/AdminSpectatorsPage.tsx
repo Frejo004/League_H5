@@ -24,9 +24,9 @@ export function AdminSpectatorsPage() {
   const { data: spectators, isLoading } = useSpectators(season?.id)
   const updateStatus = useUpdateSpectatorStatus()
 
-  async function handleUpdate(id: string, status: SpectatorStatus) {
+  async function handleUpdate(id: string, status: SpectatorStatus, userId: string) {
     if (!user) return
-    await updateStatus.mutateAsync({ id, status, reviewedBy: user.id })
+    await updateStatus.mutateAsync({ id, status, reviewedBy: user.id, userId })
   }
 
   const pending = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status === 'pending')
@@ -70,7 +70,7 @@ export function AdminSpectatorsPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button
-                          onClick={() => handleUpdate(s.id, 'approved')}
+                          onClick={() => handleUpdate(s.id, 'approved', s.user_id)}
                           disabled={updateStatus.isPending}
                           className="btn-primary flex items-center gap-1.5 text-sm py-1.5"
                         >
@@ -78,7 +78,7 @@ export function AdminSpectatorsPage() {
                           Approuver
                         </button>
                         <button
-                          onClick={() => handleUpdate(s.id, 'rejected')}
+                          onClick={() => handleUpdate(s.id, 'rejected', s.user_id)}
                           disabled={updateStatus.isPending}
                           className="btn-danger flex items-center gap-1.5 text-sm py-1.5"
                         >
