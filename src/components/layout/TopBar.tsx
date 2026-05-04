@@ -32,13 +32,7 @@ export function TopBar() {
         <div className="relative flex items-center justify-between px-4 h-13">
           {/* Logo + title */}
           <div className="flex items-center gap-2.5">
-            <div className="relative w-7 h-7 shrink-0">
-              <div className="absolute inset-0 bg-primary-600 rounded-lg blur-sm opacity-60" />
-              <div className="relative w-7 h-7 bg-gradient-to-br from-primary-500 to-primary-700
-                              rounded-lg flex items-center justify-center">
-                <span className="text-sm leading-none select-none">⚽</span>
-              </div>
-            </div>
+            <img src="/logo-h5.png" alt="League H5" className="w-7 h-7 object-contain shrink-0" />
             <div>
               <span className="font-black text-white text-sm tracking-tight">{pageTitle}</span>
             </div>
@@ -99,13 +93,7 @@ export function TopBar() {
           {/* Header */}
           <div className="relative flex items-center justify-between px-5 h-14 border-b border-surface-border shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative w-8 h-8 shrink-0">
-                <div className="absolute inset-0 bg-primary-600 rounded-xl blur-sm opacity-50" />
-                <div className="relative w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700
-                                rounded-xl flex items-center justify-center">
-                  <span className="text-base leading-none select-none">⚽</span>
-                </div>
-              </div>
+              <img src="/logo-h5.png" alt="League H5" className="w-8 h-8 object-contain shrink-0" />
               <div>
                 <p className="font-black text-white text-sm tracking-tight">League H5</p>
                 <p className="text-[9px] text-slate-500 uppercase tracking-[0.15em]">Ligue interne</p>

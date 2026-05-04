@@ -45,12 +45,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
 
         <div className="relative z-10 flex flex-col h-full p-8 lg:p-10">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10">
-              <div className="absolute inset-0 bg-primary-500 rounded-xl blur-md opacity-60" />
-              <div className="relative w-10 h-10 bg-linear-to-br from-primary-400 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-xl drop-shadow-md">⚽</span>
-              </div>
-            </div>
+            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0" />
             <span className="text-white font-bold text-lg tracking-wide drop-shadow-md">
               League H5
             </span>

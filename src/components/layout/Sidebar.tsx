@@ -9,7 +9,9 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex flex-col w-60 min-h-screen shrink-0
-                      bg-surface-card border-r border-surface-border relative overflow-hidden">
+                      border-r border-surface-border relative overflow-hidden
+                      z-20"
+           style={{ backgroundColor: '#161c2d' }}>
 
       {/* Subtle pitch texture */}
       <div className="absolute inset-0 pointer-events-none"
@@ -20,13 +22,8 @@ export function Sidebar() {
 
       {/* Logo */}
       <div className="relative flex items-center gap-3 px-5 py-4 border-b border-surface-border">
-        {/* Ball icon */}
-        <div className="relative w-9 h-9 shrink-0">
-          <div className="absolute inset-0 bg-primary-600 rounded-xl blur-md opacity-50" />
-          <div className="relative w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700
-                          rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-lg leading-none select-none">⚽</span>
-          </div>
+        <div className="w-9 h-9 shrink-0">
+          <img src="/logo-h5.png" alt="League H5" className="w-9 h-9 object-contain" />
         </div>
         <div>
           <p className="font-black text-white text-sm leading-tight tracking-tight">League H5</p>
