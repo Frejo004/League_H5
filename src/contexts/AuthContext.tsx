@@ -24,24 +24,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading]       = useState(true)
   const [isProfileLoading, setIsProfileLoading] = useState(false)
 
-  // Ref pour éviter les fetch concurrents
+  // Refs pour éviter les fetch concurrents et tracker l'état actuel
   const fetchingRef = useRef(false)
+  const initializedRef = useRef(false)
+  const profileRef = useRef<Profile | null>(null)
+
+  // Sync profileRef avec profile state
+  useEffect(() => {
+    profileRef.current = profile
+  }, [profile])
 
   const fetchProfile = useCallback(async (userId: string) => {
     if (fetchingRef.current) return
+    
     fetchingRef.current = true
     setIsProfileLoading(true)
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
+      
       if (error) throw error
       setProfile(data)
     } catch (err) {
-      console.error('Error fetching profile:', err)
-      // Ne pas mettre profile à null sur erreur réseau — garder l'ancien
+      console.error('[AuthContext] Error fetching profile:', err)
     } finally {
       fetchingRef.current = false
       setIsProfileLoading(false)
@@ -51,43 +60,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
+    // Filet de sécurité absolu : si tout échoue, on débloque après 5 s
     const safetyTimer = setTimeout(() => {
-      if (isMounted) setIsLoading(false)
+      if (isMounted) {
+        setIsLoading(false)
+        setIsProfileLoading(false)
+      }
     }, 5000)
 
-    // Bootstrap : lit la session depuis le storage local immédiatement
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!isMounted) return
-      setSession(s)
-      if (s?.user) {
-        fetchProfile(s.user.id).finally(() => {
-          if (isMounted) { clearTimeout(safetyTimer); setIsLoading(false) }
-        })
-      } else {
-        clearTimeout(safetyTimer)
-        setIsLoading(false)
-      }
-    })
-
-    // Écoute tous les changements de session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!isMounted) return
-        if (event === 'INITIAL_SESSION') return
 
         setSession(newSession)
 
+        if (event === 'INITIAL_SESSION') {
+          if (initializedRef.current) return
+          initializedRef.current = true
+          
+          if (newSession?.user) {
+            await fetchProfile(newSession.user.id).catch(() => {})
+          }
+          
+          if (isMounted) {
+            clearTimeout(safetyTimer)
+            setIsLoading(false)
+            setIsProfileLoading(false)
+          }
+          return
+        }
+
+        // Événements suivants : SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT…
         if (newSession?.user) {
-          // Sur TOKEN_REFRESHED : re-fetch seulement si le user change
-          // ou si on n'a pas encore de profil
           const currentUserId = newSession.user.id
-          if (event === 'TOKEN_REFRESHED' && profile?.id === currentUserId) {
-            // Profil déjà chargé pour ce user — pas besoin de re-fetch
+          
+          // Ignorer SIGNED_IN juste après INITIAL_SESSION (double événement)
+          if (event === 'SIGNED_IN' && profileRef.current?.id === currentUserId) {
+            setIsProfileLoading(false)
             return
           }
+          
+          // Si c'est juste un refresh de token et qu'on a déjà le profil, pas besoin de re-fetch
+          if (event === 'TOKEN_REFRESHED' && profileRef.current?.id === currentUserId) {
+            setIsProfileLoading(false)
+            return
+          }
+          
+          // Sinon, fetch le profil
           await fetchProfile(currentUserId)
         } else {
           setProfile(null)
+          setIsProfileLoading(false)
         }
       }
     )
@@ -97,7 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimer)
       subscription.unsubscribe()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProfile])
 
   const refreshProfile = useCallback(async () => {

@@ -24,28 +24,32 @@ export function ProtectedRoute() {
   if (!session) return <Navigate to="/auth/login" replace />
 
   // 3. Profil en cours de chargement (bootstrap ou token refresh)
-  //    → attendre pour éviter le flash "spectateur par défaut"
-  if (isProfileLoading || !profile) return <PageLoader />
+  if (isProfileLoading) return <PageLoader />
 
-  // 4. Rôles non-spectateurs → accès direct
+  // 4. Session valide mais profil absent → la requête a échoué (réseau absent
+  //    au réveil de l'app sur mobile). On renvoie au login plutôt que de rester
+  //    bloqué sur un spinner infini.
+  if (!profile) return <Navigate to="/auth/login" replace />
+
+  // 5. Rôles non-spectateurs → accès direct
   if (profile.role !== 'spectator') return <Outlet />
 
   // ── Spectateur ────────────────────────────────────────────
 
-  // 5. Attendre la saison active
+  // 6. Attendre la saison active
   if (!seasonFetched || seasonLoading) return <PageLoader />
 
-  // 6. Pas de saison → modal
+  // 7. Pas de saison → modal
   if (!season) return <PendingApprovalModal />
 
-  // 7. Attendre la demande spectateur
+  // 8. Attendre la demande spectateur
   if (!spectatorFetched || spectatorLoading) return <PageLoader />
 
-  // 8. Non approuvé → modal
+  // 9. Non approuvé → modal
   if (!spectatorRequest || spectatorRequest.status !== 'approved') {
     return <PendingApprovalModal />
   }
 
-  // 9. Spectateur approuvé → accès
+  // 10. Spectateur approuvé → accès
   return <Outlet />
 }

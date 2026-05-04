@@ -111,7 +111,7 @@ export function StandingsPage() {
 
       {/* Hero */}
       <PageHero
-        imageUrl="https://images.unsplash.com/photo-1551958219-acbc595d9e47?w=1200&q=80&auto=format&fit=crop"
+        imageUrl="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1200&q=80&auto=format&fit=crop"
         pattern="lines"
         accentColor="#f59e0b"
         title="Classement"

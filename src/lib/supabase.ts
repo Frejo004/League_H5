@@ -8,10 +8,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Check your .env file.')
 }
 
-// Le Web Lock natif du navigateur entre en conflit avec les extensions
-// de navigateur (VPN, ad blockers) qui volent le lock.
-// On le remplace par un no-op dans tous les environnements.
-const lockImpl = <R>(_name: string, _timeout: number, fn: () => Promise<R>): Promise<R> => fn()
+// Le Web Lock natif du navigateur entre en conflit avec certaines extensions
+// (VPN, ad blockers). On le remplace par un mutex en mémoire qui garantit
+// l'exécution séquentielle des rafraîchissements de token sans collision.
+let _lockChain: Promise<unknown> = Promise.resolve()
+const lockImpl = <R>(_name: string, _timeout: number, fn: () => Promise<R>): Promise<R> => {
+  const next = _lockChain.then(() => fn())
+  _lockChain = next.then(() => {}, () => {})
+  return next
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
