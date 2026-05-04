@@ -110,8 +110,6 @@ export function ProfilePage() {
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
   const [hasEditedName, setHasEditedName] = useState(false)
-  // Cache-bust local : mis à jour après chaque upload pour forcer le rechargement de l'image
-  const [avatarCacheBust, setAvatarCacheBust] = useState(() => Date.now())
 
   useEffect(() => {
     // Ne réinitialise le nom que si l'utilisateur n'est pas en train d'éditer
@@ -120,9 +118,8 @@ export function ProfilePage() {
   }, [profile?.full_name, hasEditedName])
 
 
-  const avatarUrl = profile?.avatar_url
-    ? `${profile.avatar_url}?t=${avatarCacheBust}`
-    : null
+  // L'URL en base contient déjà le cache-bust timestamp (ajouté à l'upload)
+  const avatarUrl = profile?.avatar_url ?? null
 
   const initials = useMemo(() => {
     const name = displayName || profile?.full_name
@@ -163,14 +160,16 @@ export function ProfilePage() {
       }
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      // On ajoute un timestamp dans l'URL stockée en base pour forcer le
+      // rechargement du cache navigateur partout dans l'app (Header, profils, etc.)
+      const avatarUrlWithBust = `${data.publicUrl}?t=${Date.now()}`
       const { error: dbErr } = await supabase
         .from('profiles')
-        .update({ avatar_url: data.publicUrl })
+        .update({ avatar_url: avatarUrlWithBust })
         .eq('id', user.id)
       if (dbErr) throw dbErr
 
       setAvatarBroken(false)
-      setAvatarCacheBust(Date.now())
       await refreshProfile()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur upload avatar'

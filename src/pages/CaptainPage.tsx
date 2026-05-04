@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useUpdateTeam } from '@/hooks/useTeams'
 import { usePlayersByTeam, usePlayers, useUpdatePlayer } from '@/hooks/usePlayers'
+import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
 import { useScorers } from '@/hooks/useScorers'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
@@ -937,6 +938,11 @@ export function CaptainPage() {
   const [teamName, setTeamName] = useState('')
   const [nameError, setNameError] = useState('')
 
+  // Upload logo équipe
+  const logoRef = useRef<HTMLInputElement>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoError, setLogoError] = useState('')
+
   if (!isCaptain) return <Navigate to="/" replace />
 
   const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
@@ -974,6 +980,47 @@ export function CaptainPage() {
     }
   }
 
+  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !myTeamTyped) return
+    if (file.size > 2 * 1024 * 1024) { setLogoError('Max 2 Mo.'); return }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setLogoError('Format : JPG, PNG ou WebP.'); return
+    }
+    setLogoError('')
+    setLogoUploading(true)
+    try {
+      const path = `teams/${myTeamTyped.id}/logo`
+
+      // Upsert : update d'abord, insert si inexistant
+      const { error: updateErr } = await supabase.storage
+        .from('avatars')
+        .update(path, file, { contentType: file.type, upsert: false })
+      if (updateErr) {
+        const { error: insertErr } = await supabase.storage
+          .from('avatars')
+          .upload(path, file, { contentType: file.type, upsert: false })
+        if (insertErr) throw insertErr
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const logoUrlWithBust = `${data.publicUrl}?t=${Date.now()}`
+      await updateTeam.mutateAsync({
+        id: myTeamTyped.id,
+        logo_url: logoUrlWithBust,
+        season_id: myTeamTyped.season_id,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur upload'
+      setLogoError(msg.includes('row-level') || msg.includes('policy')
+        ? 'Permission refusée.'
+        : 'Erreur upload, réessaie.')
+    } finally {
+      setLogoUploading(false)
+      if (logoRef.current) logoRef.current.value = ''
+    }
+  }
+
   return (
     <div className="space-y-4">
 
@@ -1003,11 +1050,39 @@ export function CaptainPage() {
         <>
           {/* Team info card */}
           <div className="card flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-white font-bold text-lg"
-              style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
-            >
-              {myTeamTyped.name[0]}
+            {/* Logo / couleur avec bouton upload */}
+            <div className="relative shrink-0">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg overflow-hidden"
+                style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
+              >
+                {myTeamTyped.logo_url
+                  ? <img src={myTeamTyped.logo_url} alt="" className="w-full h-full object-cover" />
+                  : myTeamTyped.name[0]
+                }
+              </div>
+              {/* Bouton caméra */}
+              <button
+                onClick={() => logoRef.current?.click()}
+                disabled={logoUploading}
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 hover:bg-primary-500
+                           border-2 border-surface-card flex items-center justify-center transition-colors
+                           disabled:opacity-50"
+                title="Changer le logo"
+                aria-label="Changer le logo de l'équipe"
+              >
+                {logoUploading
+                  ? <LoadingSpinner size="sm" />
+                  : <Camera size={9} className="text-white" />
+                }
+              </button>
+              <input
+                ref={logoRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleLogoChange}
+              />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -1028,6 +1103,7 @@ export function CaptainPage() {
                 <>
                   <p className="font-semibold text-white">{myTeamTyped.name}</p>
                   <p className="text-xs text-slate-500">{season.name}</p>
+                  {logoError && <p className="text-[10px] text-red-400 mt-0.5">{logoError}</p>}
                 </>
               )}
             </div>
