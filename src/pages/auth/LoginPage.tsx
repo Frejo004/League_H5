@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Mail, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -7,6 +7,7 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 
 export function LoginPage() {
+  const navigate = useNavigate()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState<string | null>(null)
@@ -28,6 +29,8 @@ export function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
+      // Redirection immédiate — ProtectedRoute gère ensuite le rôle/approbation
+      navigate('/', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {

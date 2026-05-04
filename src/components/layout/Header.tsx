@@ -3,7 +3,7 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu,
+  Settings, User, X, Menu, LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -176,7 +176,7 @@ function Avatar({ profile, role }: { profile: { full_name?: string | null; avata
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Header() {
-  const { profile, role, isAdmin, isCaptain } = useAuth()
+  const { profile, role, isAdmin, isCaptain, signOut } = useAuth()
   const { data: season } = useActiveSeason()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -328,8 +328,21 @@ export default function Header() {
             {/* Badge rôle */}
             <RoleBadge role={effectiveRole} />
 
-            {/* Avatar */}
-            <Avatar profile={profile} role={effectiveRole} />
+            {/* Avatar + déconnexion */}
+            <div className="flex items-center gap-1.5">
+              <Avatar profile={profile} role={effectiveRole} />
+              <button
+                onClick={signOut}
+                className="p-1.5 rounded-lg transition-colors group"
+                style={{ color: NAV_OFF }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                title="Se déconnecter"
+                aria-label="Se déconnecter"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -530,6 +543,17 @@ export default function Header() {
                   <p className="text-[10px] truncate" style={{ color: NAV_OFF }}>{profile?.email}</p>
                 </div>
                 <RoleBadge role={effectiveRole} />
+                <button
+                  onClick={signOut}
+                  className="p-1.5 rounded-lg shrink-0 transition-colors"
+                  style={{ color: NAV_OFF }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                  title="Se déconnecter"
+                  aria-label="Se déconnecter"
+                >
+                  <LogOut size={15} />
+                </button>
               </div>
             </div>
           </div>

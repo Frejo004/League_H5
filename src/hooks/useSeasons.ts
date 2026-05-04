@@ -13,9 +13,9 @@ export function useSeasons() {
       if (error) throw error
       return data as Season[]
     },
-    staleTime: 1000 * 60 * 5,       // 5 min avant de considérer les données périmées
-    gcTime: 1000 * 60 * 10,          // 10 min avant de vider le cache
-    refetchOnWindowFocus: false,     // ne pas refetch au retour sur l'onglet
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -66,5 +66,19 @@ export function useUpdateSeason() {
       return data as Season
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['seasons'] }),
+  })
+}
+
+export function useDeleteSeason() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('seasons').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['seasons'] })
+      qc.invalidateQueries({ queryKey: ['seasons', 'active'] })
+    },
   })
 }
