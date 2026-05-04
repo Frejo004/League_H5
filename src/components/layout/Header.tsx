@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, LayoutDashboard, Trophy, Calendar,
-  Target, Users, BarChart2, Star, Crown,
+  Target, Users, Star, Crown,
   Settings, User, X, Menu,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { useNotifications } from '@/hooks/useNotifications'
+import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import type { UserRole } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -178,6 +180,10 @@ export default function Header() {
   const { data: season } = useActiveSeason()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
+
+  const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
 
   // Ferme le drawer à chaque navigation
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
@@ -285,21 +291,39 @@ export default function Header() {
             )}
 
             {/* Cloche */}
-            <button
-              className="relative p-1.5 rounded-lg transition-colors"
-              style={{ color: NAV_OFF }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
-              aria-label="Notifications"
-            >
-              <Bell size={17} />
-              {(isAdmin || isCaptain) && (
-                <span
-                  className="absolute top-1 right-1 w-2 h-2 rounded-full"
-                  style={{ backgroundColor: ACCENT }}
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="relative p-1.5 rounded-lg transition-colors"
+                style={{ color: notifOpen ? 'white' : NAV_OFF }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white' }}
+                onMouseLeave={e => { if (!notifOpen) (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                aria-label="Notifications"
+              >
+                <Bell size={17} />
+                {count > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                               flex items-center justify-center text-[9px] font-black"
+                    style={{
+                      backgroundColor: hasUrgent ? '#ef4444' : ACCENT,
+                      color: hasUrgent ? 'white' : '#0D1117',
+                    }}
+                  >
+                    {count > 9 ? '9+' : count}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <NotificationPanel
+                  notifications={notifications}
+                  onClose={() => setNotifOpen(false)}
+                  onMarkAllRead={markAllRead}
+                  onMarkRead={markRead}
                 />
               )}
-            </button>
+            </div>
 
             {/* Badge rôle */}
             <RoleBadge role={effectiveRole} />

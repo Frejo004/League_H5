@@ -45,26 +45,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // onAuthStateChange ne fire pas (réseau coupé, erreur inattendue…)
     const safetyTimer = setTimeout(() => {
       if (isMounted) setIsLoading(false)
-    }, 3000)
+    }, 5000)
 
-    // Pattern officiel Supabase pour React 18+ :
-    // INITIAL_SESSION est émis synchroniquement au premier abonnement,
-    // qu'une session existe ou non en storage. C'est le seul endroit
-    // où on hydrate l'état — pas de getSession() séparé qui créerait
-    // un second lock concurrent.
+    // Bootstrap immédiat : récupère la session depuis le storage local
+    // sans attendre le réseau. Évite le blocage sur loading après navigation.
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!isMounted) return
+      setSession(initialSession)
+      if (initialSession?.user) {
+        fetchProfile(initialSession.user.id).finally(() => {
+          if (isMounted) {
+            clearTimeout(safetyTimer)
+            setIsLoading(false)
+          }
+        })
+      } else {
+        clearTimeout(safetyTimer)
+        setIsLoading(false)
+      }
+    })
+
+    // onAuthStateChange gère les changements ultérieurs (login, logout,
+    // refresh de token) mais ne pilote plus isLoading.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!isMounted) return
 
-        if (event === 'INITIAL_SESSION') {
-          setSession(newSession)
-          if (newSession?.user) {
-            await fetchProfile(newSession.user.id)
-          }
-          clearTimeout(safetyTimer)
-          setIsLoading(false)
-          return
-        }
+        // INITIAL_SESSION est déjà géré par getSession() ci-dessus
+        if (event === 'INITIAL_SESSION') return
 
         setSession(newSession)
 
