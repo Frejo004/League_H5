@@ -150,10 +150,13 @@ export function TeamDetailPage() {
                     {p.jersey_number ?? '—'}
                   </span>
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden"
                     style={{ backgroundColor: team.color }}
                   >
-                    {p.first_name[0]}{p.last_name[0]}
+                    {p.avatar_url
+                      ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : `${p.first_name[0]}${p.last_name[0]}`
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-semibold">

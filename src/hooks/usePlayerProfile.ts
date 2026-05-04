@@ -39,7 +39,7 @@ export function usePlayerProfile(playerId?: string) {
     enabled: !!playerId,
     staleTime: 1000 * 60 * 5,
     queryFn: async () => {
-      // ── Requête 1 : player + team en une seule jointure ──────────────────────
+      // ── Requête 1 : player + team + profil lié ──────────────────────────────
       const { data: playerRaw, error: playerErr } = await supabase
         .from('players')
         .select('*, team:teams!team_id(id, name, color)')
@@ -48,6 +48,17 @@ export function usePlayerProfile(playerId?: string) {
       if (playerErr) throw playerErr
 
       const team = playerRaw.team as TeamRef
+
+      // Récupère l'avatar depuis profiles si le joueur a un compte
+      let resolvedAvatarUrl: string | null = playerRaw.avatar_url
+      if (playerRaw.user_id) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', playerRaw.user_id)
+          .single()
+        if (prof?.avatar_url) resolvedAvatarUrl = prof.avatar_url
+      }
 
       // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
       const [matchesRes, goalsRes, assistsRes] = await Promise.all([
@@ -141,7 +152,7 @@ export function usePlayerProfile(playerId?: string) {
         last_name:     playerRaw.last_name,
         jersey_number: playerRaw.jersey_number,
         position:      playerRaw.position,
-        avatar_url:    playerRaw.avatar_url,
+        avatar_url:    resolvedAvatarUrl,
         team_id:       playerRaw.team_id,
         season_id:     playerRaw.season_id,
         team,

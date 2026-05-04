@@ -4,6 +4,7 @@ import {
   ShieldCheck, AlertCircle, Loader2
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 
@@ -106,6 +107,7 @@ function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; labe
 
 export function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth()
+  const qc = useQueryClient()
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
@@ -171,6 +173,10 @@ export function ProfilePage() {
 
       setAvatarBroken(false)
       await refreshProfile()
+      // Invalide tous les caches qui affichent des avatars de joueurs
+      qc.invalidateQueries({ queryKey: ['players'] })
+      qc.invalidateQueries({ queryKey: ['teams', 'detail'] })
+      qc.invalidateQueries({ queryKey: ['player_profile'] })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur upload avatar'
       // Message lisible si c'est une erreur RLS Supabase

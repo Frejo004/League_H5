@@ -7,7 +7,6 @@ export function usePlayers(seasonId?: string) {
     queryKey: ['players', seasonId],
     enabled: !!seasonId,
     queryFn: async () => {
-      // Requête séparée pour éviter les problèmes de FK imbriquée
       const { data: players, error: playersErr } = await supabase
         .from('players')
         .select('*')
@@ -18,17 +17,24 @@ export function usePlayers(seasonId?: string) {
 
       if (!players?.length) return []
 
-      // Fetch les équipes séparément
-      const teamIds = [...new Set(players.map(p => p.team_id))]
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('id, name, color')
-        .in('id', teamIds)
+      // Fetch équipes + profils liés en parallèle
+      const teamIds   = [...new Set(players.map(p => p.team_id))]
+      const userIds   = players.map(p => p.user_id).filter(Boolean) as string[]
 
-      const teamsMap = new Map((teams ?? []).map(t => [t.id, t]))
+      const [teamsRes, profilesRes] = await Promise.all([
+        supabase.from('teams').select('id, name, color').in('id', teamIds),
+        userIds.length
+          ? supabase.from('profiles').select('id, avatar_url').in('id', userIds)
+          : Promise.resolve({ data: [] }),
+      ])
+
+      const teamsMap    = new Map((teamsRes.data ?? []).map(t => [t.id, t]))
+      const profilesMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]))
 
       return players.map(p => ({
         ...p,
+        // avatar_url : priorité au profil lié (toujours à jour), fallback sur players.avatar_url
+        avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
         teams: teamsMap.get(p.team_id) ?? null,
       }))
     },
@@ -47,7 +53,25 @@ export function usePlayersByTeam(teamId?: string) {
         .eq('is_active', true)
         .order('jersey_number')
       if (error) throw error
-      return data as Player[]
+
+      const players = data as Player[]
+      if (!players.length) return players
+
+      // Récupère les avatars depuis profiles (toujours à jour)
+      const userIds = players.map(p => p.user_id).filter(Boolean) as string[]
+      if (!userIds.length) return players
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', userIds)
+
+      const profilesMap = new Map((profiles ?? []).map(p => [p.id, p]))
+
+      return players.map(p => ({
+        ...p,
+        avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
+      }))
     },
   })
 }

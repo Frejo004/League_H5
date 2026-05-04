@@ -49,7 +49,25 @@ export function useTeam(teamId?: string) {
         .order('jersey_number', { ascending: true })
       if (playersErr) throw playersErr
 
-      return { ...team, players: players ?? [] }
+      // Requête 3 : avatars depuis profiles pour les joueurs avec un compte
+      const userIds = (players ?? []).map(p => p.user_id).filter(Boolean) as string[]
+      const profilesMap = new Map<string, string | null>()
+      if (userIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', userIds)
+        for (const prof of profiles ?? []) {
+          profilesMap.set(prof.id, prof.avatar_url)
+        }
+      }
+
+      const playersWithAvatar = (players ?? []).map(p => ({
+        ...p,
+        avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
+      }))
+
+      return { ...team, players: playersWithAvatar }
     },
   })
 }

@@ -115,9 +115,13 @@ export function PlayersPage() {
                   {p.jersey_number ?? '—'}
                 </span>
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-surface-raised flex items-center justify-center
-                                  text-slate-300 text-xs font-bold shrink-0">
-                    {p.first_name[0]}{p.last_name[0]}
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center
+                                  text-white text-xs font-bold shrink-0 overflow-hidden"
+                    style={{ backgroundColor: team?.color ?? '#16a34a' }}>
+                    {p.avatar_url
+                      ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : `${p.first_name[0]}${p.last_name[0]}`
+                    }
                   </div>
                   <span className="text-sm text-slate-200 font-medium truncate">
                     {p.first_name} {p.last_name}
