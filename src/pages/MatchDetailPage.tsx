@@ -143,15 +143,6 @@ export function MatchDetailPage() {
   // Sort goals by minute
   const sortedGoals = [...goals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
 
-  // MVP
-  const voteMap = new Map<string, number>()
-  for (const v of votes ?? []) {
-    voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
-  }
-  const topMvpId = voteMap.size > 0
-    ? [...voteMap.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    : null
-
   const goalPlayers = goals.flatMap(g => g.players ? [g.players] : [])
   const assistPlayers = assists.flatMap(a => a.players ? [a.players] : [])
   // Priorité aux joueurs qui ont marqué/passé, complété par tous les joueurs des équipes
@@ -163,6 +154,21 @@ export function MatchDetailPage() {
       ...assistPlayers.map(p => [p.id, p] as const),
     ]).values()
   )
+
+  // MVP
+  const voteMap = new Map<string, number>()
+  for (const v of votes ?? []) {
+    voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
+  }
+  const topMvpId = voteMap.size > 0
+    ? [...voteMap.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    : null
+
+  // Joueur MVP (le plus voté)
+  const mvpPlayer = topMvpId
+    ? allMatchPlayers.find(p => p.id === topMvpId) ?? null
+    : null
+  const mvpVoteCount = topMvpId ? (voteMap.get(topMvpId) ?? 0) : 0
 
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
 
@@ -259,6 +265,27 @@ export function MatchDetailPage() {
           </div>
         )}
       </div>
+
+      {/* ── Bandeau MVP du match ── */}
+      {isCompleted && mvpPlayer && (
+        <div className="card flex items-center gap-4 border-amber-500/30 bg-amber-500/5">
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <Star size={18} className="text-amber-400 fill-amber-400/50" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-wider mb-0.5">
+              Homme du match
+            </p>
+            <p className="text-base font-black text-white truncate">
+              {mvpPlayer.first_name} {mvpPlayer.last_name}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-2xl font-black text-amber-400 tabular-nums">{mvpVoteCount}</p>
+            <p className="text-[10px] text-slate-600">vote{mvpVoteCount > 1 ? 's' : ''}</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Timeline buts — style Sofascore ── */}
       {isCompleted && (

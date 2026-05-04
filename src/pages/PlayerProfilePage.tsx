@@ -1,10 +1,10 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Target, Zap, Calendar, Shield } from 'lucide-react'
+import { ArrowLeft, Target, Zap, Calendar, Shield, Star } from 'lucide-react'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useScorers } from '@/hooks/useScorers'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { SkeletonPlayerProfile } from '@/components/ui/SkeletonLoader'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
 const POSITION_LABELS: Record<string, string> = {
@@ -39,6 +39,7 @@ export function PlayerProfilePage() {
   const { data: season } = useActiveSeason()
   const { data: player, isLoading } = usePlayerProfile(id)
   const { data: scorers } = useScorers(season?.id)
+  const { data: mvpData } = usePlayerMvp(id, season?.id)
 
   if (isLoading) {
     return <SkeletonPlayerProfile />
@@ -125,14 +126,15 @@ export function PlayerProfilePage() {
       {/* ── Stats saison ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { label: 'Matchs joués', value: player.matches_played, icon: Calendar,  color: 'text-blue-400' },
-          { label: 'Buts',         value: player.goals,          icon: Target,    color: 'text-orange-400' },
-          { label: 'Passes déc.',  value: player.assists,        icon: Zap,       color: 'text-violet-400' },
-          { label: 'Buts/match',   value: player.matches_played > 0
-              ? (player.goals / player.matches_played).toFixed(1)
-              : '—',                                              icon: Shield,    color: 'text-primary-400' },
+          { label: 'Matchs joués', value: player.matches_played,  icon: Calendar, color: 'text-blue-400'   },
+          { label: 'Buts',         value: player.goals,           icon: Target,   color: 'text-orange-400' },
+          { label: 'Passes déc.',  value: player.assists,         icon: Zap,      color: 'text-violet-400' },
+          { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star,  color: 'text-amber-400'  },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="stat-card text-center">
+          <div key={label} className={clsx(
+            'stat-card text-center',
+            label === 'Homme du match' && (mvpData?.total_mvp ?? 0) > 0 && 'border-amber-500/30 bg-amber-500/5'
+          )}>
             <Icon size={16} className={clsx('mx-auto mb-1.5', color)} />
             <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
             <p className="text-xs text-slate-500 mt-0.5">{label}</p>
@@ -224,6 +226,51 @@ export function PlayerProfilePage() {
             <div className="empty-state-icon"><Calendar size={18} /></div>
             <p className="text-slate-500 text-sm">Aucun match joué cette saison.</p>
           </div>
+        </div>
+      )}
+
+      {/* ── Matchs MVP ── */}
+      {(mvpData?.total_mvp ?? 0) > 0 && (
+        <div className="card p-0 overflow-hidden border-amber-500/20">
+          {/* Header */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-surface-border bg-amber-500/5">
+            <Star size={14} className="text-amber-400 fill-amber-400/40 shrink-0" />
+            <p className="section-title text-amber-500/80">
+              Homme du match · {mvpData!.total_mvp} fois
+            </p>
+          </div>
+
+          {mvpData!.mvp_matches.map((m, i) => (
+            <Link
+              key={m.match_id}
+              to={`/matches/${m.match_id}`}
+              className={clsx(
+                'flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors',
+                i < mvpData!.mvp_matches.length - 1 && 'border-b border-surface-border/30'
+              )}
+            >
+              {/* Étoile */}
+              <Star size={14} className="text-amber-400 fill-amber-400 shrink-0" />
+
+              {/* Infos match */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {m.home_team_name} <span className="text-slate-500 font-normal">vs</span> {m.away_team_name}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Journée {m.matchday}
+                  {m.played_at && (
+                    <> · {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(m.played_at))}</>
+                  )}
+                </p>
+              </div>
+
+              {/* Score */}
+              <span className="text-sm font-bold text-white tabular-nums shrink-0">
+                {m.home_score} – {m.away_score}
+              </span>
+            </Link>
+          ))}
         </div>
       )}
     </div>

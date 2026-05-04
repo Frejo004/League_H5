@@ -187,9 +187,17 @@ export function StatsPage() {
                 Classement MVP
               </h2>
 
-              {!mvpRanking?.length ? (
+              {mvpLoading ? (
                 <div className="empty-state py-6">
-                  <p className="text-slate-500 text-sm">Aucun vote MVP enregistré.</p>
+                  <p className="text-slate-500 text-sm">Chargement…</p>
+                </div>
+              ) : !mvpRanking?.length ? (
+                <div className="empty-state py-6">
+                  <div className="empty-state-icon"><Star size={18} /></div>
+                  <p className="text-slate-400 font-medium">Aucun homme du match</p>
+                  <p className="text-slate-600 text-xs mt-1">
+                    Votez sur les pages de matchs terminés.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
