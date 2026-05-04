@@ -3,7 +3,7 @@ import { Trophy } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
-import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -101,6 +101,7 @@ export function StandingsPage() {
 
   // Abonnement Realtime — classement mis à jour en direct
   useRealtimeMatches(season?.id)
+  useRealtimeTeams(season?.id)
 
   // Calcul pur — réutilise les matches déjà chargés, pas de fetch supplémentaire
   const filteredStandings = computeFilteredStandings(standings, matches, filter)

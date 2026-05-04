@@ -2,12 +2,15 @@ import { Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
+import { useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function TeamsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: teams, isLoading: teamsLoading } = useTeams(season?.id)
+
+  useRealtimeTeams(season?.id)
 
   const isLoading = seasonLoading || teamsLoading
 

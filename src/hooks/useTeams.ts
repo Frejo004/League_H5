@@ -85,8 +85,10 @@ export function useCreateTeam() {
       if (error) throw error
       return data as Team
     },
-    onSuccess: (_data, variables) =>
-      qc.invalidateQueries({ queryKey: ['teams', variables.season_id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['teams'] })
+      qc.invalidateQueries({ queryKey: ['standings'] })
+    },
   })
 }
 
@@ -104,8 +106,13 @@ export function useUpdateTeam() {
       return data as Team
     },
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['teams', data.season_id] })
-      qc.invalidateQueries({ queryKey: ['teams', 'detail', data.id] })
+      // Invalider toutes les queries qui contiennent des données d'équipes
+      qc.invalidateQueries({ queryKey: ['teams'] })
+      qc.invalidateQueries({ queryKey: ['matches'] })
+      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['scorers'] })
+      qc.invalidateQueries({ queryKey: ['mvp-ranking'] })
+      qc.invalidateQueries({ queryKey: ['players'] })
     },
   })
 }
@@ -134,9 +141,9 @@ export function useSetCaptain() {
       })
       if (error) throw error
     },
-    onSuccess: (_data, { seasonId }) => {
-      qc.invalidateQueries({ queryKey: ['teams', seasonId] })
-      qc.invalidateQueries({ queryKey: ['teams', 'detail'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['teams'] })
+      qc.invalidateQueries({ queryKey: ['players'] })
     },
   })
 }
@@ -148,7 +155,11 @@ export function useDeleteTeam() {
       const { error } = await supabase.from('teams').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: (_data, { seasonId }) =>
-      qc.invalidateQueries({ queryKey: ['teams', seasonId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['teams'] })
+      qc.invalidateQueries({ queryKey: ['matches'] })
+      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['players'] })
+    },
   })
 }

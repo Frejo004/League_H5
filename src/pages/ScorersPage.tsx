@@ -1,7 +1,7 @@
 import { Target } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
-import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
@@ -11,6 +11,7 @@ export function ScorersPage() {
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
 
   useRealtimeMatches(season?.id)
+  useRealtimeTeams(season?.id)
 
   const isLoading = seasonLoading || scorersLoading
   const topScorer = scorers?.[0]

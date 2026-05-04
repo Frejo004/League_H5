@@ -136,3 +136,41 @@ export function useRealtimeMatches(seasonId?: string) {
     }
   }, [seasonId, qc])
 }
+
+// ── Realtime pour les équipes d'une saison ───────────────────────────────────
+// Utilisé dans les pages qui affichent des équipes — met à jour le nom, logo, etc.
+// en temps réel quand un admin modifie une équipe.
+
+export function useRealtimeTeams(seasonId?: string) {
+  const qc = useQueryClient()
+
+  useEffect(() => {
+    if (!seasonId) return
+
+    const channel = supabase
+      .channel(`teams-season-${seasonId}`)
+      // Changement sur n'importe quelle équipe de la saison
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'teams',
+          filter: `season_id=eq.${seasonId}`,
+        },
+        () => {
+          // Invalider toutes les queries qui contiennent des données d'équipes
+          qc.invalidateQueries({ queryKey: ['teams'] })
+          qc.invalidateQueries({ queryKey: ['matches'] })
+          qc.invalidateQueries({ queryKey: ['standings'] })
+          qc.invalidateQueries({ queryKey: ['scorers'] })
+          qc.invalidateQueries({ queryKey: ['mvp-ranking'] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [seasonId, qc])
+}
