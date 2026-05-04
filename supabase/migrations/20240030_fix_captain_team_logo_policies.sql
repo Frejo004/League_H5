@@ -1,10 +1,15 @@
 -- ============================================================
--- Migration 028 — Team logo storage policies
--- Le capitaine peut uploader/modifier le logo de son équipe
--- dans le bucket 'avatars' sous le chemin teams/{team_id}/logo
+-- Migration 030 — Fix policies logo équipe capitaine
+-- Drop + recreate avec support captain_player_id
 -- ============================================================
 
--- INSERT : le capitaine peut uploader le logo de son équipe
+-- Drop des policies existantes (créées par 028)
+drop policy if exists "avatars: captain upload team logo"  on storage.objects;
+drop policy if exists "avatars: captain update team logo"  on storage.objects;
+drop policy if exists "avatars: captain delete team logo"  on storage.objects;
+drop policy if exists "avatars: admin manage team logos"   on storage.objects;
+
+-- INSERT
 create policy "avatars: captain upload team logo"
   on storage.objects for insert
   to authenticated
@@ -25,7 +30,7 @@ create policy "avatars: captain upload team logo"
     )
   );
 
--- UPDATE : le capitaine peut modifier le logo de son équipe
+-- UPDATE
 create policy "avatars: captain update team logo"
   on storage.objects for update
   to authenticated
@@ -62,7 +67,7 @@ create policy "avatars: captain update team logo"
     )
   );
 
--- DELETE : le capitaine peut supprimer le logo de son équipe
+-- DELETE
 create policy "avatars: captain delete team logo"
   on storage.objects for delete
   to authenticated
@@ -83,7 +88,7 @@ create policy "avatars: captain delete team logo"
     )
   );
 
--- L'admin peut aussi gérer tous les logos d'équipe
+-- Admin
 create policy "avatars: admin manage team logos"
   on storage.objects for all
   to authenticated

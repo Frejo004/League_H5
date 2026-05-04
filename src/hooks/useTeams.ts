@@ -103,7 +103,10 @@ export function useUpdateTeam() {
       if (error) throw error
       return data as Team
     },
-    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['teams', data.season_id] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['teams', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['teams', 'detail', data.id] })
+    },
   })
 }
 
