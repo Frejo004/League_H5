@@ -56,6 +56,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams',     label: 'Équipes',     icon: Users },
     { to: '/stats',     label: 'Vote MVP',    icon: Star },
     { to: '/my-stats',  label: 'Mes Stats',   icon: Target },
+    { to: '/my-team',   label: 'Mon Équipe',  icon: Users },
   ],
   spectator: [
     { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
@@ -201,13 +202,13 @@ export default function Header() {
 
   const isAdminPage = location.pathname.startsWith('/admin')
 
-  // Mobile bottom nav — ajoute Admin si admin, Mon Équipe si capitaine, Mes Stats si joueur/capitaine
+  // Mobile bottom nav — ajoute Admin si admin, Mon Équipe si capitaine ou joueur
   const mobileNav: NavItem[] = isAdmin
-    ? [...MOBILE_NAV_BASE, { to: '/admin',    label: 'Admin',     icon: Settings }]
+    ? [...MOBILE_NAV_BASE, { to: '/admin',    label: 'Admin',      icon: Settings }]
     : isCaptain
     ? [...MOBILE_NAV_BASE, { to: '/captain',  label: 'Mon Équipe', icon: Crown }]
     : (role === 'player')
-    ? [...MOBILE_NAV_BASE, { to: '/my-stats', label: 'Mes Stats',  icon: Target }]
+    ? [...MOBILE_NAV_BASE, { to: '/my-team',  label: 'Mon Équipe', icon: Users }]
     : MOBILE_NAV_BASE
 
   // Page title pour la mobile title bar
@@ -222,6 +223,7 @@ export default function Header() {
     '/admin':     'Administration',
     '/captain':   'Mon Équipe',
     '/my-stats':  'Mes Stats',
+    '/my-team':   'Mon Équipe',
     '/profile':   'Mon Profil',
   }
   const pageTitle = Object.entries(PAGE_TITLES)

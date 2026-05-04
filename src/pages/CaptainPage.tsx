@@ -56,11 +56,13 @@ function PlayerRow({
   isLast,
   teamColor,
   onViewStats,
+  readonly = false,
 }: {
   player: Player
   isLast: boolean
   teamColor: string
   onViewStats: (p: Player) => void
+  readonly?: boolean
 }) {
   const updatePlayer = useUpdatePlayer()
   const [editing, setEditing] = useState(false)
@@ -140,20 +142,24 @@ function PlayerRow({
               >
                 <ChevronRight size={14} />
               </button>
-              {/* Modifier */}
-              <button
-                onClick={() => setEditing(true)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-surface-raised transition-colors"
-                title="Modifier"
-                aria-label="Modifier le joueur"
-              >
-                <Pencil size={13} />
-              </button>
-              <InviteButton
-                playerId={player.id}
-                playerName={`${player.first_name} ${player.last_name}`}
-                hasAccount={!!player.user_id}
-              />
+              {/* Modifier — capitaine seulement */}
+              {!readonly && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-surface-raised transition-colors"
+                  title="Modifier"
+                  aria-label="Modifier le joueur"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+              {!readonly && (
+                <InviteButton
+                  playerId={player.id}
+                  playerName={`${player.first_name} ${player.last_name}`}
+                  hasAccount={!!player.user_id}
+                />
+              )}
             </>
           )}
           {editing && (
@@ -181,8 +187,8 @@ function PlayerRow({
         </div>
       </div>
 
-      {/* Formulaire inline */}
-      {editing && (
+      {/* Formulaire inline — capitaine seulement */}
+      {editing && !readonly && (
         <div className="px-4 pb-3 flex items-center gap-2">
           {/* Numéro */}
           <div className="flex flex-col gap-1">
@@ -531,7 +537,7 @@ function PlayerStatsDrawer({
 
 // ── Onglet Joueurs ────────────────────────────────────────────────────────────
 
-function TabJoueurs({ teamId, teamColor, seasonId }: { teamId: string; teamColor: string; seasonId: string }) {
+function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId: string; teamColor: string; seasonId: string; readonly?: boolean }) {
   const { data: players, isLoading } = usePlayersByTeam(teamId)
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
 
@@ -563,13 +569,15 @@ function TabJoueurs({ teamId, teamColor, seasonId }: { teamId: string; teamColor
       )}
 
       <div className="space-y-4">
-        {/* Info */}
-        <div className="card bg-primary-600/8 border-primary-600/20">
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Clique sur un joueur pour voir ses stats. <Pencil size={11} className="inline mb-0.5" /> pour modifier numéro/position.
-            Lien d'invitation expire après <strong className="text-white">7 jours</strong>.
-          </p>
-        </div>
+        {/* Info — capitaine seulement */}
+        {!readonly && (
+          <div className="card bg-primary-600/8 border-primary-600/20">
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Clique sur un joueur pour voir ses stats. <Pencil size={11} className="inline mb-0.5" /> pour modifier numéro/position.
+              Lien d'invitation expire après <strong className="text-white">7 jours</strong>.
+            </p>
+          </div>
+        )}
 
         {/* Joueurs sans compte */}
         {pending.length > 0 && (
@@ -586,6 +594,7 @@ function TabJoueurs({ teamId, teamColor, seasonId }: { teamId: string; teamColor
                 isLast={i === pending.length - 1}
                 teamColor={teamColor}
                 onViewStats={setSelectedPlayer}
+                readonly={readonly}
               />
             ))}
           </div>
@@ -606,6 +615,7 @@ function TabJoueurs({ teamId, teamColor, seasonId }: { teamId: string; teamColor
                 isLast={i === linked.length - 1}
                 teamColor={teamColor}
                 onViewStats={setSelectedPlayer}
+                readonly={readonly}
               />
             ))}
           </div>
@@ -856,7 +866,56 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
   )
 }
 
-// ── Page principale ───────────────────────────────────────────────────────────
+// ── Contenu équipe partagé (capitaine + joueur) ───────────────────────────────
+
+export function TeamView({
+  teamId,
+  teamColor,
+  seasonId,
+  readonly = false,
+}: {
+  teamId: string
+  teamColor: string
+  seasonId: string
+  readonly?: boolean
+}) {
+  const [activeTab, setActiveTab] = useState<Tab>('joueurs')
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      {/* Tab bar */}
+      <div className="flex border-b border-surface-border">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}            className={clsx(
+              'sf-tab flex-1 flex items-center justify-center gap-1.5',
+              activeTab === id && 'active'
+            )}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenu onglet */}
+      <div className="p-3">
+        {activeTab === 'joueurs' && (
+          <TabJoueurs teamId={teamId} teamColor={teamColor} seasonId={seasonId} readonly={readonly} />
+        )}
+        {activeTab === 'matchs' && (
+          <TabMatchs teamId={teamId} seasonId={seasonId} />
+        )}
+        {activeTab === 'stats' && (
+          <TabStats teamId={teamId} seasonId={seasonId} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Page principale capitaine ─────────────────────────────────────────────────
 
 type Tab = 'joueurs' | 'matchs' | 'stats'
 
@@ -871,7 +930,6 @@ export function CaptainPage() {
   const { data: season } = useActiveSeason()
   const { data: teams } = useTeams(season?.id)
   const { data: allPlayers } = usePlayers(season?.id)
-  const [activeTab, setActiveTab] = useState<Tab>('joueurs')
 
   // Édition nom d'équipe
   const updateTeam = useUpdateTeam()
@@ -1015,37 +1073,11 @@ export function CaptainPage() {
           </div>
 
           {/* Onglets */}
-          <div className="card p-0 overflow-hidden">
-            {/* Tab bar */}
-            <div className="flex border-b border-surface-border">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={clsx(
-                    'sf-tab flex-1 flex items-center justify-center gap-1.5',
-                    activeTab === id && 'active'
-                  )}
-                >
-                  <Icon size={13} />
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Contenu onglet */}
-            <div className="p-3">
-              {activeTab === 'joueurs' && (
-                <TabJoueurs teamId={myTeamTyped.id} teamColor={myTeamTyped.color ?? '#16a34a'} seasonId={season.id} />
-              )}
-              {activeTab === 'matchs' && (
-                <TabMatchs teamId={myTeamTyped.id} seasonId={season.id} />
-              )}
-              {activeTab === 'stats' && (
-                <TabStats teamId={myTeamTyped.id} seasonId={season.id} />
-              )}
-            </div>
-          </div>
+          <TeamView
+            teamId={myTeamTyped.id}
+            teamColor={myTeamTyped.color ?? '#16a34a'}
+            seasonId={season.id}
+          />
         </>
       )}
     </div>

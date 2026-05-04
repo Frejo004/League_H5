@@ -21,6 +21,7 @@ const PAGE_BACKGROUNDS: Record<string, PageBg> = {
   '/admin':      { accent: '#64748b', glow: '#475569', pattern: 'none'    },
   '/captain':    { accent: '#f59e0b', glow: '#d97706', pattern: 'hexagon' },
   '/my-stats':   { accent: '#f97316', glow: '#ef4444', pattern: 'hexagon' },
+  '/my-team':    { accent: '#3b82f6', glow: '#6366f1', pattern: 'dots'    },
   '/profile':    { accent: '#2563eb', glow: '#7c3aed', pattern: 'dots'    },
 }
 

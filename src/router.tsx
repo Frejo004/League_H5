@@ -19,6 +19,7 @@ import { ProfilePage } from '@/pages/ProfilePage'
 import { CaptainPage } from '@/pages/CaptainPage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { MyStatsPage } from '@/pages/MyStatsPage'
+import { MyTeamPage } from '@/pages/MyTeamPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
           { path: '/admin',         element: <AdminPage /> },
           { path: '/captain',       element: <CaptainPage /> },
           { path: '/my-stats',      element: <MyStatsPage /> },
+          { path: '/my-team',       element: <MyTeamPage /> },
           { path: '/profile',       element: <ProfilePage /> },
         ],
       },
