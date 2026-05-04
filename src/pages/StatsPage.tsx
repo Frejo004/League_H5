@@ -4,6 +4,7 @@ import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useMvpRanking } from '@/hooks/useMvpVotes'
 import { useMatches } from '@/hooks/useMatches'
+import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
@@ -40,18 +41,22 @@ export function StatsPage() {
   return (
     <div className="space-y-5">
 
-      {/* Header */}
-      <div className="animate-fade-in-up">
-        <div className="page-header">
-          <BarChart2 className="text-primary-400" size={22} />
-          <h1 className="page-title">Statistiques</h1>
-          {season && (
-            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">
-              {season.name}
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1200&q=80&auto=format&fit=crop"
+        pattern="lines"
+        accentColor="#22c55e"
+        title="Statistiques"
+        subtitle={season?.name}
+        icon={<BarChart2 size={20} className="text-green-400" />}
+        stats={season ? [
+          { label: 'Buts marqués',    value: totalGoals },
+          { label: 'Passes déc.',     value: totalAssists },
+          { label: 'Buts / match',    value: avgGoalsPerMatch },
+          { label: 'Matchs joués',    value: completedMatches.length },
+        ] : undefined}
+        compact
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>

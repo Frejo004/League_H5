@@ -7,6 +7,7 @@ import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 
@@ -181,18 +182,28 @@ export function DashboardPage() {
   return (
     <div className="space-y-3">
 
-      {/* Season header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-white">{season.name}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Tableau de bord</p>
-        </div>
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-primary-400
-                         bg-primary-600/10 border border-primary-600/20 px-2.5 py-1 rounded">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
-          En cours
-        </span>
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80&auto=format&fit=crop"
+        pattern="pitch"
+        accentColor="#2563eb"
+        title={season.name}
+        subtitle="Tableau de bord · Saison en cours"
+        icon={<Trophy size={20} className="text-white" />}
+        badge={
+          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400
+                           bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
+            <span className="live-dot" />
+            En cours
+          </span>
+        }
+        stats={[
+          { label: 'Matchs joués', value: completedMatches.length },
+          { label: 'Équipes',      value: teams?.length ?? 0 },
+          { label: 'Buteurs',      value: scorers?.filter(s => s.goals > 0).length ?? 0 },
+          { label: 'À venir',      value: upcomingMatches.length },
+        ]}
+      />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useTeams } from '@/hooks/useTeams'
+import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { PlayerPosition, PlayerWithTeam } from '@/types/database'
 
@@ -32,18 +33,20 @@ export function PlayersPage() {
   return (
     <div className="space-y-3">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <User size={18} className="text-primary-400" />
-          <h1 className="page-title">Joueurs</h1>
-        </div>
-        {season && (
-          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
-            {season.name}
-          </span>
-        )}
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=1200&q=80&auto=format&fit=crop"
+        pattern="dots"
+        accentColor="#06b6d4"
+        title="Joueurs"
+        subtitle={season?.name}
+        icon={<User size={20} className="text-cyan-400" />}
+        stats={players?.length ? [
+          { label: 'Joueurs',    value: players.length },
+          { label: 'Équipes',    value: teams?.length ?? 0 },
+        ] : undefined}
+        compact
+      />
 
       {/* Filters */}
       {!isLoading && !!players?.length && (

@@ -2,6 +2,7 @@ import { Target } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 
@@ -9,26 +10,29 @@ export function ScorersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
 
-  // Abonnement Realtime — buteurs mis à jour en direct
   useRealtimeMatches(season?.id)
 
   const isLoading = seasonLoading || scorersLoading
+  const topScorer = scorers?.[0]
 
   return (
     <div className="space-y-3">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <Target size={18} className="text-primary-400" />
-          <h1 className="page-title">Buteurs</h1>
-        </div>
-        {season && (
-          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
-            {season.name}
-          </span>
-        )}
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=1200&q=80&auto=format&fit=crop"
+        pattern="hexagon"
+        accentColor="#f97316"
+        title="Buteurs"
+        subtitle={season?.name}
+        icon={<Target size={20} className="text-orange-400" />}
+        stats={topScorer ? [
+          { label: 'Meilleur buteur', value: `${topScorer.first_name} ${topScorer.last_name}` },
+          { label: 'Buts',            value: topScorer.goals },
+          { label: 'Classés',         value: scorers?.filter(s => s.goals > 0).length ?? 0 },
+        ] : undefined}
+        compact
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>

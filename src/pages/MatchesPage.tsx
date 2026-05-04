@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
@@ -162,18 +163,21 @@ export function MatchesPage() {
   return (
     <div className="space-y-3">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <Calendar size={18} className="text-primary-400" />
-          <h1 className="page-title">Matchs</h1>
-        </div>
-        {season && (
-          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
-            {season.name}
-          </span>
-        )}
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&q=80&auto=format&fit=crop"
+        pattern="net"
+        accentColor="#3b82f6"
+        title="Matchs"
+        subtitle={season?.name}
+        icon={<Calendar size={20} className="text-blue-400" />}
+        stats={matches ? [
+          { label: 'Journées',  value: matchdays.length },
+          { label: 'Terminés', value: matches.filter(m => m.status === 'completed').length },
+          { label: 'À venir',  value: matches.filter(m => m.status === 'scheduled').length },
+        ] : undefined}
+        compact
+      />
 
       {isLoading ? (
         <div className="card p-0 overflow-hidden animate-fade-in">

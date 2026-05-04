@@ -2,6 +2,7 @@ import { Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
+import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function TeamsPage() {
@@ -13,18 +14,23 @@ export function TeamsPage() {
   return (
     <div className="space-y-3">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <Users size={18} className="text-primary-400" />
-          <h1 className="page-title">Équipes</h1>
-        </div>
-        {season && (
-          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
-            {season.name}
-          </span>
-        )}
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=1200&q=80&auto=format&fit=crop"
+        pattern="dots"
+        accentColor="#8b5cf6"
+        title="Équipes"
+        subtitle={season?.name}
+        icon={<Users size={20} className="text-violet-400" />}
+        stats={teams?.length ? [
+          { label: 'Équipes',  value: teams.length },
+          { label: 'Joueurs',  value: teams.reduce((acc, t) => {
+            const count = (t as unknown as { players?: { count: number }[] }).players?.[0]?.count ?? 0
+            return acc + count
+          }, 0) },
+        ] : undefined}
+        compact
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>

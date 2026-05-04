@@ -4,6 +4,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
 import { useRealtimeMatches } from '@/hooks/useRealtime'
+import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
@@ -108,18 +109,21 @@ export function StandingsPage() {
   return (
     <div className="space-y-3">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <Trophy size={18} className="text-primary-400" />
-          <h1 className="page-title">Classement</h1>
-        </div>
-        {season && (
-          <span className="badge bg-surface-raised text-slate-400 border border-surface-border">
-            {season.name}
-          </span>
-        )}
-      </div>
+      {/* Hero */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1551958219-acbc595d9e47?w=1200&q=80&auto=format&fit=crop"
+        pattern="lines"
+        accentColor="#f59e0b"
+        title="Classement"
+        subtitle={season?.name}
+        icon={<Trophy size={20} className="text-yellow-400" />}
+        stats={standings?.length ? [
+          { label: 'Leader',   value: standings[0]?.team_name ?? '—' },
+          { label: 'Points',   value: standings[0]?.points ?? 0 },
+          { label: 'Équipes',  value: standings.length },
+        ] : undefined}
+        compact
+      />
 
       {isLoading ? (
         <div className="space-y-2 animate-fade-in">
