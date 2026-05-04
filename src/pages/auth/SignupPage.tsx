@@ -78,10 +78,10 @@ export function SignupPage() {
           <div className="space-y-1.5">
             <label htmlFor="fullName" className="label">Nom complet</label>
             <div className="relative">
-              <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input id="fullName" type="text" value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                className="input pl-9" placeholder="Jean Dupont"
+                className="input input-icon-l" placeholder="Jean Dupont"
                 required autoComplete="name" />
             </div>
           </div>
@@ -90,10 +90,10 @@ export function SignupPage() {
           <div className="space-y-1.5">
             <label htmlFor="email" className="label">Email</label>
             <div className="relative">
-              <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input id="email" type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="input pl-9" placeholder="vous@exemple.com"
+                className="input input-icon-l" placeholder="vous@exemple.com"
                 required autoComplete="email" />
             </div>
           </div>

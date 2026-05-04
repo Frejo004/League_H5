@@ -49,13 +49,13 @@ export function PlayersPage() {
       {!isLoading && !!players?.length && (
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             <input
               type="text"
               placeholder="Rechercher..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="input pl-8 py-2 text-sm"
+              className="input input-icon-l py-2 text-sm"
             />
           </div>
           <select

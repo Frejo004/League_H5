@@ -308,6 +308,14 @@ body {
 }
 .input option { background-color: #222736; }
 
+/* Variantes avec icône — padding explicite pour éviter le chevauchement */
+/* icône à gauche (16px icône + 14px left + 8px gap = 38px → 2.5rem) */
+.input-icon-l  { padding-left: 2.5rem !important; }
+/* icône à droite (bouton œil) */
+.input-icon-r  { padding-right: 2.5rem !important; }
+/* les deux côtés (password avec cadenas + œil) */
+.input-icon-lr { padding-left: 2.5rem !important; padding-right: 2.5rem !important; }
+
 .label {
   display: block;
   font-size: 0.75rem;
