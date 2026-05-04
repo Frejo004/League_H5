@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Zap, Pencil, Check, X, Calendar } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { useMatches, useCreateMatch, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
+import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchStatus } from '@/types/database'
 
@@ -177,6 +179,7 @@ export function AdminSchedulePage() {
   const { data: teams } = useTeams(season?.id)
   const { data: matches, isLoading } = useMatches(season?.id)
   const createMatch = useCreateMatch()
+  const qc = useQueryClient()
 
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState<string | null>(null)
@@ -199,26 +202,40 @@ export function AdminSchedulePage() {
     try {
       const rounds = generateRoundRobin(teamList.map(t => t.id))
 
-      // Créer tous les matchs en séquence
-      for (let i = 0; i < rounds.length; i++) {
+      // Construire tous les matchs à créer en filtrant ceux qui existent déjà
+      const allMatchesToCreate = rounds.flatMap((round, i) => {
         const matchday = i + 1
-        for (const [homeId, awayId] of rounds[i]) {
-          // Vérifie si le match existe déjà
-          const exists = (matches ?? []).some(
-            m => m.home_team_id === homeId && m.away_team_id === awayId && m.matchday === matchday
+        return round
+          .filter(([homeId, awayId]) =>
+            !(matches ?? []).some(
+              m => m.home_team_id === homeId && m.away_team_id === awayId && m.matchday === matchday
+            )
           )
-          if (!exists) {
-            await createMatch.mutateAsync({
-              season_id: season.id,
-              home_team_id: homeId,
-              away_team_id: awayId,
-              matchday,
-              scheduled_at: null,
-              venue: null,
-            })
-          }
-        }
+          .map(([homeId, awayId]) => ({
+            season_id:    season.id,
+            home_team_id: homeId,
+            away_team_id: awayId,
+            matchday,
+            scheduled_at: null as string | null,
+            venue:        null as string | null,
+          }))
+      })
+
+      if (allMatchesToCreate.length === 0) {
+        setGenSuccess(true)
+        setTimeout(() => setGenSuccess(false), 3000)
+        return
       }
+
+      // Insérer tous les matchs en un seul batch
+      const { error } = await supabase
+        .from('matches')
+        .insert(allMatchesToCreate)
+      if (error) throw error
+
+      // Invalider le cache des matchs pour la saison courante
+      qc.invalidateQueries({ queryKey: ['matches', season.id] })
+
       setGenSuccess(true)
       setTimeout(() => setGenSuccess(false), 3000)
     } catch (err: unknown) {

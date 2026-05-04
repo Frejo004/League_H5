@@ -17,6 +17,8 @@ export function AdminSeasonsPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [activateError, setActivateError] = useState<string | null>(null)
+  const [lockError, setLockError] = useState<string | null>(null)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -35,16 +37,24 @@ export function AdminSeasonsPage() {
   }
 
   async function toggleActive(season: Season) {
-    if (!season.is_active) {
+    if (season.is_active) return
+    setActivateError(null)
+    try {
       const { error } = await supabase.rpc('set_active_season', { p_season_id: season.id })
       if (error) throw error
-      // Invalidate seasons cache after atomic swap
       qc.invalidateQueries({ queryKey: ['seasons'] })
+    } catch (err: unknown) {
+      setActivateError(err instanceof Error ? err.message : 'Erreur lors de l\'activation')
     }
   }
 
   async function toggleLock(season: Season) {
-    await updateSeason.mutateAsync({ id: season.id, is_locked: !season.is_locked })
+    setLockError(null)
+    try {
+      await updateSeason.mutateAsync({ id: season.id, is_locked: !season.is_locked })
+    } catch (err: unknown) {
+      setLockError(err instanceof Error ? err.message : 'Erreur lors du verrouillage')
+    }
   }
 
   return (
@@ -108,6 +118,16 @@ export function AdminSeasonsPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {activateError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+              {activateError}
+            </div>
+          )}
+          {lockError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+              {lockError}
+            </div>
+          )}
           {seasons.map(season => (
             <div key={season.id} className="card flex items-center justify-between gap-4">
               <div className="min-w-0">

@@ -37,15 +37,38 @@ export function JoinPage() {
     if (password.length < 8)          { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
     setIsLoading(true)
     try {
+      // Étape 1 : créer le compte Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
         email, password,
         options: { data: { full_name: `${playerInfo!.first_name} ${playerInfo!.last_name}` } },
       })
       if (signUpError) throw signUpError
+
       const userId = data.user?.id
-      if (!userId) throw new Error('Erreur lors de la création du compte.')
-      await claimInvite(token, userId)
-      setSuccess(true)
+      if (!userId) {
+        // Supabase a créé le compte mais retourne null si confirmation email activée.
+        // Dans ce cas, le claim se fera via le lien de confirmation (flow email).
+        // On affiche le succès et on indique de vérifier l'email.
+        setSuccess(true)
+        return
+      }
+
+      // Étape 2 : lier le compte au joueur via le token d'invitation
+      // Cette étape est critique — si elle échoue, le compte existe mais
+      // le joueur n'est pas lié. On distingue les deux types d'erreur.
+      try {
+        await claimInvite(token, userId)
+        setSuccess(true)
+      } catch (claimErr: unknown) {
+        // Le compte a été créé mais le lien joueur a échoué.
+        // L'utilisateur peut se connecter, mais son profil sera en mode spectateur
+        // jusqu'à ce qu'un admin corrige manuellement.
+        const msg = claimErr instanceof Error ? claimErr.message : 'Erreur inconnue'
+        setError(
+          `Compte créé, mais le lien avec votre profil joueur a échoué (${msg}). ` +
+          `Connectez-vous et contactez votre administrateur en indiquant votre email.`
+        )
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'inscription")
     } finally {
@@ -86,9 +109,10 @@ export function JoinPage() {
           </div>
           <h2 className="text-lg font-bold text-white mb-2">Compte créé !</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Connectez-vous pour accéder à votre ligue.
+            Vérifiez votre boîte email pour confirmer votre adresse,
+            puis connectez-vous pour accéder à votre ligue.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5">
+          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5 flex items-center justify-center gap-2">
             Se connecter <ArrowRight size={15} />
           </button>
         </div>

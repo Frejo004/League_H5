@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Team } from '@/types/database'
+import type { Team, Database } from '@/types/database'
 
 export function useTeams(seasonId?: string) {
   return useQuery({
@@ -75,7 +75,7 @@ export function useCreateTeam() {
 export function useUpdateTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...values }: Partial<Team> & { id: string }) => {
+    mutationFn: async ({ id, ...values }: Database['public']['Tables']['teams']['Update'] & { id: string }) => {
       const { data, error } = await supabase
         .from('teams')
         .update(values)
@@ -90,9 +90,8 @@ export function useUpdateTeam() {
 }
 
 // Définir le capitaine d'une équipe (admin uniquement)
-// Utilise captain_id pour stocker le player_id du capitaine désigné.
-// Quand le joueur crée son compte, son rôle sera mis à 'captain' via
-// la logique de claim_player_invite.
+// Passe par la fonction RPC set_team_captain (security definer)
+// qui vérifie côté serveur que l'appelant est bien admin.
 export function useSetCaptain() {
   const qc = useQueryClient()
   return useMutation({
@@ -100,29 +99,19 @@ export function useSetCaptain() {
       teamId,
       captainPlayerId,
       captainUserId,
-      seasonId,
+      seasonId: _seasonId,  // utilisé dans onSuccess via les variables
     }: {
       teamId: string
       captainPlayerId: string | null
       captainUserId: string | null
       seasonId: string
     }) => {
-      // Met à jour captain_id avec le user_id si disponible, sinon null
-      // (le joueur sans compte sera mis à jour quand il créera son compte)
-      const { error: teamErr } = await supabase
-        .from('teams')
-        .update({ captain_id: captainUserId })
-        .eq('id', teamId)
-      if (teamErr) throw teamErr
-
-      // Si le joueur a déjà un compte, mettre son rôle à 'captain'
-      if (captainUserId) {
-        const { error: profileErr } = await supabase
-          .from('profiles')
-          .update({ role: 'captain' })
-          .eq('id', captainUserId)
-        if (profileErr) throw profileErr
-      }
+      const { error } = await supabase.rpc('set_team_captain', {
+        p_team_id:           teamId,
+        p_captain_player_id: captainPlayerId,
+        p_captain_user_id:   captainUserId,
+      })
+      if (error) throw error
     },
     onSuccess: (_data, { seasonId }) => {
       qc.invalidateQueries({ queryKey: ['teams', seasonId] })
@@ -134,7 +123,7 @@ export function useSetCaptain() {
 export function useDeleteTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, seasonId }: { id: string; seasonId: string }) => {
+    mutationFn: async ({ id, seasonId: _seasonId }: { id: string; seasonId: string }) => {
       const { error } = await supabase.from('teams').delete().eq('id', id)
       if (error) throw error
     },

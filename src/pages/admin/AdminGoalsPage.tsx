@@ -90,6 +90,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
         team_id: goalTeam,
         minute: goalMinute ? parseInt(goalMinute) : null,
         is_own_goal: isOwnGoal,
+        seasonId: match.season_id,
       })
       setGoalPlayer(''); setGoalMinute(''); setIsOwnGoal(false)
     } catch (err: unknown) {
@@ -102,7 +103,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
     if (!assistGoalId || !assistPlayer) { setAssistError('Sélectionnez un but et un joueur.'); return }
     setAssistError(null)
     try {
-      await addAssist.mutateAsync({ match_id: match.id, goal_id: assistGoalId, player_id: assistPlayer })
+      await addAssist.mutateAsync({ match_id: match.id, goal_id: assistGoalId, player_id: assistPlayer, seasonId: match.season_id })
       setAssistGoalId(''); setAssistPlayer('')
     } catch (err: unknown) {
       setAssistError(err instanceof Error ? err.message : 'Erreur')
@@ -167,12 +168,12 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                           )}
                         </span>
                         {assist && (
-                          <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id })}
+                          <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id, seasonId: match.season_id })}
                             className="text-slate-600 hover:text-red-400 transition-colors p-0.5" title="Supprimer la passe">
                             <Trash2 size={11} />
                           </button>
                         )}
-                        <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id })}
+                        <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id, seasonId: match.season_id })}
                           className="text-slate-600 hover:text-red-400 transition-colors p-0.5" title="Supprimer le but">
                           <Trash2 size={13} />
                         </button>

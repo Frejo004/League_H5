@@ -42,14 +42,12 @@ function RankBadge({ rank }: { rank: number }) {
 
 type FilterType = 'all' | 'home' | 'away'
 
-// ── Compute home/away sub-standings from matches ──────────────────────────────
-function useFilteredStandings(
+// ── Compute home/away sub-standings from matches (pure function, no hook) ─────
+function computeFilteredStandings(
   standings: StandingRow[] | undefined,
-  seasonId: string | undefined,
+  matches: import('@/hooks/useMatches').MatchWithTeams[] | undefined,
   filter: FilterType
-) {
-  const { data: matches } = useMatches(filter !== 'all' ? seasonId : undefined)
-
+): StandingRow[] | undefined {
   if (filter === 'all' || !matches || !standings) return standings
 
   // Rebuild stats from matches filtered by home/away
@@ -96,9 +94,11 @@ function useFilteredStandings(
 export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
+  const { data: matches } = useMatches(season?.id)
   const [filter, setFilter] = useState<FilterType>('all')
 
-  const filteredStandings = useFilteredStandings(standings, season?.id, filter)
+  // Calcul pur — réutilise les matches déjà chargés, pas de fetch supplémentaire
+  const filteredStandings = computeFilteredStandings(standings, matches, filter)
   const isLoading = seasonLoading || standingsLoading
 
   return (

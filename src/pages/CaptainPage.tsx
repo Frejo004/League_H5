@@ -2,10 +2,11 @@ import { Crown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
-import { usePlayersByTeam } from '@/hooks/usePlayers'
+import { usePlayersByTeam, usePlayers } from '@/hooks/usePlayers'
 import { InviteButton } from '@/components/ui/InviteButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Navigate } from 'react-router-dom'
+import type { Team } from '@/types/database'
 
 function TeamInvitePanel({ teamId }: { teamId: string }) {
   const { data: players, isLoading } = usePlayersByTeam(teamId)
@@ -106,16 +107,31 @@ export function CaptainPage() {
   const { profile, isCaptain } = useAuth()
   const { data: season } = useActiveSeason()
   const { data: teams } = useTeams(season?.id)
+  // Charge les joueurs de la saison pour trouver le player lié au profil courant
+  const { data: allPlayers } = usePlayers(season?.id)
 
   // Redirige si pas capitaine
   if (!isCaptain) return <Navigate to="/" replace />
 
-  // Trouve l'équipe dont l'utilisateur est capitaine
-  // Vérifie captain_id (user lié) OU captain_player_id via le player lié au profil
+  // Trouve l'équipe dont l'utilisateur est capitaine.
+  // Double vérification :
+  //   1. captain_id === profile.id  (cas normal : joueur avec compte)
+  //   2. captain_player_id === player.id où player.user_id === profile.id
+  //      (cas où le capitaine a été désigné par player_id avant d'avoir un compte)
+  const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
+
+  type TeamWithCaptainPlayer = Team & { captain_player_id: string | null }
+
   const myTeam = (teams ?? []).find(t => {
-    const team = t as unknown as { captain_id: string | null; captain_player_id: string | null }
-    return team.captain_id === profile?.id
+    const team = t as unknown as TeamWithCaptainPlayer
+    return (
+      team.captain_id === profile?.id ||
+      (myPlayer && team.captain_player_id === myPlayer.id)
+    )
   })
+
+  // Typage étendu pour accéder aux champs non présents dans le type Team de base
+  const myTeamTyped = myTeam as unknown as TeamWithCaptainPlayer | undefined
 
   return (
     <div className="space-y-4">
@@ -148,7 +164,7 @@ export function CaptainPage() {
           <div className="card flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-white font-bold"
-              style={{ backgroundColor: (myTeam as unknown as { color: string }).color }}
+              style={{ backgroundColor: myTeamTyped?.color ?? '#16a34a' }}
             >
               {myTeam.name[0]}
             </div>

@@ -413,6 +413,14 @@ export interface Database {
           form: string // Format: "W,D,L,W,W" (comma-separated)
         }[]
       }
+      set_team_captain: {
+        Args: {
+          p_team_id: string
+          p_captain_player_id: string | null
+          p_captain_user_id: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: UserRole

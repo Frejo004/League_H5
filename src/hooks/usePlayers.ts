@@ -99,9 +99,18 @@ export function useDeactivatePlayer() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('players').update({ is_active: false }).eq('id', id)
+      const { data, error } = await supabase
+        .from('players')
+        .update({ is_active: false })
+        .eq('id', id)
+        .select('season_id, team_id')
+        .single()
       if (error) throw error
+      return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['players'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['players', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['players', 'team', data.team_id] })
+    },
   })
 }

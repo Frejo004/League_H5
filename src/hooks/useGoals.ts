@@ -13,19 +13,21 @@ export function useAddGoal() {
       team_id: string
       minute?: number | null
       is_own_goal?: boolean
+      seasonId: string  // nécessaire pour invalider les bonnes clés de cache
     }) => {
+      const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('goals')
-        .insert(values)
+        .insert(dbValues)
         .select()
         .single()
       if (error) throw error
       return data as Goal
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       qc.invalidateQueries({ queryKey: ['matches', 'detail', data.match_id] })
-      qc.invalidateQueries({ queryKey: ['scorers'] })
-      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['scorers', variables.seasonId] })
+      qc.invalidateQueries({ queryKey: ['standings', variables.seasonId] })
     },
   })
 }
@@ -33,15 +35,15 @@ export function useAddGoal() {
 export function useDeleteGoal() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, matchId }: { id: string; matchId: string }) => {
+    mutationFn: async ({ id, matchId, seasonId }: { id: string; matchId: string; seasonId: string }) => {
       const { error } = await supabase.from('goals').delete().eq('id', id)
       if (error) throw error
-      return matchId
+      return { matchId, seasonId }
     },
-    onSuccess: (matchId) => {
+    onSuccess: ({ matchId, seasonId }) => {
       qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-      qc.invalidateQueries({ queryKey: ['scorers'] })
-      qc.invalidateQueries({ queryKey: ['standings'] })
+      qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+      qc.invalidateQueries({ queryKey: ['standings', seasonId] })
     },
   })
 }
@@ -55,18 +57,20 @@ export function useAddAssist() {
       match_id: string
       goal_id: string
       player_id: string
+      seasonId: string  // nécessaire pour invalider les bonnes clés de cache
     }) => {
+      const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('assists')
-        .insert(values)
+        .insert(dbValues)
         .select()
         .single()
       if (error) throw error
       return data as Assist
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       qc.invalidateQueries({ queryKey: ['matches', 'detail', data.match_id] })
-      qc.invalidateQueries({ queryKey: ['scorers'] })
+      qc.invalidateQueries({ queryKey: ['scorers', variables.seasonId] })
     },
   })
 }
@@ -74,14 +78,14 @@ export function useAddAssist() {
 export function useDeleteAssist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, matchId }: { id: string; matchId: string }) => {
+    mutationFn: async ({ id, matchId, seasonId }: { id: string; matchId: string; seasonId: string }) => {
       const { error } = await supabase.from('assists').delete().eq('id', id)
       if (error) throw error
-      return matchId
+      return { matchId, seasonId }
     },
-    onSuccess: (matchId) => {
+    onSuccess: ({ matchId, seasonId }) => {
       qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-      qc.invalidateQueries({ queryKey: ['scorers'] })
+      qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
     },
   })
 }
