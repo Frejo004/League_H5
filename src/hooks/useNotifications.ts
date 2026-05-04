@@ -83,7 +83,7 @@ function usePendingSpectators(enabled: boolean) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('spectators')
-        .select('id, requested_at, user_id, profiles(full_name, email)')
+        .select('id, requested_at, user_id, profiles!spectators_user_id_fkey(full_name, email)')
         .eq('status', 'pending')
         .order('requested_at', { ascending: false })
       if (error) throw error
@@ -229,7 +229,7 @@ export function useNotifications() {
           type:      'spectator_request',
           title:     'Demande d\'accès',
           message:   `${name} souhaite accéder à la ligue`,
-          href:      '/admin',
+          href:      '/admin?tab=spectators',
           createdAt: new Date(s.requested_at),
           urgent:    true,
         })

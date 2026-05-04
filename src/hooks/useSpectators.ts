@@ -10,13 +10,18 @@ export interface SpectatorWithProfile extends Spectator {
 export function useSpectators(seasonId?: string) {
   return useQuery({
     queryKey: ['spectators', seasonId],
-    enabled: !!seasonId,
+    // Charge même sans seasonId pour que l'admin voie toutes les demandes en attente
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('spectators')
-        .select('*, profiles(id, full_name, email, avatar_url)')
-        .eq('season_id', seasonId!)
+        .select('*, profiles!spectators_user_id_fkey(id, full_name, email, avatar_url)')
         .order('requested_at', { ascending: false })
+
+      if (seasonId) {
+        query = query.eq('season_id', seasonId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return data as unknown as SpectatorWithProfile[]
     },

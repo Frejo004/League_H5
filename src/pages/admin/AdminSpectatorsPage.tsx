@@ -1,5 +1,4 @@
 import { Check, X } from 'lucide-react'
-import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSpectators, useUpdateSpectatorStatus, type SpectatorWithProfile } from '@/hooks/useSpectators'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -20,8 +19,8 @@ const STATUS_LABELS: Record<SpectatorStatus, string> = {
 
 export function AdminSpectatorsPage() {
   const { user } = useAuth()
-  const { data: season } = useActiveSeason()
-  const { data: spectators, isLoading } = useSpectators(season?.id)
+  // Charge toutes les demandes (pas de filtre saison) pour ne rien manquer
+  const { data: spectators, isLoading } = useSpectators()
   const updateStatus = useUpdateSpectatorStatus()
 
   async function handleUpdate(id: string, status: SpectatorStatus, userId: string) {
@@ -29,7 +28,7 @@ export function AdminSpectatorsPage() {
     await updateStatus.mutateAsync({ id, status, reviewedBy: user.id, userId })
   }
 
-  const pending = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status === 'pending')
+  const pending  = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status === 'pending')
   const reviewed = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status !== 'pending')
 
   return (
@@ -58,14 +57,17 @@ export function AdminSpectatorsPage() {
                 {pending.map(s => {
                   const profile = s.profiles
                   return (
-                    <div key={s.id} className="card flex items-center justify-between gap-4">
+                    <div key={s.id} className="card flex items-center justify-between gap-4 border-yellow-500/20">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-surface-border flex items-center justify-center text-slate-300 text-sm font-bold flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 text-sm font-bold flex-shrink-0">
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <p className="text-white font-medium truncate">{profile.full_name ?? 'Inconnu'}</p>
                           <p className="text-sm text-slate-400 truncate">{profile.email}</p>
+                          <p className="text-xs text-slate-600 mt-0.5">
+                            Demande reçue le {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(s.requested_at))}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
