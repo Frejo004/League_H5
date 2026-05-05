@@ -58,6 +58,8 @@ export function JoinPage() {
       // le joueur n'est pas lié. On distingue les deux types d'erreur.
       try {
         await claimInvite(token, userId)
+        // Succès : rediriger vers la page de connexion
+        // Le joueur devra se connecter manuellement pour que son profil soit chargé correctement
         setSuccess(true)
       } catch (claimErr: unknown) {
         // Le compte a été créé mais le lien joueur a échoué.
@@ -107,10 +109,10 @@ export function JoinPage() {
                           flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">✅</span>
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">Compte créé !</h2>
+          <h2 className="text-lg font-bold text-white mb-2">Compte joueur créé !</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Vérifiez votre boîte email pour confirmer votre adresse,
-            puis connectez-vous pour accéder à votre ligue.
+            Votre compte joueur a été créé avec succès.
+            Connectez-vous maintenant pour accéder à votre ligue.
           </p>
           <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5 flex items-center justify-center gap-2">
             Se connecter <ArrowRight size={15} />

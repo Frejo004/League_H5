@@ -24,6 +24,8 @@ export function ProtectedRoute() {
   if (!session) return <Navigate to="/auth/login" replace />
 
   // 3. Profil en cours de chargement (bootstrap ou token refresh)
+  // Attendre que le profil soit chargé pour éviter de montrer le dashboard
+  // avant de détecter qu'un utilisateur est spectateur
   if (isProfileLoading) return <PageLoader />
 
   // 4. Session valide mais profil absent → la requête a échoué (réseau absent

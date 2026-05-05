@@ -94,9 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newSession?.user) {
           const currentUserId = newSession.user.id
           
-          // Ignorer SIGNED_IN juste après INITIAL_SESSION (double événement)
-          if (event === 'SIGNED_IN' && profileRef.current?.id === currentUserId) {
-            setIsProfileLoading(false)
+          // Pour SIGNED_IN, toujours fetch le profil pour s'assurer d'avoir les données à jour
+          // (important après inscription ou claim d'invitation)
+          if (event === 'SIGNED_IN') {
+            await fetchProfile(currentUserId)
             return
           }
           
