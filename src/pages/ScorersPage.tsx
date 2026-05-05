@@ -3,7 +3,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 
 export function ScorersPage() {
@@ -36,7 +36,14 @@ export function ScorersPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <div className="card p-0 overflow-hidden animate-fade-in">
+          <div className="grid grid-cols-[2rem_1fr_3rem_3rem] gap-2 px-4 py-2 border-b border-surface-border">
+            {['w-4', 'w-1/3', 'w-8', 'w-8'].map((w, i) => (
+              <SkeletonLine key={i} width={w} height="h-2" />
+            ))}
+          </div>
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={4} />)}
+        </div>
       ) : !season ? (
         <div className="card">
           <div className="empty-state">

@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { useEffect } from 'react'
 
 // ── Config background par page ────────────────────────────────────────────────
 
@@ -72,6 +73,11 @@ export function AppLayout() {
   const location = useLocation()
   const bg = getPageBg(location.pathname)
 
+  // View Transitions API — transition fluide entre pages
+  useEffect(() => {
+    if (!document.startViewTransition) return
+  }, [location.pathname])
+
   return (
     <div
       className="flex flex-col min-h-screen"
@@ -110,7 +116,7 @@ export function AppLayout() {
 
         <main
           key={location.pathname}
-          className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6 animate-fade-in-up"
+          className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6 page-transition"
         >
           <ErrorBoundary key={location.pathname}>
             <Outlet />

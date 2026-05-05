@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useNotifications } from '@/hooks/useNotifications'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
+import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import type { UserRole } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -36,6 +37,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/scorers',   label: 'Buteurs',     icon: Target },
     { to: '/teams',     label: 'Équipes',     icon: Users },
     { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/palmares',  label: 'Palmarès',   icon: Star },
     { to: '/admin',     label: 'Admin',       icon: Settings },
   ],
   captain: [
@@ -45,6 +47,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/scorers',   label: 'Buteurs',     icon: Target },
     { to: '/teams',     label: 'Équipes',     icon: Users },
     { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/palmares',  label: 'Palmarès',   icon: Star },
     { to: '/my-stats',  label: 'Mes Stats',   icon: Target },
     { to: '/captain',   label: 'Mon Équipe',  icon: Crown },
   ],
@@ -55,6 +58,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/scorers',   label: 'Buteurs',     icon: Target },
     { to: '/teams',     label: 'Équipes',     icon: Users },
     { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/palmares',  label: 'Palmarès',   icon: Star },
     { to: '/my-stats',  label: 'Mes Stats',   icon: Target },
     { to: '/my-team',   label: 'Mon Équipe',  icon: Users },
   ],
@@ -64,6 +68,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/matches',   label: 'Matchs',      icon: Calendar },
     { to: '/scorers',   label: 'Buteurs',     icon: Target },
     { to: '/teams',     label: 'Équipes',     icon: Users },
+    { to: '/palmares',  label: 'Palmarès',   icon: Star },
   ],
 }
 
@@ -225,6 +230,7 @@ export default function Header() {
     '/my-stats':  'Mes Stats',
     '/my-team':   'Mon Équipe',
     '/profile':   'Mon Profil',
+    '/palmares':  'Palmarès',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/')
@@ -285,6 +291,9 @@ export default function Header() {
             className="flex items-center gap-3 px-5 shrink-0 ml-auto"
             style={{ borderLeft: `1px solid ${BORDER}` }}
           >
+            {/* Recherche globale */}
+            <GlobalSearch />
+
             {/* Pill saison */}
             {season && (
               <span
@@ -422,6 +431,7 @@ export default function Header() {
               {season.name}
             </span>
           )}
+          <GlobalSearch />
           <RoleBadge role={effectiveRole} />
           <Avatar profile={profile} role={effectiveRole} />
           <button
@@ -465,13 +475,13 @@ export default function Header() {
         <div className="lg:hidden fixed inset-0 z-50">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
             onClick={() => setMobileOpen(false)}
           />
 
-          {/* Panel */}
+          {/* Panel — slide-in depuis la gauche */}
           <div
-            className="absolute top-0 left-0 bottom-0 w-72 flex flex-col overflow-y-auto"
+            className="absolute top-0 left-0 bottom-0 w-72 flex flex-col overflow-y-auto animate-slide-in-left"
             style={{ backgroundColor: BG_MAIN, borderRight: `1px solid ${BORDER}` }}
           >
             {/* Header drawer */}
@@ -587,16 +597,23 @@ export default function Header() {
             to={to}
             end={to === '/'}
             aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
-            className="flex flex-col items-center justify-center gap-1 flex-1 transition-colors"
+            className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors"
             style={({ isActive }) => ({
               color: isActive ? ACCENT : NAV_OFF,
             })}
           >
             {({ isActive }) => (
               <>
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                {/* Active pill */}
+                {isActive && (
+                  <span
+                    className="absolute top-1.5 inset-x-1.5 h-8 rounded-xl animate-scale-in"
+                    style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }}
+                  />
+                )}
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} className="relative z-10" />
                 <span
-                  className="text-[9px] font-bold uppercase tracking-wider"
+                  className="relative z-10 text-[9px] font-bold uppercase tracking-wider"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
                   {label}

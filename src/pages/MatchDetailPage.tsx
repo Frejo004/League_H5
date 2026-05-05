@@ -6,6 +6,7 @@ import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useRealtimeMatch } from '@/hooks/useRealtime'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
 
@@ -116,7 +117,14 @@ export function MatchDetailPage() {
   useRealtimeMatch(id)
 
   if (isLoading) {
-    return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>
+    return (
+      <div className="space-y-3 animate-fade-in">
+        <div className="skeleton-text w-20 h-4" />
+        <SkeletonMatchCard />
+        <SkeletonKpiGrid count={2} />
+        <SkeletonCard lines={5} />
+      </div>
+    )
   }
 
   if (!match) {

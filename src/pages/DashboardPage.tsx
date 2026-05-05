@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Trophy, Target, Users, ArrowRight } from 'lucide-react'
+import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
@@ -25,7 +25,46 @@ function formatDay(dateStr: string) {
   return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
 }
 
-// ── Mini match card style Sofascore ──────────────────────────────────────────
+// ── KPI Card premium ──────────────────────────────────────────────────────────
+function KpiCard({ label, value, icon: Icon, color, bg, trend }: {
+  label: string
+  value: number
+  icon: typeof Calendar
+  color: string
+  bg: string
+  trend?: string
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/6 p-4 group transition-all duration-300 hover:-translate-y-1 hover:border-white/10"
+      style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+      {/* Glow accent */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${color}12 0%, transparent 70%)` }} />
+
+      {/* Top row */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="p-2 rounded-xl" style={{ backgroundColor: `${color}18`, border: `1px solid ${color}25` }}>
+          <Icon size={15} style={{ color }} />
+        </div>
+        {trend && (
+          <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+            <TrendingUp size={9} /> {trend}
+          </span>
+        )}
+      </div>
+
+      {/* Value */}
+      <p className="text-3xl font-black text-white tabular-nums leading-none tracking-tight">{value}</p>
+      <p className="text-xs text-slate-500 mt-1.5 font-medium">{label}</p>
+
+      {/* Bottom accent line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: `linear-gradient(90deg, transparent, ${color}60, transparent)` }} />
+    </div>
+  )
+}
+
+// ── Mini match card premium ───────────────────────────────────────────────────
 function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'upcoming' | 'result' }) {
   const homeWon = match.home_score! > match.away_score!
   const awayWon = match.away_score! > match.home_score!
@@ -34,12 +73,11 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
   return (
     <Link
       to={`/matches/${match.id}`}
-      className="flex items-center gap-2 px-3 py-3 hover:bg-surface-raised
-                 transition-colors border-b border-surface-border/40 last:border-b-0"
+      className="group flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-all duration-150 border-b border-white/5 last:border-b-0"
     >
       {/* Home */}
-      <div className="flex flex-col items-center gap-1 w-16 shrink-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.home_team.color }}>
           {match.home_team.logo_url
             ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
@@ -47,75 +85,167 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
           }
         </div>
         <span className={clsx(
-          'text-[10px] font-medium text-center leading-tight truncate w-full',
-          variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-300'
+          'text-sm font-semibold truncate transition-colors',
+          variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
         )}>
           {match.home_team.name}
         </span>
       </div>
 
       {/* Center */}
-      <div className="flex-1 flex flex-col items-center gap-0.5">
+      <div className="flex flex-col items-center gap-0.5 shrink-0 min-w-[72px]">
         {variant === 'result' ? (
           <>
-            <div className="flex items-center gap-2">
-              <span className={clsx('text-lg font-bold tabular-nums',
-                homeWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-500')}>
+            <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/6">
+              <span className={clsx('text-base font-black tabular-nums',
+                homeWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
                 {match.home_score}
               </span>
-              <span className="text-slate-600 text-sm">-</span>
-              <span className={clsx('text-lg font-bold tabular-nums',
-                awayWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-500')}>
+              <span className="text-slate-700 text-xs">–</span>
+              <span className={clsx('text-base font-black tabular-nums',
+                awayWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
                 {match.away_score}
               </span>
             </div>
-            <span className="text-[9px] text-primary-500 font-bold uppercase">Terminé</span>
+            <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">FT</span>
           </>
         ) : match.scheduled_at ? (
           <>
-            <span className="text-base font-bold text-white tabular-nums">
+            <span className="text-sm font-black text-white tabular-nums bg-primary-600/20 px-2.5 py-1 rounded-lg border border-primary-600/20">
               {formatTime(match.scheduled_at)}
             </span>
             <span className="text-[10px] text-slate-500">{formatDay(match.scheduled_at)}</span>
           </>
         ) : (
-          <span className="text-xs text-slate-600 font-medium">À venir</span>
+          <span className="text-xs text-slate-600 font-semibold bg-surface-raised px-2 py-1 rounded-lg">À venir</span>
         )}
       </div>
 
       {/* Away */}
-      <div className="flex flex-col items-center gap-1 w-16 shrink-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+        <span className={clsx(
+          'text-sm font-semibold truncate text-right transition-colors',
+          variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
+        )}>
+          {match.away_team.name}
+        </span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.away_team.color }}>
           {match.away_team.logo_url
             ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
             : match.away_team.name[0]
           }
         </div>
-        <span className={clsx(
-          'text-[10px] font-medium text-center leading-tight truncate w-full',
-          variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-300'
-        )}>
-          {match.away_team.name}
-        </span>
       </div>
     </Link>
   )
 }
 
+// ── Section header ────────────────────────────────────────────────────────────
+function SectionHeader({ title, href }: { title: string; href: string }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
+      <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em]">{title}</span>
+      <Link to={href} className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors font-semibold">
+        Tout voir <ArrowRight size={11} />
+      </Link>
+    </div>
+  )
+}
+
+// ── Top scorer card premium ───────────────────────────────────────────────────
+function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/6 p-4"
+      style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
+
+      <div className="flex items-center gap-1 mb-3">
+        <Flame size={11} className="text-orange-400" />
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Meilleur buteur</span>
+      </div>
+
+      <div className="flex items-center gap-3 relative">
+        <div className="relative shrink-0">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-lg"
+            style={{ backgroundColor: scorer.team_color }}>
+            {scorer.first_name[0]}{scorer.last_name[0]}
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-[#111827]">
+            <Target size={9} className="text-white" />
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-white font-bold text-sm truncate leading-tight">
+            {scorer.first_name} {scorer.last_name}
+          </p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: scorer.team_color }} />
+            <span className="text-xs text-slate-500 truncate">{scorer.team_name}</span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-3xl font-black text-orange-400 tabular-nums leading-none">{scorer.goals}</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">buts</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Leader card premium ───────────────────────────────────────────────────────
+function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings>['data']>[0] }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border p-4"
+      style={{
+        background: `linear-gradient(135deg, ${team.team_color}12 0%, #111827 60%)`,
+        borderColor: `${team.team_color}30`,
+      }}>
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${team.team_color}10 0%, transparent 70%)` }} />
+
+      <div className="flex items-center gap-1 mb-3">
+        <Trophy size={11} className="text-yellow-400" />
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Leader</span>
+      </div>
+
+      <div className="flex items-center gap-3 relative">
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-lg shrink-0"
+          style={{ backgroundColor: team.team_color }}>
+          {team.team_logo
+            ? <img src={team.team_logo} alt="" className="w-9 h-9 object-contain rounded-lg" />
+            : team.team_name[0]
+          }
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-white font-bold text-sm truncate leading-tight">{team.team_name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">{team.won}V</span>
+            <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">{team.drawn}N</span>
+            <span className="text-[10px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">{team.lost}D</span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-3xl font-black tabular-nums leading-none" style={{ color: team.team_color }}>{team.points}</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">pts</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
-  const { data: teams } = useTeams(season?.id)
+  const { data: teams }   = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
 
-  // Abonnement Realtime — scores et classement mis à jour en direct
   useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
 
-  // N'affiche le spinner que les 3 premières secondes max
-  // Après, on affiche le contenu même si la saison n'est pas encore chargée
   const [timedOut, setTimedOut] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setTimedOut(true), 3000)
@@ -125,10 +255,9 @@ export function DashboardPage() {
   const isLoading = seasonLoading && !timedOut && !isFetched
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
-  const upcomingMatches = (matches ?? [])
+  const upcomingMatches  = (matches ?? [])
     .filter(m => m.status === 'scheduled')
     .sort((a, b) => {
-      // Matchs avec date en premier, triés par date
       if (a.scheduled_at && b.scheduled_at)
         return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
       if (a.scheduled_at) return -1
@@ -139,24 +268,16 @@ export function DashboardPage() {
     .filter(m => m.played_at)
     .sort((a, b) => new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime())
     .slice(0, 5)
+
   const topScorer = scorers?.[0]
-  const topTeam = standings?.[0]
+  const topTeam   = standings?.[0]
 
   if (isLoading) {
     return (
-      <div className="space-y-3 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1.5">
-            <div className="skeleton-text w-40 h-5" />
-            <div className="skeleton-text w-24 h-3" />
-          </div>
-        </div>
+      <div className="space-y-4 animate-fade-in">
         <SkeletonKpiGrid count={4} />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="card p-0 overflow-hidden lg:col-span-2">
-            <div className="px-4 py-2.5 border-b border-surface-border">
-              <div className="skeleton-text w-32 h-3" />
-            </div>
             {[1,2,3].map(i => <SkeletonMatchCard key={i} />)}
           </div>
           <div className="space-y-3">
@@ -172,8 +293,8 @@ export function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
-          <Trophy size={32} className="mx-auto text-slate-600 mb-3" />
-          <p className="text-slate-400 font-medium">Aucune saison active</p>
+          <Trophy size={32} className="mx-auto text-slate-700 mb-3" />
+          <p className="text-slate-400 font-semibold">Aucune saison active</p>
           <p className="text-slate-600 text-sm mt-1">Contactez l'administrateur</p>
         </div>
       </div>
@@ -181,7 +302,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
 
       {/* Hero */}
       <PageHero
@@ -207,42 +328,27 @@ export function DashboardPage() {
       />
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        {[
-          { label: 'Matchs joués', value: completedMatches.length, icon: Calendar, color: 'text-blue-400' },
-          { label: 'Équipes',      value: teams?.length ?? 0,       icon: Users,    color: 'text-violet-400' },
-          { label: 'Buteurs',      value: scorers?.filter(s => s.goals > 0).length ?? 0, icon: Target, color: 'text-orange-400' },
-          { label: 'À venir',      value: upcomingMatches.length,   icon: Calendar, color: 'text-primary-400' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="stat-card">
-            <div className="flex items-center justify-between mb-2">
-              <Icon size={15} className={color} />
-            </div>
-            <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{label}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+        <KpiCard label="Matchs joués" value={completedMatches.length}                              icon={Calendar} color="#3b82f6" bg="blue" />
+        <KpiCard label="Équipes"      value={teams?.length ?? 0}                                   icon={Users}    color="#8b5cf6" bg="violet" />
+        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0}        icon={Target}   color="#f97316" bg="orange" />
+        <KpiCard label="À venir"      value={upcomingMatches.length}                               icon={Calendar} color="#2563eb" bg="blue" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* Next matches */}
-        <div className="card p-0 overflow-hidden lg:col-span-2">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface-border">
-            <p className="section-title">Prochains matchs</p>
-            <Link to="/matches" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
-              Voir tout <ArrowRight size={11} />
-            </Link>
-          </div>
-
+        {/* Prochains matchs */}
+        <div className="overflow-hidden rounded-2xl border border-white/6 lg:col-span-2"
+          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+          <SectionHeader title="Prochains matchs" href="/matches" />
           {upcomingMatches.length === 0 ? (
-            <div className="empty-state py-6">
+            <div className="empty-state py-8">
               <div className="empty-state-icon"><Calendar size={18} /></div>
               <p className="text-slate-500 text-sm">Aucun match programmé</p>
             </div>
           ) : (
-            <div>
-              {upcomingMatches.slice(0, 3).map(match => (
+            <div className="stagger-fast">
+              {upcomingMatches.slice(0, 4).map(match => (
                 <MiniMatchCard key={match.id} match={match} variant="upcoming" />
               ))}
             </div>
@@ -251,71 +357,17 @@ export function DashboardPage() {
 
         {/* Top scorer + leader */}
         <div className="space-y-3">
-
-          {/* Top scorer */}
-          {topScorer && (
-            <div className="card">
-              <p className="section-title mb-3">Meilleur buteur</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center
-                                text-white text-sm font-bold shrink-0"
-                  style={{ backgroundColor: topScorer.team_color }}>
-                  {topScorer.first_name[0]}{topScorer.last_name[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-white font-semibold text-sm truncate">
-                    {topScorer.first_name} {topScorer.last_name}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="w-2 h-2 rounded-sm shrink-0"
-                      style={{ backgroundColor: topScorer.team_color }} />
-                    <span className="text-xs text-slate-500 truncate">{topScorer.team_name}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-2xl font-bold text-orange-400 tabular-nums">{topScorer.goals}</p>
-                  <p className="text-[10px] text-slate-600">buts</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Leader */}
-          {topTeam && (
-            <div className="card">
-              <p className="section-title mb-3">Leader</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center
-                                text-white text-sm font-bold shrink-0"
-                  style={{ backgroundColor: topTeam.team_color }}>
-                  {topTeam.team_name[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-white font-semibold text-sm truncate">{topTeam.team_name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {topTeam.won}V · {topTeam.drawn}N · {topTeam.lost}D
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-2xl font-bold text-primary-400 tabular-nums">{topTeam.points}</p>
-                  <p className="text-[10px] text-slate-600">pts</p>
-                </div>
-              </div>
-            </div>
-          )}
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam   && <LeaderCard   team={topTeam} />}
         </div>
       </div>
 
-      {/* Recent results */}
+      {/* Derniers résultats */}
       {recentMatches.length > 0 && (
-        <div className="card p-0 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface-border">
-            <p className="section-title">Derniers résultats</p>
-            <Link to="/matches" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
-              Voir tout <ArrowRight size={11} />
-            </Link>
-          </div>
-          <div>
+        <div className="overflow-hidden rounded-2xl border border-white/6"
+          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+          <SectionHeader title="Derniers résultats" href="/matches" />
+          <div className="stagger-fast">
             {recentMatches.map(match => (
               <MiniMatchCard key={match.id} match={match} variant="result" />
             ))}

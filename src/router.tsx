@@ -20,47 +20,52 @@ import { CaptainPage } from '@/pages/CaptainPage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { MyStatsPage } from '@/pages/MyStatsPage'
 import { MyTeamPage } from '@/pages/MyTeamPage'
+import { PalmaresPage } from '@/pages/PalmaresPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
-export const router = createBrowserRouter([
-  // Auth routes (public)
-  { path: '/auth/login',           element: <LoginPage /> },
-  { path: '/auth/signup',          element: <SignupPage /> },
-  { path: '/auth/reset-password',  element: <ResetPasswordPage /> },
-  { path: '/auth/update-password', element: <UpdatePasswordPage /> },
-  { path: '/auth/join',            element: <JoinPage /> },
+export const router = createBrowserRouter(
+  [
+    // Auth routes (public)
+    { path: '/auth/login',           element: <LoginPage /> },
+    { path: '/auth/signup',          element: <SignupPage /> },
+    { path: '/auth/reset-password',  element: <ResetPasswordPage /> },
+    { path: '/auth/update-password', element: <UpdatePasswordPage /> },
+    { path: '/auth/join',            element: <JoinPage /> },
 
-  // App routes (protected)
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        element: <AppLayout />,
-        children: [
-          { path: '/',              element: <DashboardPage /> },
-          { path: '/standings',     element: <StandingsPage /> },
-          { path: '/matches',       element: <MatchesPage /> },
-          { path: '/matches/:id',   element: <MatchDetailPage /> },
-          { path: '/scorers',       element: <ScorersPage /> },
-          { path: '/teams',         element: <TeamsPage /> },
-          { path: '/teams/:id',     element: <TeamDetailPage /> },
-          { path: '/players',       element: <PlayersPage /> },
-          { path: '/players/:id',   element: <PlayerProfilePage /> },
-          { path: '/stats',         element: <StatsPage /> },
-          { path: '/admin',         element: <AdminPage /> },
-          { path: '/captain',       element: <CaptainPage /> },
-          { path: '/my-stats',      element: <MyStatsPage /> },
-          { path: '/my-team',       element: <MyTeamPage /> },
-          { path: '/profile',       element: <ProfilePage /> },
-        ],
-      },
-    ],
-  },
+    // App routes (protected)
+    {
+      element: <ProtectedRoute />,
+      children: [
+        {
+          element: <AppLayout />,
+          children: [
+            { path: '/',              element: <DashboardPage /> },
+            { path: '/standings',     element: <StandingsPage /> },
+            { path: '/matches',       element: <MatchesPage /> },
+            { path: '/matches/:id',   element: <MatchDetailPage /> },
+            { path: '/scorers',       element: <ScorersPage /> },
+            { path: '/teams',         element: <TeamsPage /> },
+            { path: '/teams/:id',     element: <TeamDetailPage /> },
+            { path: '/players',       element: <PlayersPage /> },
+            { path: '/players/:id',   element: <PlayerProfilePage /> },
+            { path: '/stats',         element: <StatsPage /> },
+            { path: '/admin',         element: <AdminPage /> },
+            { path: '/captain',       element: <CaptainPage /> },
+            { path: '/my-stats',      element: <MyStatsPage /> },
+            { path: '/my-team',       element: <MyTeamPage /> },
+            { path: '/palmares',      element: <PalmaresPage /> },
+            { path: '/profile',       element: <ProfilePage /> },
+          ],
+        },
+      ],
+    },
 
-  // Fallback
-  { path: '*', element: <NotFoundPage /> },
-])
+    // Fallback
+    { path: '*', element: <NotFoundPage /> },
+  ],
+  { future: { v7_startTransition: true } }
+)
 
 /** Use this outside React components (e.g. AuthContext) */
 export function navigateTo(path: string) {

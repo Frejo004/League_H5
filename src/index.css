@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800;900&display=swap');
 @import "tailwindcss";
 
 
@@ -706,6 +707,23 @@ body {
 
 .page-transition {
   animation: fadeInUp 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* View Transitions API — transition native entre pages */
+@keyframes vt-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes vt-slide-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-6px); }
+}
+
+::view-transition-old(root) {
+  animation: vt-slide-out 0.18s ease both;
+}
+::view-transition-new(root) {
+  animation: vt-slide-in 0.25s cubic-bezier(0.16,1,0.3,1) both;
 }
 
 /* ═══════════════════════════════════════════════════════════

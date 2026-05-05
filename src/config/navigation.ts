@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2,
+  Users, User, BarChart2, Star,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/teams',     icon: Users,           label: 'Équipes' },
   { to: '/players',   icon: User,            label: 'Joueurs' },
   { to: '/stats',     icon: BarChart2,       label: 'Stats' },
+  { to: '/palmares',  icon: Star,            label: 'Palmarès' },
 ]
 
 /** Subset shown in the mobile bottom nav (limited space — no Joueurs) */
