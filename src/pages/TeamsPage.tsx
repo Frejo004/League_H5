@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { useRealtimeTeams } from '@/hooks/useRealtime'
+import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { clsx } from 'clsx'
 
 export function TeamsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: teams, isLoading: teamsLoading } = useTeams(season?.id)
+  const { myTeamId } = useMyTeam(season?.id)
 
   useRealtimeTeams(season?.id)
 
@@ -55,12 +58,16 @@ export function TeamsPage() {
         <div className="card p-0 overflow-hidden">
           {teams.map((team, i) => {
             const playerCount = (team as unknown as { players?: { count: number }[] }).players?.[0]?.count ?? 0
+            const isMyTeam = team.id === myTeamId
             return (
               <Link
                 key={team.id}
                 to={`/teams/${team.id}`}
-                className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors
-                            ${i < teams.length - 1 ? 'border-b border-surface-border/50' : ''}`}
+                className={clsx(
+                  'flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors',
+                  i < teams.length - 1 && 'border-b border-surface-border/50',
+                  isMyTeam && 'bg-primary-600/5 border-l-2 border-l-primary-500/50'
+                )}
               >
                 {/* Color swatch */}
                 <div
@@ -75,7 +82,14 @@ export function TeamsPage() {
 
                 {/* Name */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-200 truncate">{team.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-200 truncate">{team.name}</p>
+                    {isMyTeam && (
+                      <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                        Mon équipe
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {playerCount} joueur{playerCount !== 1 ? 's' : ''}
                   </p>

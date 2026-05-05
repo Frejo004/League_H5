@@ -5,6 +5,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
+import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
@@ -96,6 +97,7 @@ export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
   const { data: matches } = useMatches(season?.id)
+  const { myTeamId } = useMyTeam(season?.id)
   const [filter, setFilter] = useState<FilterType>('all')
 
   useRealtimeMatches(season?.id)
@@ -188,6 +190,7 @@ export function StandingsPage() {
               {(filteredStandings ?? []).map((row: StandingRow, i: number) => {
                 const isFirst  = i === 0
                 const isLast   = i === (filteredStandings?.length ?? 0) - 1
+                const isMyTeam = row.team_id === myTeamId
 
                 return (
                   <Link
@@ -197,7 +200,8 @@ export function StandingsPage() {
                       'grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-3',
                       'border-b border-white/4 last:border-b-0 transition-colors duration-150',
                       'hover:bg-white/3 group',
-                      isFirst && 'bg-yellow-500/3'
+                      isFirst && 'bg-yellow-500/3',
+                      isMyTeam && 'bg-primary-600/5 border-l-2 border-l-primary-500/50'
                     )}
                   >
                     {/* Rank */}
@@ -225,12 +229,19 @@ export function StandingsPage() {
                           : row.team_name[0]
                         }
                       </div>
-                      <span className={clsx(
-                        'text-sm font-semibold truncate group-hover:text-white transition-colors',
-                        isFirst ? 'text-white' : 'text-slate-300'
-                      )}>
-                        {row.team_name}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className={clsx(
+                          'text-sm font-semibold truncate group-hover:text-white transition-colors',
+                          isFirst ? 'text-white' : 'text-slate-300'
+                        )}>
+                          {row.team_name}
+                        </span>
+                        {isMyTeam && (
+                          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                            Mon équipe
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Played */}

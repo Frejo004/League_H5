@@ -7,6 +7,7 @@ import { useTeams } from '@/hooks/useTeams'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
+import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
@@ -65,15 +66,25 @@ function KpiCard({ label, value, icon: Icon, color, bg, trend }: {
 }
 
 // ── Mini match card premium ───────────────────────────────────────────────────
-function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'upcoming' | 'result' }) {
+function MiniMatchCard({ match, variant, myTeamId }: { 
+  match: MatchWithTeams
+  variant: 'upcoming' | 'result'
+  myTeamId?: string | null
+}) {
   const homeWon = match.home_score! > match.away_score!
   const awayWon = match.away_score! > match.home_score!
   const isDraw  = match.home_score === match.away_score
+  const isMyMatch = myTeamId && (match.home_team_id === myTeamId || match.away_team_id === myTeamId)
+  const isMyTeamHome = match.home_team_id === myTeamId
+  const isMyTeamAway = match.away_team_id === myTeamId
 
   return (
     <Link
       to={`/matches/${match.id}`}
-      className="group flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-all duration-150 border-b border-white/5 last:border-b-0"
+      className={clsx(
+        "group flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-all duration-150 border-b border-white/5 last:border-b-0",
+        isMyMatch && "bg-primary-600/5 border-l-2 border-l-primary-500/50"
+      )}
     >
       {/* Home */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -84,12 +95,19 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
             : match.home_team.name[0]
           }
         </div>
-        <span className={clsx(
-          'text-sm font-semibold truncate transition-colors',
-          variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
-        )}>
-          {match.home_team.name}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className={clsx(
+            'text-sm font-semibold truncate transition-colors',
+            variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
+          )}>
+            {match.home_team.name}
+          </span>
+          {isMyTeamHome && (
+            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+              Mon équipe
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Center */}
@@ -123,12 +141,19 @@ function MiniMatchCard({ match, variant }: { match: MatchWithTeams; variant: 'up
 
       {/* Away */}
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <span className={clsx(
-          'text-sm font-semibold truncate text-right transition-colors',
-          variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
-        )}>
-          {match.away_team.name}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+          {isMyTeamAway && (
+            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+              Mon équipe
+            </span>
+          )}
+          <span className={clsx(
+            'text-sm font-semibold truncate text-right transition-colors',
+            variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
+          )}>
+            {match.away_team.name}
+          </span>
+        </div>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.away_team.color }}>
           {match.away_team.logo_url
@@ -242,6 +267,7 @@ export function DashboardPage() {
   const { data: teams }   = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
+  const { myTeamId } = useMyTeam(season?.id)
 
   useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
@@ -349,7 +375,7 @@ export function DashboardPage() {
           ) : (
             <div className="stagger-fast">
               {upcomingMatches.slice(0, 4).map(match => (
-                <MiniMatchCard key={match.id} match={match} variant="upcoming" />
+                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
               ))}
             </div>
           )}
@@ -369,7 +395,7 @@ export function DashboardPage() {
           <SectionHeader title="Derniers résultats" href="/matches" />
           <div className="stagger-fast">
             {recentMatches.map(match => (
-              <MiniMatchCard key={match.id} match={match} variant="result" />
+              <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
             ))}
           </div>
         </div>

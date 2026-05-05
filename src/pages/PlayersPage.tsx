@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { User, Search, ChevronDown } from 'lucide-react'
+import { User, Search, ChevronDown, Crown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
@@ -7,7 +7,7 @@ import { useTeams } from '@/hooks/useTeams'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
-import type { PlayerPosition, PlayerWithTeam } from '@/types/database'
+import type { PlayerPosition, PlayerWithTeam, TeamWithCaptain } from '@/types/database'
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   goalkeeper: 'Gardien',
@@ -199,6 +199,9 @@ export function PlayersPage() {
             {filtered.map((player, i) => {
               const p = player as PlayerWithTeam
               const team = p.teams
+              const teamWithCaptain = teams?.find(t => t.id === p.team_id) as TeamWithCaptain | undefined
+              const isCaptain = teamWithCaptain?.captain_player_id === p.id
+              
               return (
                 <Link
                   key={p.id}
@@ -215,17 +218,29 @@ export function PlayersPage() {
 
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden relative"
                       style={{ backgroundColor: team?.color ?? '#16a34a' }}
                     >
                       {p.avatar_url
                         ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
                         : `${p.first_name[0]}${p.last_name[0]}`
                       }
+                      {isCaptain && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-yellow-500 rounded-full flex items-center justify-center border border-surface-card">
+                          <Crown size={8} className="text-slate-900" strokeWidth={3} />
+                        </div>
+                      )}
                     </div>
-                    <span className="text-sm text-slate-200 font-medium truncate">
-                      {p.first_name} {p.last_name}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-sm text-slate-200 font-medium truncate">
+                        {p.first_name} {p.last_name}
+                      </span>
+                      {isCaptain && (
+                        <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                          Capitaine
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="hidden sm:flex items-center gap-1.5">

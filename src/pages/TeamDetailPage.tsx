@@ -1,12 +1,12 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Users, Target, Trophy } from 'lucide-react'
+import { ArrowLeft, Users, Target, Trophy, Crown } from 'lucide-react'
 import { useTeam } from '@/hooks/useTeams'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
-import type { Player, PlayerPosition, TeamRef } from '@/types/database'
+import type { Player, PlayerPosition, TeamRef, TeamWithCaptain } from '@/types/database'
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   goalkeeper: 'Gardien',
@@ -51,6 +51,7 @@ export function TeamDetailPage() {
   const players = (team.players ?? []) as Player[]
   const standing = standings?.find(s => s.team_id === id)
   const form = standing?.form ?? []
+  const teamWithCaptain = team as unknown as TeamWithCaptain
 
   // Team matches (completed)
   const teamMatches = (matches ?? [])
@@ -144,32 +145,47 @@ export function TeamDetailPage() {
             {players
               .filter(p => p.is_active)
               .sort((a, b) => (a.jersey_number ?? 99) - (b.jersey_number ?? 99))
-              .map(p => (
-                <div key={p.id} className="flex items-center gap-3 py-2.5">
-                  <span className="text-slate-600 font-mono text-sm w-6 text-right shrink-0">
-                    {p.jersey_number ?? '—'}
-                  </span>
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden"
-                    style={{ backgroundColor: team.color }}
-                  >
-                    {p.avatar_url
-                      ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
-                      : `${p.first_name[0]}${p.last_name[0]}`
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold">
-                      {p.first_name} {p.last_name}
-                    </p>
-                  </div>
-                  {p.position && (
-                    <span className="badge bg-surface-border text-slate-400 text-[10px]">
-                      {POSITION_LABELS[p.position]}
+              .map(p => {
+                const isCaptain = teamWithCaptain.captain_player_id === p.id
+                return (
+                  <div key={p.id} className="flex items-center gap-3 py-2.5">
+                    <span className="text-slate-600 font-mono text-sm w-6 text-right shrink-0">
+                      {p.jersey_number ?? '—'}
                     </span>
-                  )}
-                </div>
-              ))
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden relative"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {p.avatar_url
+                        ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : `${p.first_name[0]}${p.last_name[0]}`
+                      }
+                      {isCaptain && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center border border-surface-card">
+                          <Crown size={9} className="text-slate-900" strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-white text-sm font-semibold">
+                          {p.first_name} {p.last_name}
+                        </p>
+                        {isCaptain && (
+                          <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                            Capitaine
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {p.position && (
+                      <span className="badge bg-surface-border text-slate-400 text-[10px]">
+                        {POSITION_LABELS[p.position]}
+                      </span>
+                    )}
+                  </div>
+                )
+              })
             }
           </div>
         )}
