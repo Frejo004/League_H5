@@ -29,7 +29,9 @@ export function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      // Redirection immédiate — ProtectedRoute gère ensuite le rôle/approbation
+      
+      // Redirection immédiate - le ProtectedRoute attendra que le profil soit chargé
+      // grâce à la correction dans AuthContext qui évite le double chargement
       navigate('/', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))

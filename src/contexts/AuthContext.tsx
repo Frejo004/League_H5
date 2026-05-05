@@ -3,6 +3,26 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile, UserRole } from '@/types/database'
 
+/**
+ * ⚠️ ATTENTION : NE PAS MODIFIER LA LOGIQUE D'AUTHENTIFICATION SANS COMPRENDRE LE FLUX COMPLET
+ * 
+ * Ce contexte gère l'authentification et le chargement du profil utilisateur.
+ * La logique est complexe car Supabase déclenche plusieurs événements successifs :
+ * 
+ * 1. INITIAL_SESSION : Au chargement de l'app (session existante ou null)
+ * 2. SIGNED_IN : Après signInWithPassword() OU juste après INITIAL_SESSION si déjà connecté
+ * 3. TOKEN_REFRESHED : Rafraîchissement automatique du token
+ * 4. SIGNED_OUT : Après signOut()
+ * 
+ * PROBLÈME RÉSOLU : Supabase déclenche SIGNED_IN même après INITIAL_SESSION, ce qui causait
+ * un double chargement du profil et bloquait l'interface sur "Profile loading...".
+ * 
+ * SOLUTION : Vérifier si le profil est déjà chargé avant de le recharger lors de SIGNED_IN.
+ * 
+ * ⚠️ Toute modification de cette logique peut casser le flux d'authentification.
+ * ⚠️ Tester minutieusement : connexion, déconnexion, rafraîchissement, retour après fermeture.
+ */
+
 interface AuthContextValue {
   session: Session | null
   user: Session['user'] | null
@@ -49,8 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (error) throw error
       setProfile(data)
+      
+      // Toujours mettre isLoading à false après avoir chargé le profil
+      setIsLoading(false)
     } catch (err) {
       console.error('[AuthContext] Error fetching profile:', err)
+      // Même en cas d'erreur, débloquer le chargement
+      setIsLoading(false)
     } finally {
       fetchingRef.current = false
       setIsProfileLoading(false)
@@ -90,28 +115,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        // Événements suivants : SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT…
+        // ⚠️ IMPORTANT : Ne pas modifier cette logique sans comprendre le flux complet
+        // Supabase déclenche SIGNED_IN même après INITIAL_SESSION, ce qui peut causer
+        // un double chargement du profil et bloquer l'interface sur "Profile loading..."
         if (newSession?.user) {
           const currentUserId = newSession.user.id
           
-          // Pour SIGNED_IN, toujours fetch le profil pour s'assurer d'avoir les données à jour
-          // (important après inscription ou claim d'invitation)
+          // SIGNED_IN : Vérifier si le profil est déjà chargé avant de recharger
+          // Cela évite le rechargement inutile après INITIAL_SESSION
           if (event === 'SIGNED_IN') {
+            // Si le profil est déjà chargé pour ce user, ne rien faire
+            if (profileRef.current?.id === currentUserId) {
+              setIsLoading(false)
+              setIsProfileLoading(false)
+              return
+            }
+            
+            // Sinon, charger le profil (cas d'une vraie nouvelle connexion)
             await fetchProfile(currentUserId)
+            if (isMounted) {
+              setIsLoading(false)
+            }
             return
           }
           
-          // Si c'est juste un refresh de token et qu'on a déjà le profil, pas besoin de re-fetch
+          // TOKEN_REFRESHED : Ne pas recharger si on a déjà le profil
           if (event === 'TOKEN_REFRESHED' && profileRef.current?.id === currentUserId) {
             setIsProfileLoading(false)
             return
           }
           
-          // Sinon, fetch le profil
+          // Autres événements : charger le profil
           await fetchProfile(currentUserId)
         } else {
           setProfile(null)
           setIsProfileLoading(false)
+          // Réinitialiser isLoading lors de la déconnexion
+          if (event === 'SIGNED_OUT') {
+            setIsLoading(false)
+          }
         }
       }
     )

@@ -28,10 +28,16 @@ export function ProtectedRoute() {
   // avant de détecter qu'un utilisateur est spectateur
   if (isProfileLoading) return <PageLoader />
 
-  // 4. Session valide mais profil absent → la requête a échoué (réseau absent
-  //    au réveil de l'app sur mobile). On renvoie au login plutôt que de rester
-  //    bloqué sur un spinner infini.
-  if (!profile) return <Navigate to="/auth/login" replace />
+  // 4. Session valide mais profil absent après le chargement initial
+  // Cela peut arriver si :
+  // - La requête a échoué (réseau absent)
+  // - Le profil n'existe pas encore (cas rare)
+  if (!profile) {
+    // Si on est encore en train de charger, attendre
+    if (isLoading || isProfileLoading) return <PageLoader />
+    // Sinon, rediriger vers login
+    return <Navigate to="/auth/login" replace />
+  }
 
   // 5. Rôles non-spectateurs → accès direct
   if (profile.role !== 'spectator') return <Outlet />
