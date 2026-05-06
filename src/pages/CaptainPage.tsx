@@ -992,16 +992,11 @@ export function CaptainPage() {
     try {
       const path = `teams/${myTeamTyped.id}/logo`
 
-      // Upsert : update d'abord, insert si inexistant
-      const { error: updateErr } = await supabase.storage
+      // Upsert direct : crée ou remplace le fichier existant
+      const { error: uploadErr } = await supabase.storage
         .from('avatars')
-        .update(path, file, { contentType: file.type, upsert: false })
-      if (updateErr) {
-        const { error: insertErr } = await supabase.storage
-          .from('avatars')
-          .upload(path, file, { contentType: file.type, upsert: false })
-        if (insertErr) throw insertErr
-      }
+        .upload(path, file, { contentType: file.type, upsert: true })
+      if (uploadErr) throw uploadErr
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const logoUrlWithBust = `${data.publicUrl}?t=${Date.now()}`
