@@ -36,8 +36,11 @@ function KpiCard({ label, value, icon: Icon, color, bg, trend }: {
   trend?: string
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/6 p-4 group transition-all duration-300 hover:-translate-y-1 hover:border-white/10"
-      style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+    <div className="relative overflow-hidden rounded-2xl border p-4 group transition-all duration-300 hover:-translate-y-1"
+      style={{ 
+        background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))',
+        borderColor: 'var(--color-surface-border)'
+      }}>
       {/* Glow accent */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${color}12 0%, transparent 70%)` }} />
@@ -55,8 +58,8 @@ function KpiCard({ label, value, icon: Icon, color, bg, trend }: {
       </div>
 
       {/* Value */}
-      <p className="text-3xl font-black text-white tabular-nums leading-none tracking-tight">{value}</p>
-      <p className="text-xs text-slate-500 mt-1.5 font-medium">{label}</p>
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight" style={{ color: 'var(--color-text-primary)' }}>{value}</p>
+      <p className="text-xs mt-1.5 font-medium" style={{ color: 'var(--color-text-muted)' }}>{label}</p>
 
       {/* Bottom accent line */}
       <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -82,9 +85,15 @@ function MiniMatchCard({ match, variant, myTeamId }: {
     <Link
       to={`/matches/${match.id}`}
       className={clsx(
-        "group flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-all duration-150 border-b border-white/5 last:border-b-0",
-        isMyMatch && "bg-primary-600/5 border-l-2 border-l-primary-500/50"
+        "group flex items-center gap-3 px-4 py-3.5 transition-all duration-150 last:border-b-0",
+        isMyMatch && "border-l-2 border-l-primary-500/50"
       )}
+      style={{ 
+        borderBottom: '1px solid var(--color-surface-border)',
+        backgroundColor: isMyMatch ? 'rgba(37,99,235,0.04)' : undefined
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-surface-raised, rgba(255,255,255,0.03))' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = isMyMatch ? 'rgba(37,99,235,0.04)' : '' }}
     >
       {/* Home */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -98,8 +107,9 @@ function MiniMatchCard({ match, variant, myTeamId }: {
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span className={clsx(
             'text-sm font-semibold truncate transition-colors',
-            variant === 'result' ? (homeWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
-          )}>
+            variant === 'result' ? (homeWon ? '' : '') : ''
+          )}
+          style={{ color: variant === 'result' ? (homeWon ? 'var(--color-text-primary)' : 'var(--color-text-muted)') : 'var(--color-text-secondary)' }}>
             {match.home_team.name}
           </span>
           {isMyTeamHome && (
@@ -114,28 +124,29 @@ function MiniMatchCard({ match, variant, myTeamId }: {
       <div className="flex flex-col items-center gap-0.5 shrink-0 min-w-[72px]">
         {variant === 'result' ? (
           <>
-            <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/6">
-              <span className={clsx('text-base font-black tabular-nums',
-                homeWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg border"
+              style={{ backgroundColor: 'var(--color-surface-raised, rgba(0,0,0,0.3))', borderColor: 'var(--color-surface-border)' }}>
+              <span className="text-base font-black tabular-nums"
+                style={{ color: homeWon ? 'var(--color-text-primary)' : isDraw ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
                 {match.home_score}
               </span>
-              <span className="text-slate-700 text-xs">–</span>
-              <span className={clsx('text-base font-black tabular-nums',
-                awayWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>–</span>
+              <span className="text-base font-black tabular-nums"
+                style={{ color: awayWon ? 'var(--color-text-primary)' : isDraw ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
                 {match.away_score}
               </span>
             </div>
-            <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">FT</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>FT</span>
           </>
         ) : match.scheduled_at ? (
           <>
-            <span className="text-sm font-black text-white tabular-nums bg-primary-600/20 px-2.5 py-1 rounded-lg border border-primary-600/20">
+            <span className="text-sm font-black tabular-nums bg-primary-600/20 px-2.5 py-1 rounded-lg border border-primary-600/20 text-primary-400">
               {formatTime(match.scheduled_at)}
             </span>
-            <span className="text-[10px] text-slate-500">{formatDay(match.scheduled_at)}</span>
+            <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{formatDay(match.scheduled_at)}</span>
           </>
         ) : (
-          <span className="text-xs text-slate-600 font-semibold bg-surface-raised px-2 py-1 rounded-lg">À venir</span>
+          <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{ color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface-raised)' }}>À venir</span>
         )}
       </div>
 
@@ -147,10 +158,8 @@ function MiniMatchCard({ match, variant, myTeamId }: {
               Mon équipe
             </span>
           )}
-          <span className={clsx(
-            'text-sm font-semibold truncate text-right transition-colors',
-            variant === 'result' ? (awayWon ? 'text-white' : 'text-slate-500') : 'text-slate-200 group-hover:text-white'
-          )}>
+          <span className="text-sm font-semibold truncate text-right transition-colors"
+            style={{ color: variant === 'result' ? (awayWon ? 'var(--color-text-primary)' : 'var(--color-text-muted)') : 'var(--color-text-secondary)' }}>
             {match.away_team.name}
           </span>
         </div>
@@ -169,8 +178,8 @@ function MiniMatchCard({ match, variant, myTeamId }: {
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
-      <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em]">{title}</span>
+    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--color-surface-border)' }}>
+      <span className="text-[11px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>{title}</span>
       <Link to={href} className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors font-semibold">
         Tout voir <ArrowRight size={11} />
       </Link>
@@ -181,14 +190,17 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 // ── Top scorer card premium ───────────────────────────────────────────────────
 function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/6 p-4"
-      style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+    <div className="relative overflow-hidden rounded-2xl border p-4"
+      style={{ 
+        background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))',
+        borderColor: 'var(--color-surface-border)'
+      }}>
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
 
       <div className="flex items-center gap-1 mb-3">
         <Flame size={11} className="text-orange-400" />
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Meilleur buteur</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>Meilleur buteur</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -197,22 +209,23 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
             style={{ backgroundColor: scorer.team_color }}>
             {scorer.first_name[0]}{scorer.last_name[0]}
           </div>
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-[#111827]">
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2"
+            style={{ borderColor: 'var(--color-surface-card, #111827)' }}>
             <Target size={9} className="text-white" />
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-white font-bold text-sm truncate leading-tight">
+          <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--color-text-primary)' }}>
             {scorer.first_name} {scorer.last_name}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: scorer.team_color }} />
-            <span className="text-xs text-slate-500 truncate">{scorer.team_name}</span>
+            <span className="text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>{scorer.team_name}</span>
           </div>
         </div>
         <div className="text-right shrink-0">
           <p className="text-3xl font-black text-orange-400 tabular-nums leading-none">{scorer.goals}</p>
-          <p className="text-[10px] text-slate-600 mt-0.5">buts</p>
+          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>buts</p>
         </div>
       </div>
     </div>
@@ -224,7 +237,7 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
   return (
     <div className="relative overflow-hidden rounded-2xl border p-4"
       style={{
-        background: `linear-gradient(135deg, ${team.team_color}12 0%, #111827 60%)`,
+        background: `linear-gradient(135deg, ${team.team_color}12 0%, var(--color-surface-card, #111827) 60%)`,
         borderColor: `${team.team_color}30`,
       }}>
       <div className="absolute inset-0 pointer-events-none"
@@ -232,7 +245,7 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
 
       <div className="flex items-center gap-1 mb-3">
         <Trophy size={11} className="text-yellow-400" />
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Leader</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>Leader</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -244,16 +257,16 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
           }
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-white font-bold text-sm truncate leading-tight">{team.team_name}</p>
+          <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--color-text-primary)' }}>{team.team_name}</p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">{team.won}V</span>
-            <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">{team.drawn}N</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface-raised, rgba(255,255,255,0.05))' }}>{team.drawn}N</span>
             <span className="text-[10px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">{team.lost}D</span>
           </div>
         </div>
         <div className="text-right shrink-0">
           <p className="text-3xl font-black tabular-nums leading-none" style={{ color: team.team_color }}>{team.points}</p>
-          <p className="text-[10px] text-slate-600 mt-0.5">pts</p>
+          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>pts</p>
         </div>
       </div>
     </div>
@@ -364,13 +377,13 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Prochains matchs */}
-        <div className="overflow-hidden rounded-2xl border border-white/6 lg:col-span-2"
-          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+        <div className="overflow-hidden rounded-2xl border lg:col-span-2"
+          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))', borderColor: 'var(--color-surface-border)' }}>
           <SectionHeader title="Prochains matchs" href="/matches" />
           {upcomingMatches.length === 0 ? (
             <div className="empty-state py-8">
               <div className="empty-state-icon"><Calendar size={18} /></div>
-              <p className="text-slate-500 text-sm">Aucun match programmé</p>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
             </div>
           ) : (
             <div className="stagger-fast">
@@ -390,8 +403,8 @@ export function DashboardPage() {
 
       {/* Derniers résultats */}
       {recentMatches.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-white/6"
-          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+        <div className="overflow-hidden rounded-2xl border"
+          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))', borderColor: 'var(--color-surface-border)' }}>
           <SectionHeader title="Derniers résultats" href="/matches" />
           <div className="stagger-fast">
             {recentMatches.map(match => (

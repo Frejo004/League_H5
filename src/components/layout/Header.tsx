@@ -10,18 +10,29 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useNotifications } from '@/hooks/useNotifications'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { UserRole } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Design tokens
+// Design tokens - Adaptés au thème
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ACCENT   = '#C8F135'
-const BG_MAIN  = '#0D1117'
-const BG_SUB   = '#161B22'
-const BORDER   = 'rgba(255,255,255,0.08)'
-const NAV_OFF  = 'rgba(255,255,255,0.5)'
-const NAV_HOV  = 'rgba(255,255,255,0.85)'
+
+// Fonction pour obtenir les couleurs selon le thème
+function getThemeColors() {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light'
+  
+  return {
+    BG_MAIN: isDark ? '#0D1117' : '#ffffff',
+    BG_SUB: isDark ? '#161B22' : '#f8fafc',
+    BORDER: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    NAV_OFF: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+    NAV_HOV: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    TEXT_PRIMARY: isDark ? '#ffffff' : '#0f172a',
+    TEXT_SECONDARY: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Navigation par rôle
@@ -117,12 +128,12 @@ function BallIcon() {
   )
 }
 
-function Brand() {
+function Brand({ border, textColor }: { border: string; textColor: string }) {
   return (
     <Link
       to="/"
       className="flex items-center gap-2.5 px-5 shrink-0"
-      style={{ minWidth: 200, borderRight: `1px solid ${BORDER}`, height: '100%' }}
+      style={{ minWidth: 200, borderRight: `1px solid ${border}`, height: '100%' }}
     >
       {/* Logo carré vert */}
       <div
@@ -133,8 +144,12 @@ function Brand() {
       </div>
       {/* Titre */}
       <span
-        className="text-white text-lg tracking-tight leading-none select-none"
-        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+        className="text-lg tracking-tight leading-none select-none"
+        style={{ 
+          fontFamily: "'Barlow Condensed', sans-serif", 
+          fontWeight: 800,
+          color: textColor
+        }}
       >
         LEAGUE <span style={{ color: ACCENT }}>H5</span>
       </span>
@@ -190,8 +205,25 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+  const [, forceUpdate] = useState({})
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
+
+  // Forcer le re-render quand le thème change
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      forceUpdate({})
+    })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  // Obtenir les couleurs du thème actuel
+  const colors = getThemeColors()
+  const { BG_MAIN, BG_SUB, BORDER, NAV_OFF, NAV_HOV, TEXT_PRIMARY } = colors
 
   // Ferme le drawer à chaque navigation
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
@@ -251,7 +283,7 @@ export default function Header() {
         <div className="flex items-stretch h-14 relative">
 
           {/* Brand — gauche */}
-          <Brand />
+          <Brand border={BORDER} textColor={TEXT_PRIMARY} />
 
           {/* Nav principale — centrée absolument */}
           <nav
@@ -294,14 +326,18 @@ export default function Header() {
             {/* Recherche globale */}
             <GlobalSearch />
 
+            {/* Toggle de thème */}
+            <ThemeToggle />
+
             {/* Pill saison */}
             {season && (
               <span
-                className="px-3 py-1 rounded-full text-xs font-semibold text-white/70 whitespace-nowrap"
+                className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
                 style={{
                   fontFamily: "'Barlow', sans-serif",
-                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  backgroundColor: 'rgba(128,128,128,0.1)',
                   border: `1px solid ${BORDER}`,
+                  color: colors.TEXT_SECONDARY,
                 }}
               >
                 {season.name}
@@ -313,8 +349,8 @@ export default function Header() {
               <button
                 onClick={() => setNotifOpen(v => !v)}
                 className="relative p-1.5 rounded-lg transition-colors"
-                style={{ color: notifOpen ? 'white' : NAV_OFF }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white' }}
+                style={{ color: notifOpen ? TEXT_PRIMARY : NAV_OFF }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = TEXT_PRIMARY }}
                 onMouseLeave={e => { if (!notifOpen) (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
                 aria-label="Notifications"
               >
@@ -410,8 +446,12 @@ export default function Header() {
             <BallIcon />
           </div>
           <span
-            className="text-white text-base leading-none"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+            className="text-base leading-none"
+            style={{ 
+              fontFamily: "'Barlow Condensed', sans-serif", 
+              fontWeight: 800,
+              color: TEXT_PRIMARY
+            }}
           >
             LEAGUE <span style={{ color: ACCENT }}>H5</span>
           </span>
@@ -421,17 +461,19 @@ export default function Header() {
         <div className="flex items-center gap-2.5">
           {season && (
             <span
-              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white/60 hidden sm:block"
+              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold hidden sm:block"
               style={{
                 fontFamily: "'Barlow', sans-serif",
-                backgroundColor: 'rgba(255,255,255,0.06)',
+                backgroundColor: 'rgba(128,128,128,0.1)',
                 border: `1px solid ${BORDER}`,
+                color: colors.TEXT_SECONDARY,
               }}
             >
               {season.name}
             </span>
           )}
           <GlobalSearch />
+          <ThemeToggle />
           <RoleBadge role={effectiveRole} />
           <Avatar profile={profile} role={effectiveRole} />
           <button
@@ -455,8 +497,11 @@ export default function Header() {
         }}
       >
         <span
-          className="text-white text-sm font-bold"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+          className="text-sm font-bold"
+          style={{ 
+            fontFamily: "'Barlow Condensed', sans-serif",
+            color: TEXT_PRIMARY
+          }}
         >
           {pageTitle}
         </span>
@@ -497,7 +542,7 @@ export default function Header() {
                   <BallIcon />
                 </div>
                 <span
-                  className="text-white text-base"
+                  className="text-base leading-none"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
                 >
                   LEAGUE <span style={{ color: ACCENT }}>H5</span>
@@ -543,12 +588,12 @@ export default function Header() {
               {season && (
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-lg"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+                  style={{ backgroundColor: 'rgba(128,128,128,0.1)' }}
                 >
                   <span className="text-xs" style={{ color: NAV_OFF, fontFamily: "'Barlow', sans-serif" }}>
                     Saison active :
                   </span>
-                  <span className="text-xs font-semibold text-white" style={{ fontFamily: "'Barlow', sans-serif" }}>
+                  <span className="text-xs font-semibold" style={{ fontFamily: "'Barlow', sans-serif", color: TEXT_PRIMARY }}>
                     {season.name}
                   </span>
                 </div>
@@ -556,7 +601,7 @@ export default function Header() {
               <div className="flex items-center gap-3 px-3 py-2">
                 <Avatar profile={profile} role={effectiveRole} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-white truncate" style={{ fontFamily: "'Barlow', sans-serif" }}>
+                  <p className="text-xs font-bold truncate" style={{ fontFamily: "'Barlow', sans-serif", color: TEXT_PRIMARY }}>
                     {profile?.full_name ?? profile?.email?.split('@')[0] ?? 'Utilisateur'}
                   </p>
                   <p className="text-[10px] truncate" style={{ color: NAV_OFF }}>{profile?.email}</p>

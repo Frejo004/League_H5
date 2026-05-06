@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 // ── Config background par page ────────────────────────────────────────────────
 
@@ -54,6 +54,34 @@ const PATTERNS: Record<string, string> = {
   none: '',
 }
 
+// Light mode patterns (darker strokes on light bg)
+const PATTERNS_LIGHT: Record<string, string> = {
+  pitch: `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>
+    <circle cx='80' cy='80' r='36' stroke='rgba(0,0,0,0.04)' stroke-width='1' fill='none'/>
+    <line x1='80' y1='0' x2='80' y2='160' stroke='rgba(0,0,0,0.03)' stroke-width='1'/>
+    <line x1='0' y1='80' x2='160' y2='80' stroke='rgba(0,0,0,0.03)' stroke-width='1'/>
+    <rect x='20' y='50' width='40' height='60' stroke='rgba(0,0,0,0.03)' stroke-width='1' fill='none'/>
+    <rect x='100' y='50' width='40' height='60' stroke='rgba(0,0,0,0.03)' stroke-width='1' fill='none'/>
+  </svg>`,
+  hexagon: `<svg xmlns='http://www.w3.org/2000/svg' width='100' height='115'>
+    <polygon points='50,5 95,30 95,85 50,110 5,85 5,30'
+      stroke='rgba(0,0,0,0.04)' stroke-width='1' fill='none'/>
+  </svg>`,
+  net: `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'>
+    <line x1='0' y1='0' x2='48' y2='48' stroke='rgba(0,0,0,0.035)' stroke-width='0.8'/>
+    <line x1='48' y1='0' x2='0' y2='48' stroke='rgba(0,0,0,0.035)' stroke-width='0.8'/>
+    <line x1='24' y1='0' x2='24' y2='48' stroke='rgba(0,0,0,0.025)' stroke-width='0.8'/>
+    <line x1='0' y1='24' x2='48' y2='24' stroke='rgba(0,0,0,0.025)' stroke-width='0.8'/>
+  </svg>`,
+  dots: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>
+    <circle cx='16' cy='16' r='1.2' fill='rgba(0,0,0,0.06)'/>
+  </svg>`,
+  lines: `<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'>
+    <line x1='0' y1='60' x2='60' y2='0' stroke='rgba(0,0,0,0.04)' stroke-width='1'/>
+  </svg>`,
+  none: '',
+}
+
 function getPageBg(pathname: string): PageBg {
   if (PAGE_BACKGROUNDS[pathname]) return PAGE_BACKGROUNDS[pathname]
   const prefix = Object.keys(PAGE_BACKGROUNDS)
@@ -62,9 +90,10 @@ function getPageBg(pathname: string): PageBg {
   return PAGE_BACKGROUNDS[prefix ?? '/'] ?? PAGE_BACKGROUNDS['/']
 }
 
-function patternDataUrl(pattern: string): string {
-  if (pattern === 'none' || !PATTERNS[pattern]) return ''
-  return `url("data:image/svg+xml,${encodeURIComponent(PATTERNS[pattern])}")`
+function patternDataUrl(pattern: string, isLight: boolean): string {
+  const map = isLight ? PATTERNS_LIGHT : PATTERNS
+  if (pattern === 'none' || !map[pattern]) return ''
+  return `url("data:image/svg+xml,${encodeURIComponent(map[pattern])}")`
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
@@ -72,16 +101,31 @@ function patternDataUrl(pattern: string): string {
 export function AppLayout() {
   const location = useLocation()
   const bg = getPageBg(location.pathname)
+  const [isLight, setIsLight] = useState(
+    () => document.documentElement.getAttribute('data-theme') === 'light'
+  )
+
+  // Écouter les changements de thème
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsLight(document.documentElement.getAttribute('data-theme') === 'light')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   // View Transitions API — transition fluide entre pages
   useEffect(() => {
     if (!document.startViewTransition) return
   }, [location.pathname])
 
+  const bgColor = isLight ? '#f8fafc' : '#0D1117'
+  const gradientBase = isLight ? '#f1f5f9' : '#080C12'
+
   return (
     <div
       className="flex flex-col min-h-screen"
-      style={{ backgroundColor: '#0D1117' }}
+      style={{ backgroundColor: bgColor, transition: 'background-color 0.3s ease' }}
     >
       {/* Header full-width */}
       <Header />
@@ -94,11 +138,11 @@ export function AppLayout() {
           className="pointer-events-none absolute inset-0 z-0 transition-all duration-700"
           style={{
             background: [
-              `radial-gradient(ellipse 55% 45% at 100% 0%, ${bg.accent}12 0%, transparent 65%)`,
+              `radial-gradient(ellipse 55% 45% at 100% 0%, ${bg.accent}${isLight ? '0a' : '12'} 0%, transparent 65%)`,
               bg.glow
-                ? `radial-gradient(ellipse 40% 35% at 0% 100%, ${bg.glow}08 0%, transparent 60%)`
+                ? `radial-gradient(ellipse 40% 35% at 0% 100%, ${bg.glow}${isLight ? '06' : '08'} 0%, transparent 60%)`
                 : '',
-              'linear-gradient(180deg, #0D1117 0%, #080C12 100%)',
+              `linear-gradient(180deg, ${bgColor} 0%, ${gradientBase} 100%)`,
             ].filter(Boolean).join(', '),
           }}
         />
@@ -108,7 +152,7 @@ export function AppLayout() {
           <div
             className="pointer-events-none absolute inset-0 z-0"
             style={{
-              backgroundImage: patternDataUrl(bg.pattern),
+              backgroundImage: patternDataUrl(bg.pattern, isLight),
               backgroundRepeat: 'repeat',
             }}
           />
