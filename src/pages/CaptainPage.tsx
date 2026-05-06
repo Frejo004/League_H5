@@ -1008,7 +1008,6 @@ export function CaptainPage() {
       await updateTeam.mutateAsync({
         id: myTeamTyped.id,
         logo_url: logoUrlWithBust,
-        season_id: myTeamTyped.season_id,
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur upload'
