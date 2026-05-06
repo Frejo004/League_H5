@@ -148,18 +148,11 @@ export function ProfilePage() {
       // qui autorise name like auth.uid() || '/%'
       const path = `${user.id}/avatar`
 
-      // Tenter un update d'abord (fichier existant), sinon insert
-      const { error: updateErr } = await supabase.storage
+      // Upsert direct : crée ou remplace le fichier existant
+      const { error: uploadErr } = await supabase.storage
         .from('avatars')
-        .update(path, file, { contentType: file.type, upsert: false })
-
-      if (updateErr) {
-        // Fichier inexistant → premier upload
-        const { error: insertErr } = await supabase.storage
-          .from('avatars')
-          .upload(path, file, { contentType: file.type, upsert: false })
-        if (insertErr) throw insertErr
-      }
+        .upload(path, file, { contentType: file.type, upsert: true })
+      if (uploadErr) throw uploadErr
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       // On ajoute un timestamp dans l'URL stockée en base pour forcer le

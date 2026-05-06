@@ -36,4 +36,8 @@ export const PAGE_TITLES: Record<string, string> = {
   '/stats':     'Statistiques',
   '/admin':     'Administration',
   '/profile':   'Mon profil',
+  '/palmares':  'Palmarès',
+  '/my-stats':  'Mes Stats',
+  '/my-team':   'Mon Équipe',
+  '/captain':   'Mon Équipe',
 }

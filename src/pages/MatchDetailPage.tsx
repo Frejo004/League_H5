@@ -191,106 +191,175 @@ export function MatchDetailPage() {
       </Link>
 
       {/* ── Score header — style Sofascore ── */}
-      <div className="card">
+      <div className="card overflow-hidden p-0">
 
-        {/* Meta */}
-        <div className="flex items-center justify-center gap-2 mb-4 text-xs text-slate-500">
-          <span className="badge bg-surface-raised text-slate-500 border border-surface-border">
-            Journée {match.matchday}
-          </span>
-          {(match.played_at || match.scheduled_at) && (
-            <span className="flex items-center gap-1">
-              <Calendar size={10} />
-              {formatDate(match.played_at ?? match.scheduled_at)}
-            </span>
-          )}
+        {/* Bande de couleur des équipes en haut */}
+        <div className="flex h-1">
+          <div className="flex-1" style={{ backgroundColor: home.color }} />
+          <div className="flex-1" style={{ backgroundColor: away.color }} />
         </div>
 
-        {/* Teams + score */}
-        <div className="flex items-center gap-2">
-
-          {/* Home */}
-          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-            <div className="w-12 h-12 rounded-lg shrink-0"
-              style={{ backgroundColor: home.color }} />
-            <p className={clsx(
-              'text-sm font-semibold text-center leading-tight truncate w-full',
-              homeWon ? 'text-white' : 'text-slate-400'
-            )}>
-              {home.name}
-            </p>
+        <div className="p-4">
+          {/* Meta */}
+          <div className="flex items-center justify-center gap-2 mb-5 text-xs text-slate-500">
+            <span className="badge bg-surface-raised text-slate-500 border border-surface-border">
+              Journée {match.matchday}
+            </span>
+            {(match.played_at || match.scheduled_at) && (
+              <span className="flex items-center gap-1">
+                <Calendar size={10} />
+                {formatDate(match.played_at ?? match.scheduled_at)}
+              </span>
+            )}
           </div>
 
-          {/* Score */}
-          <div className="flex flex-col items-center gap-1.5 shrink-0 px-2">
-            {isCompleted ? (
-              <div className="flex items-center gap-3">
-                <span className={clsx(
-                  'text-4xl font-bold tabular-nums',
-                  homeWon ? 'text-white' : 'text-slate-500'
-                )}>
+          {/* Teams + score */}
+          <div className="flex items-center gap-2">
+
+            {/* Home */}
+            <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+              <div
+                className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-xl overflow-hidden shadow-lg"
+                style={{ backgroundColor: home.color }}
+              >
+                {home.logo_url
+                  ? <img src={home.logo_url} alt={home.name} className="w-full h-full object-cover" />
+                  : home.name[0]
+                }
+              </div>
+              <p className={clsx(
+                'text-sm font-semibold text-center leading-tight truncate w-full',
+                homeWon ? 'text-white' : 'text-slate-400'
+              )}>
+                {home.name}
+              </p>
+            </div>
+
+            {/* Score */}
+            <div className="flex flex-col items-center gap-1.5 shrink-0 px-2">
+              {isCompleted ? (
+                <div className="flex items-center gap-2">
+                  <span className={clsx(
+                    'text-4xl font-black tabular-nums leading-none',
+                    homeWon ? 'text-white' : 'text-slate-500'
+                  )}>
+                    {match.home_score}
+                  </span>
+                  <span className="text-slate-600 text-2xl font-light">–</span>
+                  <span className={clsx(
+                    'text-4xl font-black tabular-nums leading-none',
+                    awayWon ? 'text-white' : 'text-slate-500'
+                  )}>
+                    {match.away_score}
+                  </span>
+                </div>
+              ) : match.scheduled_at ? (
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xl font-black text-white tabular-nums">
+                    {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at))}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(match.scheduled_at))}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-2xl font-bold text-slate-500">VS</span>
+              )}
+              <span className={clsx(
+                'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                match.status === 'completed' ? 'text-green-400 bg-green-500/10 border border-green-500/20' :
+                match.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
+                'text-slate-500 bg-surface-raised border border-surface-border'
+              )}>
+                {match.status === 'completed' ? 'Terminé' :
+                 match.status === 'cancelled' ? 'Annulé' : 'À venir'}
+              </span>
+            </div>
+
+            {/* Away */}
+            <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+              <div
+                className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-xl overflow-hidden shadow-lg"
+                style={{ backgroundColor: away.color }}
+              >
+                {away.logo_url
+                  ? <img src={away.logo_url} alt={away.name} className="w-full h-full object-cover" />
+                  : away.name[0]
+                }
+              </div>
+              <p className={clsx(
+                'text-sm font-semibold text-center leading-tight truncate w-full',
+                awayWon ? 'text-white' : 'text-slate-400'
+              )}>
+                {away.name}
+              </p>
+            </div>
+          </div>
+
+          {/* Venue */}
+          {match.venue && (
+            <div className="flex items-center justify-center gap-1 mt-3 text-xs text-slate-600">
+              <MapPin size={10} />
+              {match.venue}
+            </div>
+          )}
+
+          {/* Barre de buts par équipe (si match terminé) */}
+          {isCompleted && (match.home_score! + match.away_score!) > 0 && (
+            <div className="mt-4 pt-3 border-t border-surface-border/50">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold tabular-nums" style={{ color: home.color }}>
                   {match.home_score}
                 </span>
-                <span className="text-slate-600 text-xl font-light">-</span>
-                <span className={clsx(
-                  'text-4xl font-bold tabular-nums',
-                  awayWon ? 'text-white' : 'text-slate-500'
-                )}>
+                <div className="flex-1 flex h-1.5 rounded-full overflow-hidden bg-surface-raised">
+                  <div
+                    className="h-full rounded-l-full transition-all duration-700"
+                    style={{
+                      width: `${(match.home_score! / (match.home_score! + match.away_score!)) * 100}%`,
+                      backgroundColor: home.color,
+                    }}
+                  />
+                  <div
+                    className="h-full rounded-r-full transition-all duration-700"
+                    style={{
+                      width: `${(match.away_score! / (match.home_score! + match.away_score!)) * 100}%`,
+                      backgroundColor: away.color,
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-bold tabular-nums" style={{ color: away.color }}>
                   {match.away_score}
                 </span>
               </div>
-            ) : (
-              <span className="text-2xl font-bold text-slate-500">VS</span>
-            )}
-            <span className={clsx(
-              'text-[10px] font-bold uppercase tracking-wider',
-              match.status === 'completed' ? 'text-primary-500' :
-              match.status === 'cancelled'  ? 'text-red-500' : 'text-slate-600'
-            )}>
-              {match.status === 'completed' ? 'Terminé' :
-               match.status === 'cancelled' ? 'Annulé' : 'Programmé'}
-            </span>
-          </div>
-
-          {/* Away */}
-          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-            <div className="w-12 h-12 rounded-lg shrink-0"
-              style={{ backgroundColor: away.color }} />
-            <p className={clsx(
-              'text-sm font-semibold text-center leading-tight truncate w-full',
-              awayWon ? 'text-white' : 'text-slate-400'
-            )}>
-              {away.name}
-            </p>
-          </div>
+              <p className="text-center text-[10px] text-slate-600 mt-1">Buts</p>
+            </div>
+          )}
         </div>
-
-        {/* Venue */}
-        {match.venue && (
-          <div className="flex items-center justify-center gap-1 mt-3 text-xs text-slate-600">
-            <MapPin size={10} />
-            {match.venue}
-          </div>
-        )}
       </div>
 
       {/* ── Bandeau MVP du match ── */}
       {isCompleted && mvpPlayer && (
-        <div className="card flex items-center gap-4 border-amber-500/30 bg-amber-500/5">
-          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-            <Star size={18} className="text-amber-400 fill-amber-400/50" />
+        <div
+          className="relative overflow-hidden rounded-xl border border-amber-500/25 p-4 flex items-center gap-4"
+          style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)' }}
+        >
+          {/* Glow */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
+          <div className="relative w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 ring-2 ring-amber-500/30">
+            <Star size={20} className="text-amber-400 fill-amber-400/50" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-wider mb-0.5">
-              Homme du match
+          <div className="relative flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
+              🏆 Homme du match
             </p>
-            <p className="text-base font-black text-white truncate">
+            <p className="text-lg font-black text-white truncate leading-tight">
               {mvpPlayer.first_name} {mvpPlayer.last_name}
             </p>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-2xl font-black text-amber-400 tabular-nums">{mvpVoteCount}</p>
-            <p className="text-[10px] text-slate-600">vote{mvpVoteCount > 1 ? 's' : ''}</p>
+          <div className="relative text-right shrink-0">
+            <p className="text-3xl font-black text-amber-400 tabular-nums leading-none">{mvpVoteCount}</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">vote{mvpVoteCount > 1 ? 's' : ''}</p>
           </div>
         </div>
       )}
@@ -300,13 +369,29 @@ export function MatchDetailPage() {
         <div className="card p-0 overflow-hidden">
 
           {/* Column headers */}
-          <div className="flex items-center border-b border-surface-border">
-            <div className="flex-1 px-4 py-2 text-center">
-              <span className="text-xs font-semibold text-slate-400">{home.name}</span>
+          <div className="flex items-center border-b border-surface-border bg-surface-raised/50">
+            <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
+              <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
+                style={{ backgroundColor: home.color }}>
+                {home.logo_url
+                  ? <img src={home.logo_url} alt="" className="w-full h-full object-cover" />
+                  : home.name[0]
+                }
+              </div>
+              <span className="text-xs font-semibold text-slate-400 truncate">{home.name}</span>
             </div>
-            <div className="w-20 shrink-0" />
-            <div className="flex-1 px-4 py-2 text-center">
-              <span className="text-xs font-semibold text-slate-400">{away.name}</span>
+            <div className="w-20 shrink-0 flex items-center justify-center">
+              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Buts</span>
+            </div>
+            <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 truncate">{away.name}</span>
+              <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
+                style={{ backgroundColor: away.color }}>
+                {away.logo_url
+                  ? <img src={away.logo_url} alt="" className="w-full h-full object-cover" />
+                  : away.name[0]
+                }
+              </div>
             </div>
           </div>
 
