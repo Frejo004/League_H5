@@ -42,7 +42,7 @@ function usePushNotifications() {
       badge: '/logo-h5.png',
       tag: `chat-${teamId}`,   // regroupe les notifs de la même équipe
       renotify: true,
-    })
+    } as NotificationOptions & { renotify?: boolean })
     n.onclick = () => { window.focus(); n.close() }
   }, [permission])
 
@@ -316,7 +316,7 @@ interface TeamChatProps {
 export function TeamChat({ teamId, teamColor, teamName, embedded = false }: TeamChatProps) {
   const { user, isAdmin } = useAuth()
   const { data: isMember, isLoading: memberLoading } = useIsTeamMember(teamId, user?.id)
-  const { messages, receipts, isLoading, sendMessage, deleteMessage, toggleReaction, markAsRead } = useTeamChat(teamId, user?.id)
+  const { messages, receipts, isLoading, sendMessage, deleteMessage, clearChat, toggleReaction, markAsRead } = useTeamChat(teamId, user?.id)
   const push = usePushNotifications()
 
   const [input, setInput] = useState('')
@@ -437,7 +437,7 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     <div className="card flex justify-center py-10"><LoadingSpinner size="md" /></div>
   )
 
-  if (!isMember) return (
+  if (!isMember && !isAdmin) return (
     <div className="card flex flex-col items-center justify-center py-10 gap-3 text-center">
       <Lock size={24} className="text-slate-500" />
       <p className="text-slate-400 text-sm font-medium">Chat réservé aux membres de l'équipe</p>
@@ -476,9 +476,25 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
           </span>
         )}
 
-        <span className="ml-auto text-[10px] text-slate-600 bg-white/5 px-2 py-0.5 rounded-full">
+        <span className="ml-auto text-[10px] text-slate-600 bg-white/5 px-2 py-0.5 rounded-full mr-2">
           {messages.length} message{messages.length !== 1 ? 's' : ''}
         </span>
+
+        {isAdmin && messages.length > 0 && (
+          <button
+            onClick={async () => {
+              if (confirm(`Voulez-vous supprimer TOUS les messages (${messages.length}) de ce groupe ? Cette action est irréversible.`)) {
+                await clearChat.mutateAsync()
+              }
+            }}
+            disabled={clearChat.isPending}
+            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400/70 hover:text-red-400 transition-colors flex items-center gap-1.5"
+            title="Vider la discussion"
+          >
+            {clearChat.isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={13} />}
+            <span className="text-[10px] font-bold">Vider</span>
+          </button>
+        )}
       </div>
 
       {/* Messages area */}

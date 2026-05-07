@@ -14,14 +14,15 @@ import { TeamChat } from '@/components/ui/TeamChat'
 import { useChatUnread } from '@/hooks/useChatUnread'
 import type { TeamUnread } from '@/hooks/useChatUnread'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { useAuth } from '@/hooks/useAuth'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
-  const mins  = Math.floor(diff / 60_000)
+  const mins = Math.floor(diff / 60_000)
   const hours = Math.floor(diff / 3_600_000)
-  const days  = Math.floor(diff / 86_400_000)
-  if (mins < 1)   return 'à l\'instant'
-  if (mins < 60)  return `${mins}min`
+  const days = Math.floor(diff / 86_400_000)
+  if (mins < 1) return 'à l\'instant'
+  if (mins < 60) return `${mins}min`
   if (hours < 24) return `${hours}h`
   return `${days}j`
 }
@@ -36,7 +37,8 @@ interface ChatPanelProps {
 export function ChatPanel({ userId, onClose, mobile = false }: ChatPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [selectedTeam, setSelectedTeam] = useState<TeamUnread | null>(null)
-  const { data: teams, isLoading } = useChatUnread(userId)
+  const { isAdmin } = useAuth()
+  const { data: teams, isLoading } = useChatUnread(userId, isAdmin)
 
   // Ferme au clic extérieur
   useEffect(() => {
@@ -166,34 +168,42 @@ export function ChatPanel({ userId, onClose, mobile = false }: ChatPanelProps) {
                   )}
                 >
                   {/* Logo / couleur équipe */}
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0 overflow-hidden"
-                    style={{ backgroundColor: team.teamColor }}
-                  >
-                    {team.logo_url
-                      ? <img src={team.logo_url} alt={team.teamName} className="w-full h-full object-contain" />
-                      : team.teamName[0].toUpperCase()
-                    }
+                  <div className="relative shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black overflow-hidden"
+                      style={{ backgroundColor: team.teamColor }}
+                    >
+                      {team.logo_url
+                        ? <img src={team.logo_url} alt={team.teamName} className="w-full h-full object-contain" />
+                        : team.teamName[0].toUpperCase()
+                      }
+                    </div>
+                    {team.unread > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-[#161B22] animate-pulse" />
+                    )}
                   </div>
 
                   {/* Infos */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className={clsx(
-                        'text-sm truncate',
-                        team.unread > 0 ? 'font-bold text-white' : 'font-semibold text-slate-300'
+                        'text-sm truncate transition-colors',
+                        team.unread > 0 ? 'font-black text-white' : 'font-semibold text-slate-400'
                       )}>
                         {team.teamName}
                       </span>
                       {team.lastMessageAt && (
-                        <span className="text-[10px] text-slate-600 shrink-0">
+                        <span className={clsx(
+                          'text-[10px] shrink-0',
+                          team.unread > 0 ? 'text-primary-400 font-bold' : 'text-slate-600'
+                        )}>
                           {timeAgo(team.lastMessageAt)}
                         </span>
                       )}
                     </div>
                     <p className={clsx(
                       'text-xs truncate mt-0.5',
-                      team.unread > 0 ? 'text-slate-300' : 'text-slate-500'
+                      team.unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-500'
                     )}>
                       {team.lastMessage ?? 'Aucun message'}
                     </p>
@@ -202,7 +212,7 @@ export function ChatPanel({ userId, onClose, mobile = false }: ChatPanelProps) {
                   {/* Badge non-lus */}
                   {team.unread > 0 && (
                     <span
-                      className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black"
+                      className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg shadow-primary-500/20"
                       style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
                     >
                       {team.unread > 99 ? '99+' : team.unread}

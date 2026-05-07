@@ -76,33 +76,41 @@ function TeamList({
                   : 'hover:bg-white/[0.03] border-l-2 border-l-transparent'
               )}
             >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-base font-black shrink-0 overflow-hidden"
-                style={{ backgroundColor: team.teamColor }}
-              >
-                {team.logo_url
-                  ? <img src={team.logo_url} alt={team.teamName} className="w-full h-full object-contain" />
-                  : team.teamName[0].toUpperCase()
-                }
+              <div className="relative shrink-0">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-base font-black overflow-hidden"
+                  style={{ backgroundColor: team.teamColor }}
+                >
+                  {team.logo_url
+                    ? <img src={team.logo_url} alt={team.teamName} className="w-full h-full object-contain" />
+                    : team.teamName[0].toUpperCase()
+                  }
+                </div>
+                {team.unread > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full border-2 border-[#0D1117] animate-pulse" />
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <span className={clsx(
-                    'text-sm truncate',
-                    team.unread > 0 ? 'font-bold text-white' : 'font-semibold text-slate-300'
+                    'text-sm truncate transition-colors',
+                    team.unread > 0 ? 'font-black text-white' : 'font-semibold text-slate-400'
                   )}>
                     {team.teamName}
                   </span>
                   {team.lastMessageAt && (
-                    <span className="text-[10px] text-slate-600 shrink-0">
+                    <span className={clsx(
+                      'text-[10px] shrink-0',
+                      team.unread > 0 ? 'text-primary-400 font-bold' : 'text-slate-600'
+                    )}>
                       {timeAgo(team.lastMessageAt)}
                     </span>
                   )}
                 </div>
                 <p className={clsx(
                   'text-xs truncate',
-                  team.unread > 0 ? 'text-slate-300' : 'text-slate-500'
+                  team.unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-500'
                 )}>
                   {team.lastMessage ?? 'Aucun message'}
                 </p>
@@ -110,7 +118,7 @@ function TeamList({
 
               {team.unread > 0 && (
                 <span
-                  className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black"
+                  className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg shadow-primary-500/20"
                   style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
                 >
                   {team.unread > 99 ? '99+' : team.unread}
@@ -129,8 +137,8 @@ function TeamList({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ChatPage() {
-  const { user } = useAuth()
-  const { data: teams, isLoading } = useChatUnread(user?.id)
+  const { user, isAdmin } = useAuth()
+  const { data: teams, isLoading } = useChatUnread(user?.id, isAdmin)
   const [selected, setSelected] = useState<TeamUnread | null>(null)
   // true = on est en vue chat sur mobile
   const [mobileShowChat, setMobileShowChat] = useState(false)

@@ -20,28 +20,39 @@ export interface TeamUnread {
   lastMessageAt: string | null
 }
 
-async function fetchUnreadCounts(userId: string): Promise<TeamUnread[]> {
-  // 1. Équipes dont l'user est membre (joueur actif ou capitaine)
-  const [{ data: playerTeams }, { data: captainTeams }] = await Promise.all([
-    supabase
-      .from('players')
-      .select('team_id, teams!players_team_id_fkey(id, name, color, logo_url)')
-      .eq('user_id', userId)
-      .eq('is_active', true),
-    supabase
+async function fetchUnreadCounts(userId: string, isAdmin: boolean = false): Promise<TeamUnread[]> {
+  let teamsMap = new Map<string, { teamId: string; teamName: string; teamColor: string; logo_url: string | null }>()
+
+  if (isAdmin) {
+    // Admin voit TOUTES les équipes
+    const { data: allTeams } = await supabase
       .from('teams')
       .select('id, name, color, logo_url')
-      .eq('captain_id', userId),
-  ])
+    
+    for (const t of allTeams ?? []) {
+      teamsMap.set(t.id, { teamId: t.id, teamName: t.name, teamColor: t.color, logo_url: t.logo_url })
+    }
+  } else {
+    // 1. Équipes dont l'user est membre (joueur actif ou capitaine)
+    const [{ data: playerTeams }, { data: captainTeams }] = await Promise.all([
+      supabase
+        .from('players')
+        .select('team_id, teams!players_team_id_fkey(id, name, color, logo_url)')
+        .eq('user_id', userId)
+        .eq('is_active', true),
+      supabase
+        .from('teams')
+        .select('id, name, color, logo_url')
+        .eq('captain_id', userId),
+    ])
 
-  // Dédupliquer les équipes
-  const teamsMap = new Map<string, { teamId: string; teamName: string; teamColor: string; logo_url: string | null }>()
-  for (const row of playerTeams ?? []) {
-    const t = row.teams as unknown as { id: string; name: string; color: string; logo_url: string | null } | null
-    if (t) teamsMap.set(t.id, { teamId: t.id, teamName: t.name, teamColor: t.color, logo_url: t.logo_url })
-  }
-  for (const t of captainTeams ?? []) {
-    teamsMap.set(t.id, { teamId: t.id, teamName: t.name, teamColor: t.color, logo_url: t.logo_url })
+    for (const row of playerTeams ?? []) {
+      const t = row.teams as unknown as { id: string; name: string; color: string; logo_url: string | null } | null
+      if (t) teamsMap.set(t.id, { teamId: t.id, teamName: t.name, teamColor: t.color, logo_url: t.logo_url })
+    }
+    for (const t of captainTeams ?? []) {
+      teamsMap.set(t.id, { teamId: t.id, teamName: t.name, teamColor: t.color, logo_url: t.logo_url })
+    }
   }
 
   if (teamsMap.size === 0) return []
@@ -105,20 +116,19 @@ async function fetchUnreadCounts(userId: string): Promise<TeamUnread[]> {
     })
   )
 
-  // Trier : non lus en premier, puis par date du dernier message
+  // Trier par date du dernier message (plus récent en premier)
   return results.sort((a, b) => {
-    if (b.unread !== a.unread) return b.unread - a.unread
-    if (a.lastMessageAt && b.lastMessageAt)
-      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
-    return 0
+    const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+    const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+    return timeB - timeA
   })
 }
 
-export function useChatUnread(userId?: string) {
+export function useChatUnread(userId?: string, isAdmin: boolean = false) {
   return useQuery({
-    queryKey: ['chat-unread', userId],
+    queryKey: ['chat-unread', userId, isAdmin],
     enabled: !!userId,
-    queryFn: () => fetchUnreadCounts(userId!),
+    queryFn: () => fetchUnreadCounts(userId!, isAdmin),
     staleTime: 0,
     refetchInterval: 30_000,
   })
@@ -127,7 +137,7 @@ export function useChatUnread(userId?: string) {
 /**
  * useChatUnreadRealtime
  * À monter UNE SEULE FOIS dans AppLayout.
- * Utilise un nom de channel unique basé sur userId pour éviter les doublons.
+ * Gère les notifications globales et l'invalidation des compteurs.
  */
 export function useChatUnreadRealtime(userId?: string) {
   const qc = useQueryClient()
@@ -135,8 +145,12 @@ export function useChatUnreadRealtime(userId?: string) {
   useEffect(() => {
     if (!userId) return
 
-    // Nom unique — si un channel identique existe déjà Supabase le réutilise
-    // sans pouvoir y ajouter de listeners. On le supprime d'abord par précaution.
+    // 1. Demander la permission de notification automatiquement
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
+    // 2. Écouter les nouveaux messages pour envoyer des notifications
     const channelName = `chat-unread-rt-${userId}`
     supabase.removeChannel(supabase.channel(channelName))
 
@@ -144,7 +158,38 @@ export function useChatUnreadRealtime(userId?: string) {
       .channel(channelName)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'team_messages' },
-        () => qc.invalidateQueries({ queryKey: ['chat-unread', userId] })
+        async (payload) => {
+          // Invalider les compteurs pour rafraîchir l'UI
+          qc.invalidateQueries({ queryKey: ['chat-unread', userId] })
+
+          const newMsg = payload.new as { sender_id: string; team_id: string; content: string }
+          
+          // Ne pas notifier si c'est notre propre message
+          if (newMsg.sender_id === userId) return
+
+          // Ne pas notifier si l'onglet est visible (l'utilisateur est déjà en train de lire)
+          if (document.visibilityState === 'visible') return
+
+          // Vérifier la permission
+          if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+
+          // Récupérer les infos pour la notification (nom du sender et de l'équipe)
+          const [{ data: profile }, { data: team }] = await Promise.all([
+            supabase.from('profiles').select('full_name').eq('id', newMsg.sender_id).single(),
+            supabase.from('teams').select('name').eq('id', newMsg.team_id).single()
+          ])
+
+          const title = `${profile?.full_name ?? 'Nouveau message'} — ${team?.name ?? 'Chat'}`
+          const body = newMsg.content.length > 80 ? newMsg.content.slice(0, 80) + '…' : newMsg.content
+
+          new Notification(title, {
+            body,
+            icon: '/logo-h5.png',
+            badge: '/logo-h5.png',
+            tag: `chat-${newMsg.team_id}`,
+            renotify: true,
+          } as NotificationOptions & { renotify?: boolean })
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'chat_read_receipts' },

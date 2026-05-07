@@ -194,6 +194,16 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
   })
 
+  // ── Clear chat (admin only) ──────────────────────────────────────────────
+  const clearChat = useMutation({
+    mutationFn: async () => {
+      if (!teamId) return
+      const { error } = await supabase.from('team_messages').delete().eq('team_id', teamId)
+      if (error) throw error
+    },
+    onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
+  })
+
   return {
     messages:   messagesQuery.data ?? [],
     receipts:   receiptsQuery.data ?? [],
@@ -201,6 +211,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     isError:    messagesQuery.isError,
     sendMessage,
     deleteMessage,
+    clearChat,
     toggleReaction,
     markAsRead,
   }
