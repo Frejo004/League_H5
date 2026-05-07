@@ -54,11 +54,14 @@ function usePushNotifications() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const EMOJI_GROUPS = [
-  { label: 'Foot',    emojis: ['⚽','🥅','🏆','🥇','🎯','💪','🔥','⚡','🎉','🙌'] },
-  { label: 'Visages', emojis: ['😀','😂','🤣','😍','🥳','😎','🤩','😤','😡','😭'] },
-  { label: 'Gestes',  emojis: ['👍','👎','👏','🙏','🤝','✌️','🤙','💯','❤️','🫡'] },
+  { label: 'Visages', emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'] },
+  { label: 'Gestes',  emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','👂','🦻','👃','🧠','🦷','🦴','👀','👁️','👅','👄'] },
+  { label: 'Foot & Sport', emojis: ['⚽','🥅','🏆','🥇','🥈','🥉','🎖️','🏅','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🎱','🏓','🏸','🥅','🏒','🏑','🏏','⛳','🏹','🎣','🛹','🛷','⛸️','🎿','⛷️','🏂','🏋️','🤸','🏃','🏃‍♀️','🥇','🎯','💪','🔥','⚡','🎉','🙌'] },
+  { label: 'Objets', emojis: ['⌚','📱','💻','⌨️','🖥️','🖨️','🖱️','🖱️','🕹️','🗂️','📁','📂','📅','📆','🗑️','🗒️','📁','📂','🗄️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧱','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸'] },
+  { label: 'Symboles', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭'] },
 ]
-const QUICK_REACTIONS = ['👍','❤️','😂','🔥','⚽','💪','🎉','😎']
+// Set de réactions Microsoft Teams : Like, Love, Laugh, Surprised, Sad, Angry
+const QUICK_REACTIONS = ['👍','❤️','😂','😲','😢','😡']
 
 function EmojiPicker({ onSelect, onClose }: { onSelect: (e: string) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -69,20 +72,29 @@ function EmojiPicker({ onSelect, onClose }: { onSelect: (e: string) => void; onC
   }, [onClose])
 
   return (
-    <div ref={ref} className="absolute bottom-full mb-2 left-0 z-50 bg-surface-card border border-surface-border rounded-2xl shadow-2xl p-3 w-72">
-      {EMOJI_GROUPS.map(g => (
-        <div key={g.label} className="mb-2">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 px-1">{g.label}</p>
-          <div className="flex flex-wrap gap-1">
-            {g.emojis.map(e => (
-              <button key={e} onClick={() => { onSelect(e); onClose() }}
-                className="w-8 h-8 flex items-center justify-center text-lg rounded-lg hover:bg-white/10 transition-colors">
-                {e}
-              </button>
-            ))}
+    <div ref={ref} className="absolute bottom-full mb-2 left-0 z-50 bg-[#161B22] border border-white/10 rounded-2xl shadow-2xl p-0 w-80 overflow-hidden flex flex-col max-h-[400px]">
+      <div className="px-4 py-3 border-b border-white/5 shrink-0">
+        <h3 className="text-xs font-black text-white uppercase tracking-wider">Émojis</h3>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+        {EMOJI_GROUPS.map(g => (
+          <div key={g.label} className="mb-4 last:mb-0">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-2 px-1">{g.label}</h4>
+            <div className="grid grid-cols-8 gap-1">
+              {g.emojis.map(e => (
+                <button
+                  key={e}
+                  onClick={() => { onSelect(e); onClose() }}
+                  className="w-8 h-8 flex items-center justify-center text-lg hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
@@ -207,7 +219,7 @@ function ChatMessage({
 
   return (
     <div
-      className={clsx('group flex gap-2.5 px-3 py-1 hover:bg-white/2 rounded-xl transition-colors', isOwn ? 'flex-row-reverse' : 'flex-row')}
+      className={clsx('group relative flex gap-2.5 px-3 py-1 hover:bg-white/2 rounded-xl transition-colors', isOwn ? 'flex-row-reverse' : 'flex-row')}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); setShowReactionPicker(false) }}
     >
@@ -260,42 +272,69 @@ function ChatMessage({
         )}
       </div>
 
-      {/* Actions hover */}
+      {/* Actions hover (Style Teams) */}
       <div className={clsx(
-        'flex items-center gap-1 self-center transition-opacity relative',
-        showActions ? 'opacity-100' : 'opacity-0 pointer-events-none',
-        isOwn ? 'flex-row-reverse' : 'flex-row'
+        'absolute -top-4 z-10 flex items-center bg-[#161B22] border border-white/10 rounded-lg shadow-2xl p-0.5 transition-all duration-200',
+        showActions ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none',
+        isOwn ? 'right-4' : 'left-4'
       )}>
-        <div className="relative">
-          <button onClick={() => setShowReactionPicker(v => !v)}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors" title="Réagir">
+        {/* Quick Reactions */}
+        <div className="flex items-center gap-0.5 px-1 border-r border-white/10 mr-1">
+          {QUICK_REACTIONS.map(emoji => {
+            const r = reactionMap.get(emoji)
+            return (
+              <button
+                key={emoji}
+                onClick={() => onReact(msg.id, emoji, r?.hasReacted ?? false)}
+                className={clsx(
+                  'w-7 h-7 flex items-center justify-center text-sm rounded-md transition-all hover:scale-125 hover:bg-white/5',
+                  r?.hasReacted && 'bg-primary-600/20 text-primary-400'
+                )}
+                title={emoji}
+              >
+                {emoji}
+              </button>
+            )
+          })}
+          
+          <button 
+            onClick={() => setShowReactionPicker(v => !v)}
+            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
+            title="Plus de réactions"
+          >
             <Smile size={14} />
           </button>
+
           {showReactionPicker && (
-            <div className={clsx('absolute bottom-full mb-1 z-50 bg-surface-card border border-surface-border rounded-xl shadow-xl p-1.5 flex gap-1', isOwn ? 'right-0' : 'left-0')}>
-              {QUICK_REACTIONS.map(emoji => {
-                const r = reactionMap.get(emoji)
-                return (
-                  <button key={emoji}
-                    onClick={() => { onReact(msg.id, emoji, r?.hasReacted ?? false); setShowReactionPicker(false) }}
-                    className={clsx('w-8 h-8 flex items-center justify-center text-base rounded-lg transition-colors', r?.hasReacted ? 'bg-primary-600/30' : 'hover:bg-white/10')}>
-                    {emoji}
-                  </button>
-                )
-              })}
+            <div className="absolute bottom-full left-0 mb-2">
+              <EmojiPicker 
+                onSelect={(e) => { onReact(msg.id, e, reactionMap.get(e)?.hasReacted ?? false); setShowReactionPicker(false) }}
+                onClose={() => setShowReactionPicker(false)}
+              />
             </div>
           )}
         </div>
-        <button onClick={() => onReply(msg)}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors" title="Répondre">
-          <Reply size={14} />
-        </button>
-        {canDelete && (
-          <button onClick={() => onDelete(msg.id)}
-            className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors" title="Supprimer">
-            <Trash2 size={14} />
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-0.5 px-1">
+          <button 
+            onClick={() => onReply(msg)}
+            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
+            title="Répondre"
+          >
+            <Reply size={14} />
           </button>
-        )}
+          
+          {canDelete && (
+            <button 
+              onClick={() => onDelete(msg.id)}
+              className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+              title="Supprimer"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
