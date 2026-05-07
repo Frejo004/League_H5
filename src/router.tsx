@@ -22,6 +22,7 @@ import { MyStatsPage } from '@/pages/MyStatsPage'
 import { MyTeamPage } from '@/pages/MyTeamPage'
 import { PalmaresPage } from '@/pages/PalmaresPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { ChatPage } from '@/pages/ChatPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const router = createBrowserRouter(
@@ -56,6 +57,7 @@ export const router = createBrowserRouter(
             { path: '/my-team',       element: <MyTeamPage /> },
             { path: '/palmares',      element: <PalmaresPage /> },
             { path: '/profile',       element: <ProfilePage /> },
+            { path: '/chat',          element: <ChatPage /> },
           ],
         },
       ],

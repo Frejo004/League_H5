@@ -314,6 +314,75 @@ export interface Database {
         }
         Relationships: []
       }
+      team_messages: {
+        Row: {
+          id: string
+          team_id: string
+          sender_id: string
+          content: string
+          reply_to_id: string | null
+          edited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          sender_id: string
+          content: string
+          reply_to_id?: string | null
+          edited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          content?: string
+          edited_at?: string | null
+        }
+        Relationships: []
+      }
+      team_message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          emoji?: string
+        }
+        Relationships: []
+      }
+      chat_read_receipts: {
+        Row: {
+          user_id: string
+          team_id: string
+          last_read_at: string
+          last_read_msg: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          team_id: string
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_invites: {
         Row: {
           id: string
@@ -506,4 +575,19 @@ export type TeamWithCaptain = Team & {
 /** Joueur avec équipe imbriquée — retourné par usePlayers */
 export type PlayerWithTeam = Player & {
   teams: TeamRef | null
+}
+
+export type TeamMessage = Database['public']['Tables']['team_messages']['Row']
+export type TeamMessageReaction = Database['public']['Tables']['team_message_reactions']['Row']
+export type ChatReadReceipt = Database['public']['Tables']['chat_read_receipts']['Row']
+
+/** Message enrichi avec sender + réactions + message cité */
+export type TeamMessageFull = TeamMessage & {
+  sender: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  reactions: (TeamMessageReaction & {
+    profile: Pick<Profile, 'id' | 'full_name'>
+  })[]
+  reply_to: (Pick<TeamMessage, 'id' | 'content'> & {
+    sender: Pick<Profile, 'id' | 'full_name'>
+  }) | null
 }
