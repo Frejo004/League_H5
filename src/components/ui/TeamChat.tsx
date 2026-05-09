@@ -574,6 +574,13 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     }
   }, [clearTyping])
 
+  // ── Focus input when replying ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (replyTo && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [replyTo])
+
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Supprimer ce message ?')) return
     await deleteMessage.mutateAsync(id)
