@@ -361,29 +361,87 @@ export interface Database {
         }
         Relationships: []
       }
-      chat_read_receipts: {
-        Row: {
-          user_id: string
-          team_id: string
-          last_read_at: string
-          last_read_msg: string | null
-          updated_at: string
-        }
-        Insert: {
-          user_id: string
-          team_id: string
-          last_read_at?: string
-          last_read_msg?: string | null
-          updated_at?: string
-        }
-        Update: {
-          last_read_at?: string
-          last_read_msg?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      player_invites: {
+chat_read_receipts: {
+         Row: {
+           user_id: string
+           team_id: string
+           last_read_at: string
+           last_read_msg: string | null
+           updated_at: string
+         }
+         Insert: {
+           user_id: string
+           team_id: string
+           last_read_at?: string
+           last_read_msg?: string | null
+           updated_at?: string
+         }
+         Update: {
+           last_read_at?: string
+           last_read_msg?: string | null
+           updated_at?: string
+         }
+         Relationships: []
+       }
+       chat_typing: {
+         Row: {
+           user_id: string
+           team_id: string
+           started_at: string
+         }
+         Insert: {
+           user_id: string
+           team_id: string
+           started_at?: string
+         }
+         Update: {
+           started_at?: string
+         }
+         Relationships: []
+       }
+       team_pinned_messages: {
+         Row: {
+           id: string
+           team_id: string
+           message_id: string
+           pinned_by: string
+           pinned_at: string
+         }
+         Insert: {
+           id?: string
+           team_id: string
+           message_id: string
+           pinned_by: string
+           pinned_at?: string
+         }
+         Update: {
+           pinned_by?: string
+           pinned_at?: string
+         }
+         Relationships: []
+       }
+       chat_mentions: {
+         Row: {
+           id: string
+           message_id: string
+           mentioned_user_id: string
+           mentioned_by: string
+           created_at: string
+         }
+         Insert: {
+           id?: string
+           message_id: string
+           mentioned_user_id: string
+           mentioned_by: string
+           created_at?: string
+         }
+         Update: {
+           mentioned_user_id?: string
+           mentioned_by?: string
+         }
+         Relationships: []
+       }
+       player_invites: {
         Row: {
           id: string
           player_id: string
@@ -580,6 +638,9 @@ export type PlayerWithTeam = Player & {
 export type TeamMessage = Database['public']['Tables']['team_messages']['Row']
 export type TeamMessageReaction = Database['public']['Tables']['team_message_reactions']['Row']
 export type ChatReadReceipt = Database['public']['Tables']['chat_read_receipts']['Row']
+export type ChatTyping = Database['public']['Tables']['chat_typing']['Row']
+export type TeamPinnedMessage = Database['public']['Tables']['team_pinned_messages']['Row']
+export type ChatMention = Database['public']['Tables']['chat_mentions']['Row']
 
 /** Message enrichi avec sender + réactions + message cité */
 export type TeamMessageFull = TeamMessage & {

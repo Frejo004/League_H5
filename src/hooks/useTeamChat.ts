@@ -5,6 +5,7 @@
  * - Envoi / suppression optimiste / réactions
  * - Read receipts : marque le dernier message lu, expose les receipts des autres
  * - Realtime sur messages + réactions + read receipts
+ * - Typing indicators, pinned messages
  * - useIsTeamMember : vérifie l'appartenance à l'équipe
  */
 
@@ -15,6 +16,8 @@ import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
 
 const MESSAGES_KEY  = (teamId: string) => ['team-chat', 'messages', teamId]
 const RECEIPTS_KEY  = (teamId: string) => ['team-chat', 'receipts', teamId]
+const PINNED_KEY    = (teamId: string) => ['team-chat', 'pinned', teamId]
+const TYPING_KEY    = (teamId: string) => ['team-chat', 'typing', teamId]
 const PAGE_SIZE = 100
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +79,75 @@ async function fetchReceipts(teamId: string): Promise<ReadReceiptWithProfile[]> 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Fetch pinned messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type PinnedMessage = TeamMessageFull & {
+  pinned_at: string
+  pinned_by: string
+}
+
+async function fetchPinnedMessages(teamId: string): Promise<PinnedMessage[]> {
+  const { data, error } = await supabase
+    .from('team_pinned_messages')
+    .select(`
+      pinned_at, pinned_by, message_id,
+      message:team_messages!inner (
+        id, team_id, sender_id, content, reply_to_id, edited_at, created_at,
+        sender:profiles!team_messages_sender_id_fkey (id, full_name, avatar_url),
+        reactions:team_message_reactions (
+          id, message_id, user_id, emoji, created_at,
+          profile:profiles!team_message_reactions_user_id_fkey (id, full_name)
+        )
+      )
+    `)
+    .eq('team_id', teamId)
+    .order('pinned_at', { ascending: false })
+
+  if (error) throw error
+  if (!data) return []
+
+  // Résoudre les reply_to
+  const replyIds = [...new Set(
+    (data as any[]).map((p: any) => p.message?.reply_to_id).filter(Boolean) as string[]
+  )]
+  const replyMap = new Map<string, any>()
+  if (replyIds.length > 0) {
+    const { data: replies } = await supabase
+      .from('team_messages')
+      .select('id, content, sender:profiles!team_messages_sender_id_fkey(id, full_name)')
+      .in('id', replyIds)
+    for (const r of replies ?? []) replyMap.set(r.id, r)
+  }
+
+  return (data as any[]).map((p: any) => ({
+    ...p.message,
+    reply_to: p.message?.reply_to_id ? (replyMap.get(p.message.reply_to_id) ?? null) : null,
+    pinned_at: p.pinned_at,
+    pinned_by: p.pinned_by,
+  })) as PinnedMessage[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch typing users
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TypingUser = {
+  user_id: string
+  profile: { id: string; full_name: string | null; avatar_url: string | null }
+}
+
+async function fetchTypingUsers(teamId: string): Promise<TypingUser[]> {
+  const { data, error } = await supabase
+    .from('chat_typing')
+    .select('user_id, profile:profiles!chat_typing_user_id_fkey(id, full_name, avatar_url)')
+    .eq('team_id', teamId)
+    .gt('started_at', new Date(Date.now() - 30000).toISOString()) // 30 secondes max
+  if (error) throw error
+  return (data ?? []) as unknown as TypingUser[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Hook principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -123,12 +195,35 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_read_receipts', filter: `team_id=eq.${teamId}` },
         () => qc.refetchQueries({ queryKey: RECEIPTS_KEY(teamId) })
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_pinned_messages', filter: `team_id=eq.${teamId}` },
+        () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId) })
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_typing', filter: `team_id=eq.${teamId}` },
+        () => qc.refetchQueries({ queryKey: TYPING_KEY(teamId) })
+      )
       .subscribe((status) => {
         if (import.meta.env.DEV) console.log(`[TeamChat] ${status}`)
       })
 
     return () => { supabase.removeChannel(channel) }
   }, [teamId, qc])
+
+  // ── Pinned messages query ─────────────────────────────────────────────────
+  const pinnedQuery = useQuery({
+    queryKey: PINNED_KEY(teamId ?? ''),
+    enabled: !!teamId,
+    queryFn: () => fetchPinnedMessages(teamId!),
+    staleTime: 0,
+  })
+
+  // ── Typing users query ───────────────────────────────────────────────────
+  const typingQuery = useQuery({
+    queryKey: TYPING_KEY(teamId ?? ''),
+    enabled: !!teamId,
+    queryFn: () => fetchTypingUsers(teamId!),
+    staleTime: 5000,
+    refetchInterval: 3000,
+  })
 
   // ── Mark as read ──────────────────────────────────────────────────────────
   const markAsRead = useCallback(async (lastMsgId: string, lastMsgAt: string) => {
@@ -194,6 +289,62 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
   })
 
+  // ── Edit message ───────────────────────────────────────────────────────────
+  const editMessage = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { error } = await supabase.from('team_messages')
+        .update({ content: content.trim(), edited_at: new Date().toISOString() })
+        .eq('id', messageId)
+      if (error) throw error
+    },
+    onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
+  })
+
+  // ── Set typing indicator ─────────────────────────────────────────────────
+  const setTyping = useCallback(async () => {
+    if (!teamId || !currentUserId) return
+    await supabase.from('chat_typing').upsert({
+      user_id: currentUserId,
+      team_id: teamId,
+      started_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,team_id' })
+  }, [teamId, currentUserId])
+
+  // ── Clear typing indicator ───────────────────────────────────────────────
+  const clearTyping = useCallback(async () => {
+    if (!teamId || !currentUserId) return
+    await supabase.from('chat_typing').delete()
+      .eq('user_id', currentUserId)
+      .eq('team_id', teamId)
+  }, [teamId, currentUserId])
+
+  // ── Pin message ───────────────────────────────────────────────────────────
+  const pinMessage = useMutation({
+    mutationFn: async (messageId: string) => {
+      if (!teamId || !currentUserId) return
+      const { error } = await supabase.from('team_pinned_messages').insert({
+        team_id: teamId,
+        message_id: messageId,
+        pinned_by: currentUserId,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId ?? '') }),
+  })
+
+  // ── Unpin message ─────────────────────────────────────────────────────────
+  const unpinMessage = useMutation({
+    mutationFn: async (messageId: string) => {
+      if (!teamId) return
+      const { error } = await supabase.from('team_pinned_messages')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('message_id', messageId)
+      if (error) throw error
+    },
+    onSuccess: () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId ?? '') }),
+  })
+
   // ── Clear chat (admin only) ──────────────────────────────────────────────
   const clearChat = useMutation({
     mutationFn: async () => {
@@ -207,13 +358,20 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   return {
     messages:   messagesQuery.data ?? [],
     receipts:   receiptsQuery.data ?? [],
+    pinned:     pinnedQuery.data ?? [],
+    typing:     typingQuery.data ?? [],
     isLoading:  messagesQuery.isLoading,
     isError:    messagesQuery.isError,
     sendMessage,
     deleteMessage,
     clearChat,
     toggleReaction,
+    editMessage,
     markAsRead,
+    setTyping,
+    clearTyping,
+    pinMessage,
+    unpinMessage,
   }
 }
 

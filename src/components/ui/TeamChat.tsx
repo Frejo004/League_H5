@@ -9,10 +9,10 @@
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Send, Smile, Reply, Trash2, X, MessageCircle, Lock, Bell, BellOff } from 'lucide-react'
+import { Send, Smile, Reply, Trash2, X, MessageCircle, Lock, Bell, BellOff, Pin, Edit2, Check, CornerDownCorner } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTeamChat, useIsTeamMember } from '@/hooks/useTeamChat'
-import type { ReadReceiptWithProfile } from '@/hooks/useTeamChat'
+import type { ReadReceiptWithProfile, PinnedMessage, TypingUser } from '@/hooks/useTeamChat'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { TeamMessageFull } from '@/types/database'
@@ -185,7 +185,16 @@ function ChatMessage({
   onReply,
   onDelete,
   onReact,
-  readBy,       // receipts des gens dont last_read_msg === ce message
+  onEdit,
+  onPin,
+  onUnpin,
+  isPinned,
+  readBy,
+  isEditing,
+  editContent,
+  onEditChange,
+  onEditSave,
+  onEditCancel,
 }: {
   msg: TeamMessageFull
   currentUserId: string
@@ -193,12 +202,22 @@ function ChatMessage({
   onReply: (msg: TeamMessageFull) => void
   onDelete: (id: string) => void
   onReact: (messageId: string, emoji: string, hasReacted: boolean) => void
+  onEdit: (msg: TeamMessageFull) => void
+  onPin: (msg: TeamMessageFull) => void
+  onUnpin: (msg: TeamMessageFull) => void
+  isPinned?: boolean
   readBy: ReadReceiptWithProfile[]
+  isEditing?: boolean
+  editContent?: string
+  onEditChange?: (content: string) => void
+  onEditSave?: () => void
+  onEditCancel?: () => void
 }) {
   const [showActions, setShowActions] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const isOwn = msg.sender_id === currentUserId
   const canDelete = isOwn || isAdmin
+  const canPin = isAdmin
 
   const reactionMap = new Map<string, { count: number; hasReacted: boolean; names: string[] }>()
   for (const r of msg.reactions) {
@@ -216,6 +235,22 @@ function ChatMessage({
   const time = new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
   const senderName = msg.sender?.full_name ?? 'Joueur'
   const initials = senderName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+
+  // Handle edit keydown
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onEditSave?.() }
+    if (e.key === 'Escape') { onEditCancel?.() }
+  }
+
+  // Handle edit textarea auto-resize
+  const editInputRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus()
+      editInputRef.current.style.height = 'auto'
+      editInputRef.current.style.height = Math.min(editInputRef.current.scrollHeight, 112) + 'px'
+    }
+  }, [isEditing])
 
   return (
     <div
@@ -238,6 +273,7 @@ function ChatMessage({
           <span className="text-xs font-semibold text-slate-300">{senderName}</span>
           <span className="text-[10px] text-slate-600">{time}</span>
           {msg.edited_at && <span className="text-[10px] text-slate-600 italic">(modifié)</span>}
+          {isPinned && <Pin size={10} className="text-primary-400" title="Message épinglé" />}
         </div>
 
         {/* Reply preview */}
@@ -248,13 +284,41 @@ function ChatMessage({
           </div>
         )}
 
-        {/* Content */}
-        <div className={clsx(
-          'px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words',
-          isOwn ? 'bg-primary-600/80 text-white rounded-tr-sm' : 'bg-surface-card border border-surface-border text-slate-200 rounded-tl-sm'
-        )}>
-          {msg.content}
-        </div>
+        {/* Content - Edit mode or display */}
+        {isEditing ? (
+          <div className={clsx(
+            'w-full px-3.5 py-2 rounded-2xl text-sm border-2',
+            isOwn ? 'bg-primary-600/80 border-primary-400' : 'bg-surface-card border-primary-500'
+          )}>
+            <textarea
+              ref={editInputRef}
+              value={editContent}
+              onChange={e => onEditChange?.(e.target.value)}
+              onKeyDown={handleEditKeyDown}
+              className={clsx(
+                'w-full resize-none bg-transparent text-sm text-white placeholder-slate-400',
+                'focus:outline-none'
+              )}
+              rows={2}
+              onInput={e => {
+                const el = e.currentTarget
+                el.style.height = 'auto'
+                el.style.height = Math.min(el.scrollHeight, 112) + 'px'
+              }}
+            />
+            <div className="flex items-center gap-2 mt-2 justify-end">
+              <button onClick={onEditCancel} className="text-xs text-slate-400 hover:text-slate-200">Annuler</button>
+              <button onClick={onEditSave} className="text-xs text-primary-400 hover:text-primary-300 font-semibold">Enregistrer</button>
+            </div>
+          </div>
+        ) : (
+          <div className={clsx(
+            'px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words',
+            isOwn ? 'bg-primary-600/80 text-white rounded-tr-sm' : 'bg-surface-card border border-surface-border text-slate-200 rounded-tl-sm'
+          )}>
+            {msg.content}
+          </div>
+        )}
 
         {/* Reactions */}
         {reactionMap.size > 0 && (
@@ -324,6 +388,29 @@ function ChatMessage({
           >
             <Reply size={14} />
           </button>
+
+          {isOwn && !isPinned && (
+            <button
+              onClick={() => onEdit(msg)}
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-white/5 rounded-md transition-colors"
+              title="Modifier"
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
+
+          {canPin && (
+            <button
+              onClick={() => isPinned ? onUnpin(msg) : onPin(msg)}
+              className={clsx(
+                'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
+                isPinned ? 'text-primary-400 hover:text-primary-300' : 'text-slate-400 hover:text-primary-400'
+              )}
+              title={isPinned ? 'Désépingler' : 'Épingler'}
+            >
+              <Pin size={14} />
+            </button>
+          )}
           
           {canDelete && (
             <button 
@@ -355,12 +442,17 @@ interface TeamChatProps {
 export function TeamChat({ teamId, teamColor, teamName, embedded = false }: TeamChatProps) {
   const { user, isAdmin } = useAuth()
   const { data: isMember, isLoading: memberLoading } = useIsTeamMember(teamId, user?.id)
-  const { messages, receipts, isLoading, sendMessage, deleteMessage, clearChat, toggleReaction, markAsRead } = useTeamChat(teamId, user?.id)
+  const { 
+    messages, receipts, pinned, typing, isLoading, sendMessage, deleteMessage, 
+    clearChat, toggleReaction, markAsRead, editMessage, setTyping, clearTyping, pinMessage, unpinMessage 
+  } = useTeamChat(teamId, user?.id)
   const push = usePushNotifications()
 
   const [input, setInput] = useState('')
   const [replyTo, setReplyTo] = useState<TeamMessageFull | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
 
   // ID du premier message non lu — calculé une seule fois à l'ouverture du chat
   const firstUnreadIdRef = useRef<string | null | undefined>(undefined) // undefined = pas encore calculé
@@ -450,9 +542,37 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     await sendMessage.mutateAsync({ content, replyToId: replyTo?.id ?? null, senderId: user.id })
   }, [input, user?.id, replyTo, sendMessage])
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
-  }
+  // ── Set typing indicator on input change ───────────────────────────────────
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    
+    // Set typing indicator
+    if (!typingTimeoutRef.current) {
+      setTyping()
+    }
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    
+    // Clear typing after 3 seconds of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      clearTyping()
+      typingTimeoutRef.current = null
+    }, 3000)
+  }, [setTyping, clearTyping])
+
+  // Cleanup typing on unmount
+  useEffect(() => {
+    return () => {
+      clearTyping()
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [clearTyping])
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Supprimer ce message ?')) return
@@ -463,6 +583,30 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     if (!user?.id) return
     await toggleReaction.mutateAsync({ messageId, emoji, userId: user.id, hasReacted })
   }, [user?.id, toggleReaction])
+
+  const handleEditStart = useCallback((msg: TeamMessageFull) => {
+    setEditingId(msg.id)
+    setEditContent(msg.content)
+  }, [])
+
+  const handleEditSave = useCallback(async () => {
+    if (!editingId || !editContent.trim() || editContent === messages.find(m => m.id === editingId)?.content) {
+      setEditingId(null)
+      return
+    }
+    await editMessage.mutateAsync({ messageId: editingId, content: editContent.trim() })
+    setEditingId(null)
+  }, [editingId, editContent, editMessage, messages])
+
+  const handleEditCancel = useCallback(() => {
+    setEditingId(null)
+    setEditContent('')
+  }, [])
+
+  // Filter typing users (exclude current user)
+  const typingUsers = useMemo(() => {
+    return (typing ?? []).filter(t => t.user_id !== user?.id)
+  }, [typing, user?.id])
 
   // ── Access guards ─────────────────────────────────────────────────────────
   if (!user) return (
@@ -518,6 +662,12 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         <span className="ml-auto text-[10px] text-slate-600 bg-white/5 px-2 py-0.5 rounded-full mr-2">
           {messages.length} message{messages.length !== 1 ? 's' : ''}
         </span>
+        {pinned.length > 0 && (
+          <span className="ml-1 text-[10px] text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Pin size={10} />
+            {pinned.length}
+          </span>
+        )}
 
         {isAdmin && messages.length > 0 && (
           <button
@@ -536,6 +686,27 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         )}
       </div>
 
+      {/* Pinned Messages Section */}
+      {pinned.length > 0 && (
+        <div className="px-3 py-2 bg-primary-500/5 border-b border-primary-500/20 shrink-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Pin size={12} className="text-primary-400" />
+            <span className="text-[10px] font-bold text-primary-400 uppercase tracking-wider">Messages épinglés</span>
+          </div>
+          <div className="space-y-1">
+            {pinned.slice(0, 3).map(msg => (
+              <div key={msg.id} className="flex items-start gap-2 text-xs">
+                <span className="text-primary-300 font-semibold">{msg.sender.full_name?.split(' ')[0] ?? 'Joueur'}:</span>
+                <span className="text-slate-300 line-clamp-1">{msg.content}</span>
+              </div>
+            ))}
+            {pinned.length > 3 && (
+              <span className="text-[10px] text-slate-500">+{pinned.length - 3} autres</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-2 space-y-0.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {isLoading ? (
@@ -550,6 +721,8 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
           messages.map((msg, idx) => {
             const isFirstUnread = msg.id === firstUnreadIdRef.current && unreadCount > 0
             const readBy = readByMessage.get(msg.id) ?? []
+            const isEditing = editingId === msg.id
+            const isPinned = pinned.some(p => p.id === msg.id)
 
             return (
               <div key={msg.id}>
@@ -563,7 +736,16 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
                   onReply={setReplyTo}
                   onDelete={handleDelete}
                   onReact={handleReact}
+                  onEdit={handleEditStart}
+                  onPin={msg => pinMessage.mutateAsync(msg.id)}
+                  onUnpin={msg => unpinMessage.mutateAsync(msg.id)}
+                  isPinned={isPinned}
                   readBy={readBy}
+                  isEditing={isEditing}
+                  editContent={editContent}
+                  onEditChange={setEditContent}
+                  onEditSave={handleEditSave}
+                  onEditCancel={handleEditCancel}
                 />
               </div>
             )
@@ -571,6 +753,16 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-3 py-1.5 text-xs text-slate-500 italic shrink-0">
+          {typingUsers.length === 1 
+            ? `${typingUsers[0].profile?.full_name?.split(' ')[0] ?? "Quelqu'un"} est en train d'écrire...`
+            : `${typingUsers.map(u => u.profile?.full_name?.split(' ')[0] ?? "Quelqu'un").join(', ')} sont en train d'écrire...`
+          }
+        </div>
+      )}
 
       {/* Reply preview */}
       {replyTo && (
@@ -600,8 +792,8 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         <textarea
           ref={inputRef}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={handleInputChange}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
           placeholder="Écrire un message… (Entrée pour envoyer)"
           rows={1}
           className={clsx(
