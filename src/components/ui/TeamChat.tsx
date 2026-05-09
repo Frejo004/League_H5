@@ -9,7 +9,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Send, Smile, Reply, Trash2, X, MessageCircle, Lock, Bell, BellOff, Pin, Edit2, Check, CornerDownCorner } from 'lucide-react'
+import { Send, Smile, Reply, Trash2, X, MessageCircle, Lock, Bell, BellOff, Pin, Edit2, ChevronDown, ExternalLink } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTeamChat, useIsTeamMember, useTeamMembers } from '@/hooks/useTeamChat'
 import type { ReadReceiptWithProfile, PinnedMessage, TypingUser, TeamMember } from '@/hooks/useTeamChat'
@@ -164,12 +164,37 @@ function ReadReceiptAvatars({ receipts, currentUserId }: {
 
 function UnreadSeparator({ count }: { count: number }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2 my-1">
-      <div className="flex-1 h-px bg-primary-500/40" />
-      <span className="text-[10px] font-bold text-primary-400 whitespace-nowrap bg-primary-500/10 border border-primary-500/20 px-2.5 py-1 rounded-full">
-        {count} message{count > 1 ? 's' : ''} non lu{count > 1 ? 's' : ''}
+    <div className="flex items-center gap-3 px-4 py-2 my-2">
+      <div className="flex-1 h-px bg-primary-500/30" />
+      <span className="text-[10px] font-bold text-primary-400 whitespace-nowrap bg-primary-500/10 border border-primary-500/20 px-3 py-1 rounded-full tracking-wide">
+        {count} nouveau{count > 1 ? 'x' : ''} message{count > 1 ? 's' : ''}
       </span>
-      <div className="flex-1 h-px bg-primary-500/40" />
+      <div className="flex-1 h-px bg-primary-500/30" />
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Date separator
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DateSeparator({ date }: { date: Date }) {
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  const label = isToday
+    ? "Aujourd'hui"
+    : isYesterday
+    ? 'Hier'
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined })
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 my-1">
+      <div className="flex-1 h-px bg-white/5" />
+      <span className="text-[10px] font-semibold text-slate-500 whitespace-nowrap px-2">{label}</span>
+      <div className="flex-1 h-px bg-white/5" />
     </div>
   )
 }
@@ -260,13 +285,105 @@ function MentionDropdown({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Render message content with @mention highlights
+// Link preview
+// ─────────────────────────────────────────────────────────────────────────────
+
+const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g
+
+function useLinkPreview(url: string) {
+  const [meta, setMeta] = useState<{ title?: string; description?: string; image?: string; hostname: string } | null>(null)
+
+  useEffect(() => {
+    // On extrait juste le hostname pour l'affichage — pas de fetch externe
+    try {
+      const u = new URL(url)
+      setMeta({ hostname: u.hostname.replace('www.', '') })
+    } catch {
+      setMeta(null)
+    }
+  }, [url])
+
+  return meta
+}
+
+function LinkPreview({ url }: { url: string }) {
+  const meta = useLinkPreview(url)
+  if (!meta) return null
+
+  // Détection YouTube
+  const isYoutube = /youtube\.com|youtu\.be/.test(url)
+  const ytMatch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  const ytId = ytMatch?.[1]
+
+  // Détection image directe
+  const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)
+
+  if (isImage) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="block mt-2 rounded-xl overflow-hidden max-w-xs border border-white/8 hover:border-white/20 transition-colors">
+        <img src={url} alt="Image" className="w-full object-cover max-h-48" loading="lazy" />
+      </a>
+    )
+  }
+
+  if (isYoutube && ytId) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="block mt-2 rounded-xl overflow-hidden max-w-xs border border-white/8 hover:border-white/20 transition-colors group relative">
+        <img
+          src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+          alt="YouTube"
+          className="w-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/30 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+            <div className="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[13px] border-transparent border-l-white ml-1" />
+          </div>
+        </div>
+        <div className="px-3 py-2 bg-[#1a2030]">
+          <p className="text-[11px] text-slate-500 flex items-center gap-1">
+            <span className="text-red-500 font-bold">▶</span> youtube.com
+          </p>
+        </div>
+      </a>
+    )
+  }
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="flex items-center gap-2.5 mt-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/8 hover:bg-white/[0.07] hover:border-white/15 transition-all max-w-xs group">
+      <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center shrink-0 text-slate-500 group-hover:text-slate-300 transition-colors">
+        <ExternalLink size={14} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-300 truncate group-hover:text-white transition-colors">{meta.hostname}</p>
+        <p className="text-[10px] text-slate-600 truncate">{url.length > 40 ? url.slice(0, 40) + '…' : url}</p>
+      </div>
+    </a>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render message content with @mention highlights + link detection
 // ─────────────────────────────────────────────────────────────────────────────
 
 function renderMessageContent(content: string) {
-  // Match @everyone or @Prénom Nom (up to 3 words after @)
-  const parts = content.split(/(@everyone|@[\w\u00C0-\u017E]+(?: [\w\u00C0-\u017E]+){0,2})/g)
-  return parts.map((part, i) => {
+  // Split on URLs and @mentions
+  const SPLIT_REGEX = /(https?:\/\/[^\s<>"{}|\\^`[\]]+|@everyone|@[\w\u00C0-\u017E]+(?: [\w\u00C0-\u017E]+){0,2})/g
+  const parts = content.split(SPLIT_REGEX).filter(Boolean)
+
+  const urls: string[] = []
+  const inlineNodes = parts.map((part, i) => {
+    if (/^https?:\/\//.test(part)) {
+      urls.push(part)
+      return (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+          className="text-primary-400 hover:text-primary-300 underline underline-offset-2 break-all transition-colors">
+          {part}
+        </a>
+      )
+    }
     if (part.startsWith('@')) {
       return (
         <span key={i} className="inline-flex items-center font-semibold text-primary-300 bg-primary-500/15 rounded px-0.5">
@@ -276,6 +393,14 @@ function renderMessageContent(content: string) {
     }
     return <span key={i}>{part}</span>
   })
+
+  return (
+    <>
+      <span className="leading-relaxed">{inlineNodes}</span>
+      {/* Preview pour la première URL uniquement */}
+      {urls[0] && <LinkPreview url={urls[0]} />}
+    </>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -299,6 +424,8 @@ function ChatMessage({
   onEditChange,
   onEditSave,
   onEditCancel,
+  isGrouped,       // même expéditeur que le message précédent
+  isLastInGroup,   // dernier d'un groupe consécutif
 }: {
   msg: TeamMessageFull
   currentUserId: string
@@ -316,6 +443,8 @@ function ChatMessage({
   onEditChange?: (content: string) => void
   onEditSave?: () => void
   onEditCancel?: () => void
+  isGrouped?: boolean
+  isLastInGroup?: boolean
 }) {
   const [showActions, setShowActions] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
@@ -340,13 +469,11 @@ function ChatMessage({
   const senderName = msg.sender?.full_name ?? 'Joueur'
   const initials = senderName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
-  // Handle edit keydown
   const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onEditSave?.() }
     if (e.key === 'Escape') { onEditCancel?.() }
   }
 
-  // Handle edit textarea auto-resize
   const editInputRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
     if (isEditing && editInputRef.current) {
@@ -356,53 +483,78 @@ function ChatMessage({
     }
   }, [isEditing])
 
+  // Coins de bulle selon position dans le groupe
+  const ownBubbleRadius = isGrouped && !isLastInGroup
+    ? 'rounded-2xl rounded-tr-md'
+    : isGrouped && isLastInGroup
+    ? 'rounded-2xl rounded-tr-sm'
+    : 'rounded-2xl rounded-tr-sm'
+
+  const otherBubbleRadius = isGrouped && !isLastInGroup
+    ? 'rounded-2xl rounded-tl-md'
+    : isGrouped && isLastInGroup
+    ? 'rounded-2xl rounded-tl-sm'
+    : 'rounded-2xl rounded-tl-sm'
+
   return (
     <div
-      className={clsx('group relative flex gap-2.5 px-3 py-1 hover:bg-white/2 rounded-xl transition-colors', isOwn ? 'flex-row-reverse' : 'flex-row')}
+      className={clsx(
+        'group relative flex gap-2.5 px-3 rounded-lg transition-colors duration-100',
+        isOwn ? 'flex-row-reverse' : 'flex-row',
+        isGrouped ? 'pt-0.5 pb-0' : 'pt-2 pb-0',
+        'hover:bg-white/[0.02]'
+      )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); setShowReactionPicker(false) }}
     >
-      {/* Avatar sender */}
-      <div className="shrink-0 mt-0.5">
-        {msg.sender?.avatar_url
-          ? <img src={msg.sender.avatar_url} alt={senderName} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
-          : <div className="w-8 h-8 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300 ring-1 ring-white/10">{initials}</div>
-        }
+      {/* Avatar — masqué si groupé, espace réservé sinon */}
+      <div className="shrink-0 w-8 mt-0.5">
+        {!isGrouped && (
+          msg.sender?.avatar_url
+            ? <img src={msg.sender.avatar_url} alt={senderName} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
+            : <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600/60 to-primary-800/60 flex items-center justify-center text-xs font-bold text-primary-200 ring-1 ring-white/10">{initials}</div>
+        )}
       </div>
 
-      {/* Bubble + read receipts */}
-      <div className={clsx('flex flex-col max-w-[75%]', isOwn ? 'items-end' : 'items-start')}>
-        {/* Sender + time */}
-        <div className={clsx('flex items-baseline gap-2 mb-0.5', isOwn && 'flex-row-reverse')}>
-          <span className="text-xs font-semibold text-slate-300">{senderName}</span>
-          <span className="text-[10px] text-slate-600">{time}</span>
-          {msg.edited_at && <span className="text-[10px] text-slate-600 italic">(modifié)</span>}
-          {isPinned && <Pin size={10} className="text-primary-400" title="Message épinglé" />}
-        </div>
+      {/* Contenu */}
+      <div className={clsx('flex flex-col min-w-0', isOwn ? 'items-end flex-1' : 'items-start flex-1')}>
 
-        {/* Reply preview */}
-        {msg.reply_to && (
-          <div className={clsx('mb-1 px-2.5 py-1.5 rounded-lg border-l-2 border-primary-500 bg-white/5 text-xs text-slate-400 max-w-full', isOwn && 'border-r-2 border-l-0')}>
-            <span className="font-semibold text-primary-400 block">{msg.reply_to.sender?.full_name ?? 'Joueur'}</span>
-            <span className="line-clamp-1">{msg.reply_to.content}</span>
+        {/* Nom + heure — seulement sur le premier du groupe */}
+        {!isGrouped && (
+          <div className={clsx('flex items-baseline gap-2 mb-1', isOwn && 'flex-row-reverse')}>
+            <span className={clsx('text-xs font-semibold', isOwn ? 'text-primary-300' : 'text-slate-300')}>
+              {isOwn ? 'Vous' : senderName}
+            </span>
+            <span className="text-[10px] text-slate-600">{time}</span>
+            {msg.edited_at && <span className="text-[10px] text-slate-600 italic">· modifié</span>}
+            {isPinned && <Pin size={9} className="text-amber-400/70" title="Épinglé" />}
           </div>
         )}
 
-        {/* Content - Edit mode or display */}
+        {/* Reply preview */}
+        {msg.reply_to && (
+          <div className={clsx(
+            'mb-1.5 px-3 py-1.5 rounded-xl text-xs max-w-xs cursor-pointer',
+            'border-l-2 border-primary-500/60 bg-white/[0.04] hover:bg-white/[0.07] transition-colors',
+            isOwn && 'border-r-2 border-l-0'
+          )}>
+            <span className="font-semibold text-primary-400 block text-[11px]">{msg.reply_to.sender?.full_name ?? 'Joueur'}</span>
+            <span className="text-slate-500 line-clamp-1">{msg.reply_to.content}</span>
+          </div>
+        )}
+
+        {/* Bulle */}
         {isEditing ? (
           <div className={clsx(
-            'w-full px-3.5 py-2 rounded-2xl text-sm border-2',
-            isOwn ? 'bg-primary-600/80 border-primary-400' : 'bg-surface-card border-primary-500'
+            'w-full max-w-sm px-3.5 py-2.5 rounded-2xl text-sm border-2',
+            isOwn ? 'bg-primary-700/60 border-primary-500/50' : 'bg-[#1e2530] border-primary-500/50'
           )}>
             <textarea
               ref={editInputRef}
               value={editContent}
               onChange={e => onEditChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
-              className={clsx(
-                'w-full resize-none bg-transparent text-sm text-white placeholder-slate-400',
-                'focus:outline-none'
-              )}
+              className="w-full resize-none bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
               rows={2}
               onInput={e => {
                 const el = e.currentTarget
@@ -410,23 +562,35 @@ function ChatMessage({
                 el.style.height = Math.min(el.scrollHeight, 112) + 'px'
               }}
             />
-            <div className="flex items-center gap-2 mt-2 justify-end">
-              <button onClick={onEditCancel} className="text-xs text-slate-400 hover:text-slate-200">Annuler</button>
-              <button onClick={onEditSave} className="text-xs text-primary-400 hover:text-primary-300 font-semibold">Enregistrer</button>
+            <div className="flex items-center gap-3 mt-2 justify-end">
+              <button onClick={onEditCancel} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Annuler</button>
+              <button onClick={onEditSave} className="text-xs font-semibold text-primary-400 hover:text-primary-300 transition-colors">Enregistrer</button>
             </div>
           </div>
         ) : (
           <div className={clsx(
-            'px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words',
-            isOwn ? 'bg-primary-600/80 text-white rounded-tr-sm' : 'bg-surface-card border border-surface-border text-slate-200 rounded-tl-sm'
+            'max-w-sm px-3.5 py-2 text-sm leading-relaxed',
+            isOwn
+              ? `bg-primary-600 text-white ${ownBubbleRadius} shadow-md shadow-primary-900/30`
+              : `bg-[#1e2530] text-slate-100 border border-white/[0.06] ${otherBubbleRadius} shadow-sm`
           )}>
             {renderMessageContent(msg.content)}
           </div>
         )}
 
-        {/* Reactions */}
+        {/* Heure au hover pour les messages groupés */}
+        {isGrouped && (
+          <span className={clsx(
+            'text-[10px] text-slate-600 mt-0.5 transition-opacity duration-150',
+            showActions ? 'opacity-100' : 'opacity-0'
+          )}>
+            {time}{msg.edited_at && ' · modifié'}
+          </span>
+        )}
+
+        {/* Réactions */}
         {reactionMap.size > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {Array.from(reactionMap.entries()).map(([emoji, { count, hasReacted, names }]) => (
               <ReactionBubble key={emoji} emoji={emoji} count={count} hasReacted={hasReacted}
                 onClick={() => onReact(msg.id, emoji, hasReacted)} names={names.join(', ')} />
@@ -434,98 +598,91 @@ function ChatMessage({
           </div>
         )}
 
-        {/* ── Read receipts style Messenger ── */}
+        {/* Read receipts */}
         {readBy.length > 0 && (
           <ReadReceiptAvatars receipts={readBy} currentUserId={currentUserId} />
         )}
       </div>
 
-      {/* Actions hover (Style Teams) */}
+      {/* Barre d'actions au hover */}
       <div className={clsx(
-        'absolute -top-4 z-10 flex items-center bg-[#161B22] border border-white/10 rounded-lg shadow-2xl p-0.5 transition-all duration-200',
-        showActions ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none',
-        isOwn ? 'right-4' : 'left-4'
+        'absolute -top-3.5 z-20 flex items-center gap-0.5',
+        'bg-[#1a2030] border border-white/10 rounded-xl shadow-2xl shadow-black/50 p-1',
+        'transition-all duration-150',
+        showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-1 pointer-events-none',
+        isOwn ? 'right-10' : 'left-10'
       )}>
-        {/* Quick Reactions */}
-        <div className="flex items-center gap-0.5 px-1 border-r border-white/10 mr-1">
-          {QUICK_REACTIONS.map(emoji => {
-            const r = reactionMap.get(emoji)
-            return (
-              <button
-                key={emoji}
-                onClick={() => onReact(msg.id, emoji, r?.hasReacted ?? false)}
-                className={clsx(
-                  'w-7 h-7 flex items-center justify-center text-sm rounded-md transition-all hover:scale-125 hover:bg-white/5',
-                  r?.hasReacted && 'bg-primary-600/20 text-primary-400'
-                )}
-                title={emoji}
-              >
-                {emoji}
-              </button>
-            )
-          })}
-          
-          <button 
-            onClick={() => setShowReactionPicker(v => !v)}
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
-            title="Plus de réactions"
-          >
-            <Smile size={14} />
-          </button>
-
-          {showReactionPicker && (
-            <div className="absolute bottom-full left-0 mb-2">
-              <EmojiPicker 
-                onSelect={(e) => { onReact(msg.id, e, reactionMap.get(e)?.hasReacted ?? false); setShowReactionPicker(false) }}
-                onClose={() => setShowReactionPicker(false)}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-0.5 px-1">
-          <button 
-            onClick={() => onReply(msg)}
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
-            title="Répondre"
-          >
-            <Reply size={14} />
-          </button>
-
-          {isOwn && !isPinned && (
+        {/* Quick reactions */}
+        {QUICK_REACTIONS.map(emoji => {
+          const r = reactionMap.get(emoji)
+          return (
             <button
-              onClick={() => onEdit(msg)}
-              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-white/5 rounded-md transition-colors"
-              title="Modifier"
-            >
-              <Edit2 size={14} />
-            </button>
-          )}
-
-          {canPin && (
-            <button
-              onClick={() => isPinned ? onUnpin(msg) : onPin(msg)}
+              key={emoji}
+              onClick={() => onReact(msg.id, emoji, r?.hasReacted ?? false)}
               className={clsx(
-                'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
-                isPinned ? 'text-primary-400 hover:text-primary-300' : 'text-slate-400 hover:text-primary-400'
+                'w-7 h-7 flex items-center justify-center text-sm rounded-lg transition-all hover:scale-125 hover:bg-white/8',
+                r?.hasReacted && 'bg-primary-600/25'
               )}
-              title={isPinned ? 'Désépingler' : 'Épingler'}
+              title={emoji}
             >
-              <Pin size={14} />
+              {emoji}
             </button>
-          )}
-          
-          {canDelete && (
-            <button 
-              onClick={() => onDelete(msg.id)}
-              className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-              title="Supprimer"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
+          )
+        })}
+
+        <button
+          onClick={() => setShowReactionPicker(v => !v)}
+          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/8 rounded-lg transition-colors"
+          title="Plus"
+        >
+          <Smile size={13} />
+        </button>
+
+        {showReactionPicker && (
+          <div className="absolute bottom-full left-0 mb-2">
+            <EmojiPicker
+              onSelect={e => { onReact(msg.id, e, reactionMap.get(e)?.hasReacted ?? false); setShowReactionPicker(false) }}
+              onClose={() => setShowReactionPicker(false)}
+            />
+          </div>
+        )}
+
+        <div className="w-px h-4 bg-white/10 mx-0.5" />
+
+        <button onClick={() => onReply(msg)}
+          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/8 rounded-lg transition-colors"
+          title="Répondre">
+          <Reply size={13} />
+        </button>
+
+        {isOwn && (
+          <button onClick={() => onEdit(msg)}
+            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-white/8 rounded-lg transition-colors"
+            title="Modifier">
+            <Edit2 size={13} />
+          </button>
+        )}
+
+        {canPin && (
+          <button
+            onClick={() => isPinned ? onUnpin(msg) : onPin(msg)}
+            className={clsx(
+              'w-7 h-7 flex items-center justify-center rounded-lg transition-colors',
+              isPinned ? 'text-amber-400 hover:text-amber-300' : 'text-slate-500 hover:text-amber-400 hover:bg-white/8'
+            )}
+            title={isPinned ? 'Désépingler' : 'Épingler'}
+          >
+            <Pin size={13} />
+          </button>
+        )}
+
+        {canDelete && (
+          <button onClick={() => onDelete(msg.id)}
+            className="w-7 h-7 flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Supprimer">
+            <Trash2 size={13} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -562,6 +719,10 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   // ── Mention state ─────────────────────────────────────────────────────────
   const [mentionQuery, setMentionQuery] = useState<string | null>(null) // null = fermé
   const [mentionStart, setMentionStart] = useState<number>(-1)
+
+  // ── Scroll-to-bottom button ───────────────────────────────────────────────
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [newMsgWhileScrolled, setNewMsgWhileScrolled] = useState(0)
 
   // ID du premier message non lu — calculé une seule fois à l'ouverture du chat
   const firstUnreadIdRef = useRef<string | null | undefined>(undefined) // undefined = pas encore calculé
@@ -605,10 +766,28 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   // ── Scroll auto vers le bas sur nouveaux messages ─────────────────────────
   useEffect(() => {
     if (messages.length > prevCountRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      // Si on est déjà en bas → scroll auto ; sinon → badge compteur
+      if (!showScrollBtn) {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        setNewMsgWhileScrolled(n => n + (messages.length - prevCountRef.current))
+      }
     }
     prevCountRef.current = messages.length
-  }, [messages.length])
+  }, [messages.length, showScrollBtn])
+
+  // ── Détecter si on est loin du bas (afficher le bouton) ──────────────────
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      setShowScrollBtn(distFromBottom > 120)
+      if (distFromBottom <= 120) setNewMsgWhileScrolled(0)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
 
   // ── Notif push pour les messages des autres ───────────────────────────────
   const prevMessagesRef = useRef<TeamMessageFull[]>([])
@@ -778,91 +957,89 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className={clsx('flex flex-col', embedded ? 'h-full' : 'card')} style={embedded ? {} : { height: '540px' }}>
+    <div className={clsx('flex flex-col relative', embedded ? 'h-full' : 'card')} style={embedded ? {} : { height: '580px' }}>
 
-      {/* Header */}
-      <div className="flex items-center gap-2 pb-3 border-b border-surface-border shrink-0">
-        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: teamColor ?? '#16a34a' }} />
-        <MessageCircle size={14} className="text-primary-400" />
-        <h2 className="section-title mb-0">Chat d'équipe</h2>
+      {/* ── Header ── */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] shrink-0">
+        <div className="relative">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: (teamColor ?? '#16a34a') + '22' }}>
+            <MessageCircle size={14} style={{ color: teamColor ?? '#16a34a' }} />
+          </div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0D1117] animate-pulse" style={{ backgroundColor: teamColor ?? '#16a34a' }} />
+        </div>
 
-        {/* Bouton permission push */}
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-bold text-white leading-none">Chat d'équipe</h2>
+          <p className="text-[10px] text-slate-600 mt-0.5">{messages.length} message{messages.length !== 1 ? 's' : ''}</p>
+        </div>
+
+        {/* Notifications push */}
         {typeof Notification !== 'undefined' && push.permission !== 'granted' && (
-          <button
-            onClick={push.request}
-            title="Activer les notifications"
-            className="ml-1 p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-primary-400 transition-colors"
-          >
+          <button onClick={push.request} title="Activer les notifications"
+            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-primary-400 transition-colors">
             <Bell size={13} />
           </button>
         )}
-        {push.permission === 'granted' && (
-          <span title="Notifications activées">
-            <Bell size={12} className="text-primary-400 ml-1" />
-          </span>
-        )}
-        {push.permission === 'denied' && (
-          <span title="Notifications bloquées par le navigateur">
-            <BellOff size={12} className="text-slate-600 ml-1" />
-          </span>
-        )}
+        {push.permission === 'granted' && <Bell size={12} className="text-primary-400/60" title="Notifications activées" />}
+        {push.permission === 'denied' && <BellOff size={12} className="text-slate-700" title="Notifications bloquées" />}
 
-        <span className="ml-auto text-[10px] text-slate-600 bg-white/5 px-2 py-0.5 rounded-full mr-2">
-          {messages.length} message{messages.length !== 1 ? 's' : ''}
-        </span>
+        {/* Épinglés */}
         {pinned.length > 0 && (
-          <span className="ml-1 text-[10px] text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Pin size={10} />
+          <span className="flex items-center gap-1 text-[10px] text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded-full">
+            <Pin size={9} />
             {pinned.length}
           </span>
         )}
 
+        {/* Vider (admin) */}
         {isAdmin && messages.length > 0 && (
           <button
             onClick={async () => {
-              if (confirm(`Voulez-vous supprimer TOUS les messages (${messages.length}) de ce groupe ? Cette action est irréversible.`)) {
+              if (confirm(`Supprimer TOUS les messages (${messages.length}) ? Action irréversible.`)) {
                 await clearChat.mutateAsync()
               }
             }}
             disabled={clearChat.isPending}
-            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400/70 hover:text-red-400 transition-colors flex items-center gap-1.5"
+            className="p-1.5 rounded-lg bg-red-500/8 hover:bg-red-500/15 text-red-500/50 hover:text-red-400 transition-colors"
             title="Vider la discussion"
           >
             {clearChat.isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={13} />}
-            <span className="text-[10px] font-bold">Vider</span>
           </button>
         )}
       </div>
 
-      {/* Pinned Messages Section */}
+      {/* ── Messages épinglés ── */}
       {pinned.length > 0 && (
-        <div className="px-3 py-2 bg-primary-500/5 border-b border-primary-500/20 shrink-0">
+        <div className="px-4 py-2.5 bg-amber-500/5 border-b border-amber-500/10 shrink-0">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Pin size={12} className="text-primary-400" />
-            <span className="text-[10px] font-bold text-primary-400 uppercase tracking-wider">Messages épinglés</span>
+            <Pin size={11} className="text-amber-400/70" />
+            <span className="text-[10px] font-bold text-amber-400/70 uppercase tracking-wider">Épinglés</span>
           </div>
           <div className="space-y-1">
-            {pinned.slice(0, 3).map(msg => (
+            {pinned.slice(0, 2).map(msg => (
               <div key={msg.id} className="flex items-start gap-2 text-xs">
-                <span className="text-primary-300 font-semibold">{msg.sender.full_name?.split(' ')[0] ?? 'Joueur'}:</span>
-                <span className="text-slate-300 line-clamp-1">{msg.content}</span>
+                <span className="text-amber-300/70 font-semibold shrink-0">{msg.sender.full_name?.split(' ')[0] ?? 'Joueur'}</span>
+                <span className="text-slate-400 line-clamp-1">{msg.content}</span>
               </div>
             ))}
-            {pinned.length > 3 && (
-              <span className="text-[10px] text-slate-500">+{pinned.length - 3} autres</span>
-            )}
+            {pinned.length > 2 && <span className="text-[10px] text-slate-600">+{pinned.length - 2} autres</span>}
           </div>
         </div>
       )}
 
-      {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-2 space-y-0.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      {/* ── Zone messages ── */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto py-3 scrollbar-thin scrollbar-thumb-white/[0.06] scrollbar-track-transparent"
+      >
         {isLoading ? (
           <div className="flex justify-center py-10"><LoadingSpinner size="md" /></div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-10">
-            <MessageCircle size={32} className="text-slate-600" />
-            <p className="text-slate-500 text-sm">Aucun message pour l'instant.</p>
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-10 px-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+              <MessageCircle size={24} className="text-slate-600" />
+            </div>
+            <p className="text-slate-400 text-sm font-medium">Aucun message</p>
             <p className="text-slate-600 text-xs">Soyez le premier à écrire !</p>
           </div>
         ) : (
@@ -872,11 +1049,32 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
             const isEditing = editingId === msg.id
             const isPinned = pinned.some(p => p.id === msg.id)
 
-            return (
-              <div key={msg.id}>
-                {/* Séparateur messages non lus */}
-                {isFirstUnread && <UnreadSeparator count={unreadCount} />}
+            // Regroupement : même expéditeur, moins de 5 min d'écart
+            const prev = messages[idx - 1]
+            const isGrouped = !isFirstUnread && !!prev
+              && prev.sender_id === msg.sender_id
+              && (new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime()) < 5 * 60 * 1000
 
+            const next = messages[idx + 1]
+            const isLastInGroup = !next
+              || next.sender_id !== msg.sender_id
+              || (new Date(next.created_at).getTime() - new Date(msg.created_at).getTime()) >= 5 * 60 * 1000
+
+            // Séparateur de date
+            const msgDate = new Date(msg.created_at)
+            const prevDate = prev ? new Date(prev.created_at) : null
+            const showDateSep = !prevDate || msgDate.toDateString() !== prevDate.toDateString()
+
+            // Animation : seulement sur les nouveaux messages (après chargement initial)
+            const isNew = idx >= messages.length - (messages.length - prevCountRef.current)
+
+            return (
+              <div
+                key={msg.id}
+                style={isNew ? { animation: 'msgSlideIn 0.2s ease-out both' } : undefined}
+              >
+                {showDateSep && <DateSeparator date={msgDate} />}
+                {isFirstUnread && <UnreadSeparator count={unreadCount} />}
                 <ChatMessage
                   msg={msg}
                   currentUserId={user.id}
@@ -894,6 +1092,8 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
                   onEditChange={setEditContent}
                   onEditSave={handleEditSave}
                   onEditCancel={handleEditCancel}
+                  isGrouped={isGrouped}
+                  isLastInGroup={isLastInGroup}
                 />
               </div>
             )
@@ -902,33 +1102,60 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         <div ref={bottomRef} />
       </div>
 
-      {/* Typing Indicator */}
-      {typingUsers.length > 0 && (
-        <div className="px-3 py-1.5 text-xs text-slate-500 italic shrink-0">
-          {typingUsers.length === 1 
-            ? `${typingUsers[0].profile?.full_name?.split(' ')[0] ?? "Quelqu'un"} est en train d'écrire...`
-            : `${typingUsers.map(u => u.profile?.full_name?.split(' ')[0] ?? "Quelqu'un").join(', ')} sont en train d'écrire...`
-          }
+      {/* ── Scroll-to-bottom button ── */}
+      {showScrollBtn && (
+        <div className="absolute bottom-[88px] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex justify-center">
+          <button
+            onClick={() => {
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+              setNewMsgWhileScrolled(0)
+            }}
+            className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1a2030] border border-white/15 shadow-xl shadow-black/40 text-xs text-slate-300 hover:text-white hover:border-white/25 transition-all hover:scale-105 active:scale-95"
+          >
+            {newMsgWhileScrolled > 0 && (
+              <span className="bg-primary-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {newMsgWhileScrolled > 99 ? '99+' : newMsgWhileScrolled}
+              </span>
+            )}
+            <ChevronDown size={14} />
+            <span>{newMsgWhileScrolled > 0 ? 'Nouveaux messages' : 'Aller en bas'}</span>
+          </button>
         </div>
       )}
 
-      {/* Reply preview */}
+      {/* ── Typing indicator ── */}
+      {typingUsers.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-1.5 shrink-0">
+          <div className="flex gap-0.5 items-end">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="text-[11px] text-slate-600">
+            {typingUsers.length === 1
+              ? `${typingUsers[0].profile?.full_name?.split(' ')[0] ?? "Quelqu'un"} écrit…`
+              : `${typingUsers.map(u => u.profile?.full_name?.split(' ')[0] ?? "Quelqu'un").join(', ')} écrivent…`}
+          </span>
+        </div>
+      )}
+
+      {/* ── Reply preview ── */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-white/5 border-t border-surface-border shrink-0">
-          <Reply size={12} className="text-primary-400 shrink-0" />
+        <div className="flex items-center gap-2.5 mx-3 mb-2 px-3 py-2 bg-white/[0.04] border border-white/[0.07] rounded-xl shrink-0">
+          <div className="w-0.5 h-8 rounded-full bg-primary-500/60 shrink-0" />
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-primary-400">{replyTo.sender?.full_name ?? 'Joueur'}</span>
-            <p className="text-xs text-slate-500 truncate">{replyTo.content}</p>
+            <span className="text-[11px] font-semibold text-primary-400 block">{replyTo.sender?.full_name ?? 'Joueur'}</span>
+            <p className="text-[11px] text-slate-500 truncate">{replyTo.content}</p>
           </div>
           <button onClick={() => setReplyTo(null)}
-            className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors shrink-0">
+            className="p-1 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors shrink-0">
             <X size={12} />
           </button>
         </div>
       )}
 
-      {/* Input */}
-      <div className="flex items-end gap-2 pt-3 border-t border-surface-border shrink-0 relative">
+      {/* ── Input ── */}
+      <div className="px-3 pb-3 shrink-0 relative">
         {showEmojiPicker && (
           <EmojiPicker onSelect={e => { setInput(p => p + e); inputRef.current?.focus() }} onClose={() => setShowEmojiPicker(false)} />
         )}
@@ -940,46 +1167,61 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
             onClose={() => { setMentionQuery(null); setMentionStart(-1) }}
           />
         )}
-        <button onClick={() => setShowEmojiPicker(v => !v)}
-          className={clsx('p-2 rounded-xl transition-colors shrink-0 mb-0.5', showEmojiPicker ? 'bg-primary-600/30 text-primary-400' : 'hover:bg-white/10 text-slate-400 hover:text-slate-200')}
-          title="Emojis">
-          <Smile size={18} />
-        </button>
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={e => {
-            if (e.key === 'Escape' && mentionQuery !== null) {
-              e.preventDefault()
-              setMentionQuery(null)
-              setMentionStart(-1)
-              return
-            }
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
-          }}
-          placeholder="Écrire un message… (Entrée pour envoyer)"
-          rows={1}
-          className={clsx(
-            'flex-1 resize-none bg-white/5 border border-surface-border rounded-xl px-3 py-2',
-            'text-sm text-white placeholder-slate-600',
-            'focus:outline-none focus:border-primary-500/50 focus:bg-white/8',
-            'transition-colors max-h-28 overflow-y-auto',
-            'scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent'
-          )}
-          style={{ lineHeight: '1.5' }}
-          onInput={e => {
-            const el = e.currentTarget
-            el.style.height = 'auto'
-            el.style.height = Math.min(el.scrollHeight, 112) + 'px'
-          }}
-        />
-        <button onClick={handleSend} disabled={!input.trim() || sendMessage.isPending}
-          className={clsx('p-2 rounded-xl transition-all shrink-0 mb-0.5',
-            input.trim() ? 'bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-600/20' : 'bg-white/5 text-slate-600 cursor-not-allowed')}
-          title="Envoyer">
-          {sendMessage.isPending ? <LoadingSpinner size="sm" /> : <Send size={16} />}
-        </button>
+
+        <div className="flex items-end gap-2 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-2 py-1.5 focus-within:border-primary-500/30 focus-within:bg-white/[0.06] transition-all">
+          <button
+            onClick={() => setShowEmojiPicker(v => !v)}
+            className={clsx(
+              'p-1.5 rounded-xl transition-colors shrink-0 mb-0.5',
+              showEmojiPicker ? 'text-primary-400 bg-primary-500/15' : 'text-slate-600 hover:text-slate-300 hover:bg-white/8'
+            )}
+            title="Emojis"
+          >
+            <Smile size={17} />
+          </button>
+
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={e => {
+              if (e.key === 'Escape' && mentionQuery !== null) {
+                e.preventDefault()
+                setMentionQuery(null)
+                setMentionStart(-1)
+                return
+              }
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+            }}
+            placeholder="Écrire un message…"
+            rows={1}
+            className={clsx(
+              'flex-1 resize-none bg-transparent text-sm text-white placeholder-slate-600',
+              'focus:outline-none py-1.5 max-h-28 overflow-y-auto',
+              'scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent'
+            )}
+            style={{ lineHeight: '1.5' }}
+            onInput={e => {
+              const el = e.currentTarget
+              el.style.height = 'auto'
+              el.style.height = Math.min(el.scrollHeight, 112) + 'px'
+            }}
+          />
+
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || sendMessage.isPending}
+            className={clsx(
+              'p-2 rounded-xl transition-all shrink-0 mb-0.5',
+              input.trim()
+                ? 'bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/40'
+                : 'text-slate-700 cursor-not-allowed'
+            )}
+            title="Envoyer"
+          >
+            {sendMessage.isPending ? <LoadingSpinner size="sm" /> : <Send size={15} />}
+          </button>
+        </div>
       </div>
     </div>
   )
