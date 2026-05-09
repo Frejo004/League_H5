@@ -960,17 +960,31 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     <div className={clsx('flex flex-col relative', embedded ? 'h-full' : 'card')} style={embedded ? {} : { height: '580px' }}>
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] shrink-0">
-        <div className="relative">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: (teamColor ?? '#16a34a') + '22' }}>
-            <MessageCircle size={14} style={{ color: teamColor ?? '#16a34a' }} />
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0">
+        {/* Avatar équipe */}
+        <div className="relative shrink-0">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-lg"
+            style={{ backgroundColor: teamColor ?? '#16a34a' }}
+          >
+            {teamName ? teamName[0].toUpperCase() : <MessageCircle size={16} />}
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0D1117] animate-pulse" style={{ backgroundColor: teamColor ?? '#16a34a' }} />
+          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0D1117] bg-emerald-500 animate-pulse" />
         </div>
 
+        {/* Nom + membres */}
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-bold text-white leading-none">Chat d'équipe</h2>
-          <p className="text-[10px] text-slate-600 mt-0.5">{messages.length} message{messages.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-sm font-bold text-white leading-tight truncate">
+            {teamName ?? 'Chat d\'équipe'}
+          </h2>
+          <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />
+              {teamMembers.length} membre{teamMembers.length !== 1 ? 's' : ''}
+            </span>
+            <span className="text-slate-700">·</span>
+            <span>{messages.length} message{messages.length !== 1 ? 's' : ''}</span>
+          </p>
         </div>
 
         {/* Notifications push */}
@@ -1030,7 +1044,8 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
       {/* ── Zone messages ── */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto py-3 scrollbar-thin scrollbar-thumb-white/[0.06] scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto py-3 relative"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
       >
         {isLoading ? (
           <div className="flex justify-center py-10"><LoadingSpinner size="md" /></div>
@@ -1099,29 +1114,27 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
             )
           })
         )}
+        {showScrollBtn && (
+          <div className="sticky bottom-3 z-20 flex justify-center pointer-events-none">
+            <button
+              onClick={() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+                setNewMsgWhileScrolled(0)
+              }}
+              className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full bg-[#1a2030]/90 border border-white/10 shadow-lg text-slate-400 hover:text-white hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
+              style={{ animation: 'msgSlideIn 0.15s ease-out both' }}
+            >
+              {newMsgWhileScrolled > 0 && (
+                <span className="bg-primary-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                  {newMsgWhileScrolled > 99 ? '99+' : newMsgWhileScrolled}
+                </span>
+              )}
+              <ChevronDown size={12} />
+            </button>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
-
-      {/* ── Scroll-to-bottom button ── */}
-      {showScrollBtn && (
-        <div className="absolute bottom-[88px] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex justify-center">
-          <button
-            onClick={() => {
-              bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-              setNewMsgWhileScrolled(0)
-            }}
-            className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1a2030] border border-white/15 shadow-xl shadow-black/40 text-xs text-slate-300 hover:text-white hover:border-white/25 transition-all hover:scale-105 active:scale-95"
-          >
-            {newMsgWhileScrolled > 0 && (
-              <span className="bg-primary-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {newMsgWhileScrolled > 99 ? '99+' : newMsgWhileScrolled}
-              </span>
-            )}
-            <ChevronDown size={14} />
-            <span>{newMsgWhileScrolled > 0 ? 'Nouveaux messages' : 'Aller en bas'}</span>
-          </button>
-        </div>
-      )}
 
       {/* ── Typing indicator ── */}
       {typingUsers.length > 0 && (
