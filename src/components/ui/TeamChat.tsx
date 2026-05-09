@@ -11,8 +11,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Send, Smile, Reply, Trash2, X, MessageCircle, Lock, Bell, BellOff, Pin, Edit2, Check, CornerDownCorner } from 'lucide-react'
 import { clsx } from 'clsx'
-import { useTeamChat, useIsTeamMember } from '@/hooks/useTeamChat'
-import type { ReadReceiptWithProfile, PinnedMessage, TypingUser } from '@/hooks/useTeamChat'
+import { useTeamChat, useIsTeamMember, useTeamMembers } from '@/hooks/useTeamChat'
+import type { ReadReceiptWithProfile, PinnedMessage, TypingUser, TeamMember } from '@/hooks/useTeamChat'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { TeamMessageFull } from '@/types/database'
@@ -175,6 +175,110 @@ function UnreadSeparator({ count }: { count: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Mention dropdown
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MentionDropdown({
+  members,
+  query,
+  onSelect,
+  onClose,
+}: {
+  members: TeamMember[]
+  query: string
+  onSelect: (member: TeamMember | 'everyone') => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const lq = query.toLowerCase()
+
+  const filtered = members.filter(m =>
+    !lq || (m.full_name ?? '').toLowerCase().includes(lq)
+  )
+
+  const showEveryone = !lq || 'everyone'.includes(lq) || 'tout le monde'.includes(lq)
+
+  const items = [
+    ...(showEveryone ? [{ type: 'everyone' as const }] : []),
+    ...filtered.map(m => ({ type: 'member' as const, member: m })),
+  ]
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
+
+  if (items.length === 0) return null
+
+  return (
+    <div
+      ref={ref}
+      className="absolute bottom-full mb-2 left-0 z-50 bg-[#161B22] border border-white/10 rounded-xl shadow-2xl overflow-hidden w-64"
+    >
+      <div className="px-3 py-2 border-b border-white/5">
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mentionner</span>
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        {items.map((item, i) =>
+          item.type === 'everyone' ? (
+            <button
+              key="everyone"
+              onMouseDown={e => { e.preventDefault(); onSelect('everyone') }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 transition-colors text-left"
+            >
+              <div className="w-7 h-7 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300 shrink-0">
+                @
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-white">everyone</div>
+                <div className="text-[10px] text-slate-500">Notifier tout le monde</div>
+              </div>
+            </button>
+          ) : (
+            <button
+              key={item.member.id}
+              onMouseDown={e => { e.preventDefault(); onSelect(item.member) }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 transition-colors text-left"
+            >
+              {item.member.avatar_url ? (
+                <img src={item.member.avatar_url} alt={item.member.full_name ?? ''} className="w-7 h-7 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300 shrink-0">
+                  {(item.member.full_name ?? '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+              )}
+              <span className="text-sm text-slate-200 truncate">{item.member.full_name ?? 'Joueur'}</span>
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render message content with @mention highlights
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderMessageContent(content: string) {
+  // Match @everyone or @Prénom Nom (up to 3 words after @)
+  const parts = content.split(/(@everyone|@[\w\u00C0-\u017E]+(?: [\w\u00C0-\u017E]+){0,2})/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      return (
+        <span key={i} className="inline-flex items-center font-semibold text-primary-300 bg-primary-500/15 rounded px-0.5">
+          {part}
+        </span>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Single message
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -316,7 +420,7 @@ function ChatMessage({
             'px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words',
             isOwn ? 'bg-primary-600/80 text-white rounded-tr-sm' : 'bg-surface-card border border-surface-border text-slate-200 rounded-tl-sm'
           )}>
-            {msg.content}
+            {renderMessageContent(msg.content)}
           </div>
         )}
 
@@ -442,6 +546,7 @@ interface TeamChatProps {
 export function TeamChat({ teamId, teamColor, teamName, embedded = false }: TeamChatProps) {
   const { user, isAdmin } = useAuth()
   const { data: isMember, isLoading: memberLoading } = useIsTeamMember(teamId, user?.id)
+  const { data: teamMembers = [] } = useTeamMembers(teamId)
   const { 
     messages, receipts, pinned, typing, isLoading, sendMessage, deleteMessage, 
     clearChat, toggleReaction, markAsRead, editMessage, setTyping, clearTyping, pinMessage, unpinMessage 
@@ -453,6 +558,10 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
+
+  // ── Mention state ─────────────────────────────────────────────────────────
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null) // null = fermé
+  const [mentionStart, setMentionStart] = useState<number>(-1)
 
   // ID du premier message non lu — calculé une seule fois à l'ouverture du chat
   const firstUnreadIdRef = useRef<string | null | undefined>(undefined) // undefined = pas encore calculé
@@ -545,7 +654,21 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   // ── Set typing indicator on input change ───────────────────────────────────
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value)
+    const val = e.target.value
+    setInput(val)
+
+    // ── Détection mention @ ───────────────────────────────────────────────
+    const cursor = e.target.selectionStart ?? val.length
+    // Chercher le dernier @ avant le curseur sans espace
+    const textBeforeCursor = val.slice(0, cursor)
+    const atMatch = textBeforeCursor.match(/@([\w\u00C0-\u017E ]*)$/)
+    if (atMatch) {
+      setMentionQuery(atMatch[1])
+      setMentionStart(cursor - atMatch[0].length)
+    } else {
+      setMentionQuery(null)
+      setMentionStart(-1)
+    }
     
     // Set typing indicator
     if (!typingTimeoutRef.current) {
@@ -563,6 +686,24 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
       typingTimeoutRef.current = null
     }, 3000)
   }, [setTyping, clearTyping])
+
+  // ── Handle mention selection ──────────────────────────────────────────────
+  const handleMentionSelect = useCallback((member: TeamMember | 'everyone') => {
+    const mention = member === 'everyone' ? '@everyone ' : `@${member.full_name} `
+    const before = input.slice(0, mentionStart)
+    const after = input.slice(mentionStart + 1 + (mentionQuery?.length ?? 0))
+    setInput(before + mention + after)
+    setMentionQuery(null)
+    setMentionStart(-1)
+    // Remettre le focus sur l'input
+    setTimeout(() => {
+      if (inputRef.current) {
+        const pos = (before + mention).length
+        inputRef.current.focus()
+        inputRef.current.setSelectionRange(pos, pos)
+      }
+    }, 0)
+  }, [input, mentionStart, mentionQuery])
 
   // Cleanup typing on unmount
   useEffect(() => {
@@ -791,6 +932,14 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
         {showEmojiPicker && (
           <EmojiPicker onSelect={e => { setInput(p => p + e); inputRef.current?.focus() }} onClose={() => setShowEmojiPicker(false)} />
         )}
+        {mentionQuery !== null && (
+          <MentionDropdown
+            members={teamMembers}
+            query={mentionQuery}
+            onSelect={handleMentionSelect}
+            onClose={() => { setMentionQuery(null); setMentionStart(-1) }}
+          />
+        )}
         <button onClick={() => setShowEmojiPicker(v => !v)}
           className={clsx('p-2 rounded-xl transition-colors shrink-0 mb-0.5', showEmojiPicker ? 'bg-primary-600/30 text-primary-400' : 'hover:bg-white/10 text-slate-400 hover:text-slate-200')}
           title="Emojis">
@@ -800,7 +949,15 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
           ref={inputRef}
           value={input}
           onChange={handleInputChange}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+          onKeyDown={e => {
+            if (e.key === 'Escape' && mentionQuery !== null) {
+              e.preventDefault()
+              setMentionQuery(null)
+              setMentionStart(-1)
+              return
+            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+          }}
           placeholder="Écrire un message… (Entrée pour envoyer)"
           rows={1}
           className={clsx(

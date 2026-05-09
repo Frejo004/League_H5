@@ -376,6 +376,60 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// useTeamMembers — liste des membres pour les mentions @
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TeamMember = {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+}
+
+export function useTeamMembers(teamId?: string) {
+  return useQuery({
+    queryKey: ['team-members', teamId],
+    enabled: !!teamId,
+    queryFn: async (): Promise<TeamMember[]> => {
+      // Joueurs actifs de l'équipe
+      const { data: players } = await supabase
+        .from('players')
+        .select('user_id, profile:profiles!players_user_id_fkey(id, full_name, avatar_url)')
+        .eq('team_id', teamId!)
+        .eq('is_active', true)
+
+      const members: TeamMember[] = []
+      const seen = new Set<string>()
+
+      for (const p of players ?? []) {
+        const profile = (p as any).profile
+        if (profile && !seen.has(profile.id)) {
+          seen.add(profile.id)
+          members.push({ id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url })
+        }
+      }
+
+      // Capitaine (peut ne pas être dans players)
+      const { data: team } = await supabase
+        .from('teams')
+        .select('captain_id, captain:profiles!teams_captain_id_fkey(id, full_name, avatar_url)')
+        .eq('id', teamId!)
+        .maybeSingle()
+
+      if (team) {
+        const cap = (team as any).captain
+        if (cap && !seen.has(cap.id)) {
+          seen.add(cap.id)
+          members.push({ id: cap.id, full_name: cap.full_name, avatar_url: cap.avatar_url })
+        }
+      }
+
+      return members
+    },
+    staleTime: 60_000,
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // useIsTeamMember
 // ─────────────────────────────────────────────────────────────────────────────
 
