@@ -1,6 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { ChatToastProvider } from '@/components/ui/ChatToastProvider'
+import { useChatUnreadRealtime } from '@/hooks/useChatUnread'
+import { useAuth } from '@/hooks/useAuth'
 import { useEffect, useState } from 'react'
 
 // ── Config background par page ────────────────────────────────────────────────
@@ -100,10 +103,14 @@ function patternDataUrl(pattern: string, isLight: boolean): string {
 
 export function AppLayout() {
   const location = useLocation()
+  const { profile } = useAuth()
   const bg = getPageBg(location.pathname)
   const [isLight, setIsLight] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'light'
   )
+
+  // Realtime unread counts — monté une seule fois ici pour éviter les doublons
+  useChatUnreadRealtime(profile?.id)
 
   // Écouter les changements de thème
   useEffect(() => {
@@ -168,6 +175,9 @@ export function AppLayout() {
           </ErrorBoundary>
         </main>
       </div>
+
+      {/* Notifications toast chat — global, hors du flux de page */}
+      <ChatToastProvider />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
-  Bell, LayoutDashboard, Trophy, Calendar,
+  Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
   Settings, User, X, Menu, LogOut,
 } from 'lucide-react'
@@ -11,6 +11,7 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useChatUnread } from '@/hooks/useChatUnread'
 import type { UserRole } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,9 +206,12 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+  const chatRef  = useRef<HTMLDivElement>(null)
   const [, forceUpdate] = useState({})
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
+  const { data: chatTeams } = useChatUnread(profile?.id)
+  const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
 
   // Forcer le re-render quand le thème change
   useEffect(() => {
@@ -344,6 +348,32 @@ export default function Header() {
               </span>
             )}
 
+            {/* Icône Chat → /chat */}
+            {profile && (
+              <NavLink
+                to="/chat"
+                className="relative p-1.5 rounded-lg transition-colors"
+                style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = TEXT_PRIMARY }}
+                onMouseLeave={e => {
+                  if (!location.pathname.startsWith('/chat'))
+                    (e.currentTarget as HTMLElement).style.color = NAV_OFF
+                }}
+                aria-label="Messages"
+              >
+                <MessageCircle size={17} />
+                {totalChatUnread > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                               flex items-center justify-center text-[9px] font-black"
+                    style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                  >
+                    {totalChatUnread > 9 ? '9+' : totalChatUnread}
+                  </span>
+                )}
+              </NavLink>
+            )}
+
             {/* Cloche */}
             <div ref={notifRef} className="relative">
               <button
@@ -474,6 +504,28 @@ export default function Header() {
           )}
           <GlobalSearch />
           <ThemeToggle />
+
+          {/* Icône Chat mobile */}
+          {profile && (
+            <NavLink
+              to="/chat"
+              className="relative p-1.5 rounded-lg transition-colors"
+              style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
+              aria-label="Messages"
+            >
+              <MessageCircle size={19} />
+              {totalChatUnread > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                             flex items-center justify-center text-[9px] font-black"
+                  style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                >
+                  {totalChatUnread > 9 ? '9+' : totalChatUnread}
+                </span>
+              )}
+            </NavLink>
+          )}
+
           <RoleBadge role={effectiveRole} />
           <Avatar profile={profile} role={effectiveRole} />
           <button
@@ -667,6 +719,44 @@ export default function Header() {
             )}
           </NavLink>
         ))}
+
+        {/* Chat dans la bottom nav */}
+        {profile && (
+          <NavLink
+            to="/chat"
+            className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors"
+            style={({ isActive }) => ({ color: isActive ? ACCENT : NAV_OFF })}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <span
+                    className="absolute top-1.5 inset-x-1.5 h-8 rounded-xl animate-scale-in"
+                    style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }}
+                  />
+                )}
+                <div className="relative z-10">
+                  <MessageCircle size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                  {totalChatUnread > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 rounded-full
+                                 flex items-center justify-center text-[8px] font-black"
+                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                    >
+                      {totalChatUnread > 9 ? '9+' : totalChatUnread}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="relative z-10 text-[9px] font-bold uppercase tracking-wider"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                >
+                  Chat
+                </span>
+              </>
+            )}
+          </NavLink>
+        )}
       </nav>
     </>
   )
