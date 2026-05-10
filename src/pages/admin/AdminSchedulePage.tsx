@@ -10,6 +10,7 @@ import type { MatchStatus } from '@/types/database'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
   { value: 'scheduled', label: 'Programmé' },
+  { value: 'live',      label: '🔴 En direct' },
   { value: 'completed', label: 'Terminé' },
   { value: 'cancelled', label: 'Annulé' },
 ]

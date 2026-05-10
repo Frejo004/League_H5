@@ -6,6 +6,7 @@ import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
+import { LiveBadge } from '@/components/live/LiveBadge'
 import { clsx } from 'clsx'
 
 function formatTime(dateStr: string) {
@@ -51,6 +52,7 @@ function TeamBlock({ name, color, logoUrl, won, isCompleted, align }: {
 function MatchCard({ match }: { match: MatchWithTeams }) {
   const isCompleted = match.status === 'completed'
   const isCancelled = match.status === 'cancelled'
+  const isLive = match.status === 'live'
   const homeWon = isCompleted && match.home_score! > match.away_score!
   const awayWon = isCompleted && match.away_score! > match.home_score!
   const isDraw  = isCompleted && match.home_score === match.away_score
@@ -60,14 +62,23 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
       <div className={clsx(
         'relative overflow-hidden mx-3 my-2 rounded-2xl border transition-all duration-200',
         'hover:-translate-y-0.5 hover:shadow-xl',
-        isCompleted
+        isLive
+          ? 'border-red-500/40 hover:border-red-500/60'
+          : isCompleted
           ? 'border-white/6 hover:border-white/10'
           : 'border-primary-600/20 hover:border-primary-600/35'
       )}
-        style={{ background: 'linear-gradient(135deg, #161c2d 0%, #0f1420 100%)' }}>
+        style={{ background: isLive
+          ? 'linear-gradient(135deg, #1a0f0f 0%, #0f1420 100%)'
+          : 'linear-gradient(135deg, #161c2d 0%, #0f1420 100%)' }}>
+
+        {/* Barre rouge animée en haut si live */}
+        {isLive && (
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
+        )}
 
         {/* Subtle top glow for upcoming */}
-        {!isCompleted && !isCancelled && (
+        {!isCompleted && !isCancelled && !isLive && (
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.6), transparent)' }} />
         )}
@@ -84,7 +95,20 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
 
           {/* Center */}
           <div className="flex flex-col items-center gap-1 shrink-0 min-w-[88px]">
-            {isCompleted ? (
+            {isLive ? (
+              <>
+                <div className="flex items-center gap-2.5 bg-red-500/10 px-4 py-2 rounded-xl border border-red-500/30">
+                  <span className="text-2xl font-black tabular-nums leading-none text-white">
+                    {match.home_score ?? 0}
+                  </span>
+                  <span className="text-slate-700 text-sm font-light">–</span>
+                  <span className="text-2xl font-black tabular-nums leading-none text-white">
+                    {match.away_score ?? 0}
+                  </span>
+                </div>
+                <LiveBadge size="sm" />
+              </>
+            ) : isCompleted ? (
               <>
                 <div className="flex items-center gap-2.5 bg-black/40 px-4 py-2 rounded-xl border border-white/6">
                   <span className={clsx('text-2xl font-black tabular-nums leading-none',

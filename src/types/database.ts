@@ -7,9 +7,15 @@ export type Json =
   | Json[]
 
 export type UserRole = 'admin' | 'captain' | 'player' | 'spectator'
-export type MatchStatus = 'scheduled' | 'completed' | 'cancelled'
+export type MatchStatus = 'scheduled' | 'live' | 'completed' | 'cancelled'
 export type SpectatorStatus = 'pending' | 'approved' | 'rejected'
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
+export type MatchEventType =
+  | 'goal' | 'own_goal'
+  | 'yellow_card' | 'red_card'
+  | 'substitution'
+  | 'kickoff' | 'halftime' | 'fulltime'
+  | 'comment'
 
 export interface Database {
   public: {
@@ -135,6 +141,9 @@ export interface Database {
           away_score: number | null
           status: MatchStatus
           venue: string | null
+          live_started_at: string | null
+          live_period: 1 | 2 | null
+          live_minute: number | null
           created_at: string
           updated_at: string
         }
@@ -150,6 +159,9 @@ export interface Database {
           away_score?: number | null
           status?: MatchStatus
           venue?: string | null
+          live_started_at?: string | null
+          live_period?: 1 | 2 | null
+          live_minute?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -165,6 +177,9 @@ export interface Database {
           away_score?: number | null
           status?: MatchStatus
           venue?: string | null
+          live_started_at?: string | null
+          live_period?: 1 | 2 | null
+          live_minute?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -641,6 +656,34 @@ export type ChatReadReceipt = Database['public']['Tables']['chat_read_receipts']
 export type ChatTyping = Database['public']['Tables']['chat_typing']['Row']
 export type TeamPinnedMessage = Database['public']['Tables']['team_pinned_messages']['Row']
 export type ChatMention = Database['public']['Tables']['chat_mentions']['Row']
+
+// ── Live match types ──────────────────────────────────────────────────────────
+
+export interface MatchEvent {
+  id: string
+  match_id: string
+  type: MatchEventType
+  minute: number | null
+  period: 1 | 2 | null
+  team_id: string | null
+  player_id: string | null
+  player2_id: string | null
+  description: string | null
+  created_at: string
+  created_by: string
+  // Jointures optionnelles
+  team?: { id: string; name: string; color: string } | null
+  player?: { id: string; first_name: string; last_name: string } | null
+  player2?: { id: string; first_name: string; last_name: string } | null
+}
+
+export interface LiveReaction {
+  id: string
+  match_id: string
+  user_id: string
+  emoji: string
+  created_at: string
+}
 
 /** Message enrichi avec sender + réactions + message cité */
 export type TeamMessageFull = TeamMessage & {

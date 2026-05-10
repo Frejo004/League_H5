@@ -4,9 +4,15 @@ import { useMatch } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useRealtimeMatch } from '@/hooks/useRealtime'
+import { useMatchEvents } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
+import { LiveBadge } from '@/components/live/LiveBadge'
+import { LiveClock } from '@/components/live/LiveClock'
+import { LiveEventFeed } from '@/components/live/LiveEventFeed'
+import { LiveReactionBar } from '@/components/live/LiveReactionBar'
+import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { clsx } from 'clsx'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
 
@@ -102,7 +108,7 @@ function GoalEvent({
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { data: match, isLoading } = useMatch(id)
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
@@ -115,6 +121,9 @@ export function MatchDetailPage() {
 
   // Abonnement Realtime — met à jour score, buts, passes et votes MVP en direct
   useRealtimeMatch(id)
+
+  // Événements live
+  const { data: liveEvents = [] } = useMatchEvents(id)
 
   if (isLoading) {
     return (
@@ -141,6 +150,7 @@ export function MatchDetailPage() {
   const goals   = match.goals   as GoalWithPlayer[]
   const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
+  const isLive = match.status === 'live'
   const homeWon = isCompleted && match.home_score! > match.away_score!
   const awayWon = isCompleted && match.away_score! > match.home_score!
 
@@ -237,21 +247,33 @@ export function MatchDetailPage() {
 
             {/* Score */}
             <div className="flex flex-col items-center gap-1.5 shrink-0 px-2">
-              {isCompleted ? (
-                <div className="flex items-center gap-2">
-                  <span className={clsx(
-                    'text-4xl font-black tabular-nums leading-none',
-                    homeWon ? 'text-white' : 'text-slate-500'
-                  )}>
-                    {match.home_score}
-                  </span>
-                  <span className="text-slate-600 text-2xl font-light">–</span>
-                  <span className={clsx(
-                    'text-4xl font-black tabular-nums leading-none',
-                    awayWon ? 'text-white' : 'text-slate-500'
-                  )}>
-                    {match.away_score}
-                  </span>
+              {(isCompleted || isLive) ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={clsx(
+                      'text-4xl font-black tabular-nums leading-none',
+                      homeWon ? 'text-white' : isLive ? 'text-white' : 'text-slate-500'
+                    )}>
+                      {match.home_score ?? 0}
+                    </span>
+                    <span className="text-slate-600 text-2xl font-light">–</span>
+                    <span className={clsx(
+                      'text-4xl font-black tabular-nums leading-none',
+                      awayWon ? 'text-white' : isLive ? 'text-white' : 'text-slate-500'
+                    )}>
+                      {match.away_score ?? 0}
+                    </span>
+                  </div>
+                  {isLive && (
+                    <LiveClock
+                      liveStartedAt={match.live_started_at ?? null}
+                      livePeriod={match.live_period ?? null}
+                      status={match.status}
+                      homeColor={home.color}
+                      awayColor={away.color}
+                      className="w-full"
+                    />
+                  )}
                 </div>
               ) : match.scheduled_at ? (
                 <div className="flex flex-col items-center gap-0.5">
@@ -265,15 +287,19 @@ export function MatchDetailPage() {
               ) : (
                 <span className="text-2xl font-bold text-slate-500">VS</span>
               )}
-              <span className={clsx(
-                'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
-                match.status === 'completed' ? 'text-green-400 bg-green-500/10 border border-green-500/20' :
-                match.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
-                'text-slate-500 bg-surface-raised border border-surface-border'
-              )}>
-                {match.status === 'completed' ? 'Terminé' :
-                 match.status === 'cancelled' ? 'Annulé' : 'À venir'}
-              </span>
+              {isLive ? (
+                <LiveBadge size="md" />
+              ) : (
+                <span className={clsx(
+                  'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                  match.status === 'completed' ? 'text-green-400 bg-green-500/10 border border-green-500/20' :
+                  match.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
+                  'text-slate-500 bg-surface-raised border border-surface-border'
+                )}>
+                  {match.status === 'completed' ? 'Terminé' :
+                   match.status === 'cancelled' ? 'Annulé' : 'À venir'}
+                </span>
+              )}
             </div>
 
             {/* Away */}
@@ -336,6 +362,46 @@ export function MatchDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Contrôles admin live ── */}
+      {isAdmin && (match.status === 'scheduled' || match.status === 'live') && (
+        <AdminLiveControls
+          matchId={match.id}
+          status={match.status}
+          liveStartedAt={match.live_started_at ?? null}
+          livePeriod={match.live_period ?? null}
+          homeTeam={home}
+          awayTeam={away}
+          homeScore={match.home_score ?? 0}
+          awayScore={match.away_score ?? 0}
+          events={liveEvents}
+          homePlayers={(homePlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
+          awayPlayers={(awayPlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
+        />
+      )}
+
+      {/* ── Fil d'événements live ── */}
+      {isLive && (
+        <div className="card p-0 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-border">
+            <LiveBadge size="sm" />
+            <span className="text-sm font-bold text-white">Événements</span>
+          </div>
+          <div className="px-4 py-2">
+            <LiveEventFeed
+              events={liveEvents}
+              homeTeamId={home.id}
+              homeColor={home.color}
+              awayColor={away.color}
+            />
+          </div>
+          {/* Réactions spectateurs */}
+          <div className="px-4 py-3 border-t border-surface-border/50">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Réagir</p>
+            <LiveReactionBar matchId={match.id} />
+          </div>
+        </div>
+      )}
 
       {/* ── Bandeau MVP du match ── */}
       {isCompleted && mvpPlayer && (

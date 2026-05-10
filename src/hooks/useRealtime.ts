@@ -102,7 +102,6 @@ export function useRealtimeMatches(seasonId?: string) {
 
     const channel = supabase
       .channel(`matches-season-${seasonId}`)
-      // Changement sur n'importe quel match de la saison
       .on(
         'postgres_changes',
         {
@@ -111,12 +110,37 @@ export function useRealtimeMatches(seasonId?: string) {
           table: 'matches',
           filter: `season_id=eq.${seasonId}`,
         },
-        () => {
+        async (payload) => {
           qc.invalidateQueries({ queryKey: ['matches', seasonId] })
           qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+
+          // Notification push quand un match passe en live
+          const newMatch = payload.new as { status?: string; home_team_id?: string; away_team_id?: string }
+          const oldMatch = payload.old as { status?: string }
+          if (
+            newMatch.status === 'live' &&
+            oldMatch.status !== 'live' &&
+            typeof Notification !== 'undefined' &&
+            Notification.permission === 'granted' &&
+            document.visibilityState !== 'visible'
+          ) {
+            // Récupérer les noms des équipes
+            const { data: match } = await supabase
+              .from('matches')
+              .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
+              .eq('id', (payload.new as any).id)
+              .single()
+            const home = (match as any)?.home_team?.name ?? 'Équipe A'
+            const away = (match as any)?.away_team?.name ?? 'Équipe B'
+            new Notification('🔴 Match en direct !', {
+              body: `${home} vs ${away} vient de commencer`,
+              icon: '/logo-h5.png',
+              badge: '/logo-h5.png',
+              tag: `live-${(payload.new as any).id}`,
+            })
+          }
         }
       )
-      // Changement sur les buts (impacte buteurs + classement)
       .on(
         'postgres_changes',
         {

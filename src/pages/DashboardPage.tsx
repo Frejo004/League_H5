@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame } from 'lucide-react'
+import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame, Radio } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
@@ -10,6 +10,7 @@ import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
+import { LiveBadge } from '@/components/live/LiveBadge'
 import { clsx } from 'clsx'
 
 function formatTime(dateStr: string) {
@@ -294,6 +295,7 @@ export function DashboardPage() {
   const isLoading = seasonLoading && !timedOut && !isFetched
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
+  const liveMatches = (matches ?? []).filter(m => m.status === 'live')
   const upcomingMatches  = (matches ?? [])
     .filter(m => m.status === 'scheduled')
     .sort((a, b) => {
@@ -342,6 +344,52 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Widget matchs en cours ── */}
+      {liveMatches.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4"
+          style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }}>
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
+          <div className="flex items-center gap-2 mb-3">
+            <Radio size={14} className="text-red-400 animate-pulse" />
+            <span className="text-sm font-black text-white uppercase tracking-wider">En direct</span>
+            <LiveBadge size="sm" />
+          </div>
+          <div className="space-y-2">
+            {liveMatches.map(match => (
+              <Link
+                key={match.id}
+                to={`/matches/${match.id}`}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-red-500/20 transition-all"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
+                    style={{ backgroundColor: match.home_team.color }}>
+                    {match.home_team.logo_url
+                      ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
+                      : match.home_team.name[0]}
+                  </div>
+                  <span className="text-sm font-semibold text-white truncate">{match.home_team.name}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xl font-black text-white tabular-nums">{match.home_score ?? 0}</span>
+                  <span className="text-slate-600">–</span>
+                  <span className="text-xl font-black text-white tabular-nums">{match.away_score ?? 0}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                  <span className="text-sm font-semibold text-white truncate text-right">{match.away_team.name}</span>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
+                    style={{ backgroundColor: match.away_team.color }}>
+                    {match.away_team.logo_url
+                      ? <img src={match.away_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
+                      : match.away_team.name[0]}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <PageHero
