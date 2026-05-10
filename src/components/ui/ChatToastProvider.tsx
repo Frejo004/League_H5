@@ -1,12 +1,16 @@
 /**
- * ChatToastProvider — Notifications toast style Teams pour les messages de chat
+ * ChatToastProvider — Notifications toast pour TOUS les types de messages
  *
- * - S'abonne en realtime à TOUS les team_messages des équipes dont l'user est membre
- * - Affiche un toast en bas à droite avec avatar, nom, équipe, aperçu du message
- * - Pas de toast si l'user est déjà sur la page de l'équipe concernée
- * - Pas de toast pour ses propres messages
- * - Stack de toasts (max 4 simultanés), auto-dismiss après 5s
- * - Clic sur le toast → navigue vers la page de l'équipe
+ * Couvre :
+ *   - team_messages (groupes équipes)
+ *   - channel_messages (canaux globaux)
+ *   - dm_messages (messages directs)
+ *
+ * Règles :
+ *   - Pas de toast pour ses propres messages
+ *   - Pas de toast si l'utilisateur est déjà sur la page /chat
+ *   - Stack max 4 toasts, auto-dismiss 5s, pause au hover
+ *   - Clic → navigue vers /chat
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -20,11 +24,15 @@ import { useAuth } from '@/hooks/useAuth'
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
+type ToastKind = 'team' | 'channel' | 'dm'
+
 interface ChatToast {
   id: string
-  teamId: string
-  teamName: string
-  teamColor: string
+  kind: ToastKind
+  /** Pour les équipes : teamId ; pour les canaux : channelId ; pour les DMs : conversationId */
+  contextId: string
+  contextName: string
+  contextColor: string
   senderName: string
   senderAvatar: string | null
   preview: string
@@ -32,51 +40,69 @@ interface ChatToast {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hook : récupère les équipes dont l'user est membre
+// Helpers de fetch
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchUserTeams(userId: string): Promise<{ teamId: string; teamName: string; teamColor: string }[]> {
-  // Équipes via players
-  const { data: playerTeams } = await supabase
-    .from('players')
-    .select('team_id, teams!players_team_id_fkey(id, name, color)')
-    .eq('user_id', userId)
-    .eq('is_active', true)
+async function fetchUserTeams(userId: string) {
+  const [{ data: playerTeams }, { data: captainTeams }] = await Promise.all([
+    supabase
+      .from('players')
+      .select('team_id, teams!players_team_id_fkey(id, name, color)')
+      .eq('user_id', userId)
+      .eq('is_active', true),
+    supabase.from('teams').select('id, name, color').eq('captain_id', userId),
+  ])
 
-  // Équipes via captain_id
-  const { data: captainTeams } = await supabase
-    .from('teams')
-    .select('id, name, color')
-    .eq('captain_id', userId)
-
-  const result: { teamId: string; teamName: string; teamColor: string }[] = []
+  const result: { id: string; name: string; color: string }[] = []
   const seen = new Set<string>()
 
   for (const row of playerTeams ?? []) {
-    const t = row.teams as unknown as { id: string; name: string; color: string } | null
-    if (t && !seen.has(t.id)) {
-      seen.add(t.id)
-      result.push({ teamId: t.id, teamName: t.name, teamColor: t.color })
-    }
+    const t = (row as any).teams as { id: string; name: string; color: string } | null
+    if (t && !seen.has(t.id)) { seen.add(t.id); result.push(t) }
   }
   for (const t of captainTeams ?? []) {
-    if (!seen.has(t.id)) {
-      seen.add(t.id)
-      result.push({ teamId: t.id, teamName: t.name, teamColor: t.color })
-    }
+    if (!seen.has(t.id)) { seen.add(t.id); result.push(t) }
   }
-
   return result
 }
 
+async function fetchVisibleChannels(userId: string) {
+  // Canaux visibles : général (tout le monde) + capitaines (si capitaine ou admin)
+  const { data: channels } = await supabase
+    .from('global_channels')
+    .select('id, name, color, slug')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const { data: captainTeam } = await supabase
+    .from('teams')
+    .select('id')
+    .eq('captain_id', userId)
+    .limit(1)
+
+  const isAdmin = profile?.role === 'admin'
+  const isCaptain = (captainTeam?.length ?? 0) > 0
+
+  return (channels ?? []).filter(c => {
+    if (c.slug === 'captains') return isAdmin || isCaptain
+    return true
+  }) as { id: string; name: string; color: string; slug: string }[]
+}
+
+function truncate(text: string, max = 80) {
+  return text.length > max ? text.slice(0, max) + '…' : text
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Toast item
+// ToastItem
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ToastItem({
-  toast,
-  onDismiss,
-  onClick,
+  toast, onDismiss, onClick,
 }: {
   toast: ChatToast
   onDismiss: (id: string) => void
@@ -85,7 +111,6 @@ function ToastItem({
   const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Ref stable pour éviter les closures stales dans les timers
   const onDismissRef = useRef(onDismiss)
   useEffect(() => { onDismissRef.current = onDismiss }, [onDismiss])
 
@@ -100,24 +125,16 @@ function ToastItem({
     timerRef.current = setTimeout(() => handleDismiss(), delay)
   }, [handleDismiss])
 
-  // Entrée animée
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 10)
-    return () => clearTimeout(t)
-  }, [])
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 10); return () => clearTimeout(t) }, [])
+  useEffect(() => { startTimer(5000); return () => { if (timerRef.current) clearTimeout(timerRef.current) } }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-dismiss après 5s
-  useEffect(() => {
-    startTimer(5000)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const initials = toast.senderName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
-  const initials = toast.senderName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const kindLabel: Record<ToastKind, string> = {
+    team: toast.contextName,
+    channel: `#${toast.contextName}`,
+    dm: 'Message direct',
+  }
 
   return (
     <div
@@ -126,7 +143,7 @@ function ToastItem({
         'border shadow-2xl transition-all duration-300 ease-out select-none',
         visible && !leaving
           ? 'opacity-100 translate-y-0 scale-100'
-          : 'opacity-0 translate-y-4 scale-95'
+          : 'opacity-0 translate-y-4 scale-95',
       )}
       style={{
         backgroundColor: '#161B22',
@@ -140,21 +157,17 @@ function ToastItem({
       {/* Barre colorée gauche */}
       <div
         className="absolute left-0 top-3 bottom-3 w-0.5 rounded-full"
-        style={{ backgroundColor: toast.teamColor }}
+        style={{ backgroundColor: toast.contextColor }}
       />
 
       {/* Avatar */}
       <div className="shrink-0 ml-2">
         {toast.senderAvatar ? (
-          <img
-            src={toast.senderAvatar}
-            alt={toast.senderName}
-            className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10"
-          />
+          <img src={toast.senderAvatar} alt={toast.senderName} className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10" />
         ) : (
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white/10"
-            style={{ backgroundColor: toast.teamColor + '40', color: toast.teamColor }}
+            style={{ backgroundColor: toast.contextColor + '40', color: toast.contextColor }}
           >
             {initials}
           </div>
@@ -163,31 +176,21 @@ function ToastItem({
 
       {/* Contenu */}
       <div className="flex-1 min-w-0">
-        {/* Header : nom + équipe */}
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-xs font-bold text-white truncate">{toast.senderName}</span>
           <span className="text-[10px] text-slate-500 shrink-0">·</span>
-          <span
-            className="text-[10px] font-semibold truncate shrink-0"
-            style={{ color: toast.teamColor }}
-          >
-            {toast.teamName}
+          <span className="text-[10px] font-semibold truncate shrink-0" style={{ color: toast.contextColor }}>
+            {kindLabel[toast.kind]}
           </span>
         </div>
-
-        {/* Aperçu du message */}
-        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-          {toast.preview}
-        </p>
-
-        {/* Icône chat + "Nouveau message" */}
+        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{toast.preview}</p>
         <div className="flex items-center gap-1 mt-1.5">
           <MessageCircle size={10} className="text-slate-600" />
           <span className="text-[10px] text-slate-600">Nouveau message</span>
         </div>
       </div>
 
-      {/* Bouton fermer */}
+      {/* Fermer */}
       <button
         onClick={e => { e.stopPropagation(); handleDismiss() }}
         className="shrink-0 p-1 rounded-lg hover:bg-white/10 text-slate-600 hover:text-slate-300 transition-colors"
@@ -199,10 +202,7 @@ function ToastItem({
       <div className="absolute bottom-0 left-3 right-3 h-px rounded-full overflow-hidden">
         <div
           className="h-full rounded-full"
-          style={{
-            backgroundColor: toast.teamColor,
-            animation: 'toast-progress 5s linear forwards',
-          }}
+          style={{ backgroundColor: toast.contextColor, animation: 'toast-progress 5s linear forwards' }}
         />
       </div>
     </div>
@@ -220,111 +220,138 @@ export function ChatToastProvider() {
   const navigate = useNavigate()
   const location = useLocation()
   const [toasts, setToasts] = useState<ChatToast[]>([])
-  const teamsRef = useRef<{ teamId: string; teamName: string; teamColor: string }[]>([])
-  const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([])
 
-  // locationRef : toujours à jour sans re-créer le channel
   const locationRef = useRef(location.pathname)
-  useEffect(() => {
-    locationRef.current = location.pathname
-  }, [location.pathname])
+  useEffect(() => { locationRef.current = location.pathname }, [location.pathname])
 
-  // Charger les équipes de l'user et s'abonner
+  const addToast = useCallback((toast: ChatToast) => {
+    setToasts(prev => [toast, ...prev].slice(0, MAX_TOASTS))
+  }, [])
+
   useEffect(() => {
     if (!user?.id) return
-
     let cancelled = false
+    const channels: ReturnType<typeof supabase.channel>[] = []
 
     async function setup() {
-      const teams = await fetchUserTeams(user!.id)
+      const [teams, globalChannels] = await Promise.all([
+        fetchUserTeams(user!.id),
+        fetchVisibleChannels(user!.id),
+      ])
       if (cancelled) return
-      teamsRef.current = teams
 
-      // Nettoyer les anciens channels
-      for (const ch of channelsRef.current) supabase.removeChannel(ch)
-      channelsRef.current = []
+      const teamIds = new Set(teams.map(t => t.id))
+      const teamMap = new Map(teams.map(t => [t.id, t]))
+      const channelIds = new Set(globalChannels.map(c => c.id))
+      const channelMap = new Map(globalChannels.map(c => [c.id, c]))
 
-      if (teams.length === 0) return
+      // ── Canal 1 : team_messages ──────────────────────────────────────────
+      const teamCh = supabase
+        .channel(`toast-teams-${user!.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'team_messages' }, async payload => {
+          const msg = payload.new as { id: string; team_id: string; sender_id: string; content: string }
+          if (msg.sender_id === user!.id) return
+          if (!teamIds.has(msg.team_id)) return
+          if (locationRef.current === '/chat') return
 
-      const teamIds = teams.map(t => t.teamId)
+          const { data: sender } = await supabase
+            .from('profiles').select('full_name, avatar_url').eq('id', msg.sender_id).maybeSingle()
+          const team = teamMap.get(msg.team_id)
+          if (!team) return
 
-      const channel = supabase
-        .channel(`chat-toasts-${user!.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'team_messages',
-          },
-          async (payload) => {
-            const msg = payload.new as {
-              id: string
-              team_id: string
-              sender_id: string
-              content: string
-              created_at: string
-            }
-
-            // Ignorer ses propres messages
-            if (msg.sender_id === user!.id) return
-
-            // Ignorer si pas dans une équipe concernée
-            if (!teamIds.includes(msg.team_id)) return
-
-            // ✅ Utiliser locationRef.current (valeur courante, pas celle du closure)
-            if (locationRef.current === `/teams/${msg.team_id}`) return
-
-            // Récupérer le profil du sender
-            const { data: sender } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', msg.sender_id)
-              .maybeSingle()
-
-            const team = teamsRef.current.find(t => t.teamId === msg.team_id)
-            if (!team) return
-
-            const newToast: ChatToast = {
-              id: `toast-${msg.id}`,
-              teamId: msg.team_id,
-              teamName: team.teamName,
-              teamColor: team.teamColor,
-              senderName: sender?.full_name ?? 'Joueur',
-              senderAvatar: sender?.avatar_url ?? null,
-              preview: msg.content.length > 80
-                ? msg.content.slice(0, 80) + '…'
-                : msg.content,
-              createdAt: Date.now(),
-            }
-
-            setToasts(prev => [newToast, ...prev].slice(0, MAX_TOASTS))
-          }
-        )
-        .subscribe((status) => {
-          if (import.meta.env.DEV) {
-            console.log(`[ChatToast] Realtime status: ${status}`)
-          }
+          addToast({
+            id: `toast-team-${msg.id}`,
+            kind: 'team',
+            contextId: msg.team_id,
+            contextName: team.name,
+            contextColor: team.color,
+            senderName: sender?.full_name ?? 'Joueur',
+            senderAvatar: sender?.avatar_url ?? null,
+            preview: truncate(msg.content),
+            createdAt: Date.now(),
+          })
         })
+        .subscribe()
+      channels.push(teamCh)
 
-      channelsRef.current = [channel]
+      // ── Canal 2 : channel_messages ───────────────────────────────────────
+      const channelCh = supabase
+        .channel(`toast-channels-${user!.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'channel_messages' }, async payload => {
+          const msg = payload.new as { id: string; channel_id: string; sender_id: string; content: string }
+          if (msg.sender_id === user!.id) return
+          if (!channelIds.has(msg.channel_id)) return
+          if (locationRef.current === '/chat') return
+
+          const { data: sender } = await supabase
+            .from('profiles').select('full_name, avatar_url').eq('id', msg.sender_id).maybeSingle()
+          const channel = channelMap.get(msg.channel_id)
+          if (!channel) return
+
+          addToast({
+            id: `toast-ch-${msg.id}`,
+            kind: 'channel',
+            contextId: msg.channel_id,
+            contextName: channel.name,
+            contextColor: channel.color,
+            senderName: sender?.full_name ?? 'Joueur',
+            senderAvatar: sender?.avatar_url ?? null,
+            preview: truncate(msg.content),
+            createdAt: Date.now(),
+          })
+        })
+        .subscribe()
+      channels.push(channelCh)
+
+      // ── Canal 3 : dm_messages ────────────────────────────────────────────
+      const dmCh = supabase
+        .channel(`toast-dms-${user!.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, async payload => {
+          const msg = payload.new as { id: string; conversation_id: string; sender_id: string; content: string }
+          if (msg.sender_id === user!.id) return
+          if (locationRef.current === '/chat') return
+
+          // Vérifier que l'user fait partie de cette conversation
+          const { data: conv } = await supabase
+            .from('dm_conversations')
+            .select('user_a, user_b')
+            .eq('id', msg.conversation_id)
+            .maybeSingle()
+          if (!conv) return
+          if (conv.user_a !== user!.id && conv.user_b !== user!.id) return
+
+          const { data: sender } = await supabase
+            .from('profiles').select('full_name, avatar_url').eq('id', msg.sender_id).maybeSingle()
+
+          addToast({
+            id: `toast-dm-${msg.id}`,
+            kind: 'dm',
+            contextId: msg.conversation_id,
+            contextName: sender?.full_name ?? 'Joueur',
+            contextColor: '#3b82f6',
+            senderName: sender?.full_name ?? 'Joueur',
+            senderAvatar: sender?.avatar_url ?? null,
+            preview: truncate(msg.content),
+            createdAt: Date.now(),
+          })
+        })
+        .subscribe()
+      channels.push(dmCh)
     }
 
     setup()
-
     return () => {
       cancelled = true
-      for (const ch of channelsRef.current) supabase.removeChannel(ch)
-      channelsRef.current = []
+      channels.forEach(ch => supabase.removeChannel(ch))
     }
-  }, [user?.id])
+  }, [user?.id, addToast])
 
   const handleDismiss = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
   const handleClick = useCallback((toast: ChatToast) => {
-    navigate(`/teams/${toast.teamId}`)
+    navigate('/chat')
     setToasts(prev => prev.filter(t => t.id !== toast.id))
   }, [navigate])
 
@@ -332,15 +359,12 @@ export function ChatToastProvider() {
 
   return (
     <>
-      {/* Keyframe pour la barre de progression */}
       <style>{`
         @keyframes toast-progress {
           from { width: 100%; opacity: 1; }
           to   { width: 0%;   opacity: 0.4; }
         }
       `}</style>
-
-      {/* Stack de toasts — coin bas droit */}
       <div
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-[9999] flex flex-col-reverse gap-2 pointer-events-none"
         aria-live="polite"
@@ -348,11 +372,7 @@ export function ChatToastProvider() {
       >
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
-            <ToastItem
-              toast={toast}
-              onDismiss={handleDismiss}
-              onClick={handleClick}
-            />
+            <ToastItem toast={toast} onDismiss={handleDismiss} onClick={handleClick} />
           </div>
         ))}
       </div>
