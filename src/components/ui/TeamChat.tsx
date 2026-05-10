@@ -90,6 +90,7 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
     messages, receipts, pinned, typing, isLoading,
     sendMessage, deleteMessage, clearChat, toggleReaction,
     markAsRead, editMessage, setTyping, clearTyping, pinMessage, unpinMessage,
+    olderCount, isLoadingOlder, loadOlder,
   } = useTeamChat(teamId, user?.id)
   const push = usePushNotifications()
 
@@ -238,6 +239,12 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
       // Non-lus
       firstUnreadId={firstUnreadIdRef.current ?? undefined}
       unreadCount={unreadCount}
+
+      // Pagination
+      olderCount={olderCount}
+      isLoadingOlder={isLoadingOlder}
+      onLoadOlder={loadOlder}
+      emptyContext="team"
     />
   )
 }

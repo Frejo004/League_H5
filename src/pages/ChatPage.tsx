@@ -7,7 +7,7 @@
  *   3. Messages directs (DMs entre joueurs)
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MessageCircle, ArrowLeft, Plus, Search, X, Shield } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuth } from '@/hooks/useAuth'
@@ -70,11 +70,44 @@ function NewDmModal({
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
+  const [activeIdx, setActiveIdx] = useState(0)
+  const listRef = useRef<HTMLDivElement>(null)
   const { data: players = [] } = useAllPlayers(currentUserId)
 
   const filtered = players.filter(p =>
     !query || (p.full_name ?? '').toLowerCase().includes(query.toLowerCase())
   )
+
+  // Reset index quand la liste change
+  useEffect(() => { setActiveIdx(0) }, [query])
+
+  // Fermeture sur Escape
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIdx(i => Math.min(i + 1, filtered.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIdx(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && filtered[activeIdx]) {
+      e.preventDefault()
+      onSelect(filtered[activeIdx].id)
+    }
+  }
+
+  // Scroll l'item actif dans la vue
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    const item = list.children[activeIdx] as HTMLElement | undefined
+    item?.scrollIntoView({ block: 'nearest' })
+  }, [activeIdx])
 
   return (
     <div
@@ -91,28 +124,43 @@ function NewDmModal({
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Rechercher un joueur..."
+            onKeyDown={handleKeyDown}
+            placeholder="Rechercher un joueur…"
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
+            aria-label="Rechercher un joueur"
+            role="combobox"
+            aria-expanded={filtered.length > 0}
+            aria-activedescendant={filtered[activeIdx] ? `dm-player-${filtered[activeIdx].id}` : undefined}
           />
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors"
+            aria-label="Fermer"
           >
             <X size={14} />
           </button>
         </div>
         <div
+          ref={listRef}
           className="max-h-72 overflow-y-auto"
           style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+          role="listbox"
         >
           {filtered.length === 0 ? (
             <p className="text-center text-slate-600 text-sm py-8">Aucun joueur</p>
           ) : (
-            filtered.map(p => (
+            filtered.map((p, idx) => (
               <button
                 key={p.id}
+                id={`dm-player-${p.id}`}
+                role="option"
+                aria-selected={idx === activeIdx}
                 onClick={() => onSelect(p.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors text-left border-b border-white/[0.04] last:border-0"
+                onMouseEnter={() => setActiveIdx(idx)}
+                className={clsx(
+                  'w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/[0.04] last:border-0',
+                  idx === activeIdx ? 'bg-white/[0.07]' : 'hover:bg-white/[0.04]',
+                )}
               >
                 {p.avatar_url ? (
                   <img src={p.avatar_url} alt={p.full_name ?? ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -378,6 +426,7 @@ function ChannelChatView({
   const {
     messages, isLoading, sendMessage, deleteMessage,
     editMessage, toggleReaction, markAsRead, toggleReadOnly,
+    olderCount, isLoadingOlder, loadOlder,
   } = useChannelChat(channel.id, currentUserId)
 
   const genericMessages = messages.map(m => ({
@@ -429,6 +478,10 @@ function ChannelChatView({
       headerIcon={channel.icon}
       embedded
       extraHeaderActions={extraActions}
+      olderCount={olderCount}
+      isLoadingOlder={isLoadingOlder}
+      onLoadOlder={loadOlder}
+      emptyContext="channel"
     />
   )
 }
@@ -449,6 +502,7 @@ function DmChatView({
   const {
     messages, isLoading, sendMessage, deleteMessage,
     editMessage, toggleReaction, markAsRead,
+    olderCount, isLoadingOlder, loadOlder,
   } = useDmChat(conv.id, currentUserId)
 
   const other = conv.other_user
@@ -487,6 +541,10 @@ function DmChatView({
       headerColor="#3b82f6"
       headerIcon="💬"
       embedded
+      olderCount={olderCount}
+      isLoadingOlder={isLoadingOlder}
+      onLoadOlder={loadOlder}
+      emptyContext="dm"
     />
   )
 }

@@ -1,12 +1,12 @@
 /**
- * useChannelChat — Chat pour les canaux globaux (Général, Capitaines & Admins)
- * useGlobalChannels — Liste des canaux visibles par l'utilisateur
- * useDmChat — Messages directs entre deux utilisateurs
- * useDmConversations — Liste des conversations DM de l'utilisateur
+ * useChannelChat  — canaux globaux (Général, Capitaines & Admins)
+ * useGlobalChannels — liste des canaux visibles
+ * useDmChat       — messages directs avec pagination cursor-based
+ * useDmConversations — liste DMs via RPC (1 requête au lieu de N+1)
  */
 
-import { useEffect, useCallback, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useCallback, useRef, useState } from 'react'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ export interface DmMessage {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Keys
+// Query keys
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CHANNELS_KEY        = ['global-channels']
@@ -76,6 +76,29 @@ const CHANNEL_MSGS_KEY    = (id: string) => ['channel-messages', id]
 const CHANNEL_RECEIPT_KEY = (id: string) => ['channel-receipts', id]
 const DM_CONVS_KEY        = (uid: string) => ['dm-conversations', uid]
 const DM_MSGS_KEY         = (id: string) => ['dm-messages', id]
+
+const PAGE_SIZE = 50
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function resolveReplies<T extends { reply_to_id?: string | null }>(
+  msgs: T[],
+  table: 'channel_messages' | 'dm_messages' | 'team_messages',
+  senderFk: string
+): Promise<Map<string, any>> {
+  const replyIds = [...new Set(msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[])]
+  const map = new Map<string, any>()
+  if (replyIds.length === 0) return map
+
+  const { data } = await supabase
+    .from(table)
+    .select(`id, content, sender:profiles!${table}_sender_id_fkey(id, full_name)`.replace('!${table}_sender_id_fkey', `!${senderFk}`))
+    .in('id', replyIds)
+  for (const r of data ?? []) map.set(r.id, r)
+  return map
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useGlobalChannels
@@ -91,7 +114,6 @@ export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = 
         .select('*')
         .order('created_at', { ascending: true })
       if (error) throw error
-      // Filtrer le canal capitaines si l'user n'est ni admin ni capitaine
       return (data ?? []).filter(c => {
         if (c.slug === 'captains') return isAdmin || isCaptain
         return true
@@ -102,11 +124,11 @@ export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useChannelChat
+// useChannelChat — avec pagination cursor-based
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchChannelMessages(channelId: string): Promise<ChannelMessage[]> {
-  const { data: msgs, error } = await supabase
+async function fetchChannelPage(channelId: string, beforeId?: string): Promise<ChannelMessage[]> {
+  let query = supabase
     .from('channel_messages')
     .select(`
       id, channel_id, sender_id, content, reply_to_id, edited_at, created_at,
@@ -117,13 +139,19 @@ async function fetchChannelMessages(channelId: string): Promise<ChannelMessage[]
       )
     `)
     .eq('channel_id', channelId)
-    .order('created_at', { ascending: true })
-    .limit(100)
+    .order('created_at', { ascending: false })
+    .limit(PAGE_SIZE)
 
+  if (beforeId) {
+    const { data: pivot } = await supabase
+      .from('channel_messages').select('created_at').eq('id', beforeId).single()
+    if (pivot) query = query.lt('created_at', pivot.created_at)
+  }
+
+  const { data: msgs, error } = await query
   if (error) throw error
   if (!msgs || msgs.length === 0) return []
 
-  // Résoudre les reply_to
   const replyIds = [...new Set(msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[])]
   const replyMap = new Map<string, any>()
   if (replyIds.length > 0) {
@@ -134,22 +162,67 @@ async function fetchChannelMessages(channelId: string): Promise<ChannelMessage[]
     for (const r of replies ?? []) replyMap.set(r.id, r)
   }
 
-  return msgs.map(m => ({
-    ...m,
-    reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null,
-  })) as unknown as ChannelMessage[]
+  return msgs
+    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
+    .reverse() as unknown as ChannelMessage[]
 }
 
 export function useChannelChat(channelId?: string, currentUserId?: string) {
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
+  const [olderCount, setOlderCount] = useState(0)
 
+  // Page courante (les 50 derniers)
   const messagesQuery = useQuery({
     queryKey: CHANNEL_MSGS_KEY(channelId ?? ''),
     enabled: !!channelId,
-    queryFn: () => fetchChannelMessages(channelId!),
+    queryFn: () => fetchChannelPage(channelId!),
     staleTime: 0,
   })
+
+  // Pages plus anciennes (chargées à la demande)
+  const [olderPages, setOlderPages] = useState<ChannelMessage[][]>([])
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false)
+
+  const loadOlder = useCallback(async () => {
+    if (!channelId || isLoadingOlder) return
+    const allMsgs = [...(olderPages.flat()), ...(messagesQuery.data ?? [])]
+    const oldest = allMsgs[0]
+    if (!oldest) return
+    setIsLoadingOlder(true)
+    try {
+      const page = await fetchChannelPage(channelId, oldest.id)
+      if (page.length > 0) {
+        setOlderPages(prev => [page, ...prev])
+        // Compter combien il en reste
+        const { data } = await supabase.rpc('count_channel_messages_before', {
+          p_channel_id: channelId,
+          p_before_id: page[0].id,
+        })
+        setOlderCount(Number(data ?? 0))
+      } else {
+        setOlderCount(0)
+      }
+    } finally {
+      setIsLoadingOlder(false)
+    }
+  }, [channelId, isLoadingOlder, olderPages, messagesQuery.data])
+
+  // Initialiser le compteur de messages plus anciens
+  useEffect(() => {
+    if (!channelId || !messagesQuery.data?.length) return
+    const first = messagesQuery.data[0]
+    supabase.rpc('count_channel_messages_before', {
+      p_channel_id: channelId,
+      p_before_id: first.id,
+    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+  }, [channelId, messagesQuery.data])
+
+  // Reset pages anciennes quand on change de canal
+  useEffect(() => {
+    setOlderPages([])
+    setOlderCount(0)
+  }, [channelId])
 
   const receiptsQuery = useQuery({
     queryKey: CHANNEL_RECEIPT_KEY(channelId ?? ''),
@@ -254,16 +327,22 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: CHANNELS_KEY }),
   })
 
+  // Messages fusionnés : pages anciennes + page courante
+  const allMessages = [...olderPages.flat(), ...(messagesQuery.data ?? [])]
+
   return {
-    messages: messagesQuery.data ?? [],
+    messages: allMessages,
     receipts: receiptsQuery.data ?? [],
     isLoading: messagesQuery.isLoading,
+    olderCount,
+    isLoadingOlder,
+    loadOlder,
     sendMessage, deleteMessage, editMessage, toggleReaction, markAsRead, toggleReadOnly,
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useDmConversations
+// useDmConversations — via RPC (1 requête au lieu de N+1)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useDmConversations(userId?: string) {
@@ -273,75 +352,28 @@ export function useDmConversations(userId?: string) {
     queryKey: DM_CONVS_KEY(userId ?? ''),
     enabled: !!userId,
     queryFn: async (): Promise<DmConversation[]> => {
-      const { data: convs, error } = await supabase
-        .from('dm_conversations')
-        .select(`
-          id, user_a, user_b, created_at,
-          profile_a:profiles!dm_conversations_user_a_fkey(id, full_name, avatar_url),
-          profile_b:profiles!dm_conversations_user_b_fkey(id, full_name, avatar_url)
-        `)
-        .or(`user_a.eq.${userId},user_b.eq.${userId}`)
-        .order('created_at', { ascending: false })
+      const { data, error } = await supabase.rpc('get_dm_conversations_with_unread')
 
-      if (error) throw error
-      if (!convs || convs.length === 0) return []
+      if (error) {
+        // Fallback si la migration n'est pas encore appliquée
+        console.warn('[useDmConversations] RPC non disponible:', error.message)
+        return []
+      }
 
-      // Pour chaque conversation, récupérer le dernier message + non-lus
-      const results: DmConversation[] = await Promise.all(
-        (convs as any[]).map(async (conv) => {
-          const isA = conv.user_a === userId
-          const other_user = isA ? conv.profile_b : conv.profile_a
-
-          const { data: lastMsgs } = await supabase
-            .from('dm_messages')
-            .select('content, created_at')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-
-          const { data: receipt } = await supabase
-            .from('dm_read_receipts')
-            .select('last_read_at')
-            .eq('user_id', userId!)
-            .eq('conversation_id', conv.id)
-            .maybeSingle()
-
-          let unread = 0
-          if (receipt?.last_read_at) {
-            const { count } = await supabase
-              .from('dm_messages')
-              .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-              .neq('sender_id', userId!)
-              .gt('created_at', receipt.last_read_at)
-            unread = count ?? 0
-          } else {
-            const { count } = await supabase
-              .from('dm_messages')
-              .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-              .neq('sender_id', userId!)
-            unread = count ?? 0
-          }
-
-          return {
-            id: conv.id,
-            user_a: conv.user_a,
-            user_b: conv.user_b,
-            created_at: conv.created_at,
-            other_user: other_user ?? { id: '', full_name: 'Joueur', avatar_url: null },
-            last_message: lastMsgs?.[0]?.content ?? null,
-            last_message_at: lastMsgs?.[0]?.created_at ?? null,
-            unread,
-          }
-        })
-      )
-
-      return results.sort((a, b) => {
-        const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : new Date(a.created_at).getTime()
-        const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : new Date(b.created_at).getTime()
-        return tb - ta
-      })
+      return (data ?? []).map((row: any) => ({
+        id:             row.id,
+        user_a:         row.user_a,
+        user_b:         row.user_b,
+        created_at:     row.created_at,
+        other_user: {
+          id:         row.other_id,
+          full_name:  row.other_full_name ?? null,
+          avatar_url: row.other_avatar ?? null,
+        },
+        last_message:    row.last_message ?? null,
+        last_message_at: row.last_message_at ?? null,
+        unread:          Number(row.unread_count ?? 0),
+      })) as DmConversation[]
     },
     staleTime: 0,
     refetchInterval: 30_000,
@@ -359,6 +391,8 @@ export function useDmConversations(userId?: string) {
         () => qc.invalidateQueries({ queryKey: DM_CONVS_KEY(userId) }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dm_conversations' },
         () => qc.invalidateQueries({ queryKey: DM_CONVS_KEY(userId) }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dm_read_receipts' },
+        () => qc.invalidateQueries({ queryKey: DM_CONVS_KEY(userId) }))
       .subscribe()
 
     return () => { supabase.removeChannel(ch) }
@@ -368,7 +402,7 @@ export function useDmConversations(userId?: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useGetOrCreateDm — crée ou récupère une conversation DM
+// useGetOrCreateDm
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useGetOrCreateDm() {
@@ -386,11 +420,11 @@ export function useGetOrCreateDm() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useDmChat
+// useDmChat — avec pagination cursor-based
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchDmMessages(conversationId: string): Promise<DmMessage[]> {
-  const { data: msgs, error } = await supabase
+async function fetchDmPage(conversationId: string, beforeId?: string): Promise<DmMessage[]> {
+  let query = supabase
     .from('dm_messages')
     .select(`
       id, conversation_id, sender_id, content, reply_to_id, edited_at, created_at,
@@ -401,9 +435,16 @@ async function fetchDmMessages(conversationId: string): Promise<DmMessage[]> {
       )
     `)
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
-    .limit(100)
+    .order('created_at', { ascending: false })
+    .limit(PAGE_SIZE)
 
+  if (beforeId) {
+    const { data: pivot } = await supabase
+      .from('dm_messages').select('created_at').eq('id', beforeId).single()
+    if (pivot) query = query.lt('created_at', pivot.created_at)
+  }
+
+  const { data: msgs, error } = await query
   if (error) throw error
   if (!msgs || msgs.length === 0) return []
 
@@ -417,22 +458,61 @@ async function fetchDmMessages(conversationId: string): Promise<DmMessage[]> {
     for (const r of replies ?? []) replyMap.set(r.id, r)
   }
 
-  return msgs.map(m => ({
-    ...m,
-    reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null,
-  })) as unknown as DmMessage[]
+  return msgs
+    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
+    .reverse() as unknown as DmMessage[]
 }
 
 export function useDmChat(conversationId?: string, currentUserId?: string) {
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
+  const [olderPages, setOlderPages] = useState<DmMessage[][]>([])
+  const [olderCount, setOlderCount] = useState(0)
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false)
 
   const messagesQuery = useQuery({
     queryKey: DM_MSGS_KEY(conversationId ?? ''),
     enabled: !!conversationId,
-    queryFn: () => fetchDmMessages(conversationId!),
+    queryFn: () => fetchDmPage(conversationId!),
     staleTime: 0,
   })
+
+  const loadOlder = useCallback(async () => {
+    if (!conversationId || isLoadingOlder) return
+    const allMsgs = [...olderPages.flat(), ...(messagesQuery.data ?? [])]
+    const oldest = allMsgs[0]
+    if (!oldest) return
+    setIsLoadingOlder(true)
+    try {
+      const page = await fetchDmPage(conversationId, oldest.id)
+      if (page.length > 0) {
+        setOlderPages(prev => [page, ...prev])
+        const { data } = await supabase.rpc('count_dm_messages_before', {
+          p_conversation_id: conversationId,
+          p_before_id: page[0].id,
+        })
+        setOlderCount(Number(data ?? 0))
+      } else {
+        setOlderCount(0)
+      }
+    } finally {
+      setIsLoadingOlder(false)
+    }
+  }, [conversationId, isLoadingOlder, olderPages, messagesQuery.data])
+
+  useEffect(() => {
+    if (!conversationId || !messagesQuery.data?.length) return
+    const first = messagesQuery.data[0]
+    supabase.rpc('count_dm_messages_before', {
+      p_conversation_id: conversationId,
+      p_before_id: first.id,
+    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+  }, [conversationId, messagesQuery.data])
+
+  useEffect(() => {
+    setOlderPages([])
+    setOlderCount(0)
+  }, [conversationId])
 
   useEffect(() => {
     if (!conversationId) return
@@ -511,15 +591,20 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
     onSuccess: () => qc.refetchQueries({ queryKey: DM_MSGS_KEY(conversationId ?? '') }),
   })
 
+  const allMessages = [...olderPages.flat(), ...(messagesQuery.data ?? [])]
+
   return {
-    messages: messagesQuery.data ?? [],
+    messages: allMessages,
     isLoading: messagesQuery.isLoading,
+    olderCount,
+    isLoadingOlder,
+    loadOlder,
     sendMessage, deleteMessage, editMessage, toggleReaction, markAsRead,
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useAllPlayers — liste tous les joueurs pour démarrer un DM
+// useAllPlayers
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useAllPlayers(currentUserId?: string) {

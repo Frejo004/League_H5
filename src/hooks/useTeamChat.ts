@@ -9,7 +9,7 @@
  * - useIsTeamMember : vérifie l'appartenance à l'équipe
  */
 
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
@@ -18,14 +18,14 @@ const MESSAGES_KEY  = (teamId: string) => ['team-chat', 'messages', teamId]
 const RECEIPTS_KEY  = (teamId: string) => ['team-chat', 'receipts', teamId]
 const PINNED_KEY    = (teamId: string) => ['team-chat', 'pinned', teamId]
 const TYPING_KEY    = (teamId: string) => ['team-chat', 'typing', teamId]
-const PAGE_SIZE = 100
+const PAGE_SIZE = 50
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fetch messages
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchMessages(teamId: string): Promise<TeamMessageFull[]> {
-  const { data: msgs, error } = await supabase
+async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMessageFull[]> {
+  let query = supabase
     .from('team_messages')
     .select(`
       id, team_id, sender_id, content, reply_to_id, edited_at, created_at,
@@ -36,13 +36,19 @@ async function fetchMessages(teamId: string): Promise<TeamMessageFull[]> {
       )
     `)
     .eq('team_id', teamId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(PAGE_SIZE)
 
+  if (beforeId) {
+    const { data: pivot } = await supabase
+      .from('team_messages').select('created_at').eq('id', beforeId).single()
+    if (pivot) query = query.lt('created_at', pivot.created_at)
+  }
+
+  const { data: msgs, error } = await query
   if (error) throw error
   if (!msgs || msgs.length === 0) return []
 
-  // Résoudre les reply_to séparément (auto-jointure non supportée par PostgREST)
   const replyIds = [...new Set(
     msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[]
   )]
@@ -55,10 +61,9 @@ async function fetchMessages(teamId: string): Promise<TeamMessageFull[]> {
     for (const r of replies ?? []) replyMap.set(r.id, r)
   }
 
-  return msgs.map(m => ({
-    ...m,
-    reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null,
-  })) as unknown as TeamMessageFull[]
+  return msgs
+    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
+    .reverse() as unknown as TeamMessageFull[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -153,16 +158,58 @@ async function fetchTypingUsers(teamId: string): Promise<TypingUser[]> {
 
 export function useTeamChat(teamId?: string, currentUserId?: string) {
   const qc = useQueryClient()
-  // Ref pour éviter de spammer les upserts de read receipt
   const lastMarkedRef = useRef<string | null>(null)
+  const [olderPages, setOlderPages] = useState<TeamMessageFull[][]>([])
+  const [olderCount, setOlderCount] = useState(0)
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false)
 
-  // ── Messages ──────────────────────────────────────────────────────────────
+  // ── Messages (page courante) ──────────────────────────────────────────────
   const messagesQuery = useQuery({
     queryKey: MESSAGES_KEY(teamId ?? ''),
     enabled: !!teamId,
     queryFn: () => fetchMessages(teamId!),
     staleTime: 0,
   })
+
+  // ── Charger les messages plus anciens ─────────────────────────────────────
+  const loadOlder = useCallback(async () => {
+    if (!teamId || isLoadingOlder) return
+    const allMsgs = [...olderPages.flat(), ...(messagesQuery.data ?? [])]
+    const oldest = allMsgs[0]
+    if (!oldest) return
+    setIsLoadingOlder(true)
+    try {
+      const page = await fetchMessages(teamId, oldest.id)
+      if (page.length > 0) {
+        setOlderPages(prev => [page, ...prev])
+        const { data } = await supabase.rpc('count_team_messages_before', {
+          p_team_id: teamId,
+          p_before_id: page[0].id,
+        })
+        setOlderCount(Number(data ?? 0))
+      } else {
+        setOlderCount(0)
+      }
+    } finally {
+      setIsLoadingOlder(false)
+    }
+  }, [teamId, isLoadingOlder, olderPages, messagesQuery.data])
+
+  // Initialiser le compteur
+  useEffect(() => {
+    if (!teamId || !messagesQuery.data?.length) return
+    const first = messagesQuery.data[0]
+    supabase.rpc('count_team_messages_before', {
+      p_team_id: teamId,
+      p_before_id: first.id,
+    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+  }, [teamId, messagesQuery.data])
+
+  // Reset quand on change d'équipe
+  useEffect(() => {
+    setOlderPages([])
+    setOlderCount(0)
+  }, [teamId])
 
   // ── Read receipts ─────────────────────────────────────────────────────────
   const receiptsQuery = useQuery({
@@ -356,12 +403,15 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   })
 
   return {
-    messages:   messagesQuery.data ?? [],
+    messages:   [...olderPages.flat(), ...(messagesQuery.data ?? [])],
     receipts:   receiptsQuery.data ?? [],
     pinned:     pinnedQuery.data ?? [],
     typing:     typingQuery.data ?? [],
     isLoading:  messagesQuery.isLoading,
     isError:    messagesQuery.isError,
+    olderCount,
+    isLoadingOlder,
+    loadOlder,
     sendMessage,
     deleteMessage,
     clearChat,

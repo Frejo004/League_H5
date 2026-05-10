@@ -133,6 +133,14 @@ export interface GenericChatProps {
   // Séparateur non-lus
   firstUnreadId?: string | null
   unreadCount?: number
+
+  // Pagination
+  olderCount?: number
+  isLoadingOlder?: boolean
+  onLoadOlder?: () => void
+
+  // Contexte pour les états vides
+  emptyContext?: 'channel' | 'dm' | 'team'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -847,6 +855,10 @@ export function GenericChat({
   onRequestPush,
   firstUnreadId,
   unreadCount = 0,
+  olderCount = 0,
+  isLoadingOlder = false,
+  onLoadOlder,
+  emptyContext,
 }: GenericChatProps) {
   const [input, setInput] = useState('')
   const [replyTo, setReplyTo] = useState<GenericMessage | null>(null)
@@ -1164,11 +1176,37 @@ export function GenericChat({
               </div>
               <p className="text-slate-400 text-sm font-medium">Aucun message</p>
               <p className="text-slate-600 text-xs">
-                {isReadOnly && !isAdmin ? 'Ce canal est en lecture seule.' : 'Soyez le premier à écrire !'}
+                {isReadOnly && !isAdmin
+                  ? 'Ce canal est en lecture seule.'
+                  : emptyContext === 'dm'
+                  ? `Envoyez un message à ${headerTitle} pour démarrer la conversation.`
+                  : emptyContext === 'team'
+                  ? 'Soyez le premier à écrire dans ce groupe !'
+                  : 'Soyez le premier à écrire !'}
               </p>
             </div>
           ) : (
-            messages.map((msg, idx) => {
+            <>
+              {/* Bouton "Charger les messages plus anciens" */}
+              {olderCount > 0 && onLoadOlder && (
+                <div className="flex justify-center px-4 pt-2 pb-1">
+                  <button
+                    onClick={onLoadOlder}
+                    disabled={isLoadingOlder}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoadingOlder ? (
+                      <div className="w-3 h-3 border border-slate-500 border-t-slate-300 rounded-full animate-spin" />
+                    ) : (
+                      <ChevronDown size={12} className="rotate-180" />
+                    )}
+                    {isLoadingOlder
+                      ? 'Chargement…'
+                      : `${olderCount} message${olderCount > 1 ? 's' : ''} plus ancien${olderCount > 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              )}
+            {messages.map((msg, idx) => {
               const prev = messages[idx - 1]
               const next = messages[idx + 1]
               const msgDate = new Date(msg.created_at)
@@ -1217,7 +1255,8 @@ export function GenericChat({
                   />
                 </div>
               )
-            })
+            })}
+            </>
           )}
 
           {/* Scroll-to-bottom */}
