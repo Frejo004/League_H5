@@ -113,6 +113,11 @@ export function LoginPage() {
         <p className="text-center text-xs text-slate-600 mt-3">
           Accès spectateur ? Inscrivez-vous et attendez l'approbation de l'admin.
         </p>
+        <p className="text-center text-xs text-slate-700 mt-2">
+          <Link to="/landing" className="hover:text-slate-500 transition-colors">
+            ← Retour à l'accueil
+          </Link>
+        </p>
       </div>
     </AuthLayout>
   )

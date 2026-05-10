@@ -22,18 +22,21 @@ import { MyStatsPage } from '@/pages/MyStatsPage'
 import { MyTeamPage } from '@/pages/MyTeamPage'
 import { PalmaresPage } from '@/pages/PalmaresPage'
 import { RulesPage } from '@/pages/RulesPage'
+import { LandingPage } from '@/pages/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ChatPage } from '@/pages/ChatPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const router = createBrowserRouter(
   [
-    // Auth routes (public)
+    // Routes publiques (sans auth)
     { path: '/auth/login',           element: <LoginPage /> },
     { path: '/auth/signup',          element: <SignupPage /> },
     { path: '/auth/reset-password',  element: <ResetPasswordPage /> },
     { path: '/auth/update-password', element: <UpdatePasswordPage /> },
     { path: '/auth/join',            element: <JoinPage /> },
+    { path: '/landing',              element: <LandingPage /> },
+    { path: '/rules-public',         element: <RulesPage /> },
 
     // App routes (protected)
     {

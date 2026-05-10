@@ -4,6 +4,7 @@ import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useMvpRanking } from '@/hooks/useMvpVotes'
 import { useMatches } from '@/hooks/useMatches'
+import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
@@ -14,6 +15,7 @@ export function StatsPage() {
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
   const { data: mvpRanking, isLoading: mvpLoading } = useMvpRanking(season?.id)
   const { data: matches } = useMatches(season?.id)
+  const { data: discipline } = useDisciplinaryStats(season?.id)
 
   const isLoading = seasonLoading || scorersLoading || standingsLoading || mvpLoading
 
@@ -54,8 +56,7 @@ export function StatsPage() {
           { label: 'Passes déc.',     value: totalAssists },
           { label: 'Buts / match',    value: avgGoalsPerMatch },
           { label: 'Matchs joués',    value: completedMatches.length },
-        ] : undefined}
-        compact
+        ] : undefined}        compact
       />
 
       {isLoading ? (
@@ -88,6 +89,30 @@ export function StatsPage() {
               </div>
             ))}
           </div>
+
+          {/* ── KPIs disciplinaires ── */}
+          {discipline && (discipline.totalYellow > 0 || discipline.totalRed > 0) && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="stat-card animate-fade-in-up bg-linear-to-br from-yellow-500/15 to-yellow-600/5 border border-yellow-500/20">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-black/20 text-yellow-400">
+                    <Shield size={17} />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-white tracking-tight leading-none">{discipline.totalYellow}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Cartons jaunes</p>
+              </div>
+              <div className="stat-card animate-fade-in-up bg-linear-to-br from-red-500/15 to-red-600/5 border border-red-500/20">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-black/20 text-red-400">
+                    <Shield size={17} />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-white tracking-tight leading-none">{discipline.totalRed}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Cartons rouges</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -306,6 +331,118 @@ export function StatsPage() {
               )}
             </div>
           </div>
+
+          {/* ── Classement disciplinaire ── */}
+          {discipline && (discipline.players.length > 0 || discipline.teams.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+              {/* Joueurs les plus sanctionnés */}
+              <div className="card space-y-3 animate-fade-in-up">
+                <h2 className="section-title flex items-center gap-2">
+                  <span className="text-base">🟨</span>
+                  Cartons — Joueurs
+                </h2>
+                {discipline.players.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
+                ) : (
+                  <div className="space-y-2">
+                    {discipline.players.slice(0, 8).map((p, i) => (
+                      <div key={p.player_id} className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
+                          style={{ backgroundColor: p.team_color }}
+                        >
+                          {p.first_name[0]}{p.last_name[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.team_color }} />
+                            <span className="text-xs text-slate-500 truncate">{p.team_name}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {p.yellow_cards > 0 && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400">
+                              🟨 {p.yellow_cards}
+                            </span>
+                          )}
+                          {p.red_cards > 0 && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400">
+                              🟥 {p.red_cards}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Classement fair-play équipes */}
+              <div className="card space-y-3 animate-fade-in-up">
+                <h2 className="section-title flex items-center gap-2">
+                  <Shield size={12} className="text-green-400" />
+                  Fair-play — Équipes
+                </h2>
+                <p className="text-[10px] text-slate-600">Score : 🟨 = 1pt · 🟥 = 3pts · Moins c'est mieux</p>
+                {discipline.teams.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
+                ) : (
+                  <div className="space-y-2">
+                    {[...discipline.teams]
+                      .sort((a, b) => a.fairplay_score - b.fairplay_score) // meilleur fair-play en premier
+                      .map((t, i) => (
+                        <div key={t.team_id} className="flex items-center gap-3">
+                          <span className={clsx(
+                            'text-sm font-bold w-5 text-right shrink-0',
+                            i === 0 ? 'text-green-400' : 'text-slate-600'
+                          )}>
+                            {i === 0 ? '🏆' : i + 1}
+                          </span>
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
+                            style={{ backgroundColor: t.team_color }}
+                          >
+                            {t.team_name[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-semibold truncate">{t.team_name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {t.yellow_cards > 0 && (
+                                <span className="text-[10px] text-yellow-400">🟨 {t.yellow_cards}</span>
+                              )}
+                              {t.red_cards > 0 && (
+                                <span className="text-[10px] text-red-400">🟥 {t.red_cards}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${Math.min((t.fairplay_score / (discipline.teams[discipline.teams.length - 1]?.fairplay_score || 1)) * 100, 100)}%`,
+                                  backgroundColor: i === 0 ? '#22c55e' : '#ef4444',
+                                }}
+                              />
+                            </div>
+                            <span className={clsx(
+                              'font-black text-sm w-4 text-right',
+                              i === 0 ? 'text-green-400' : 'text-slate-400'
+                            )}>
+                              {t.fairplay_score}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

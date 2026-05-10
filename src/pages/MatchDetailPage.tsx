@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2, Share2 } from 'lucide-react'
 import { useMatch } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -193,12 +193,44 @@ export function MatchDetailPage() {
   return (
     <div className="space-y-3 pb-10">
 
-      {/* Back */}
-      <Link to="/matches"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">
-        <ArrowLeft size={14} />
-        Matchs
-      </Link>
+      {/* Back + Share */}
+      <div className="flex items-center justify-between">
+        <Link to="/matches"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">
+          <ArrowLeft size={14} />
+          Matchs
+        </Link>
+
+        {/* Bouton partage — Web Share API (iOS/Android natif) */}
+        {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
+          <button
+            onClick={async () => {
+              const home = match.home_team as TeamRef
+              const away = match.away_team as TeamRef
+              const score = isCompleted
+                ? `${match.home_score} – ${match.away_score}`
+                : '🔴 LIVE'
+              try {
+                await navigator.share({
+                  title: `${home.name} ${score} ${away.name}`,
+                  text: isCompleted
+                    ? `Résultat : ${home.name} ${match.home_score} – ${match.away_score} ${away.name} · League H5`
+                    : `Match en direct : ${home.name} vs ${away.name} · League H5`,
+                  url: window.location.href,
+                })
+              } catch {
+                // Annulé par l'utilisateur — pas d'erreur
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
+                       text-slate-400 hover:text-white border border-white/10 hover:border-white/20
+                       hover:bg-white/5 transition-all"
+          >
+            <Share2 size={13} />
+            Partager
+          </button>
+        )}
+      </div>
 
       {/* ── Score header — style Sofascore ── */}
       <div className="card overflow-hidden p-0">

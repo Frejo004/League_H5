@@ -5,6 +5,7 @@ import { ChatToastProvider } from '@/components/ui/ChatToastProvider'
 import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt'
 import { NetworkStatus } from '@/components/ui/NetworkStatus'
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp'
+import { PushNotificationBanner } from '@/components/ui/PushNotificationBanner'
 import { useChatUnreadRealtime } from '@/hooks/useChatUnread'
 import { useMyPresence } from '@/hooks/usePresence'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -198,6 +199,9 @@ export function AppLayout() {
 
       {/* Aide raccourcis clavier */}
       {showHelp && <KeyboardShortcutsHelp onClose={() => setShowHelp(false)} />}
+
+      {/* Invitation à activer les notifications push */}
+      <PushNotificationBanner />
     </div>
   )
 }

@@ -1,22 +1,26 @@
 /**
  * Hooks Supabase Realtime
- *
- * Deux hooks :
- *  - useRealtimeMatch  : s'abonne aux changements d'un match précis
- *                        (score, buts, passes) → invalide le cache du détail
- *  - useRealtimeMatches: s'abonne aux changements de tous les matchs d'une saison
- *                        → invalide la liste + classement + buteurs
- *
- * Pattern :
- *  1. Créer un channel nommé de façon unique
- *  2. S'abonner aux events postgres_changes sur les tables concernées
- *  3. Sur chaque event → invalider les queries TanStack Query correspondantes
- *  4. Cleanup : removeChannel() au unmount
+ * + Notifications push locales pour les événements clés
  */
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+
+// Helper : envoyer une notification locale si permission accordée
+function pushLocal(title: string, body: string, tag?: string, url?: string) {
+  if (typeof Notification === 'undefined') return
+  if (Notification.permission !== 'granted') return
+  if (document.visibilityState === 'visible') return
+
+  const n = new Notification(title, {
+    body,
+    icon: '/logo-h5.png',
+    badge: '/logo-h5.png',
+    tag,
+  })
+  if (url) n.onclick = () => { window.focus(); window.location.href = url; n.close() }
+}
 
 // ── Realtime pour le détail d'un match ───────────────────────────────────────
 // Utilisé dans MatchDetailPage — met à jour le score, les buts et les passes
@@ -30,63 +34,61 @@ export function useRealtimeMatch(matchId?: string) {
 
     const channel = supabase
       .channel(`match-detail-${matchId}`)
-      // Changement de score / statut du match
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'matches',
-          filter: `id=eq.${matchId}`,
-        },
-        () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
+        async (payload) => {
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+          // Notif : match terminé
+          const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
+          const oldMatch = payload.old as { status?: string }
+          if (newMatch.status === 'completed' && oldMatch.status !== 'completed') {
+            const { data: m } = await supabase
+              .from('matches')
+              .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
+              .eq('id', matchId).single()
+            const home = (m as any)?.home_team?.name ?? '?'
+            const away = (m as any)?.away_team?.name ?? '?'
+            pushLocal(
+              '🏁 Match terminé',
+              `${home} ${newMatch.home_score ?? 0} – ${newMatch.away_score ?? 0} ${away}`,
+              `match-end-${matchId}`,
+              `/matches/${matchId}`
+            )
+          }
         }
       )
-      // Nouveau but / suppression de but
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'goals',
-          filter: `match_id=eq.${matchId}`,
-        },
-        () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `match_id=eq.${matchId}` },
+        async (payload) => {
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+          // Notif : nouveau but pendant le live
+          if (payload.eventType === 'INSERT') {
+            const goal = payload.new as { team_id: string; is_own_goal: boolean }
+            const { data: m } = await supabase
+              .from('matches')
+              .select('home_team:teams!home_team_id(id,name), away_team:teams!away_team_id(id,name), home_score, away_score')
+              .eq('id', matchId).single()
+            if (m) {
+              const home = (m as any).home_team
+              const away = (m as any).away_team
+              const scorer = goal.team_id === home.id ? home.name : away.name
+              pushLocal(
+                '⚽ But !',
+                `${scorer} marque ! ${(m as any).home_score ?? 0} – ${(m as any).away_score ?? 0}`,
+                `goal-${matchId}`,
+                `/matches/${matchId}`
+              )
+            }
+          }
         }
       )
-      // Nouvelle passe / suppression de passe
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assists',
-          filter: `match_id=eq.${matchId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assists', filter: `match_id=eq.${matchId}` },
+        () => qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
       )
-      // Nouveau vote MVP
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'mvp_votes',
-          filter: `match_id=eq.${matchId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mvp_votes', filter: `match_id=eq.${matchId}` },
+        () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [matchId, qc])
 }
 
