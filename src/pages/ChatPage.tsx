@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ChatPage � Messagerie compl�te
  *
  * Sidebar 3 sections :
@@ -33,14 +33,25 @@ import { supabase } from '@/lib/supabase'
 // -----------------------------------------------------------------------------
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60_000)
-  const hours = Math.floor(diff / 3_600_000)
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
   const days = Math.floor(diff / 86_400_000)
-  if (mins < 1) return "� l'instant"
-  if (mins < 60) return `${mins}min`
-  if (hours < 24) return `${hours}h`
-  return `${days}j`
+  // Aujourd'hui -> heure exacte HH:MM comme WhatsApp
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  }
+  // Hier
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (date.toDateString() === yesterday.toDateString()) return 'Hier'
+  // Cette semaine -> nom du jour abrege
+  if (days < 7) {
+    const d = date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '')
+    return d.charAt(0).toUpperCase() + d.slice(1)
+  }
+  // Plus ancien -> date courte
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
 function getInitials(name: string | null): string {
@@ -187,7 +198,7 @@ function NewDmModal({
 // Sidebar — style WhatsApp
 // ─────────────────────────────────────────────────────────────────────────────
 
-type SidebarFilter = 'all' | 'unread' | 'groups' | 'channels'
+type SidebarFilter = 'all' | 'unread' | 'groups' | 'channels' | 'dm'
 
 function ConvAvatar({
   src, name, color, emoji, size = 'md', isOnline,
@@ -285,8 +296,8 @@ function Sidebar({
     channels.forEach(ch => items.push({
       kind: 'channel', data: ch,
       name: ch.name,
-      preview: ch.description ?? 'Canal',
-      time: null,
+      preview: ch.last_message ?? ch.description ?? 'Canal',
+      time: ch.last_message_at ?? ch.created_at,
       unread: 0,
     }))
 
@@ -294,7 +305,7 @@ function Sidebar({
       kind: 'team', data: t,
       name: t.teamName,
       preview: t.lastMessage ?? 'Aucun message',
-      time: t.lastMessageAt,
+      time: t.lastMessageAt ?? null,
       unread: t.unread,
     }))
 
@@ -302,11 +313,17 @@ function Sidebar({
       kind: 'dm', data: c,
       name: c.other_user.full_name ?? 'Joueur',
       preview: c.last_message ?? 'Aucun message',
-      time: c.last_message_at,
+      time: c.last_message_at ?? null,
       unread: c.unread,
     }))
 
-    return items
+    // Tri chronologique décroissant — plus récent en haut, comme WhatsApp
+    // Les items sans message (time = created_at pour les canaux) vont en bas
+    return items.sort((a, b) => {
+      const ta = a.time ? new Date(a.time).getTime() : 0
+      const tb = b.time ? new Date(b.time).getTime() : 0
+      return tb - ta
+    })
   }, [channels, teams, dmConvs])
 
   const filtered = useMemo(() => {
@@ -314,6 +331,7 @@ function Sidebar({
     if (filter === 'unread')   list = list.filter(i => i.unread > 0)
     if (filter === 'groups')   list = list.filter(i => i.kind === 'team')
     if (filter === 'channels') list = list.filter(i => i.kind === 'channel')
+    if (filter === 'dm')       list = list.filter(i => i.kind === 'dm')
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(i => i.name.toLowerCase().includes(q))
@@ -326,6 +344,7 @@ function Sidebar({
     { id: 'unread',   label: 'Non lues', badge: totalUnread || undefined },
     { id: 'groups',   label: 'Groupes' },
     { id: 'channels', label: 'Canaux' },
+    { id: 'dm',       label: 'Joueurs' },
   ]
 
   function isSelected(item: ConvItem) {
@@ -382,13 +401,13 @@ function Sidebar({
 
       {/* ── Filtres pills ── */}
       <div className="px-4 pb-3 shrink-0">
-        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex flex-wrap gap-2">
           {filters.map(f => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
               className={clsx(
-                'shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all whitespace-nowrap',
                 filter === f.id
                   ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/30'
                   : 'bg-white/[0.07] text-slate-400 hover:bg-white/[0.12] hover:text-white',

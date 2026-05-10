@@ -22,6 +22,8 @@ export interface GlobalChannel {
   icon: string
   is_read_only: boolean
   created_at: string
+  last_message: string | null
+  last_message_at: string | null
 }
 
 export interface ChannelMessage {
@@ -105,21 +107,49 @@ async function resolveReplies<T extends { reply_to_id?: string | null }>(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = false) {
+  const qc = useQueryClient()
+  const key = [...CHANNELS_KEY, userId, isAdmin, isCaptain]
+
+  // Invalider les previews quand un message arrive dans un canal
+  useEffect(() => {
+    if (!userId) return
+    const name = `channel-previews-${userId}`
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
+    if (existing) supabase.removeChannel(existing)
+
+    const ch = supabase.channel(name)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'channel_messages' },
+        () => qc.invalidateQueries({ queryKey: CHANNELS_KEY }))
+      .subscribe()
+
+    return () => { supabase.removeChannel(ch) }
+  }, [userId, qc])
+
   return useQuery({
-    queryKey: [...CHANNELS_KEY, userId, isAdmin, isCaptain],
+    queryKey: key,
     enabled: !!userId,
     queryFn: async (): Promise<GlobalChannel[]> => {
-      const { data, error } = await supabase
-        .from('global_channels')
-        .select('*')
-        .order('created_at', { ascending: true })
-      if (error) throw error
-      return (data ?? []).filter(c => {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_channel_previews')
+
+      let rows: any[]
+      if (rpcError || !rpcData) {
+        const { data, error } = await supabase
+          .from('global_channels')
+          .select('*')
+          .order('created_at', { ascending: true })
+        if (error) throw error
+        rows = (data ?? []).map(r => ({ ...r, last_message: null, last_message_at: null }))
+      } else {
+        rows = rpcData as any[]
+      }
+
+      return rows.filter(c => {
         if (c.slug === 'captains') return isAdmin || isCaptain
         return true
       }) as GlobalChannel[]
     },
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchInterval: 30_000,
   })
 }
 
@@ -257,7 +287,6 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
 
     return () => { supabase.removeChannel(ch) }
   }, [channelId, qc])
-
   const markAsRead = useCallback(async (lastMsgId: string, lastMsgAt: string) => {
     if (!channelId || !currentUserId) return
     if (lastMarkedRef.current === lastMsgId) return
