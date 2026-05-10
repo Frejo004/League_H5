@@ -1358,6 +1358,31 @@ body {
 .stagger-fast > *:nth-child(9)  { animation-delay: 240ms; }
 .stagger-fast > *:nth-child(10) { animation-delay: 270ms; }
 
+/* ── Sur mobile : stagger plus rapide pour éviter le jank ── */
+@media (max-width: 1024px) {
+  .stagger > * { animation-duration: 0.2s; }
+  .stagger > *:nth-child(n+7) { animation-delay: 0ms; } /* pas de délai après le 6ème */
+  .stagger-fast > * { animation-duration: 0.15s; }
+  .stagger-fast > *:nth-child(n+6) { animation-delay: 0ms; }
+}
+
+/* ── Respect de prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .stagger > *,
+  .stagger-fast > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    ANIMATION CLASSES
    ═══════════════════════════════════════════════════════════ */

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, User, Users, X } from 'lucide-react'
+import { Search, User, Users, X, Calendar } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useTeams } from '@/hooks/useTeams'
+import { useMatches } from '@/hooks/useMatches'
 import { clsx } from 'clsx'
 
 interface Result {
@@ -13,7 +14,7 @@ interface Result {
   color: string
   avatar?: string | null
   href: string
-  type: 'player' | 'team'
+  type: 'player' | 'team' | 'match'
 }
 
 export function GlobalSearch() {
@@ -26,6 +27,7 @@ export function GlobalSearch() {
   const { data: season } = useActiveSeason()
   const { data: players } = usePlayers(season?.id)
   const { data: teams }   = useTeams(season?.id)
+  const { data: matches } = useMatches(season?.id)
 
   // Cmd+K / Ctrl+K pour ouvrir
   useEffect(() => {
@@ -52,7 +54,7 @@ export function GlobalSearch() {
   const results: Result[] = query.trim().length < 1 ? [] : [
     ...(players ?? [])
       .filter(p => `${p.first_name} ${p.last_name}`.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 5)
+      .slice(0, 4)
       .map(p => ({
         id: p.id,
         label: `${p.first_name} ${p.last_name}`,
@@ -74,6 +76,30 @@ export function GlobalSearch() {
         href: `/teams/${t.id}`,
         type: 'team' as const,
       })),
+    ...(matches ?? [])
+      .filter(m => {
+        const q = query.toLowerCase()
+        const home = (m.home_team as any)?.name?.toLowerCase() ?? ''
+        const away = (m.away_team as any)?.name?.toLowerCase() ?? ''
+        return home.includes(q) || away.includes(q)
+      })
+      .slice(0, 3)
+      .map(m => {
+        const home = (m.home_team as any)?.name ?? '?'
+        const away = (m.away_team as any)?.name ?? '?'
+        const score = m.status === 'completed'
+          ? `${m.home_score} – ${m.away_score}`
+          : m.status === 'live' ? '🔴 LIVE' : `J${m.matchday}`
+        return {
+          id: m.id,
+          label: `${home} vs ${away}`,
+          sub: score,
+          color: (m.home_team as any)?.color ?? '#334155',
+          avatar: null,
+          href: `/matches/${m.id}`,
+          type: 'match' as const,
+        }
+      }),
   ]
 
   const go = useCallback((href: string) => {
@@ -177,6 +203,8 @@ export function GlobalSearch() {
                       ? <img src={r.avatar} alt="" className="w-full h-full object-cover" />
                       : r.type === 'team'
                         ? <Users size={14} />
+                        : r.type === 'match'
+                        ? <Calendar size={14} />
                         : <User size={14} />
                     }
                   </div>
@@ -190,11 +218,19 @@ export function GlobalSearch() {
                   {/* Type badge */}
                   <span className="text-[10px] font-bold uppercase tracking-wider shrink-0 px-1.5 py-0.5 rounded"
                     style={{
-                      backgroundColor: r.type === 'team' ? 'rgba(139,92,246,0.15)' : 'rgba(6,182,212,0.15)',
-                      color: r.type === 'team' ? '#a78bfa' : '#22d3ee',
+                      backgroundColor: r.type === 'team'
+                        ? 'rgba(139,92,246,0.15)'
+                        : r.type === 'match'
+                        ? 'rgba(37,99,235,0.15)'
+                        : 'rgba(6,182,212,0.15)',
+                      color: r.type === 'team'
+                        ? '#a78bfa'
+                        : r.type === 'match'
+                        ? '#60a5fa'
+                        : '#22d3ee',
                     }}
                   >
-                    {r.type === 'team' ? 'Équipe' : 'Joueur'}
+                    {r.type === 'team' ? 'Équipe' : r.type === 'match' ? 'Match' : 'Joueur'}
                   </span>
                 </button>
               ))

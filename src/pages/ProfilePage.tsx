@@ -1,10 +1,16 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import {
   Camera, Check, Pencil, Mail,
-  ShieldCheck, AlertCircle, Loader2
+  ShieldCheck, AlertCircle, Loader2,
+  Target, Zap, Calendar, Star, ArrowRight,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useQueryClient } from '@tanstack/react-query'
+import { useActiveSeason } from '@/hooks/useSeasons'
+import { usePlayers } from '@/hooks/usePlayers'
+import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 
@@ -100,6 +106,58 @@ function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; labe
       {loading && <Loader2 size={14} className="animate-spin" />}
       {loading ? loadingLabel : label}
     </button>
+  )
+}
+
+// ── PlayerStatsCard — stats saison du joueur lié au compte ──────────────────
+
+function PlayerStatsCard({ userId }: { userId?: string }) {
+  const { data: season } = useActiveSeason()
+  const { data: allPlayers } = usePlayers(season?.id)
+  const myPlayer = (allPlayers ?? []).find(p => p.user_id === userId)
+  const { data: profile } = usePlayerProfile(myPlayer?.id)
+  const { data: mvpData } = usePlayerMvp(myPlayer?.id, season?.id)
+
+  if (!myPlayer || !profile) return null
+
+  const stats = [
+    { label: 'Matchs', value: profile.matches_played, icon: Calendar, color: 'text-blue-400' },
+    { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400' },
+    { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400' },
+    { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400' },
+  ]
+
+  return (
+    <div className="bg-slate-900/60 border border-slate-800/70 rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mes stats — {season?.name}</p>
+          <p className="text-sm font-semibold text-white mt-0.5">{profile.first_name} {profile.last_name}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: profile.team.color }} />
+          <span className="text-xs text-slate-400">{profile.team.name}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        {stats.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="text-center p-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            <Icon size={14} className={`mx-auto mb-1 ${color}`} />
+            <p className="text-xl font-black text-white tabular-nums">{value}</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      <Link
+        to={`/players/${myPlayer.id}`}
+        className="flex items-center justify-between text-xs text-slate-500 hover:text-slate-300 transition-colors group"
+      >
+        <span>Voir mon profil complet</span>
+        <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+    </div>
   )
 }
 
@@ -277,6 +335,9 @@ export function ProfilePage() {
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="max-w-lg space-y-4 pb-10">
+
+      {/* ── Stats joueur (si lié à un joueur) ── */}
+      <PlayerStatsCard userId={profile?.id} />
 
       {/* ── Hero card ── */}
       <div className="relative bg-slate-900/80 border border-slate-800/70 rounded-2xl overflow-hidden">

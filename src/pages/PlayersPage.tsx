@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Search, ChevronDown, Crown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -24,6 +24,7 @@ const POSITION_COLORS: Record<PlayerPosition, string> = {
 }
 
 type SortKey = 'name' | 'jersey' | 'position'
+const PAGE_SIZE = 20
 
 export function PlayersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
@@ -34,6 +35,10 @@ export function PlayersPage() {
   const [filterTeam, setFilterTeam] = useState('')
   const [filterPos,  setFilterPos]  = useState<PlayerPosition | ''>('')
   const [sortKey,    setSortKey]    = useState<SortKey>('name')
+  const [page,       setPage]       = useState(1)
+
+  // Reset page quand les filtres changent
+  useEffect(() => { setPage(1) }, [search, filterTeam, filterPos, sortKey])
 
   const isLoading = seasonLoading || playersLoading
 
@@ -50,6 +55,8 @@ export function PlayersPage() {
       return `${a.last_name}${a.first_name}`.localeCompare(`${b.last_name}${b.first_name}`)
     })
 
+  const paginated = filtered.slice(0, page * PAGE_SIZE)
+  const hasMore = paginated.length < filtered.length
   const hasFilters = !!search || !!filterTeam || !!filterPos
 
   return (
@@ -196,7 +203,7 @@ export function PlayersPage() {
           </div>
 
           <div className="stagger-fast">
-            {filtered.map((player, i) => {
+            {paginated.map((player, i) => {
               const p = player as PlayerWithTeam
               const team = p.teams
               const teamWithCaptain = teams?.find(t => t.id === p.team_id) as TeamWithCaptain | undefined
@@ -267,6 +274,28 @@ export function PlayersPage() {
                 </Link>
               )
             })}
+          </div>
+
+          {/* Bouton charger plus */}
+          {hasMore && (
+            <div className="flex items-center justify-center py-4 border-t border-surface-border/50">
+              <button
+                onClick={() => setPage(p => p + 1)}
+                className="btn-secondary text-sm flex items-center gap-2"
+              >
+                Charger plus
+                <span className="text-slate-600 text-xs">
+                  ({filtered.length - paginated.length} restants)
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Compteur total */}
+          <div className="px-4 py-2 border-t border-surface-border/30 text-center">
+            <p className="text-[10px] text-slate-700">
+              {paginated.length} / {filtered.length} joueur{filtered.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
       )}

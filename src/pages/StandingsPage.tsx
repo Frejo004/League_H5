@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trophy, Link as LinkIcon } from 'lucide-react'
+import { Trophy, Download } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
@@ -8,6 +8,7 @@ import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
+import { exportCSV } from '@/hooks/useExport'
 import { clsx } from 'clsx'
 import type { StandingRow } from '@/hooks/useStandings'
 
@@ -154,34 +155,69 @@ export function StandingsPage() {
             style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
 
             {/* Filter tabs */}
-            <div className="flex items-center gap-1 px-3 py-3 border-b border-white/6">
-              {(['all', 'home', 'away'] as FilterType[]).map(f => (
+            <div className="flex items-center justify-between px-3 py-3 border-b border-white/6">
+              <div className="flex items-center gap-1">
+                {(['all', 'home', 'away'] as FilterType[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={clsx(
+                      'px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200',
+                      filter === f
+                        ? 'bg-white/8 text-white border border-white/10'
+                        : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                    )}
+                  >
+                    {f === 'all' ? 'Général' : f === 'home' ? 'Domicile' : 'Extérieur'}
+                  </button>
+                ))}
+              </div>
+              {/* Export CSV */}
+              {filteredStandings && filteredStandings.length > 0 && (
                 <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={clsx(
-                    'px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200',
-                    filter === f
-                      ? 'bg-white/8 text-white border border-white/10'
-                      : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                  onClick={() => exportCSV(
+                    filteredStandings.map((r, i) => ({
+                      Rang: i + 1,
+                      Équipe: r.team_name,
+                      J: r.played,
+                      V: r.won,
+                      N: r.drawn,
+                      D: r.lost,
+                      BP: r.goals_for,
+                      BC: r.goals_against,
+                      Diff: r.goal_diff,
+                      Pts: r.points,
+                    })),
+                    `classement-${season?.name ?? 'saison'}`
                   )}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-300 hover:bg-white/8 transition-colors"
+                  title="Exporter en CSV"
                 >
-                  {f === 'all' ? 'Général' : f === 'home' ? 'Domicile' : 'Extérieur'}
+                  <Download size={12} />
+                  <span className="hidden sm:block">CSV</span>
                 </button>
-              ))}
+              )}
             </div>
 
-            {/* Table header */}
-            <div className="grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 px-4 py-2 border-b border-white/4">
+            {/* Table header — desktop uniquement */}
+            <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 px-4 py-2 border-b border-white/4">
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
-              <span className="section-title text-center text-green-500/70 hidden sm:block">V</span>
-              <span className="section-title text-center hidden sm:block">N</span>
-              <span className="section-title text-center text-red-500/70 hidden sm:block">D</span>
-              <span className="section-title text-center hidden md:block">+/-</span>
-              <span className="section-title text-center hidden md:block">BU</span>
-              <span className="section-title text-center hidden lg:block">Forme</span>
+              <span className="section-title text-center text-green-500/70">V</span>
+              <span className="section-title text-center">N</span>
+              <span className="section-title text-center text-red-500/70">D</span>
+              <span className="section-title text-center">+/-</span>
+              <span className="section-title text-center">BU</span>
+              <span className="section-title text-center">Forme</span>
+              <span className="section-title text-right">Pts</span>
+            </div>
+            {/* Mobile header */}
+            <div className="grid grid-cols-[2rem_1fr_2rem_auto_3rem] gap-1 px-3 py-2 border-b border-white/4 lg:hidden">
+              <span className="section-title text-center">#</span>
+              <span className="section-title">Équipe</span>
+              <span className="section-title text-center">J</span>
+              <span className="section-title text-center">Forme</span>
               <span className="section-title text-right">Pts</span>
             </div>
 
@@ -197,89 +233,108 @@ export function StandingsPage() {
                     key={row.team_id}
                     to={`/teams/${row.team_id}`}
                     className={clsx(
-                      'grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-3',
                       'border-b border-white/4 last:border-b-0 transition-colors duration-150',
                       'hover:bg-white/3 group',
                       isFirst && 'bg-yellow-500/3',
                       isMyTeam && 'bg-primary-600/5 border-l-2 border-l-primary-500/50'
                     )}
                   >
-                    {/* Rank */}
-                    <div className="flex justify-center">
-                      {i < 3 ? (
-                        <span className={clsx(
-                          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black',
-                          i === 0 && 'bg-yellow-500/20 text-yellow-400',
-                          i === 1 && 'bg-slate-500/20 text-slate-300',
-                          i === 2 && 'bg-amber-700/20 text-amber-600',
-                        )}>
-                          {i + 1}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-600 font-bold tabular-nums">{i + 1}</span>
-                      )}
-                    </div>
-
-                    {/* Team */}
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
-                        style={{ backgroundColor: row.team_color }}>
-                        {row.team_logo
-                          ? <img src={row.team_logo} alt="" className="w-6 h-6 object-contain rounded-md" />
-                          : row.team_name[0]
+                    {/* Desktop row */}
+                    <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-3">
+                      <div className="flex justify-center">
+                        {i < 3 ? (
+                          <span className={clsx(
+                            'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black',
+                            i === 0 && 'bg-yellow-500/20 text-yellow-400',
+                            i === 1 && 'bg-slate-500/20 text-slate-300',
+                            i === 2 && 'bg-amber-700/20 text-amber-600',
+                          )}>
+                            {i + 1}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600 font-bold tabular-nums">{i + 1}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
+                          style={{ backgroundColor: row.team_color }}>
+                          {row.team_logo
+                            ? <img src={row.team_logo} alt="" className="w-6 h-6 object-contain rounded-md" />
+                            : row.team_name[0]
+                          }
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className={clsx('text-sm font-semibold truncate group-hover:text-white transition-colors', isFirst ? 'text-white' : 'text-slate-300')}>
+                            {row.team_name}
+                          </span>
+                          {isMyTeam && (
+                            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                              Mon équipe
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.played}</span>
+                      <span className="text-center text-xs font-semibold text-green-400 tabular-nums">{row.won}</span>
+                      <span className="text-center text-xs text-slate-600 tabular-nums">{row.drawn}</span>
+                      <span className="text-center text-xs font-semibold text-red-400 tabular-nums">{row.lost}</span>
+                      <span className={clsx('text-center text-xs font-bold tabular-nums', row.goal_diff > 0 ? 'text-green-400' : row.goal_diff < 0 ? 'text-red-400' : 'text-slate-600')}>
+                        {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
+                      </span>
+                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.goals_for}:{row.goals_against}</span>
+                      <div className="flex items-center gap-0.5 justify-center">
+                        {row.form.length === 0
+                          ? <span className="text-xs text-slate-700">—</span>
+                          : row.form.slice(-5).map((r, idx) => <FormBadge key={idx} result={r} />)
                         }
                       </div>
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className={clsx(
-                          'text-sm font-semibold truncate group-hover:text-white transition-colors',
-                          isFirst ? 'text-white' : 'text-slate-300'
-                        )}>
+                      <span className={clsx('text-right text-base font-black tabular-nums', i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-white')}>
+                        {row.points}
+                      </span>
+                    </div>
+
+                    {/* Mobile row — condensé */}
+                    <div className="lg:hidden grid grid-cols-[2rem_1fr_2rem_auto_3rem] gap-1 items-center px-3 py-3">
+                      <div className="flex justify-center">
+                        {i < 3 ? (
+                          <span className={clsx(
+                            'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black',
+                            i === 0 && 'bg-yellow-500/20 text-yellow-400',
+                            i === 1 && 'bg-slate-500/20 text-slate-300',
+                            i === 2 && 'bg-amber-700/20 text-amber-600',
+                          )}>
+                            {i + 1}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600 font-bold tabular-nums">{i + 1}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-black shrink-0"
+                          style={{ backgroundColor: row.team_color }}>
+                          {row.team_logo
+                            ? <img src={row.team_logo} alt="" className="w-5 h-5 object-contain rounded" />
+                            : row.team_name[0]
+                          }
+                        </div>
+                        <span className={clsx('text-sm font-semibold truncate', isFirst ? 'text-white' : 'text-slate-300')}>
                           {row.team_name}
                         </span>
                         {isMyTeam && (
-                          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
-                            Mon équipe
-                          </span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
                         )}
                       </div>
+                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.played}</span>
+                      <div className="flex items-center gap-0.5 justify-center">
+                        {row.form.length === 0
+                          ? <span className="text-[10px] text-slate-700">—</span>
+                          : row.form.slice(-3).map((r, idx) => <FormBadge key={idx} result={r} />)
+                        }
+                      </div>
+                      <span className={clsx('text-right text-sm font-black tabular-nums', i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-white')}>
+                        {row.points}
+                      </span>
                     </div>
-
-                    {/* Played */}
-                    <span className="text-center text-xs text-slate-500 tabular-nums">{row.played}</span>
-
-                    {/* W D L */}
-                    <span className="text-center text-xs font-semibold text-green-400 tabular-nums hidden sm:block">{row.won}</span>
-                    <span className="text-center text-xs text-slate-600 tabular-nums hidden sm:block">{row.drawn}</span>
-                    <span className="text-center text-xs font-semibold text-red-400 tabular-nums hidden sm:block">{row.lost}</span>
-
-                    {/* Diff */}
-                    <span className={clsx(
-                      'text-center text-xs font-bold tabular-nums hidden md:block',
-                      row.goal_diff > 0 ? 'text-green-400' : row.goal_diff < 0 ? 'text-red-400' : 'text-slate-600'
-                    )}>
-                      {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
-                    </span>
-
-                    {/* Goals */}
-                    <span className="text-center text-xs text-slate-500 tabular-nums hidden md:block">
-                      {row.goals_for}:{row.goals_against}
-                    </span>
-
-                    {/* Form */}
-                    <div className="hidden lg:flex items-center gap-0.5 justify-center">
-                      {row.form.length === 0
-                        ? <span className="text-xs text-slate-700">—</span>
-                        : row.form.slice(-5).map((r, idx) => <FormBadge key={idx} result={r} />)
-                      }
-                    </div>
-
-                    {/* Points */}
-                    <span className={clsx(
-                      'text-right text-base font-black tabular-nums',
-                      i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-white'
-                    )}>
-                      {row.points}
-                    </span>
                   </Link>
                 )
               })}

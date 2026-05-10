@@ -2,8 +2,12 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ChatToastProvider } from '@/components/ui/ChatToastProvider'
+import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt'
+import { NetworkStatus } from '@/components/ui/NetworkStatus'
+import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp'
 import { useChatUnreadRealtime } from '@/hooks/useChatUnread'
 import { useMyPresence } from '@/hooks/usePresence'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useAuth } from '@/hooks/useAuth'
 import { useEffect, useState } from 'react'
 
@@ -116,6 +120,9 @@ export function AppLayout() {
   // Présence — publie et maintient le statut en ligne de l'utilisateur courant
   useMyPresence(profile?.id)
 
+  // Raccourcis clavier globaux
+  const { showHelp, setShowHelp } = useKeyboardShortcuts()
+
   // Écouter les changements de thème
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -182,6 +189,15 @@ export function AppLayout() {
 
       {/* Notifications toast chat — global, hors du flux de page */}
       <ChatToastProvider />
+
+      {/* PWA install prompt — iOS et Android */}
+      <PWAInstallPrompt />
+
+      {/* Statut réseau — banner hors-ligne + toast reconnexion */}
+      <NetworkStatus />
+
+      {/* Aide raccourcis clavier */}
+      {showHelp && <KeyboardShortcutsHelp onClose={() => setShowHelp(false)} />}
     </div>
   )
 }
