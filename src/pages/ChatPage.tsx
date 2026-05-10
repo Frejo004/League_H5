@@ -1,13 +1,13 @@
-﻿/**
- * ChatPage — Messagerie complète
+/**
+ * ChatPage � Messagerie compl�te
  *
  * Sidebar 3 sections :
- *   1. Canaux globaux  (Général, Capitaines & Admins)
- *   2. Groupes équipes (TeamChat existant)
+ *   1. Canaux globaux  (G�n�ral, Capitaines & Admins)
+ *   2. Groupes �quipes (TeamChat existant)
  *   3. Messages directs (DMs entre joueurs)
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { MessageCircle, ArrowLeft, Plus, Search, X, Shield } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuth } from '@/hooks/useAuth'
@@ -25,18 +25,19 @@ import {
   useAllPlayers,
 } from '@/hooks/useChannelChat'
 import type { GlobalChannel, DmConversation } from '@/hooks/useChannelChat'
+import { useOnlineUsers, useIsOnline } from '@/hooks/usePresence'
 import { supabase } from '@/lib/supabase'
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60_000)
   const hours = Math.floor(diff / 3_600_000)
   const days = Math.floor(diff / 86_400_000)
-  if (mins < 1) return "à l'instant"
+  if (mins < 1) return "� l'instant"
   if (mins < 60) return `${mins}min`
   if (hours < 24) return `${hours}h`
   return `${days}j`
@@ -47,18 +48,18 @@ function getInitials(name: string | null): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types de sélection
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// Types de s�lection
+// -----------------------------------------------------------------------------
 
 type SelectedItem =
   | { type: 'channel'; channel: GlobalChannel }
   | { type: 'team'; team: TeamUnread }
   | { type: 'dm'; conv: DmConversation }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Modal nouveau DM
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function NewDmModal({
   currentUserId,
@@ -115,7 +116,7 @@ function NewDmModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm mx-4 bg-[#161B22] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-sm mx-4 bg-chat-panel border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
@@ -125,7 +126,7 @@ function NewDmModal({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Rechercher un joueur…"
+            placeholder="Rechercher un joueur�"
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
             aria-label="Rechercher un joueur"
             role="combobox"
@@ -182,9 +183,9 @@ function NewDmModal({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Sidebar
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function Sidebar({
   channels,
@@ -208,6 +209,13 @@ function Sidebar({
   const totalUnread =
     teams.reduce((s, t) => s + t.unread, 0) +
     dmConvs.reduce((s, d) => s + d.unread, 0)
+
+  // Présence : collecter tous les IDs des contacts DM en un seul appel
+  const dmContactIds = useMemo(
+    () => dmConvs.map(c => c.other_user.id).filter(Boolean),
+    [dmConvs]
+  )
+  const onlineUsers = useOnlineUsers(dmContactIds)
 
   return (
     <div className="flex flex-col h-full">
@@ -307,7 +315,7 @@ function Sidebar({
                       }
                     </div>
                     {team.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-[#0D1117] animate-pulse" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-(--color-chat-bg) animate-pulse" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -354,6 +362,7 @@ function Sidebar({
             dmConvs.map(conv => {
               const isSelected = selected?.type === 'dm' && selected.conv.id === conv.id
               const other = conv.other_user
+              const isOnline = onlineUsers.has(other.id)
               return (
                 <button
                   key={conv.id}
@@ -373,8 +382,16 @@ function Sidebar({
                         {getInitials(other.full_name)}
                       </div>
                     )}
+                    {/* Point de présence — vert si en ligne, gris sinon */}
+                    <span
+                      className={clsx(
+                        'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-(--color-chat-bg)',
+                        isOnline ? 'bg-emerald-500' : 'bg-slate-600',
+                      )}
+                    />
+                    {/* Badge non-lus par-dessus */}
                     {conv.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-[#0D1117] animate-pulse" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-(--color-chat-bg) animate-pulse" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -410,9 +427,9 @@ function Sidebar({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // ChannelChatView
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function ChannelChatView({
   channel,
@@ -486,9 +503,9 @@ function ChannelChatView({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // DmChatView
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function DmChatView({
   conv,
@@ -506,6 +523,7 @@ function DmChatView({
   } = useDmChat(conv.id, currentUserId)
 
   const other = conv.other_user
+  const isOnline = useIsOnline(other.id)
 
   const genericMessages = messages.map(m => ({
     id: m.id,
@@ -537,7 +555,8 @@ function DmChatView({
       onMarkAsRead={markAsRead}
       headerTitle={other.full_name ?? 'Joueur'}
       headerAvatar={other.avatar_url}
-      headerSubtitle="Message direct"
+      headerSubtitle={isOnline ? 'En ligne' : 'Hors ligne'}
+      headerOnline={isOnline}
       headerColor="#3b82f6"
       headerIcon="💬"
       embedded
@@ -549,9 +568,9 @@ function DmChatView({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Page principale
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 export function ChatPage() {
   const { user, isAdmin } = useAuth()
@@ -577,12 +596,12 @@ export function ChatPage() {
 
   const isLoading = teamsLoading || channelsLoading || dmsLoading
 
-  // Sélection auto desktop uniquement (ne pas ouvrir le chat sur mobile)
+  // S�lection auto desktop uniquement (ne pas ouvrir le chat sur mobile)
   useEffect(() => {
     if (selected) return
     if (channels.length > 0) {
       setSelected({ type: 'channel', channel: channels[0] })
-      // Ne pas setMobileShowChat(true) ici — l'user doit choisir explicitement sur mobile
+      // Ne pas setMobileShowChat(true) ici � l'user doit choisir explicitement sur mobile
     } else if (teams.length > 0) {
       setSelected({ type: 'team', team: teams[0] })
     }
@@ -678,9 +697,9 @@ export function ChatPage() {
         />
       )}
 
-      {/* MOBILE — slide horizontal entre sidebar et chat */}
+      {/* MOBILE � slide horizontal entre sidebar et chat */}
       <div className="lg:hidden h-[calc(100vh-8rem)] relative overflow-hidden">
-        {/* Sidebar — slide out à gauche quand chat ouvert */}
+        {/* Sidebar � slide out � gauche quand chat ouvert */}
         <div
           className="absolute inset-0 card p-0 overflow-hidden transition-transform duration-300 ease-in-out"
           style={{ transform: mobileShowChat ? 'translateX(-100%)' : 'translateX(0)' }}
@@ -697,7 +716,7 @@ export function ChatPage() {
           />
         </div>
 
-        {/* Chat — slide in depuis la droite */}
+        {/* Chat � slide in depuis la droite */}
         <div
           className="absolute inset-0 card p-0 overflow-hidden flex flex-col transition-transform duration-300 ease-in-out"
           style={{ transform: mobileShowChat ? 'translateX(0)' : 'translateX(100%)' }}

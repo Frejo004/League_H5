@@ -146,7 +146,7 @@ function ToastItem({
           : 'opacity-0 translate-y-4 scale-95',
       )}
       style={{
-        backgroundColor: '#161B22',
+        backgroundColor: 'var(--color-chat-panel)',
         borderColor: 'rgba(255,255,255,0.08)',
         boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
       }}

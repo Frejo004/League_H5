@@ -37,6 +37,13 @@
   --color-surface-raised:  #1e2640;
   --color-surface-border:  #2d3a5a;
   --color-surface-muted:   #3a4766;
+
+  /* ── Chat surface tokens ── */
+  --color-chat-bg:         #0D1117;
+  --color-chat-panel:      #161B22;
+  --color-chat-bubble-in:  #1e2530;
+  --color-chat-action-bar: #1a2030;
+  --color-chat-input-bg:   #0D1117;
   
   --color-text-primary:    #e2e8f0;
   --color-text-secondary:  #94a3b8;
@@ -166,6 +173,13 @@ html {
   --color-text-secondary:  #94a3b8;
   --color-text-muted:      #64748b;
   --card-bg: linear-gradient(135deg, #161c2d 0%, #111827 100%);
+
+  /* Chat */
+  --color-chat-bg:         #0D1117;
+  --color-chat-panel:      #161B22;
+  --color-chat-bubble-in:  #1e2530;
+  --color-chat-action-bar: #1a2030;
+  --color-chat-input-bg:   #0D1117;
 }
 
 body {
@@ -197,6 +211,13 @@ body {
 
   /* Card background for components using --card-bg */
   --card-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+
+  /* Chat — light mode */
+  --color-chat-bg:         #f1f5f9;
+  --color-chat-panel:      #ffffff;
+  --color-chat-bubble-in:  #e2e8f0;
+  --color-chat-action-bar: #f8fafc;
+  --color-chat-input-bg:   #f8fafc;
 }
 
 :root[data-theme='light'] body {
@@ -638,6 +659,16 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #252f4a; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #2e3a5c; }
+
+/* ── Chat : highlight de message après navigation depuis la recherche ── */
+.msg-highlight {
+  animation: msgHighlight 2s ease forwards;
+}
+@keyframes msgHighlight {
+  0%   { background-color: rgba(251, 191, 36, 0.18); border-radius: 8px; }
+  60%  { background-color: rgba(251, 191, 36, 0.10); }
+  100% { background-color: transparent; }
+}
 
 /* ═══════════════════════════════════════════════════════════
    BUTTONS — avec micro-animations

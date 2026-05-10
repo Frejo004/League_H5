@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Send, Smile, Reply, Trash2, X, ChevronDown, Edit2,
-  ExternalLink, Pin, Bell, BellOff, AlertTriangle,
+  ExternalLink, Pin, Bell, BellOff, AlertTriangle, Search as SearchIcon,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -185,6 +185,135 @@ function getInitials(name: string | null): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MessageSearch — panneau de recherche dans l'historique
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface SearchResult {
+  msg: GenericMessage
+  matchStart: number
+  matchEnd: number
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!query) return text
+  const idx = text.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return text
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-amber-400/30 text-amber-200 rounded px-0.5 not-italic">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  )
+}
+
+function MessageSearch({
+  messages,
+  onClose,
+  onJumpTo,
+}: {
+  messages: GenericMessage[]
+  onClose: () => void
+  onJumpTo: (msgId: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose])
+
+  const results = useMemo((): SearchResult[] => {
+    const q = query.trim().toLowerCase()
+    if (q.length < 2) return []
+    return messages
+      .filter(m => m.content.toLowerCase().includes(q))
+      .map(m => {
+        const idx = m.content.toLowerCase().indexOf(q)
+        return { msg: m, matchStart: idx, matchEnd: idx + q.length }
+      })
+      .reverse() // plus récents en premier
+  }, [messages, query])
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Barre de recherche */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06] shrink-0">
+        <SearchIcon size={14} className="text-slate-500 shrink-0" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Rechercher dans les messages…"
+          className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
+        />
+        {query && (
+          <span className="text-[10px] text-slate-600 shrink-0">
+            {results.length} résultat{results.length !== 1 ? 's' : ''}
+          </span>
+        )}
+        <button
+          onClick={onClose}
+          className="p-1 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors shrink-0"
+          aria-label="Fermer la recherche"
+        >
+          <X size={13} />
+        </button>
+      </div>
+
+      {/* Résultats */}
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+      >
+        {query.length < 2 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-10 px-6">
+            <SearchIcon size={24} className="text-slate-700" />
+            <p className="text-slate-600 text-xs">Tapez au moins 2 caractères</p>
+          </div>
+        ) : results.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-10 px-6">
+            <p className="text-slate-500 text-sm font-medium">Aucun résultat</p>
+            <p className="text-slate-700 text-xs">pour « {query} »</p>
+          </div>
+        ) : (
+          <div className="py-2">
+            {results.map(({ msg }) => {
+              const senderName = msg.sender?.full_name ?? 'Joueur'
+              const date = new Date(msg.created_at)
+              const dateStr = date.toLocaleDateString('fr-FR', {
+                day: 'numeric', month: 'short',
+                hour: '2-digit', minute: '2-digit',
+              })
+              return (
+                <button
+                  key={msg.id}
+                  onClick={() => { onJumpTo(msg.id); onClose() }}
+                  className="w-full flex flex-col gap-1 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors border-b border-white/[0.04] last:border-0"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-primary-300 truncate">{senderName}</span>
+                    <span className="text-[10px] text-slate-600 shrink-0">{dateStr}</span>
+                  </div>
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                    {highlightMatch(msg.content, query)}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ConfirmModal — remplace window.confirm()
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -210,7 +339,7 @@ function ConfirmModal({ message, confirmLabel = 'Confirmer', onConfirm, onCancel
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-xs mx-4 bg-[#161B22] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-xs mx-4 bg-chat-panel border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-5 pt-5 pb-4 flex flex-col items-center gap-3 text-center">
@@ -264,7 +393,7 @@ function EmojiPicker({ onSelect, onClose }: { onSelect: (e: string) => void; onC
   return (
     <div
       ref={ref}
-      className="absolute bottom-full mb-2 left-0 z-50 bg-[#161B22] border border-white/10 rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col max-h-[400px]"
+      className="absolute bottom-full mb-2 left-0 z-50 bg-chat-panel border border-white/10 rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col max-h-[400px]"
     >
       <div className="px-4 py-3 border-b border-white/5 shrink-0">
         <h3 className="text-xs font-black text-white uppercase tracking-wider">Émojis</h3>
@@ -323,7 +452,7 @@ function MentionDropdown({
   if (items.length === 0) return null
 
   return (
-    <div ref={ref} className="absolute bottom-full mb-2 left-0 z-50 bg-[#161B22] border border-white/10 rounded-xl shadow-2xl overflow-hidden w-64">
+    <div ref={ref} className="absolute bottom-full mb-2 left-0 z-50 bg-chat-panel border border-white/10 rounded-xl shadow-2xl overflow-hidden w-64">
       <div className="px-3 py-2 border-b border-white/5">
         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mentionner</span>
       </div>
@@ -481,7 +610,7 @@ function LinkPreview({ url }: { url: string }) {
             <div className="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[13px] border-transparent border-l-white ml-1" />
           </div>
         </div>
-        <div className="px-3 py-2 bg-[#1a2030]">
+        <div className="px-3 py-2 bg-chat-action-bar">
           <p className="text-[11px] text-slate-500 flex items-center gap-1">
             <span className="text-red-500 font-bold">▶</span> youtube.com
           </p>
@@ -667,7 +796,7 @@ function ChatMessage({
         {isEditing ? (
           <div className={clsx(
             'w-full max-w-sm px-3.5 py-2.5 rounded-2xl text-sm border-2',
-            isOwn ? 'bg-primary-700/60 border-primary-500/50' : 'bg-[#1e2530] border-primary-500/50',
+            isOwn ? 'bg-primary-700/60 border-primary-500/50' : 'bg-chat-bubble-in border-primary-500/50',
           )}>
             <textarea
               ref={editInputRef}
@@ -692,7 +821,7 @@ function ChatMessage({
             'max-w-sm px-3.5 py-2 text-sm leading-relaxed',
             isOwn
               ? `bg-primary-600 text-white ${ownRadius} shadow-md shadow-primary-900/30`
-              : `bg-[#1e2530] text-slate-100 border border-white/[0.06] ${otherRadius} shadow-sm`,
+              : `bg-chat-bubble-in text-slate-100 border border-white/[0.06] ${otherRadius} shadow-sm`,
           )}>
             {renderMessageContent(msg.content)}
           </div>
@@ -730,7 +859,7 @@ function ChatMessage({
       {/* Action bar on hover */}
       <div className={clsx(
         'absolute -top-3.5 z-20 flex items-center gap-0.5',
-        'bg-[#1a2030] border border-white/10 rounded-xl shadow-2xl shadow-black/50 p-1',
+        'bg-chat-action-bar border border-white/10 rounded-xl shadow-2xl shadow-black/50 p-1',
         'transition-all duration-150',
         showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-1 pointer-events-none',
         isOwn ? 'right-10' : 'left-10',
@@ -867,6 +996,8 @@ export function GenericChat({
   const [editContent, setEditContent] = useState('')
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [newMsgCount, setNewMsgCount] = useState(0)
+  const [showSearch, setShowSearch] = useState(false)
+  const [jumpToId, setJumpToId] = useState<string | null>(null)
 
   // Modal de confirmation
   const [confirmState, setConfirmState] = useState<{
@@ -930,6 +1061,21 @@ export function GenericChat({
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     }
   }, [onTypingStop])
+
+  // ── Scroll vers un message cible (depuis la recherche) ───────────────────
+  useEffect(() => {
+    if (!jumpToId) return
+    const el = document.getElementById(`msg-${jumpToId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('msg-highlight')
+      const t = setTimeout(() => {
+        el.classList.remove('msg-highlight')
+        setJumpToId(null)
+      }, 2000)
+      return () => clearTimeout(t)
+    }
+  }, [jumpToId])
 
   // ── Map read receipts par message ─────────────────────────────────────────
   const readByMessage = useMemo(() => {
@@ -1035,6 +1181,12 @@ export function GenericChat({
     setEditContent('')
   }, [])
 
+  // Sauter à un message spécifique (depuis la recherche)
+  const handleJumpTo = useCallback((msgId: string) => {
+    setJumpToId(msgId)
+    setShowSearch(false)
+  }, [])
+
   const canWrite = !isReadOnly || isAdmin
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1070,29 +1222,38 @@ export function GenericChat({
               </div>
             )}
             {headerOnline && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0D1117] bg-emerald-500 animate-pulse" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-(--color-chat-bg) bg-emerald-500 animate-pulse" />
             )}
           </div>
 
           {/* Titre + sous-titre */}
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-bold text-white leading-tight truncate">{headerTitle}</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5 truncate flex items-center gap-1.5">
-              {headerOnline && (
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />
+            <p className="text-[11px] mt-0.5 truncate flex items-center gap-1.5">
+              {/* Présence DM */}
+              {headerSubtitle === 'En ligne' && (
+                <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                  En ligne
                 </span>
               )}
+              {headerSubtitle === 'Hors ligne' && (
+                <span className="text-slate-600">Hors ligne</span>
+              )}
+              {/* Membres + messages (groupes) */}
               {memberCount !== undefined && (
-                <span>{memberCount} membre{memberCount !== 1 ? 's' : ''}</span>
+                <span className="text-slate-500">{memberCount} membre{memberCount !== 1 ? 's' : ''}</span>
               )}
               {memberCount !== undefined && messageCount !== undefined && (
                 <span className="text-slate-700">·</span>
               )}
               {messageCount !== undefined && (
-                <span>{messageCount} message{messageCount !== 1 ? 's' : ''}</span>
+                <span className="text-slate-500">{messageCount} message{messageCount !== 1 ? 's' : ''}</span>
               )}
-              {headerSubtitle && !memberCount && !messageCount && headerSubtitle}
+              {/* Sous-titre générique (canaux) */}
+              {headerSubtitle && headerSubtitle !== 'En ligne' && headerSubtitle !== 'Hors ligne' && !memberCount && !messageCount && (
+                <span className="text-slate-500">{headerSubtitle}</span>
+              )}
             </p>
           </div>
 
@@ -1134,6 +1295,23 @@ export function GenericChat({
           )}
 
           {extraHeaderActions}
+
+          {/* Bouton recherche — toujours visible si messages > 0 */}
+          {messages.length > 0 && (
+            <button
+              onClick={() => setShowSearch(v => !v)}
+              className={clsx(
+                'p-1.5 rounded-lg transition-colors shrink-0',
+                showSearch
+                  ? 'text-primary-400 bg-primary-500/15'
+                  : 'text-slate-600 hover:text-slate-300 hover:bg-white/8',
+              )}
+              title={showSearch ? 'Fermer la recherche' : 'Rechercher dans les messages'}
+              aria-label="Rechercher"
+            >
+              <SearchIcon size={14} />
+            </button>
+          )}
         </div>
 
         {/* ── Messages épinglés ── */}
@@ -1159,7 +1337,16 @@ export function GenericChat({
           </div>
         )}
 
-        {/* ── Zone messages ── */}
+        {/* ── Zone messages ou recherche ── */}
+        {showSearch ? (
+          <div className="flex-1 overflow-hidden">
+            <MessageSearch
+              messages={messages}
+              onClose={() => setShowSearch(false)}
+              onJumpTo={handleJumpTo}
+            />
+          </div>
+        ) : (
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto py-3 relative"
@@ -1229,6 +1416,7 @@ export function GenericChat({
               return (
                 <div
                   key={msg.id}
+                  id={`msg-${msg.id}`}
                   style={isNew ? { animation: 'msgSlideIn 0.2s ease-out both' } : undefined}
                 >
                   {showDateSep && <DateSeparator date={msgDate} />}
@@ -1264,7 +1452,7 @@ export function GenericChat({
             <div className="sticky bottom-3 z-20 flex justify-center pointer-events-none">
               <button
                 onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setNewMsgCount(0) }}
-                className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full bg-[#1a2030]/90 border border-white/10 shadow-lg text-slate-400 hover:text-white hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
+                className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full bg-chat-action-bar/90 border border-white/10 shadow-lg text-slate-400 hover:text-white hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
                 style={{ animation: 'msgSlideIn 0.15s ease-out both' }}
               >
                 {newMsgCount > 0 && (
@@ -1278,6 +1466,7 @@ export function GenericChat({
           )}
           <div ref={bottomRef} />
         </div>
+        )} {/* fin showSearch conditionnel */}
 
         {/* ── Typing indicator ── */}
         {typingUsers.length > 0 && (

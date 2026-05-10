@@ -3,6 +3,7 @@ import Header from './Header'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ChatToastProvider } from '@/components/ui/ChatToastProvider'
 import { useChatUnreadRealtime } from '@/hooks/useChatUnread'
+import { useMyPresence } from '@/hooks/usePresence'
 import { useAuth } from '@/hooks/useAuth'
 import { useEffect, useState } from 'react'
 
@@ -111,6 +112,9 @@ export function AppLayout() {
 
   // Realtime unread counts — monté une seule fois ici pour éviter les doublons
   useChatUnreadRealtime(profile?.id)
+
+  // Présence — publie et maintient le statut en ligne de l'utilisateur courant
+  useMyPresence(profile?.id)
 
   // Écouter les changements de thème
   useEffect(() => {
