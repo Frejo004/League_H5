@@ -3,7 +3,7 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut,
+  Settings, User, X, Menu, LogOut, BookOpen,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -43,44 +43,52 @@ interface NavItem { to: string; label: string; icon: typeof LayoutDashboard }
 
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
-    { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
-    { to: '/standings', label: 'Classement',  icon: Trophy },
-    { to: '/matches',   label: 'Matchs',      icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',     icon: Target },
-    { to: '/teams',     label: 'Équipes',     icon: Users },
-    { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/standings', label: 'Classement', icon: Trophy },
+    { to: '/matches',   label: 'Matchs',     icon: Calendar },
+    { to: '/scorers',   label: 'Buteurs',    icon: Target },
+    { to: '/teams',     label: 'Équipes',    icon: Users },
+    { to: '/players',   label: 'Joueurs',    icon: User },
+    { to: '/stats',     label: 'Stats',      icon: Star },
     { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/admin',     label: 'Admin',       icon: Settings },
+    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
+    { to: '/admin',     label: 'Admin',      icon: Settings },
   ],
   captain: [
-    { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
-    { to: '/standings', label: 'Classement',  icon: Trophy },
-    { to: '/matches',   label: 'Matchs',      icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',     icon: Target },
-    { to: '/teams',     label: 'Équipes',     icon: Users },
-    { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/standings', label: 'Classement', icon: Trophy },
+    { to: '/matches',   label: 'Matchs',     icon: Calendar },
+    { to: '/scorers',   label: 'Buteurs',    icon: Target },
+    { to: '/teams',     label: 'Équipes',    icon: Users },
+    { to: '/players',   label: 'Joueurs',    icon: User },
+    { to: '/stats',     label: 'Stats',      icon: Star },
     { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/my-stats',  label: 'Mes Stats',   icon: Target },
-    { to: '/captain',   label: 'Mon Équipe',  icon: Crown },
+    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
+    { to: '/my-stats',  label: 'Mes Stats',  icon: Target },
+    { to: '/captain',   label: 'Mon Équipe', icon: Crown },
   ],
   player: [
-    { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
-    { to: '/standings', label: 'Classement',  icon: Trophy },
-    { to: '/matches',   label: 'Matchs',      icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',     icon: Target },
-    { to: '/teams',     label: 'Équipes',     icon: Users },
-    { to: '/stats',     label: 'Vote MVP',    icon: Star },
+    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/standings', label: 'Classement', icon: Trophy },
+    { to: '/matches',   label: 'Matchs',     icon: Calendar },
+    { to: '/scorers',   label: 'Buteurs',    icon: Target },
+    { to: '/teams',     label: 'Équipes',    icon: Users },
+    { to: '/players',   label: 'Joueurs',    icon: User },
+    { to: '/stats',     label: 'Stats',      icon: Star },
     { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/my-stats',  label: 'Mes Stats',   icon: Target },
-    { to: '/my-team',   label: 'Mon Équipe',  icon: Users },
+    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
+    { to: '/my-stats',  label: 'Mes Stats',  icon: Target },
+    { to: '/my-team',   label: 'Mon Équipe', icon: Users },
   ],
   spectator: [
-    { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
-    { to: '/standings', label: 'Classement',  icon: Trophy },
-    { to: '/matches',   label: 'Matchs',      icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',     icon: Target },
-    { to: '/teams',     label: 'Équipes',     icon: Users },
+    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/standings', label: 'Classement', icon: Trophy },
+    { to: '/matches',   label: 'Matchs',     icon: Calendar },
+    { to: '/scorers',   label: 'Buteurs',    icon: Target },
+    { to: '/teams',     label: 'Équipes',    icon: Users },
+    { to: '/players',   label: 'Joueurs',    icon: User },
     { to: '/palmares',  label: 'Palmarès',   icon: Star },
+    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
   ],
 }
 
@@ -134,7 +142,7 @@ function Brand({ border, textColor }: { border: string; textColor: string }) {
     <Link
       to="/"
       className="flex items-center gap-2.5 px-5 shrink-0"
-      style={{ minWidth: 200, borderRight: `1px solid ${border}`, height: '100%' }}
+      style={{ minWidth: 160, borderRight: `1px solid ${border}`, height: '100%' }}
     >
       {/* Logo carré vert */}
       <div
@@ -267,6 +275,8 @@ export default function Header() {
     '/my-team':   'Mon Équipe',
     '/profile':   'Mon Profil',
     '/palmares':  'Palmarès',
+    '/rules':     'Règlement',
+    '/chat':      'Messages',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/')
@@ -284,15 +294,15 @@ export default function Header() {
         style={{ backgroundColor: BG_MAIN, borderBottom: `1px solid ${BORDER}` }}
       >
         {/* ── Main bar (56px) ── */}
-        <div className="flex items-stretch h-14 relative">
+        <div className="flex items-stretch h-14">
 
           {/* Brand — gauche */}
           <Brand border={BORDER} textColor={TEXT_PRIMARY} />
 
-          {/* Nav principale — centrée absolument */}
+          {/* Nav principale — flex-1, scrollable si débordement */}
           <nav
-            className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2
-                       flex items-stretch"
+            className="flex-1 flex items-stretch overflow-x-auto min-w-0"
+            style={{ scrollbarWidth: 'none' }}
             aria-label="Navigation principale"
           >
             {navItems.map(({ to, label }) => (
@@ -301,8 +311,8 @@ export default function Header() {
                 to={to}
                 end={to === '/'}
                 aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
-                className="relative flex items-center px-4 text-sm font-semibold whitespace-nowrap
-                           transition-colors duration-150 outline-none"
+                className="relative flex items-center px-3 text-[13px] font-semibold whitespace-nowrap
+                           transition-colors duration-150 outline-none shrink-0"
                 style={({ isActive }) => ({
                   fontFamily: "'Barlow', sans-serif",
                   color: isActive ? ACCENT : NAV_OFF,
@@ -322,9 +332,9 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Zone droite — poussée à droite avec ml-auto */}
+          {/* Zone droite — fixe à droite */}
           <div
-            className="flex items-center gap-3 px-5 shrink-0 ml-auto"
+            className="flex items-center gap-2 px-4 shrink-0"
             style={{ borderLeft: `1px solid ${BORDER}` }}
           >
             {/* Recherche globale */}
@@ -332,21 +342,6 @@ export default function Header() {
 
             {/* Toggle de thème */}
             <ThemeToggle />
-
-            {/* Pill saison */}
-            {season && (
-              <span
-                className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
-                style={{
-                  fontFamily: "'Barlow', sans-serif",
-                  backgroundColor: 'rgba(128,128,128,0.1)',
-                  border: `1px solid ${BORDER}`,
-                  color: colors.TEXT_SECONDARY,
-                }}
-              >
-                {season.name}
-              </span>
-            )}
 
             {/* Icône Chat → /chat */}
             {profile && (

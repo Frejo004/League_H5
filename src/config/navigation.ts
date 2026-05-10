@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2, Star,
+  Users, User, BarChart2, Star, BookOpen,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -19,11 +19,12 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/players',   icon: User,            label: 'Joueurs' },
   { to: '/stats',     icon: BarChart2,       label: 'Stats' },
   { to: '/palmares',  icon: Star,            label: 'Palmarès' },
+  { to: '/rules',     icon: BookOpen,        label: 'Règlement' },
 ]
 
 /** Subset shown in the mobile bottom nav (limited space — no Joueurs) */
 export const MOBILE_NAV_ITEMS: NavItem[] = NAV_ITEMS.filter(
-  item => item.to !== '/players'
+  item => item.to !== '/players' && item.to !== '/rules'
 )
 
 export const PAGE_TITLES: Record<string, string> = {
@@ -37,6 +38,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/admin':     'Administration',
   '/profile':   'Mon profil',
   '/palmares':  'Palmarès',
+  '/rules':     'Règlement',
   '/my-stats':  'Mes Stats',
   '/my-team':   'Mon Équipe',
   '/captain':   'Mon Équipe',

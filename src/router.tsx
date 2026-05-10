@@ -21,6 +21,7 @@ import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { MyStatsPage } from '@/pages/MyStatsPage'
 import { MyTeamPage } from '@/pages/MyTeamPage'
 import { PalmaresPage } from '@/pages/PalmaresPage'
+import { RulesPage } from '@/pages/RulesPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ChatPage } from '@/pages/ChatPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -56,6 +57,7 @@ export const router = createBrowserRouter(
             { path: '/my-stats',      element: <MyStatsPage /> },
             { path: '/my-team',       element: <MyTeamPage /> },
             { path: '/palmares',      element: <PalmaresPage /> },
+            { path: '/rules',         element: <RulesPage /> },
             { path: '/profile',       element: <ProfilePage /> },
             { path: '/chat',          element: <ChatPage /> },
           ],
