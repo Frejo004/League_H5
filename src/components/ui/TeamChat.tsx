@@ -10,7 +10,7 @@ import type { ReadReceiptWithProfile } from '@/hooks/useTeamChat'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { GenericChat } from '@/components/ui/GenericChat'
-import type { GenericMessage, ReadReceiptProfile, MentionMember, PinnedEntry } from '@/components/ui/GenericChat'
+import type { GenericMessage, ReadReceiptProfile, MentionMember, PinnedEntry, GroupMember } from '@/components/ui/GenericChat'
 import type { TeamMessageFull } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,6 +94,15 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   } = useTeamChat(teamId, user?.id)
   const push = usePushNotifications()
 
+  // Récupérer le captain_id pour marquer le rôle dans le panneau membres
+  const [captainId, setCaptainId] = useState<string | null>(null)
+  useEffect(() => {
+    import('@/lib/supabase').then(({ supabase }) => {
+      supabase.from('teams').select('captain_id').eq('id', teamId).maybeSingle()
+        .then(({ data }) => setCaptainId(data?.captain_id ?? null))
+    })
+  }, [teamId])
+
   // ── Calcul premier message non lu ────────────────────────────────────────
   const myReceipt = useMemo(() => receipts.find(r => r.user_id === user?.id), [receipts, user?.id])
   const firstUnreadIdRef = useRef<string | null | undefined>(undefined)
@@ -147,6 +156,21 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   const mentionMembers: MentionMember[] = useMemo(
     () => teamMembers.map(m => ({ id: m.id, full_name: m.full_name, avatar_url: m.avatar_url })),
     [teamMembers]
+  )
+
+  // Membres enrichis avec rôle pour le panneau membres
+  const groupMembers: GroupMember[] = useMemo(
+    () => teamMembers.map(m => ({
+      id: m.id,
+      full_name: m.full_name,
+      avatar_url: m.avatar_url,
+      role: isAdmin && m.id === user?.id
+        ? 'admin'
+        : m.id === captainId
+        ? 'captain'
+        : 'player',
+    })),
+    [teamMembers, captainId, isAdmin, user?.id]
   )
 
   const pinnedEntries: PinnedEntry[] = useMemo(
@@ -222,6 +246,9 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
 
       // Mentions
       mentionMembers={mentionMembers}
+
+      // Membres (panneau)
+      groupMembers={groupMembers}
 
       // Pinned
       pinnedMessages={pinnedEntries}

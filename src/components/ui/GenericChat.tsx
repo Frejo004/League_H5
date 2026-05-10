@@ -9,8 +9,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Send, Smile, Reply, Trash2, X, ChevronDown, Edit2,
-  ExternalLink, Pin, Bell, BellOff, AlertTriangle, Search as SearchIcon,
+  ExternalLink, Pin, Bell, BellOff, AlertTriangle, Search as SearchIcon, Users,
 } from 'lucide-react'
+import { useOnlineUsers } from '@/hooks/usePresence'
 import { clsx } from 'clsx'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +142,17 @@ export interface GenericChatProps {
 
   // Contexte pour les états vides
   emptyContext?: 'channel' | 'dm' | 'team'
+
+  // Liste des membres du groupe (pour le panneau membres)
+  groupMembers?: GroupMember[]
+}
+
+/** Membre affiché dans le panneau membres */
+export interface GroupMember {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+  role?: string | null  // 'captain' | 'player' | 'admin' | etc.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -182,6 +194,139 @@ function formatDateLabel(date: Date): string {
 function getInitials(name: string | null): string {
   if (!name) return '?'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MembersPanel — liste des membres triés par présence
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MembersPanel({
+  members,
+  currentUserId,
+  onClose,
+}: {
+  members: GroupMember[]
+  currentUserId: string
+  onClose: () => void
+}) {
+  const memberIds = useMemo(() => members.map(m => m.id), [members])
+  const onlineSet = useOnlineUsers(memberIds)
+
+  // Trier : en ligne d'abord, puis par nom
+  const sorted = useMemo(() => {
+    return [...members].sort((a, b) => {
+      const aOnline = onlineSet.has(a.id)
+      const bOnline = onlineSet.has(b.id)
+      if (aOnline !== bOnline) return aOnline ? -1 : 1
+      return (a.full_name ?? '').localeCompare(b.full_name ?? '', 'fr')
+    })
+  }, [members, onlineSet])
+
+  const onlineCount = useMemo(
+    () => members.filter(m => onlineSet.has(m.id)).length,
+    [members, onlineSet]
+  )
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose])
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header du panneau */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
+        <div>
+          <h3 className="text-sm font-bold text-white">Membres</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5">
+            <span className="text-emerald-400 font-semibold">{onlineCount}</span>
+            {' '}en ligne · {members.length} au total
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg hover:bg-white/8 text-slate-600 hover:text-slate-300 transition-colors"
+          aria-label="Fermer"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Liste */}
+      <div
+        className="flex-1 overflow-y-auto py-2"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+      >
+        {sorted.map(member => {
+          const isOnline = onlineSet.has(member.id)
+          const isMe = member.id === currentUserId
+          const name = member.full_name ?? 'Joueur'
+          const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+
+          return (
+            <div
+              key={member.id}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.03] transition-colors"
+            >
+              {/* Avatar + indicateur présence */}
+              <div className="relative shrink-0">
+                {member.avatar_url ? (
+                  <img
+                    src={member.avatar_url}
+                    alt={name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300">
+                    {initials}
+                  </div>
+                )}
+                <span
+                  className={clsx(
+                    'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-(--color-chat-bg)',
+                    isOnline ? 'bg-emerald-500' : 'bg-slate-600',
+                  )}
+                />
+              </div>
+
+              {/* Nom + rôle */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className={clsx(
+                    'text-sm truncate',
+                    isOnline ? 'text-white font-semibold' : 'text-slate-400',
+                  )}>
+                    {name}
+                    {isMe && <span className="text-[10px] text-slate-600 font-normal ml-1">(vous)</span>}
+                  </p>
+                </div>
+                <p className="text-[10px] text-slate-600 capitalize">
+                  {isOnline ? (
+                    <span className="text-emerald-500/80">En ligne</span>
+                  ) : (
+                    member.role ?? 'Joueur'
+                  )}
+                </p>
+              </div>
+
+              {/* Badge rôle capitaine */}
+              {member.role === 'captain' && (
+                <span className="text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full shrink-0">
+                  CAP
+                </span>
+              )}
+              {member.role === 'admin' && (
+                <span className="text-[9px] font-bold text-primary-400/80 bg-primary-500/10 border border-primary-500/20 px-1.5 py-0.5 rounded-full shrink-0">
+                  ADM
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -988,6 +1133,7 @@ export function GenericChat({
   isLoadingOlder = false,
   onLoadOlder,
   emptyContext,
+  groupMembers = [],
 }: GenericChatProps) {
   const [input, setInput] = useState('')
   const [replyTo, setReplyTo] = useState<GenericMessage | null>(null)
@@ -998,6 +1144,7 @@ export function GenericChat({
   const [newMsgCount, setNewMsgCount] = useState(0)
   const [showSearch, setShowSearch] = useState(false)
   const [jumpToId, setJumpToId] = useState<string | null>(null)
+  const [showMembers, setShowMembers] = useState(false)
 
   // Modal de confirmation
   const [confirmState, setConfirmState] = useState<{
@@ -1296,10 +1443,27 @@ export function GenericChat({
 
           {extraHeaderActions}
 
+          {/* Bouton membres — visible uniquement pour les groupes */}
+          {groupMembers.length > 0 && (
+            <button
+              onClick={() => { setShowMembers(v => !v); setShowSearch(false) }}
+              className={clsx(
+                'p-1.5 rounded-lg transition-colors shrink-0',
+                showMembers
+                  ? 'text-primary-400 bg-primary-500/15'
+                  : 'text-slate-600 hover:text-slate-300 hover:bg-white/8',
+              )}
+              title={showMembers ? 'Fermer la liste des membres' : 'Voir les membres'}
+              aria-label="Membres du groupe"
+            >
+              <Users size={14} />
+            </button>
+          )}
+
           {/* Bouton recherche — toujours visible si messages > 0 */}
           {messages.length > 0 && (
             <button
-              onClick={() => setShowSearch(v => !v)}
+              onClick={() => { setShowSearch(v => !v); setShowMembers(false) }}
               className={clsx(
                 'p-1.5 rounded-lg transition-colors shrink-0',
                 showSearch
@@ -1337,8 +1501,16 @@ export function GenericChat({
           </div>
         )}
 
-        {/* ── Zone messages ou recherche ── */}
-        {showSearch ? (
+        {/* ── Zone messages, recherche ou membres ── */}
+        {showMembers && groupMembers.length > 0 ? (
+          <div className="flex-1 overflow-hidden">
+            <MembersPanel
+              members={groupMembers}
+              currentUserId={currentUserId}
+              onClose={() => setShowMembers(false)}
+            />
+          </div>
+        ) : showSearch ? (
           <div className="flex-1 overflow-hidden">
             <MessageSearch
               messages={messages}

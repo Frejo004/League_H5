@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { MessageCircle, ArrowLeft, Plus, Search, X, Shield } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageCircle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAuth } from '@/hooks/useAuth'
 import { useChatUnread } from '@/hooks/useChatUnread'
@@ -183,9 +183,63 @@ function NewDmModal({
   )
 }
 
-// -----------------------------------------------------------------------------
-// Sidebar
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// Sidebar — style WhatsApp
+// ─────────────────────────────────────────────────────────────────────────────
+
+type SidebarFilter = 'all' | 'unread' | 'groups' | 'channels'
+
+function ConvAvatar({
+  src, name, color, emoji, size = 'md', isOnline,
+}: {
+  src?: string | null
+  name: string
+  color?: string
+  emoji?: string
+  size?: 'md' | 'lg'
+  isOnline?: boolean
+}) {
+  const dim = size === 'lg' ? 'w-13 h-13' : 'w-12 h-12'
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+
+  return (
+    <div className={clsx('relative shrink-0', dim)}>
+      {src ? (
+        <img src={src} alt={name} className={clsx('rounded-full object-cover w-full h-full')} />
+      ) : emoji ? (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-xl"
+          style={{ backgroundColor: (color ?? '#3b82f6') + '33' }}
+        >
+          {emoji}
+        </div>
+      ) : (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-sm font-bold text-white"
+          style={{ backgroundColor: color ?? '#3b82f6' }}
+        >
+          {initials}
+        </div>
+      )}
+      {isOnline !== undefined && (
+        <span
+          className={clsx(
+            'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-(--color-chat-bg)',
+            isOnline ? 'bg-emerald-500' : 'bg-slate-600',
+          )}
+        />
+      )}
+    </div>
+  )
+}
+
+function UnreadBadge({ count }: { count: number }) {
+  return (
+    <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold bg-primary-500 text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
 
 function Sidebar({
   channels,
@@ -206,222 +260,224 @@ function Sidebar({
   isAdmin: boolean
   isCaptain: boolean
 }) {
-  const totalUnread =
-    teams.reduce((s, t) => s + t.unread, 0) +
-    dmConvs.reduce((s, d) => s + d.unread, 0)
+  const [filter, setFilter] = useState<SidebarFilter>('all')
+  const [search, setSearch] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
-  // Présence : collecter tous les IDs des contacts DM en un seul appel
-  const dmContactIds = useMemo(
-    () => dmConvs.map(c => c.other_user.id).filter(Boolean),
-    [dmConvs]
-  )
+  const dmContactIds = useMemo(() => dmConvs.map(c => c.other_user.id), [dmConvs])
   const onlineUsers = useOnlineUsers(dmContactIds)
 
+  const totalUnread = useMemo(
+    () => teams.reduce((s, t) => s + t.unread, 0)
+      + dmConvs.reduce((s, d) => s + d.unread, 0),
+    [teams, dmConvs]
+  )
+
+  // ── Construire la liste unifiée et filtrée ────────────────────────────────
+  type ConvItem =
+    | { kind: 'channel'; data: GlobalChannel; name: string; preview: string; time: string | null; unread: number }
+    | { kind: 'team';    data: TeamUnread;    name: string; preview: string; time: string | null; unread: number }
+    | { kind: 'dm';      data: DmConversation; name: string; preview: string; time: string | null; unread: number }
+
+  const allItems = useMemo((): ConvItem[] => {
+    const items: ConvItem[] = []
+
+    channels.forEach(ch => items.push({
+      kind: 'channel', data: ch,
+      name: ch.name,
+      preview: ch.description ?? 'Canal',
+      time: null,
+      unread: 0,
+    }))
+
+    teams.forEach(t => items.push({
+      kind: 'team', data: t,
+      name: t.teamName,
+      preview: t.lastMessage ?? 'Aucun message',
+      time: t.lastMessageAt,
+      unread: t.unread,
+    }))
+
+    dmConvs.forEach(c => items.push({
+      kind: 'dm', data: c,
+      name: c.other_user.full_name ?? 'Joueur',
+      preview: c.last_message ?? 'Aucun message',
+      time: c.last_message_at,
+      unread: c.unread,
+    }))
+
+    return items
+  }, [channels, teams, dmConvs])
+
+  const filtered = useMemo(() => {
+    let list = allItems
+    if (filter === 'unread')   list = list.filter(i => i.unread > 0)
+    if (filter === 'groups')   list = list.filter(i => i.kind === 'team')
+    if (filter === 'channels') list = list.filter(i => i.kind === 'channel')
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(i => i.name.toLowerCase().includes(q))
+    }
+    return list
+  }, [allItems, filter, search])
+
+  const filters: { id: SidebarFilter; label: string; badge?: number }[] = [
+    { id: 'all',      label: 'Toutes' },
+    { id: 'unread',   label: 'Non lues', badge: totalUnread || undefined },
+    { id: 'groups',   label: 'Groupes' },
+    { id: 'channels', label: 'Canaux' },
+  ]
+
+  function isSelected(item: ConvItem) {
+    if (!selected) return false
+    if (item.kind === 'channel' && selected.type === 'channel') return selected.channel.id === item.data.id
+    if (item.kind === 'team'    && selected.type === 'team')    return selected.team.teamId === (item.data as TeamUnread).teamId
+    if (item.kind === 'dm'      && selected.type === 'dm')      return selected.conv.id === (item.data as DmConversation).id
+    return false
+  }
+
+  function handleSelect(item: ConvItem) {
+    if (item.kind === 'channel') onSelect({ type: 'channel', channel: item.data as GlobalChannel })
+    if (item.kind === 'team')    onSelect({ type: 'team',    team: item.data as TeamUnread })
+    if (item.kind === 'dm')      onSelect({ type: 'dm',      conv: item.data as DmConversation })
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 py-4 border-b border-surface-border shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-black text-white flex items-center gap-2">
-              <MessageCircle size={16} className="text-primary-400" />
-              Messages
-            </h1>
-            {totalUnread > 0 && (
-              <p className="text-[10px] text-primary-400 font-bold mt-0.5">
-                {totalUnread} non lu{totalUnread > 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
+    <div className="flex flex-col h-full bg-chat-panel">
+
+      {/* ── Header ── */}
+      <div className="px-4 pt-5 pb-3 shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-black text-white tracking-tight">Discussions</h1>
           <button
             onClick={onNewDm}
-            className="p-1.5 rounded-xl bg-primary-600/20 hover:bg-primary-600/30 text-primary-400 transition-colors"
+            className="p-2 rounded-xl hover:bg-white/8 text-slate-400 hover:text-white transition-colors"
             title="Nouveau message direct"
+            aria-label="Nouveau message"
           >
-            <Plus size={14} />
+            <Plus size={18} />
           </button>
+        </div>
+
+        {/* Barre de recherche */}
+        <div
+          className="flex items-center gap-2.5 bg-white/[0.06] rounded-2xl px-3.5 py-2.5 cursor-text"
+          onClick={() => searchRef.current?.focus()}
+        >
+          <Search size={15} className="text-slate-500 shrink-0" />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher ou démarrer une discussion"
+            className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none min-w-0"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="text-slate-500 hover:text-slate-300 transition-colors shrink-0">
+              <X size={13} />
+            </button>
+          )}
         </div>
       </div>
 
+      {/* ── Filtres pills ── */}
+      <div className="px-4 pb-3 shrink-0">
+        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {filters.map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={clsx(
+                'shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                filter === f.id
+                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/30'
+                  : 'bg-white/[0.07] text-slate-400 hover:bg-white/[0.12] hover:text-white',
+              )}
+            >
+              {f.label}
+              {f.badge && f.id !== filter && (
+                <span className="w-4 h-4 rounded-full bg-primary-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {f.badge > 9 ? '9+' : f.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Liste des conversations ── */}
       <div
         className="flex-1 overflow-y-auto"
         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}
       >
-        {/* Canaux */}
-        {channels.length > 0 && (
-          <div className="pt-3 pb-1">
-            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Canaux</p>
-            {channels.map(ch => {
-              const isSelected = selected?.type === 'channel' && selected.channel.id === ch.id
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => onSelect({ type: 'channel', channel: ch })}
-                  className={clsx(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-l-2',
-                    isSelected
-                      ? 'bg-primary-600/10 border-l-primary-500'
-                      : 'hover:bg-white/[0.03] border-l-transparent',
-                  )}
-                >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0"
-                    style={{ backgroundColor: ch.color + '33' }}
-                  >
-                    {ch.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={clsx('text-sm font-semibold truncate', isSelected ? 'text-white' : 'text-slate-300')}>
-                      {ch.name}
-                    </p>
-                    {ch.is_read_only && (
-                      <p className="text-[10px] text-amber-500/60">Lecture seule</p>
-                    )}
-                  </div>
-                  {ch.slug === 'captains' && (
-                    <Shield size={11} className="text-amber-400/50 shrink-0" />
-                  )}
-                </button>
-              )
-            })}
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+            <Search size={28} className="text-slate-700" />
+            <p className="text-slate-500 text-sm">
+              {search ? `Aucun résultat pour « ${search} »` : 'Aucune conversation'}
+            </p>
+            {filter === 'unread' && !search && (
+              <p className="text-slate-700 text-xs">Tout est lu 👍</p>
+            )}
           </div>
-        )}
+        ) : (
+          filtered.map(item => {
+            const sel = isSelected(item)
+            const ch = item.kind === 'channel' ? (item.data as GlobalChannel) : null
+            const team = item.kind === 'team' ? (item.data as TeamUnread) : null
+            const dm = item.kind === 'dm' ? (item.data as DmConversation) : null
+            const isOnline = dm ? onlineUsers.has(dm.other_user.id) : undefined
 
-        {/* Equipes */}
-        {teams.length > 0 && (
-          <div className="pt-3 pb-1">
-            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Equipes</p>
-            {teams.map(team => {
-              const isSelected = selected?.type === 'team' && selected.team.teamId === team.teamId
-              return (
-                <button
-                  key={team.teamId}
-                  onClick={() => onSelect({ type: 'team', team })}
-                  className={clsx(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-l-2',
-                    isSelected
-                      ? 'bg-primary-600/10 border-l-primary-500'
-                      : 'hover:bg-white/[0.03] border-l-transparent',
-                  )}
-                >
-                  <div className="relative shrink-0">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black overflow-hidden"
-                      style={{ backgroundColor: team.teamColor }}
-                    >
-                      {team.logo_url
-                        ? <img src={team.logo_url} alt={team.teamName} className="w-full h-full object-contain" />
-                        : team.teamName[0].toUpperCase()
-                      }
-                    </div>
-                    {team.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-(--color-chat-bg) animate-pulse" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className={clsx('text-sm truncate', team.unread > 0 ? 'font-black text-white' : 'font-semibold text-slate-400')}>
-                        {team.teamName}
-                      </p>
-                      {team.lastMessageAt && (
-                        <span className={clsx('text-[10px] shrink-0', team.unread > 0 ? 'text-primary-400 font-bold' : 'text-slate-600')}>
-                          {timeAgo(team.lastMessageAt)}
-                        </span>
-                      )}
-                    </div>
-                    <p className={clsx('text-xs truncate', team.unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-500')}>
-                      {team.lastMessage ?? 'Aucun message'}
-                    </p>
-                  </div>
-                  {team.unread > 0 && (
-                    <span
-                      className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-black"
-                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
-                    >
-                      {team.unread > 99 ? '99+' : team.unread}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
+            return (
+              <button
+                key={`${item.kind}-${item.kind === 'channel' ? ch!.id : item.kind === 'team' ? team!.teamId : dm!.id}`}
+                onClick={() => handleSelect(item)}
+                className={clsx(
+                  'w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors',
+                  sel ? 'bg-primary-600/15' : 'hover:bg-white/[0.04]',
+                )}
+              >
+                {/* Avatar */}
+                <ConvAvatar
+                  src={dm ? dm.other_user.avatar_url : team?.logo_url}
+                  name={item.name}
+                  color={ch ? ch.color : team ? team.teamColor : '#3b82f6'}
+                  emoji={ch ? ch.icon : undefined}
+                  isOnline={isOnline}
+                />
 
-        {/* DMs */}
-        <div className="pt-3 pb-3">
-          <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Messages directs</p>
-          {dmConvs.length === 0 ? (
-            <button
-              onClick={onNewDm}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-slate-600 hover:text-slate-400 transition-colors text-xs"
-            >
-              <Plus size={12} />
-              Demarrer une conversation
-            </button>
-          ) : (
-            dmConvs.map(conv => {
-              const isSelected = selected?.type === 'dm' && selected.conv.id === conv.id
-              const other = conv.other_user
-              const isOnline = onlineUsers.has(other.id)
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelect({ type: 'dm', conv })}
-                  className={clsx(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-l-2',
-                    isSelected
-                      ? 'bg-primary-600/10 border-l-primary-500'
-                      : 'hover:bg-white/[0.03] border-l-transparent',
-                  )}
-                >
-                  <div className="relative shrink-0">
-                    {other.avatar_url ? (
-                      <img src={other.avatar_url} alt={other.full_name ?? ''} className="w-9 h-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300">
-                        {getInitials(other.full_name)}
-                      </div>
-                    )}
-                    {/* Point de présence — vert si en ligne, gris sinon */}
-                    <span
-                      className={clsx(
-                        'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-(--color-chat-bg)',
-                        isOnline ? 'bg-emerald-500' : 'bg-slate-600',
-                      )}
-                    />
-                    {/* Badge non-lus par-dessus */}
-                    {conv.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-(--color-chat-bg) animate-pulse" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className={clsx('text-sm truncate', conv.unread > 0 ? 'font-black text-white' : 'font-semibold text-slate-400')}>
-                        {other.full_name ?? 'Joueur'}
-                      </p>
-                      {conv.last_message_at && (
-                        <span className={clsx('text-[10px] shrink-0', conv.unread > 0 ? 'text-primary-400 font-bold' : 'text-slate-600')}>
-                          {timeAgo(conv.last_message_at)}
-                        </span>
-                      )}
-                    </div>
-                    <p className={clsx('text-xs truncate', conv.unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-500')}>
-                      {conv.last_message ?? 'Aucun message'}
+                {/* Contenu */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                    <p className={clsx(
+                      'text-sm truncate',
+                      item.unread > 0 ? 'font-bold text-white' : sel ? 'font-semibold text-white' : 'font-medium text-slate-200',
+                    )}>
+                      {item.name}
                     </p>
+                    {item.time && (
+                      <span className={clsx(
+                        'text-[11px] shrink-0',
+                        item.unread > 0 ? 'text-primary-400 font-semibold' : 'text-slate-600',
+                      )}>
+                        {timeAgo(item.time)}
+                      </span>
+                    )}
                   </div>
-                  {conv.unread > 0 && (
-                    <span
-                      className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-black"
-                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
-                    >
-                      {conv.unread > 99 ? '99+' : conv.unread}
-                    </span>
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={clsx(
+                      'text-[13px] truncate leading-snug',
+                      item.unread > 0 ? 'text-slate-300 font-medium' : 'text-slate-500',
+                    )}>
+                      {item.preview}
+                    </p>
+                    {item.unread > 0 && <UnreadBadge count={item.unread} />}
+                  </div>
+                </div>
+              </button>
+            )
+          })
+        )}
       </div>
     </div>
   )
@@ -739,7 +795,7 @@ export function ChatPage() {
 
       {/* DESKTOP */}
       <div className="hidden lg:flex h-[calc(100vh-8rem)] card p-0 overflow-hidden">
-        <div className="w-72 shrink-0 flex flex-col border-r border-surface-border">
+        <div className="w-80 shrink-0 flex flex-col border-r border-surface-border overflow-hidden">
           <Sidebar
             channels={channels}
             teams={teams}
