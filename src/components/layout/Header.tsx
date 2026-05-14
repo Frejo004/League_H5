@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useTheme, type ResolvedTheme } from '@/hooks/useTheme'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -20,19 +21,35 @@ import type { UserRole } from '@/types/database'
 
 const ACCENT   = '#C8F135'
 
-// Fonction pour obtenir les couleurs selon le thème
-function getThemeColors() {
-  const isDark = document.documentElement.getAttribute('data-theme') !== 'light'
-  
-  return {
-    BG_MAIN: isDark ? '#0D1117' : '#ffffff',
-    BG_SUB: isDark ? '#161B22' : '#f8fafc',
-    BORDER: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-    NAV_OFF: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
-    NAV_HOV: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    TEXT_PRIMARY: isDark ? '#ffffff' : '#0f172a',
-    TEXT_SECONDARY: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-  }
+interface ThemeColors {
+  BG_MAIN: string
+  BG_SUB: string
+  BORDER: string
+  NAV_OFF: string
+  NAV_HOV: string
+  TEXT_PRIMARY: string
+  TEXT_SECONDARY: string
+}
+
+const THEME_COLORS: Record<ResolvedTheme, ThemeColors> = {
+  dark: {
+    BG_MAIN: '#0D1117',
+    BG_SUB: '#161B22',
+    BORDER: 'rgba(255,255,255,0.08)',
+    NAV_OFF: 'rgba(255,255,255,0.5)',
+    NAV_HOV: 'rgba(255,255,255,0.85)',
+    TEXT_PRIMARY: '#ffffff',
+    TEXT_SECONDARY: 'rgba(255,255,255,0.7)',
+  },
+  light: {
+    BG_MAIN: '#ffffff',
+    BG_SUB: '#f8fafc',
+    BORDER: 'rgba(0,0,0,0.08)',
+    NAV_OFF: 'rgba(0,0,0,0.5)',
+    NAV_HOV: 'rgba(0,0,0,0.85)',
+    TEXT_PRIMARY: '#0f172a',
+    TEXT_SECONDARY: 'rgba(0,0,0,0.7)',
+  },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,26 +232,14 @@ export default function Header() {
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
   const chatRef  = useRef<HTMLDivElement>(null)
-  const [, forceUpdate] = useState({})
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
 
-  // Forcer le re-render quand le thème change
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      forceUpdate({})
-    })
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    })
-    return () => observer.disconnect()
-  }, [])
-
-  // Obtenir les couleurs du thème actuel
-  const colors = getThemeColors()
+  // Récupérer le thème et les couleurs associées
+  const { resolvedTheme } = useTheme()
+  const colors = THEME_COLORS[resolvedTheme]
   const { BG_MAIN, BG_SUB, BORDER, NAV_OFF, NAV_HOV, TEXT_PRIMARY } = colors
 
   // Ferme le drawer à chaque navigation
@@ -312,7 +317,7 @@ export default function Header() {
                 end={to === '/'}
                 aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
                 className="relative flex items-center px-3 text-[13px] font-semibold whitespace-nowrap
-                           transition-colors duration-150 outline-none shrink-0"
+                           transition-colors duration-150 shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded"
                 style={({ isActive }) => ({
                   fontFamily: "'Barlow', sans-serif",
                   color: isActive ? ACCENT : NAV_OFF,

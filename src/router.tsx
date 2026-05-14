@@ -36,7 +36,7 @@ export const router = createBrowserRouter(
     { path: '/auth/update-password', element: <UpdatePasswordPage /> },
     { path: '/auth/join',            element: <JoinPage /> },
     { path: '/landing',              element: <LandingPage /> },
-    { path: '/rules-public',         element: <RulesPage /> },
+    { path: '/rules',                element: <RulesPage /> },
 
     // App routes (protected)
     {

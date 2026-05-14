@@ -87,7 +87,7 @@ export function LandingPage() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/rules"
+            to="/rules-public"
             className="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
           >
             <BookOpen size={14} />
@@ -161,7 +161,7 @@ export function LandingPage() {
               <ArrowRight size={16} />
             </Link>
             <Link
-              to="/rules"
+              to="/rules-public"
               className="flex items-center gap-2 px-6 py-3 rounded-2xl text-base font-semibold
                          text-white border border-white/20 hover:border-white/40 hover:bg-white/5
                          transition-all"

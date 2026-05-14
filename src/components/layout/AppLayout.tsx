@@ -1,5 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
+import { useTheme } from '@/hooks/useTheme'
+import { useMemo } from 'react'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ChatToastProvider } from '@/components/ui/ChatToastProvider'
 import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt'
@@ -10,7 +12,6 @@ import { useChatUnreadRealtime } from '@/hooks/useChatUnread'
 import { useMyPresence } from '@/hooks/usePresence'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useAuth } from '@/hooks/useAuth'
-import { useEffect, useState } from 'react'
 
 // ── Config background par page ────────────────────────────────────────────────
 
@@ -110,10 +111,9 @@ function patternDataUrl(pattern: string, isLight: boolean): string {
 export function AppLayout() {
   const location = useLocation()
   const { profile } = useAuth()
+  const { resolvedTheme } = useTheme()
+  const isLight = resolvedTheme === 'light'
   const bg = getPageBg(location.pathname)
-  const [isLight, setIsLight] = useState(
-    () => document.documentElement.getAttribute('data-theme') === 'light'
-  )
 
   // Realtime unread counts — monté une seule fois ici pour éviter les doublons
   useChatUnreadRealtime(profile?.id)
@@ -124,22 +124,25 @@ export function AppLayout() {
   // Raccourcis clavier globaux
   const { showHelp, setShowHelp } = useKeyboardShortcuts()
 
-  // Écouter les changements de thème
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsLight(document.documentElement.getAttribute('data-theme') === 'light')
-    })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => observer.disconnect()
-  }, [])
-
-  // View Transitions API — transition fluide entre pages
-  useEffect(() => {
-    if (!document.startViewTransition) return
-  }, [location.pathname])
-
   const bgColor = isLight ? '#f8fafc' : '#0D1117'
   const gradientBase = isLight ? '#f1f5f9' : '#080C12'
+
+  // Mémoriser les calculs de gradient pour éviter les recalculs inutiles
+  const gradientStyle = useMemo(() => ({
+    background: [
+      `radial-gradient(ellipse 55% 45% at 100% 0%, ${bg.accent}${isLight ? '0a' : '12'} 0%, transparent 65%)`,
+      bg.glow
+        ? `radial-gradient(ellipse 40% 35% at 0% 100%, ${bg.glow}${isLight ? '06' : '08'} 0%, transparent 60%)`
+        : '',
+      `linear-gradient(180deg, ${bgColor} 0%, ${gradientBase} 100%)`,
+    ].filter(Boolean).join(', '),
+  }), [bg.accent, bg.glow, isLight, bgColor, gradientBase])
+
+  // Mémoriser le pattern URL
+  const patternUrl = useMemo(
+    () => bg.pattern !== 'none' ? patternDataUrl(bg.pattern, isLight) : '',
+    [bg.pattern, isLight]
+  )
 
   return (
     <div
@@ -155,15 +158,7 @@ export function AppLayout() {
         {/* Gradient accent */}
         <div
           className="pointer-events-none absolute inset-0 z-0 transition-all duration-700"
-          style={{
-            background: [
-              `radial-gradient(ellipse 55% 45% at 100% 0%, ${bg.accent}${isLight ? '0a' : '12'} 0%, transparent 65%)`,
-              bg.glow
-                ? `radial-gradient(ellipse 40% 35% at 0% 100%, ${bg.glow}${isLight ? '06' : '08'} 0%, transparent 60%)`
-                : '',
-              `linear-gradient(180deg, ${bgColor} 0%, ${gradientBase} 100%)`,
-            ].filter(Boolean).join(', '),
-          }}
+          style={gradientStyle}
         />
 
         {/* Pattern SVG */}
@@ -171,7 +166,7 @@ export function AppLayout() {
           <div
             className="pointer-events-none absolute inset-0 z-0"
             style={{
-              backgroundImage: patternDataUrl(bg.pattern, isLight),
+              backgroundImage: patternUrl,
               backgroundRepeat: 'repeat',
             }}
           />

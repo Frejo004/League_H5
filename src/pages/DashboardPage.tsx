@@ -28,7 +28,7 @@ function formatDay(dateStr: string) {
 }
 
 // ── KPI Card premium ──────────────────────────────────────────────────────────
-function KpiCard({ label, value, icon: Icon, color, bg, trend }: {
+function KpiCard({ label, value, icon: Icon, color, trend }: {
   label: string
   value: number
   icon: typeof Calendar
