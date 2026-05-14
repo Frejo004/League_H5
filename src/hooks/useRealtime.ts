@@ -34,6 +34,7 @@ export function useRealtimeMatch(matchId?: string) {
 
     const channel = supabase
       .channel(`match-detail-${matchId}`)
+      // 1. Écouter les changements sur le match lui-même (Chrono, Période, Statut)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
         async (payload) => {
           console.log('🔄 Realtime: Match update received', payload)
@@ -57,9 +58,21 @@ export function useRealtimeMatch(matchId?: string) {
           }
         }
       )
+      // 2. Écouter les buts
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `match_id=eq.${matchId}` },
         (payload) => {
           console.log('⚽ Realtime: Goal update received', payload)
+          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
+          qc.invalidateQueries({ queryKey: ['scorers'] }) // Pour mettre à jour les classements en arrière-plan
+        }
+      )
+      // 3. Écouter les événements (C'est ICI que la période 2 est souvent déclenchée)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'match_events', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          console.log('📝 Realtime: Event update received', payload)
+          // CRITIQUE : Si on reçoit un événement, on rafraîchit TOUT le match car 
+          // le changement de période (1ère -> 2ème MT) génère souvent un événement kickoff
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
           qc.invalidateQueries({ queryKey: ['match-events', matchId] })
         }
@@ -69,13 +82,6 @@ export function useRealtimeMatch(matchId?: string) {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mvp_votes', filter: `match_id=eq.${matchId}` },
         () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'match_events', filter: `match_id=eq.${matchId}` },
-        (payload) => {
-          console.log('📝 Realtime: Event update received', payload)
-          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
-        }
       )
       .subscribe((status) => {
         console.log(`📡 Realtime Status (${matchId}):`, status)
