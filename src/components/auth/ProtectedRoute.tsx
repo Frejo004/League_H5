@@ -1,7 +1,8 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useMySpectatorRequest } from '@/hooks/useSpectators'
+import { useMySpectatorRequest, useRequestSpectatorAccess } from '@/hooks/useSpectators'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { PendingApprovalModal } from '@/components/auth/PendingApprovalModal'
 
@@ -17,6 +18,15 @@ export function ProtectedRoute() {
       isSpectator && season?.id ? season.id : undefined,
     )
 
+  const requestAccess = useRequestSpectatorAccess()
+
+  useEffect(() => {
+    // Si l'utilisateur est spectateur, qu'une saison est active, et qu'il n'a AUCUNE demande (ni en attente ni approuvée)
+    if (isSpectator && profile && season?.id && spectatorFetched && !spectatorRequest && !requestAccess.isPending) {
+      requestAccess.mutate({ userId: profile.id, seasonId: season.id })
+    }
+  }, [isSpectator, profile, season?.id, spectatorFetched, spectatorRequest, requestAccess])
+
   // 1. Initialisation auth en cours
   if (isLoading) return <PageLoader />
 
@@ -29,13 +39,8 @@ export function ProtectedRoute() {
   if (isProfileLoading) return <PageLoader />
 
   // 4. Session valide mais profil absent après le chargement initial
-  // Cela peut arriver si :
-  // - La requête a échoué (réseau absent)
-  // - Le profil n'existe pas encore (cas rare)
   if (!profile) {
-    // Si on est encore en train de charger, attendre
     if (isLoading || isProfileLoading) return <PageLoader />
-    // Sinon, rediriger vers login
     return <Navigate to="/auth/login" replace />
   }
 

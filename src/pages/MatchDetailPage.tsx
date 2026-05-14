@@ -326,6 +326,7 @@ export function MatchDetailPage() {
               <LiveClock
                 liveStartedAt={match.live_started_at ?? null}
                 livePeriod={match.live_period ?? null}
+                halftimeAt={(match as { halftime_at?: string | null }).halftime_at ?? null}
                 status={match.status}
                 homeColor={home.color}
                 awayColor={away.color}
@@ -394,6 +395,7 @@ export function MatchDetailPage() {
           matchId={match.id}
           status={match.status}
           liveStartedAt={match.live_started_at ?? null}
+          halftimeAt={(match as { halftime_at?: string | null }).halftime_at ?? null}
           livePeriod={match.live_period ?? null}
           homeTeam={home}
           awayTeam={away}

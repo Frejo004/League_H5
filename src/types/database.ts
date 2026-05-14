@@ -142,6 +142,7 @@ export interface Database {
           status: MatchStatus
           venue: string | null
           live_started_at: string | null
+          halftime_at: string | null
           live_period: 1 | 2 | null
           live_minute: number | null
           created_at: string
@@ -160,6 +161,7 @@ export interface Database {
           status?: MatchStatus
           venue?: string | null
           live_started_at?: string | null
+          halftime_at?: string | null
           live_period?: 1 | 2 | null
           live_minute?: number | null
           created_at?: string
@@ -178,6 +180,7 @@ export interface Database {
           status?: MatchStatus
           venue?: string | null
           live_started_at?: string | null
+          halftime_at?: string | null
           live_period?: 1 | 2 | null
           live_minute?: number | null
           updated_at?: string
@@ -376,87 +379,87 @@ export interface Database {
         }
         Relationships: []
       }
-chat_read_receipts: {
-         Row: {
-           user_id: string
-           team_id: string
-           last_read_at: string
-           last_read_msg: string | null
-           updated_at: string
-         }
-         Insert: {
-           user_id: string
-           team_id: string
-           last_read_at?: string
-           last_read_msg?: string | null
-           updated_at?: string
-         }
-         Update: {
-           last_read_at?: string
-           last_read_msg?: string | null
-           updated_at?: string
-         }
-         Relationships: []
-       }
-       chat_typing: {
-         Row: {
-           user_id: string
-           team_id: string
-           started_at: string
-         }
-         Insert: {
-           user_id: string
-           team_id: string
-           started_at?: string
-         }
-         Update: {
-           started_at?: string
-         }
-         Relationships: []
-       }
-       team_pinned_messages: {
-         Row: {
-           id: string
-           team_id: string
-           message_id: string
-           pinned_by: string
-           pinned_at: string
-         }
-         Insert: {
-           id?: string
-           team_id: string
-           message_id: string
-           pinned_by: string
-           pinned_at?: string
-         }
-         Update: {
-           pinned_by?: string
-           pinned_at?: string
-         }
-         Relationships: []
-       }
-       chat_mentions: {
-         Row: {
-           id: string
-           message_id: string
-           mentioned_user_id: string
-           mentioned_by: string
-           created_at: string
-         }
-         Insert: {
-           id?: string
-           message_id: string
-           mentioned_user_id: string
-           mentioned_by: string
-           created_at?: string
-         }
-         Update: {
-           mentioned_user_id?: string
-           mentioned_by?: string
-         }
-         Relationships: []
-       }
-       player_invites: {
+      chat_read_receipts: {
+        Row: {
+          user_id: string
+          team_id: string
+          last_read_at: string
+          last_read_msg: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          team_id: string
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_typing: {
+        Row: {
+          user_id: string
+          team_id: string
+          started_at: string
+        }
+        Insert: {
+          user_id: string
+          team_id: string
+          started_at?: string
+        }
+        Update: {
+          started_at?: string
+        }
+        Relationships: []
+      }
+      team_pinned_messages: {
+        Row: {
+          id: string
+          team_id: string
+          message_id: string
+          pinned_by: string
+          pinned_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          message_id: string
+          pinned_by: string
+          pinned_at?: string
+        }
+        Update: {
+          pinned_by?: string
+          pinned_at?: string
+        }
+        Relationships: []
+      }
+      chat_mentions: {
+        Row: {
+          id: string
+          message_id: string
+          mentioned_user_id: string
+          mentioned_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          mentioned_user_id: string
+          mentioned_by: string
+          created_at?: string
+        }
+        Update: {
+          mentioned_user_id?: string
+          mentioned_by?: string
+        }
+        Relationships: []
+      }
+      player_invites: {
         Row: {
           id: string
           player_id: string
@@ -482,6 +485,70 @@ chat_read_receipts: {
           created_by?: string
           used_at?: string | null
           expires_at?: string
+        }
+        Relationships: []
+      }
+      match_events: {
+        Row: {
+          id: string
+          match_id: string
+          type: MatchEventType
+          minute: number | null
+          period: 1 | 2 | null
+          team_id: string | null
+          player_id: string | null
+          player2_id: string | null
+          description: string | null
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          type: MatchEventType
+          minute?: number | null
+          period?: 1 | 2 | null
+          team_id?: string | null
+          player_id?: string | null
+          player2_id?: string | null
+          description?: string | null
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          type?: MatchEventType
+          minute?: number | null
+          period?: 1 | 2 | null
+          team_id?: string | null
+          player_id?: string | null
+          player2_id?: string | null
+          description?: string | null
+          created_by?: string
+        }
+        Relationships: []
+      }
+      live_reactions: {
+        Row: {
+          id: string
+          match_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          user_id?: string
+          emoji?: string
         }
         Relationships: []
       }
@@ -577,6 +644,22 @@ chat_read_receipts: {
           own_goals: number
         }[]
       }
+      start_match_live: {
+        Args: { p_match_id: string }
+        Returns: undefined
+      }
+      match_halftime: {
+        Args: { p_match_id: string }
+        Returns: undefined
+      }
+      end_match_live: {
+        Args: {
+          p_match_id: string
+          p_home_score: number
+          p_away_score: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: UserRole
@@ -603,6 +686,8 @@ export type Settings = Database['public']['Tables']['settings']['Row']
 export type Spectator = Database['public']['Tables']['spectators']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
+export type MatchEventRow = Database['public']['Tables']['match_events']['Row']
+export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Row']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations

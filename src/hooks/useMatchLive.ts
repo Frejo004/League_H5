@@ -10,7 +10,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { MatchEvent, LiveReaction } from '@/types/database'
+import type { MatchEvent, LiveReaction, MatchEventType } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes de durée (en minutes)
@@ -141,68 +141,114 @@ export function useLiveReactions(matchId?: string) {
 export interface LiveClockState {
   /** Minute affichée (0-20 par mi-temps) */
   minute: number
-  /** Période : 1 = 1ère MT, 2 = pause, 3 = 2ème MT, 4 = terminé */
-  phase: 1 | 2 | 3 | 4
-  /** Secondes dans la minute courante */
+  /** Secondes dans la minute courante (0-59) */
   seconds: number
-  /** Texte affiché : "12'", "Mi-temps", "Terminé" */
+  /** Période : 1 = 1ère MT, 2 = pause/mi-temps, 3 = 2ème MT, 4 = terminé */
+  phase: 1 | 2 | 3 | 4
+  /** Texte affiché : "12'34\"", "Mi-temps 4:32", "Terminé" */
   label: string
+  /** Texte court pour le badge */
+  shortLabel: string
   /** Progression globale 0-100 */
   progress: number
+  /** Secondes restantes dans la pause (null si pas en pause) */
+  breakSecondsLeft: number | null
+  totalElapsedSeconds: number | null
 }
 
 export function useLiveClock(
   liveStartedAt: string | null,
   livePeriod: 1 | 2 | null,
   status: string,
+  halftimeAt?: string | null,
 ): LiveClockState {
   const [state, setState] = useState<LiveClockState>({
-    minute: 0, phase: 1, seconds: 0, label: '0\'', progress: 0,
+    minute: 0, seconds: 0, phase: 1, label: "0'00\"", shortLabel: "0'", progress: 0, breakSecondsLeft: null, totalElapsedSeconds: null,
   })
 
   useEffect(() => {
     if (status !== 'live' || !liveStartedAt) {
       if (status === 'completed') {
-        setState({ minute: 20, phase: 4, seconds: 0, label: 'Terminé', progress: 100 })
+        setState({ minute: 20, seconds: 0, phase: 4, label: 'Terminé', shortLabel: 'FT', progress: 100, breakSecondsLeft: null, totalElapsedSeconds: null })
       }
       return
     }
 
     const tick = () => {
-      const elapsed = (Date.now() - new Date(liveStartedAt).getTime()) / 1000 / 60 // en minutes
+      const now = Date.now()
+
+      // ── Phase 2 : Pause mi-temps (on a halftimeAt mais pas encore livePeriod 2) ──
+      if (halftimeAt && livePeriod === 1) {
+        const startTime = new Date(halftimeAt).getTime()
+        if (isNaN(startTime)) return // Sécurité : date invalide
+
+        const breakElapsedSec = (now - startTime) / 1000
+        const breakTotalSec = BREAK_DURATION * 60
+        const breakLeft = Math.max(0, breakTotalSec - breakElapsedSec)
+        const bMin = Math.floor(breakLeft / 60)
+        const bSec = Math.floor(breakLeft % 60)
+        setState({
+          minute: HALF_DURATION,
+          seconds: 0,
+          phase: 2,
+          label: `Mi-temps ${bMin}:${String(bSec).padStart(2, '0')}`,
+          shortLabel: `Pause ${bMin}:${String(bSec).padStart(2, '0')}`,
+          progress: (HALF_DURATION / TOTAL_DURATION) * 100,
+          breakSecondsLeft: Math.ceil(breakLeft),
+          totalElapsedSeconds: HALF_DURATION * 60,
+        })
+        return
+      }
+
+      const liveTime = new Date(liveStartedAt).getTime()
+      if (isNaN(liveTime)) return // Sécurité
+
+      const elapsedSec = (now - liveTime) / 1000
 
       let phase: 1 | 2 | 3 | 4
       let minute: number
       let seconds: number
       let label: string
+      let shortLabel: string
       let progress: number
+      let cappedSec: number
 
       if (livePeriod === 1) {
         // 1ère mi-temps : 0-20 min
-        const capped = Math.min(elapsed, HALF_DURATION)
-        minute = Math.floor(capped)
-        seconds = Math.floor((capped - minute) * 60)
+        cappedSec = Math.min(elapsedSec, HALF_DURATION * 60)
+        minute = Math.floor(cappedSec / 60)
+        seconds = Math.floor(cappedSec % 60)
         phase = 1
-        label = `${minute}'`
-        progress = (capped / TOTAL_DURATION) * 100
+        label = `${minute}'${String(seconds).padStart(2, '0')}"`
+        shortLabel = `${minute}'`
+        progress = (cappedSec / 60 / TOTAL_DURATION) * 100
       } else {
-        // 2ème mi-temps : on repart de 0 depuis le moment où la 2ème MT a commencé
-        // live_started_at est mis à jour au coup d'envoi de la 2ème MT
-        const capped = Math.min(elapsed, HALF_DURATION)
-        minute = Math.floor(capped)
-        seconds = Math.floor((capped - minute) * 60)
+        // 2ème mi-temps
+        cappedSec = Math.min(elapsedSec, HALF_DURATION * 60)
+        minute = Math.floor(cappedSec / 60)
+        seconds = Math.floor(cappedSec % 60)
         phase = 3
-        label = `${minute}'`
-        progress = ((HALF_DURATION + BREAK_DURATION + capped) / TOTAL_DURATION) * 100
+        label = `${minute}'${String(seconds).padStart(2, '0')}"`
+        shortLabel = `${minute}'`
+        progress = ((HALF_DURATION + BREAK_DURATION + cappedSec / 60) / TOTAL_DURATION) * 100
       }
 
-      setState({ minute, phase, seconds, label, progress: Math.min(progress, 100) })
+      setState({ 
+        minute, 
+        seconds, 
+        phase, 
+        label, 
+        shortLabel, 
+        progress: Math.min(progress, 100), 
+        breakSecondsLeft: null,
+        totalElapsedSeconds: cappedSec
+      })
     }
 
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [liveStartedAt, livePeriod, status])
+  }, [liveStartedAt, livePeriod, halftimeAt, status])
 
   return state
 }
@@ -229,15 +275,40 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  // Passer à la 2ème mi-temps
+  // Signaler la mi-temps (stocker halftime_at, déclencher le décompte 5min)
+  const signalHalftime = useMutation({
+    mutationFn: async () => {
+      const now = new Date().toISOString()
+      // 1. Stocker halftime_at
+      await supabase.from('matches').update({
+        halftime_at: now,
+      }).eq('id', matchId!)
+
+      // 2. Insérer l'événement 'halftime' (pour qu'il apparaisse dans le flux)
+      // On le met à 20' par défaut car c'est la fin théorique
+      const { data: user } = await supabase.auth.getUser()
+      if (user.user) {
+        await supabase.from('match_events').insert({
+          match_id: matchId!,
+          type: 'halftime',
+          minute: HALF_DURATION,
+          period: 1,
+          created_by: user.user.id
+        })
+      }
+    },
+    onSuccess: invalidate,
+  })
+
+  // Passer à la 2ème mi-temps (après le décompte)
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('match_halftime', { p_match_id: matchId! })
-      if (error) throw error
-      // Mettre à jour live_started_at pour le chrono de la 2ème MT
+      // On ne rappelle plus match_halftime RPC ici car on a déjà géré l'événement dans signalHalftime
+      // On met juste à jour le début de la 2ème MT
       await supabase.from('matches').update({
         live_started_at: new Date().toISOString(),
         live_period: 2,
+        halftime_at: null,
       }).eq('id', matchId!)
     },
     onSuccess: invalidate,
@@ -263,7 +334,7 @@ export function useAdminMatchLive(matchId?: string) {
   // Ajouter un événement (but, carton, commentaire…)
   const addEvent = useMutation({
     mutationFn: async (event: {
-      type: string
+      type: MatchEventType
       minute?: number | null
       period?: 1 | 2
       team_id?: string | null
@@ -281,7 +352,7 @@ export function useAdminMatchLive(matchId?: string) {
       if (event.type === 'goal' || event.type === 'own_goal') {
         const { data: match } = await supabase
           .from('matches')
-          .select('home_team_id, away_team_id, home_score, away_score')
+          .select('id, home_team_id, away_team_id, home_score, away_score')
           .eq('id', matchId!)
           .single()
 
@@ -313,5 +384,5 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  return { startLive, startSecondHalf, endMatch, addEvent, deleteEvent }
+  return { startLive, signalHalftime, startSecondHalf, endMatch, addEvent, deleteEvent }
 }
