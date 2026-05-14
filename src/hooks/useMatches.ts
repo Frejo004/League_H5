@@ -91,6 +91,10 @@ export function useUpdateMatch() {
       qc.invalidateQueries({ queryKey: ['matches', data.season_id] })
       qc.invalidateQueries({ queryKey: ['matches', 'detail', data.id] })
       qc.invalidateQueries({ queryKey: ['standings', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['scorers', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['assists', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['landing-stats', data.season_id] })
+      qc.invalidateQueries({ queryKey: ['disciplinary', data.season_id] })
     },
   })
 }

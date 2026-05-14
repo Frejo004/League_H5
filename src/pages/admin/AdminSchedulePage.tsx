@@ -58,6 +58,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const [homeScore, setHomeScore] = useState(String(match.home_score ?? ''))
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
   const [status, setStatus] = useState<MatchStatus>(match.status)
+  const [showCancelModal, setShowCancelModal] = useState(false)
 
   useEffect(() => {
     if (!editing) {
@@ -65,6 +66,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
       setHomeScore(String(match.home_score ?? ''))
       setAwayScore(String(match.away_score ?? ''))
       setStatus(match.status)
+      setShowCancelModal(false)
     }
   }, [match.scheduled_at, match.home_score, match.away_score, match.status, editing])
 
@@ -72,15 +74,50 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const away = match.away_team as { name: string; color: string }
 
   async function handleSave() {
-    await updateMatch.mutateAsync({
-      id: match.id,
-      scheduled_at: scheduledAt || null,
-      home_score: homeScore !== '' ? parseInt(homeScore) : null,
-      away_score: awayScore !== '' ? parseInt(awayScore) : null,
-      status,
-      played_at: status === 'completed' ? (match.played_at ?? new Date().toISOString()) : match.played_at,
-    })
+    // Si on passe en annulé et que ce n'était pas déjà le cas, on demande confirmation
+    if (status === 'cancelled' && match.status !== 'cancelled') {
+      setShowCancelModal(true)
+      return
+    }
+
+    await performUpdate(false)
+  }
+
+  async function performUpdate(deleteInfos: boolean) {
+    if (deleteInfos) {
+      // Supprimer les données liées avec vérification d'erreur
+      const [resGoals, resAssists, resEvents, resVotes] = await Promise.all([
+        supabase.from('goals').delete().eq('match_id', match.id),
+        supabase.from('assists').delete().eq('match_id', match.id),
+        supabase.from('match_events').delete().eq('match_id', match.id),
+        supabase.from('mvp_votes').delete().eq('match_id', match.id),
+      ])
+
+      if (resGoals.error) console.error('Error deleting goals:', resGoals.error)
+      if (resAssists.error) console.error('Error deleting assists:', resAssists.error)
+      if (resEvents.error) console.error('Error deleting events:', resEvents.error)
+      if (resVotes.error) console.error('Error deleting votes:', resVotes.error)
+
+      await updateMatch.mutateAsync({
+        id: match.id,
+        status: 'cancelled',
+        home_score: null,
+        away_score: null,
+        scheduled_at: null,
+        played_at: null,
+      })
+    } else {
+      await updateMatch.mutateAsync({
+        id: match.id,
+        scheduled_at: scheduledAt || null,
+        home_score: homeScore !== '' ? parseInt(homeScore) : null,
+        away_score: awayScore !== '' ? parseInt(awayScore) : null,
+        status,
+        played_at: status === 'completed' ? (match.played_at ?? new Date().toISOString()) : match.played_at,
+      })
+    }
     setEditing(false)
+    setShowCancelModal(false)
   }
 
   const dateLabel = match.scheduled_at
@@ -106,6 +143,10 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
             <span className="text-xl font-black tabular-nums text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score} <span className="text-[#FFDF73] text-sm mx-0.5">-</span> {match.away_score}
             </span>
+          ) : match.status === 'cancelled' ? (
+            <span className="text-[10px] font-black uppercase tracking-widest text-red-500/60 bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">
+              Annulé
+            </span>
           ) : (
             <span className={`text-[10px] font-bold uppercase tracking-widest ${match.scheduled_at ? 'text-[#FFDF73]' : 'text-slate-600'}`}>
               {dateLabel}
@@ -130,7 +171,54 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
       {/* Edit panel */}
       {editing && (
-        <div className="px-5 pb-5 pt-2 space-y-4 bg-black/40 border-t border-white/10 shadow-inner">
+        <div className="px-5 pb-5 pt-2 space-y-4 bg-black/40 border-t border-white/10 shadow-inner relative overflow-hidden">
+          {/* Modal Annulation — Overlay plein écran pour une visibilité totale */}
+          {showCancelModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-[#070b14]/90 backdrop-blur-md animate-in fade-in duration-300"
+                onClick={() => setShowCancelModal(false)}
+              />
+              
+              {/* Modal Content */}
+              <div className="relative w-full max-w-sm bg-[#0f1420] border border-white/10 rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300">
+                <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto mb-6 text-red-500">
+                  <X size={32} />
+                </div>
+                
+                <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  Annuler le match ?
+                </h3>
+                
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 text-center leading-relaxed">
+                  Voulez-vous conserver les statistiques (buts, cartons) ou tout supprimer définitivement ?
+                </p>
+                
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={() => performUpdate(false)}
+                    className="w-full py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    Conserver les infos
+                  </button>
+                  <button 
+                    onClick={() => performUpdate(true)}
+                    className="w-full py-3.5 rounded-2xl bg-red-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-red-500 transition-all shadow-[0_15px_30px_-5px_rgba(220,38,38,0.4)] active:scale-95"
+                  >
+                    Tout supprimer
+                  </button>
+                  <button 
+                    onClick={() => setShowCancelModal(false)}
+                    className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                  >
+                    Retour à l'édition
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Date & heure</label>
