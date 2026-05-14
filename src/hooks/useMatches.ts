@@ -46,6 +46,8 @@ export function useMatch(matchId?: string) {
       if (error) throw error
       return data as unknown as MatchDetail
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -73,9 +75,12 @@ export function useUpdateMatch() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, ...values }: Partial<Match> & { id: string }) => {
+      // Exclure les colonnes système pour éviter l'erreur de type
+      const { created_at, updated_at, ...updateData } = values as any
+      
       const { data, error } = await supabase
         .from('matches')
-        .update(values)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single()

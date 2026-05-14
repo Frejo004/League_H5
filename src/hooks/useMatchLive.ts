@@ -223,14 +223,15 @@ export function useLiveClock(
         shortLabel = `${minute}'`
         progress = (cappedSec / 60 / TOTAL_DURATION) * 100
       } else {
-        // 2ème mi-temps
+        // 2ème mi-temps : Cumulative (HALF_DURATION + temps écoulé)
         cappedSec = Math.min(elapsedSec, HALF_DURATION * 60)
-        minute = Math.floor(cappedSec / 60)
+        const currentHalfMinute = Math.floor(cappedSec / 60)
+        minute = HALF_DURATION + currentHalfMinute
         seconds = Math.floor(cappedSec % 60)
         phase = 3
         label = `${minute}'${String(seconds).padStart(2, '0')}"`
         shortLabel = `${minute}'`
-        progress = ((HALF_DURATION + BREAK_DURATION + cappedSec / 60) / TOTAL_DURATION) * 100
+        progress = ((HALF_DURATION + BREAK_DURATION + currentHalfMinute) / TOTAL_DURATION) * 100
       }
 
       setState({ 

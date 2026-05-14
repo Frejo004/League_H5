@@ -198,6 +198,21 @@ export function MatchDetailPage() {
     : null
   const mvpVoteCount = topMvpId ? (voteMap.get(topMvpId) ?? 0) : 0
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
+  
+  // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
+  const liveScore = liveEvents.reduce((acc, event) => {
+    if (event.type === 'goal' || event.type === 'own_goal') {
+      const isHomeGoal = event.type === 'own_goal' 
+        ? event.team_id !== match.home_team_id 
+        : event.team_id === match.home_team_id
+      if (isHomeGoal) acc.home++
+      else acc.away++
+    }
+    return acc
+  }, { home: 0, away: 0 })
+
+  const displayHomeScore = (isLive || isCompleted) ? liveScore.home : (match.home_score ?? 0)
+  const displayAwayScore = (isLive || isCompleted) ? liveScore.away : (match.away_score ?? 0)
 
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
@@ -297,7 +312,7 @@ export function MatchDetailPage() {
                   {/* Box Home */}
                   <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
                     <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                      {(isLive || isCompleted) ? (match.home_score ?? 0) : ''}
+                      {(isLive || isCompleted) ? displayHomeScore : ''}
                     </span>
                   </div>
                   
@@ -306,7 +321,7 @@ export function MatchDetailPage() {
                   {/* Box Away */}
                   <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-blue-600 border border-blue-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
                     <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                      {(isLive || isCompleted) ? (match.away_score ?? 0) : ''}
+                      {(isLive || isCompleted) ? displayAwayScore : ''}
                     </span>
                   </div>
                 </div>

@@ -76,8 +76,28 @@ export function LiveEventFeed({
       <div className="space-y-6 relative">
         {sorted.map((event, idx) => {
           const isHome = event.team_id === homeTeamId
-          const isSystem = ['kickoff', 'halftime', 'fulltime'].includes(event.type)
           
+          // Séparateurs spéciaux pour Mi-Temps et Fin du Match
+          if (event.type === 'halftime' || event.type === 'fulltime') {
+            const label = event.type === 'halftime' ? 'MI-TEMPS' : 'FIN DU MATCH'
+            const scoreLabel = event.type === 'halftime' ? `HT ${event.currentScore}` : `FT ${event.currentScore}`
+            
+            return (
+              <div key={event.id} className="relative py-8 flex flex-col items-center justify-center gap-3">
+                <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
+                <div className="relative px-4 bg-[#0f1420] flex flex-col items-center gap-1.5">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">{label}</span>
+                  <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md shadow-xl">
+                    <span className="text-sm font-black text-white tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      {scoreLabel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          const isSystem = ['kickoff'].includes(event.type)
           const playerName = event.player ? `${event.player.first_name} ${event.player.last_name}` : null
           const player2Name = event.player2 ? `${event.player2.first_name} ${event.player2.last_name}` : null
 
@@ -120,10 +140,6 @@ export function LiveEventFeed({
                   <div className="w-2.5 h-3.5 bg-red-500 rounded-sm shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
                 ) : event.type === 'substitution' ? (
                   <span className="text-green-400 text-xs font-black">⇄</span>
-                ) : event.type === 'halftime' ? (
-                   <span className="text-[10px]">⏸</span>
-                ) : event.type === 'fulltime' ? (
-                   <span className="text-[10px]">🏆</span>
                 ) : (
                   <span className="text-[10px]">🏁</span>
                 )}

@@ -36,8 +36,9 @@ export function useRealtimeMatch(matchId?: string) {
       .channel(`match-detail-${matchId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
         async (payload) => {
+          console.log('🔄 Realtime: Match update received', payload)
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-          // Notif : match terminé
+          
           const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
           const oldMatch = payload.old as { status?: string }
           if (newMatch.status === 'completed' && oldMatch.status !== 'completed') {
@@ -57,28 +58,10 @@ export function useRealtimeMatch(matchId?: string) {
         }
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `match_id=eq.${matchId}` },
-        async (payload) => {
+        (payload) => {
+          console.log('⚽ Realtime: Goal update received', payload)
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
           qc.invalidateQueries({ queryKey: ['match-events', matchId] })
-          // Notif : nouveau but pendant le live
-          if (payload.eventType === 'INSERT') {
-            const goal = payload.new as { team_id: string; is_own_goal: boolean }
-            const { data: m } = await supabase
-              .from('matches')
-              .select('home_team:teams!home_team_id(id,name), away_team:teams!away_team_id(id,name), home_score, away_score')
-              .eq('id', matchId).single()
-            if (m) {
-              const home = (m as any).home_team
-              const away = (m as any).away_team
-              const scorer = goal.team_id === home.id ? home.name : away.name
-              pushLocal(
-                '⚽ But !',
-                `${scorer} marque ! ${(m as any).home_score ?? 0} – ${(m as any).away_score ?? 0}`,
-                `goal-${matchId}`,
-                `/matches/${matchId}`
-              )
-            }
-          }
         }
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assists', filter: `match_id=eq.${matchId}` },
@@ -88,12 +71,15 @@ export function useRealtimeMatch(matchId?: string) {
         () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'match_events', filter: `match_id=eq.${matchId}` },
-        () => {
+        (payload) => {
+          console.log('📝 Realtime: Event update received', payload)
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
           qc.invalidateQueries({ queryKey: ['match-events', matchId] })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`📡 Realtime Status (${matchId}):`, status)
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [matchId, qc])

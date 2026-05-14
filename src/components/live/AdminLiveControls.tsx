@@ -57,8 +57,8 @@ export function AdminLiveControls({
     let finalMinute: number | null = null
     if (eventMinute) {
       finalMinute = parseInt(eventMinute)
-    } else if (clock.totalElapsedSeconds !== null) {
-      finalMinute = Math.max(0, Math.floor((clock.totalElapsedSeconds - 10) / 60))
+    } else if (clock.minute !== null) {
+      finalMinute = clock.minute
     }
 
     await addEvent.mutateAsync({
