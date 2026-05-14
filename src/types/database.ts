@@ -723,6 +723,7 @@ export type MatchWithTeams = Match & {
 export type MatchDetail = MatchWithTeams & {
   goals: GoalWithPlayer[]
   assists: AssistWithPlayer[]
+  seasons?: { id: string; name: string } | null
 }
 
 /** Équipe avec captain_player_id — retourné par useTeams (migration 022) */

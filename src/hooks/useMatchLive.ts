@@ -348,27 +348,45 @@ export function useAdminMatchLive(matchId?: string) {
       })
       if (error) throw error
 
-      // Si c'est un but, mettre à jour le score en temps réel
-      if (event.type === 'goal' || event.type === 'own_goal') {
+      // Si c'est un but, mettre à jour le score et la table 'goals'
+      if ((event.type === 'goal' || event.type === 'own_goal') && event.team_id) {
+        // 1. Récupérer le match actuel pour le score
         const { data: match } = await supabase
           .from('matches')
           .select('id, home_team_id, away_team_id, home_score, away_score')
           .eq('id', matchId!)
           .single()
 
-        if (match && event.team_id) {
+        if (match) {
           const isHome = event.type === 'own_goal'
             ? event.team_id !== match.home_team_id  // CSC : point pour l'adversaire
             : event.team_id === match.home_team_id
 
+          // 2. Mettre à jour le score global
           await supabase.from('matches').update({
-            home_score: isHome
-              ? (match.home_score ?? 0) + 1
-              : (match.home_score ?? 0),
-            away_score: !isHome
-              ? (match.away_score ?? 0) + 1
-              : (match.away_score ?? 0),
+            home_score: isHome ? (match.home_score ?? 0) + 1 : (match.home_score ?? 0),
+            away_score: !isHome ? (match.away_score ?? 0) + 1 : (match.away_score ?? 0),
           }).eq('id', matchId!)
+
+          // 3. Insérer dans la table 'goals' pour la liste des buteurs (header)
+          if (event.player_id) {
+            const { data: newGoal, error: goalErr } = await supabase.from('goals').insert({
+              match_id: matchId!,
+              team_id: event.team_id,
+              player_id: event.player_id,
+              minute: event.minute ?? 0,
+              is_own_goal: event.type === 'own_goal'
+            }).select().single()
+
+            // 4. Si passeur, insérer dans 'assists'
+            if (!goalErr && newGoal && event.player2_id) {
+              await supabase.from('assists').insert({
+                match_id: matchId!,
+                goal_id: newGoal.id,
+                player_id: event.player2_id
+              })
+            }
+          }
         }
       }
     },

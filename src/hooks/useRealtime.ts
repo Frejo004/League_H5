@@ -59,6 +59,7 @@ export function useRealtimeMatch(matchId?: string) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `match_id=eq.${matchId}` },
         async (payload) => {
           qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
           // Notif : nouveau but pendant le live
           if (payload.eventType === 'INSERT') {
             const goal = payload.new as { team_id: string; is_own_goal: boolean }
@@ -85,6 +86,12 @@ export function useRealtimeMatch(matchId?: string) {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mvp_votes', filter: `match_id=eq.${matchId}` },
         () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'match_events', filter: `match_id=eq.${matchId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
+        }
       )
       .subscribe()
 

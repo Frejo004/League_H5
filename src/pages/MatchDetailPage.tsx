@@ -227,107 +227,138 @@ export function MatchDetailPage() {
 
         {/* Header Content */}
         <div className="relative z-10 p-6 sm:p-8">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Saison Mai 2026</span>
-              <div className="opacity-60 hover:opacity-100 transition-opacity">
-                <Breadcrumbs items={[
-                  { label: 'Matchs', to: '/matches' },
-                  { label: `${home.name} vs ${away.name}`, to: '#' }
-                ]} />
-              </div>
+          <div className="flex flex-col items-center mb-8 relative z-10">
+            <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-6 shadow-xl">
+               <span className="text-[10px] font-bold text-slate-400 tabular-nums uppercase tracking-widest">
+                 {match.scheduled_at 
+                   ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at)).replace(',', ' •')
+                   : 'Date à définir'
+                 }
+               </span>
             </div>
+            
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-1">
+                  {match.seasons?.name ?? 'Saison Live'}
+                </span>
+                <Breadcrumbs 
+                  className="text-white/20" 
+                  items={[
+                    { label: 'Matchs', to: '/matches' },
+                    { label: `${home.name} vs ${away.name}` }
+                  ]}
+                />
+              </div>
 
-            {/* Bouton partage */}
-            {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
-              <button
-                onClick={async () => {
-                  const score = isCompleted ? `${match.home_score} – ${match.away_score}` : '🔴 LIVE'
-                  try {
-                    await navigator.share({
-                      title: `${home.name} ${score} ${away.name}`,
-                      text: isCompleted
-                        ? `Résultat : ${home.name} ${match.home_score} – ${match.away_score} ${away.name} · League H5`
-                        : `Match en direct : ${home.name} vs ${away.name} · League H5`,
-                      url: window.location.href,
-                    })
-                  } catch { }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                          text-white/40 hover:text-white border border-white/10 hover:border-white/20
-                          hover:bg-white/5 transition-all backdrop-blur-md"
-              >
-                <Share2 size={12} />
-                Partager
-              </button>
-            )}
+              {/* Bouton partage */}
+              {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
+                <button
+                  onClick={async () => {
+                    const score = isCompleted ? `${match.home_score} – ${match.away_score}` : '🔴 LIVE'
+                    try {
+                      await navigator.share({
+                        title: `${home.name} ${score} ${away.name}`,
+                        text: isCompleted
+                          ? `Résultat : ${home.name} ${match.home_score} – ${match.away_score} ${away.name} · League H5`
+                          : `Match en direct : ${home.name} vs ${away.name} · League H5`,
+                        url: window.location.href,
+                      })
+                    } catch { }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
+                            text-white/40 hover:text-white border border-white/10 hover:border-white/20
+                            hover:bg-white/5 transition-all backdrop-blur-md"
+                >
+                  <Share2 size={12} />
+                  Partager
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Teams & Scoreboard — New Format */}
+          {/* Teams & Scoreboard — Premium Boxed Format */}
           <div className="flex flex-col items-center">
-            <div className="flex items-center justify-between w-full max-w-2xl mb-4">
+            <div className="flex items-center justify-between w-full max-w-2xl mb-6">
               {/* Team Home */}
-              <div className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 flex items-center justify-center p-2 shadow-xl border border-white/5">
+              <div className="flex-1 flex flex-col items-center gap-3">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/5 flex items-center justify-center p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {home.logo_url 
-                    ? <img src={home.logo_url} alt="" className="w-full h-full object-contain" />
-                    : <span className="text-3xl font-black text-white">{home.name[0]}</span>
+                    ? <img src={home.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
+                    : <span className="text-4xl font-black text-white">{home.name[0]}</span>
                   }
                 </div>
-                <span className="text-sm font-bold text-white uppercase tracking-tight">{home.name}</span>
+                <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">{home.name}</span>
               </div>
 
-              {/* Center Score */}
+              {/* Center Score — Boxed Style */}
               <div className="flex flex-col items-center px-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-5xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                    {(isLive || isCompleted) ? (match.home_score ?? 0) : ''}
-                  </span>
-                  <span className="text-3xl font-black text-white/20">—</span>
-                  <span className="text-5xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                    {(isLive || isCompleted) ? (match.away_score ?? 0) : ''}
+                <div className="flex items-center gap-2 sm:gap-4">
+                  {/* Box Home */}
+                  <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
+                    <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      {(isLive || isCompleted) ? (match.home_score ?? 0) : ''}
+                    </span>
+                  </div>
+                  
+                  <span className="text-2xl font-black text-white/20 italic">—</span>
+                  
+                  {/* Box Away */}
+                  <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-blue-600 border border-blue-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                    <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      {(isLive || isCompleted) ? (match.away_score ?? 0) : ''}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Match Status Badge */}
+                <div className="mt-4 px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    {isLive ? clock.label : isCompleted ? 'Match Terminé' : 'À venir'}
                   </span>
                 </div>
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1">
-                  {isLive ? clock.label : isCompleted ? 'Terminé' : 'À venir'}
-                </span>
               </div>
 
               {/* Team Away */}
-              <div className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 flex items-center justify-center p-2 shadow-xl border border-white/5">
+              <div className="flex-1 flex flex-col items-center gap-3">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/5 flex items-center justify-center p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {away.logo_url 
-                    ? <img src={away.logo_url} alt="" className="w-full h-full object-contain" />
-                    : <span className="text-3xl font-black text-white">{away.name[0]}</span>
+                    ? <img src={away.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
+                    : <span className="text-4xl font-black text-white">{away.name[0]}</span>
                   }
                 </div>
-                <span className="text-sm font-bold text-white uppercase tracking-tight">{away.name}</span>
+                <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">{away.name}</span>
               </div>
             </div>
 
-            {/* Scorers List — Under Header */}
+            {/* Scorers List — Professional Format */}
             {(isLive || isCompleted) && (goals.length > 0) && (
-              <div className="flex w-full max-w-2xl mt-2 px-4 gap-8">
+              <div className="flex w-full max-w-2xl mt-4 px-6 items-start">
                 {/* Home Scorers */}
-                <div className="flex-1 flex flex-col items-end text-right space-y-0.5">
+                <div className="flex-1 flex flex-col items-end text-right space-y-1">
                   {goals.filter(g => g.team_id === home.id).map(g => (
-                    <div key={g.id} className="text-[11px] font-medium text-slate-400">
-                      {g.players?.last_name} {g.minute}'
+                    <div key={g.id} className="group cursor-default">
+                      <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors">
+                        {g.players?.last_name} <span className="text-slate-600 ml-1">{g.minute}'</span>
+                      </span>
                     </div>
                   ))}
                 </div>
-                {/* Center Icon */}
-                <div className="flex flex-col items-center py-1">
-                  <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                    <span className="text-[10px]">⚽</span>
+                
+                {/* Center Icon Separator */}
+                <div className="px-6 py-1">
+                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                    <span className="text-[10px] opacity-60">⚽</span>
                   </div>
                 </div>
+                
                 {/* Away Scorers */}
-                <div className="flex-1 flex flex-col items-start text-left space-y-0.5">
+                <div className="flex-1 flex flex-col items-start text-left space-y-1">
                   {goals.filter(g => g.team_id === away.id).map(g => (
-                    <div key={g.id} className="text-[11px] font-medium text-slate-400">
-                      {g.players?.last_name} {g.minute}'
+                    <div key={g.id} className="group cursor-default">
+                      <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors">
+                        {g.players?.last_name} <span className="text-slate-600 ml-1">{g.minute}'</span>
+                      </span>
                     </div>
                   ))}
                 </div>

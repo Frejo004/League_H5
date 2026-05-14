@@ -37,6 +37,7 @@ export function useMatch(matchId?: string) {
           *,
           home_team:teams!home_team_id(id, name, color, logo_url),
           away_team:teams!away_team_id(id, name, color, logo_url),
+          seasons(id, name),
           goals(*, players(id, first_name, last_name, jersey_number)),
           assists(*, players(id, first_name, last_name))
         `)

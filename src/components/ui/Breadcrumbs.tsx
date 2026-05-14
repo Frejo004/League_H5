@@ -6,9 +6,9 @@ interface BreadcrumbItem {
   to?: string
 }
 
-export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+export function Breadcrumbs({ items, className }: { items: BreadcrumbItem[], className?: string }) {
   return (
-    <nav className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+    <nav className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest overflow-x-auto whitespace-nowrap scrollbar-hide ${className ?? ''}`}>
       <Link 
         to="/" 
         className="hover:text-primary-400 transition-colors flex items-center gap-1 shrink-0"
