@@ -40,22 +40,53 @@ interface LiveEventFeedProps {
 export function LiveEventFeed({
   events, homeTeamId, homeColor, awayColor, className,
 }: LiveEventFeedProps) {
-  // Trier par minute croissante pour calculer le score cumulé
-  const chronological = [...events].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+  // Trier par minute croissante, puis par date de création pour l'ordre exact
+  const chronological = [...events].sort((a, b) => {
+    const minA = a.minute ?? 0
+    const minB = b.minute ?? 0
+    if (minA !== minB) return minA - minB
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  })
   
-  // Calculer le score à chaque étape
+  // Filtrer les doublons de systèmes (on ne garde que le premier kickoff et les derniers halftime/fulltime)
+  const uniqueEvents: MatchEvent[] = []
+  const systemsFound = new Set<string>()
+  
+  // On parcourt dans l'ordre chronologique pour identifier les systèmes
+  chronological.forEach(e => {
+    if (['halftime', 'fulltime', 'kickoff'].includes(e.type)) {
+      // Pour le kickoff on garde le premier
+      if (e.type === 'kickoff' && !systemsFound.has('kickoff')) {
+        uniqueEvents.push(e)
+        systemsFound.add('kickoff')
+      } 
+      // Pour les autres on remplace l'existant pour ne garder que le plus récent
+      else if (e.type !== 'kickoff') {
+        const idx = uniqueEvents.findIndex(ue => ue.type === e.type)
+        if (idx !== -1) uniqueEvents[idx] = e
+        else uniqueEvents.push(e)
+      }
+    } else {
+      uniqueEvents.push(e)
+    }
+  })
+
+  // Recalculer le score sur la liste nettoyée
   let homeScore = 0
   let awayScore = 0
-  const eventsWithScore = chronological.map(event => {
+  const eventsWithScore = uniqueEvents.map(event => {
     if (event.type === 'goal' || event.type === 'own_goal') {
-      if (event.team_id === homeTeamId) homeScore++
+      const isHomeGoal = event.type === 'own_goal' 
+        ? event.team_id !== homeTeamId 
+        : event.team_id === homeTeamId
+      if (isHomeGoal) homeScore++
       else awayScore++
     }
     return { ...event, currentScore: `${homeScore}-${awayScore}` }
   })
 
   // Inverser pour l'affichage (plus récent en haut)
-  const sorted = eventsWithScore.reverse()
+  const sorted = [...eventsWithScore].reverse()
 
   if (events.length === 0) {
     return (

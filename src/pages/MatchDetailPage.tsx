@@ -310,7 +310,12 @@ export function MatchDetailPage() {
               <div className="flex flex-col items-center px-4">
                 <div className="flex items-center gap-2 sm:gap-4">
                   {/* Box Home */}
-                  <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
+                  <div className={clsx(
+                    "w-14 h-16 sm:w-20 sm:h-24 rounded-2xl border flex items-center justify-center transition-all duration-500",
+                    displayHomeScore > displayAwayScore 
+                      ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]" 
+                      : "bg-white/5 border-white/10 shadow-2xl"
+                  )}>
                     <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayHomeScore : ''}
                     </span>
@@ -319,7 +324,12 @@ export function MatchDetailPage() {
                   <span className="text-2xl font-black text-white/20 italic">—</span>
                   
                   {/* Box Away */}
-                  <div className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-blue-600 border border-blue-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                  <div className={clsx(
+                    "w-14 h-16 sm:w-20 sm:h-24 rounded-2xl border flex items-center justify-center transition-all duration-500",
+                    displayAwayScore > displayHomeScore
+                      ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
+                      : "bg-white/5 border-white/10 shadow-2xl"
+                  )}>
                     <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayAwayScore : ''}
                     </span>
