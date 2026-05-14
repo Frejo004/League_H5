@@ -5,6 +5,7 @@ import { useSeasons, useCreateSeason, useUpdateSeason, useDeleteSeason } from '@
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Season } from '@/types/database'
+import clsx from 'clsx'
 
 export function AdminSeasonsPage() {
   const { data: seasons, isLoading } = useSeasons()
@@ -14,22 +15,22 @@ export function AdminSeasonsPage() {
   const qc = useQueryClient()
 
   // ── Création ──────────────────────────────────────────────
-  const [showForm, setShowForm]   = useState(false)
-  const [name, setName]           = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate]     = useState('')
+  const [endDate, setEndDate] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
 
   // ── Édition inline ────────────────────────────────────────
-  const [editId, setEditId]           = useState<string | null>(null)
-  const [editName, setEditName]       = useState('')
-  const [editStart, setEditStart]     = useState('')
-  const [editEnd, setEditEnd]         = useState('')
-  const [editError, setEditError]     = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editStart, setEditStart] = useState('')
+  const [editEnd, setEditEnd] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
 
   // ── Suppression ───────────────────────────────────────────
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-  const [deleteError, setDeleteError]         = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // ── Activation ────────────────────────────────────────────
   const [activateError, setActivateError] = useState<string | null>(null)
@@ -56,7 +57,7 @@ export function AdminSeasonsPage() {
       await createSeason.mutateAsync({
         name,
         start_date: startDate || undefined,
-        end_date:   endDate   || undefined,
+        end_date: endDate || undefined,
       })
       setName(''); setStartDate(''); setEndDate('')
       setShowForm(false)
@@ -70,9 +71,9 @@ export function AdminSeasonsPage() {
     try {
       await updateSeason.mutateAsync({
         id,
-        name:       editName,
+        name: editName,
         start_date: editStart || null,
-        end_date:   editEnd   || null,
+        end_date: editEnd || null,
       })
       setEditId(null)
     } catch (err: unknown) {
@@ -172,17 +173,22 @@ export function AdminSeasonsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !seasons?.length ? (
-        <div className="card text-center py-12">
+        <div className="card glass-morphism text-center py-12 border border-white/10">
           <p className="text-slate-400">Aucune saison créée.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {seasons.map(season => (
-            <div key={season.id} className="card space-y-3">
+            <div key={season.id} className="relative overflow-hidden p-5 rounded-2xl glass-morphism border border-white/5 hover:border-white/20 transition-all duration-300">
+
+              {/* Background accent si la saison est active */}
+              {season.is_active && (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#FFDF73]/5 to-transparent pointer-events-none" />
+              )}
 
               {/* Mode édition */}
               {editId === season.id ? (
-                <div className="space-y-3">
+                <div className="space-y-4 relative z-10">
                   {editError && (
                     <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-3 py-2 rounded-lg">
                       {editError}
@@ -207,74 +213,83 @@ export function AdminSeasonsPage() {
                     <button
                       onClick={() => handleSaveEdit(season.id)}
                       disabled={updateSeason.isPending}
-                      className="btn-primary flex items-center gap-1.5 text-sm py-1.5"
+                      className="btn-primary flex items-center justify-center gap-1.5 text-sm py-2 px-4 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)]"
                     >
-                      {updateSeason.isPending ? <LoadingSpinner size="sm" /> : <Save size={13} />}
+                      {updateSeason.isPending ? <LoadingSpinner size="sm" /> : <Save size={14} />}
                       Enregistrer
                     </button>
-                    <button onClick={cancelEdit} className="btn-secondary flex items-center gap-1.5 text-sm py-1.5">
-                      <X size={13} /> Annuler
+                    <button onClick={cancelEdit} className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-2 px-4">
+                      <X size={14} /> Annuler
                     </button>
                   </div>
                 </div>
               ) : (
                 /* Mode affichage */
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4 relative z-10">
                   {/* Infos saison */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-white">{season.name}</h3>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="text-xl font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {season.name}
+                        </h3>
                         {season.is_active && (
-                          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30">Active</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-black bg-[#FFDF73] px-2 py-0.5 rounded shadow-[0_0_10px_rgba(255,223,115,0.4)]">
+                            Active
+                          </span>
                         )}
                         {season.is_locked && (
-                          <span className="badge bg-red-500/20 text-red-400 border border-red-500/30">Verrouillée</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white bg-red-500/80 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(239,68,68,0.4)] border border-red-400">
+                            Verrouillée
+                          </span>
                         )}
                       </div>
                       {(season.start_date || season.end_date) && (
-                        <p className="text-sm text-slate-400 mt-0.5">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                           {season.start_date && new Date(season.start_date).toLocaleDateString('fr-FR')}
-                          {season.start_date && season.end_date && ' → '}
+                          {season.start_date && season.end_date && <span className="text-slate-600">—</span>}
                           {season.end_date && new Date(season.end_date).toLocaleDateString('fr-FR')}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* Actions — grille 2 colonnes sur mobile, inline sur desktop */}
+                  {/* Actions */}
                   {deleteConfirmId === season.id ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-red-400 font-medium">Supprimer définitivement ?</span>
+                    <div className="flex items-center gap-3 flex-wrap bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                      <span className="text-xs text-red-400 font-bold uppercase tracking-wider">Supprimer définitivement ?</span>
                       <button onClick={() => handleDelete(season.id)} disabled={deleteSeason.isPending}
-                        className="btn-danger flex items-center gap-1 text-sm py-1.5 px-3">
-                        {deleteSeason.isPending ? <LoadingSpinner size="sm" /> : <Check size={13} />}
+                        className="btn-danger flex items-center justify-center gap-1.5 text-sm py-1.5 px-3 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                        {deleteSeason.isPending ? <LoadingSpinner size="sm" /> : <Check size={14} />}
                         Confirmer
                       </button>
                       <button onClick={() => setDeleteConfirmId(null)}
-                        className="btn-secondary flex items-center gap-1 text-sm py-1.5 px-3">
-                        <X size={13} /> Annuler
+                        className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-1.5 px-3 rounded-lg bg-surface-raised border border-white/10">
+                        <X size={14} /> Annuler
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-t border-white/5 pt-3">
                       {!season.is_active && (
                         <button onClick={() => toggleActive(season)} disabled={updateSeason.isPending}
-                          className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-2">
+                          className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#FFDF73] bg-[#FFDF73]/10 hover:bg-[#FFDF73]/20 border border-[#FFDF73]/30 px-3 py-2 rounded-lg transition-colors">
                           <Check size={13} /> Activer
                         </button>
                       )}
                       <button onClick={() => toggleLock(season)} disabled={updateSeason.isPending}
-                        className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-2">
+                        className={clsx(
+                          "flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg transition-colors border",
+                          season.is_locked ? "text-slate-300 bg-slate-500/10 hover:bg-slate-500/20 border-slate-500/30" : "text-slate-300 bg-slate-500/10 hover:bg-slate-500/20 border-slate-500/30"
+                        )}>
                         {season.is_locked ? <Unlock size={13} /> : <Lock size={13} />}
                         {season.is_locked ? 'Déverrouiller' : 'Verrouiller'}
                       </button>
                       <button onClick={() => startEdit(season)}
-                        className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-2">
+                        className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-lg transition-colors">
                         <Pencil size={13} /> Modifier
                       </button>
                       <button onClick={() => setDeleteConfirmId(season.id)}
-                        className="btn-danger flex items-center justify-center gap-1.5 text-sm py-2">
+                        className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 px-3 py-2 rounded-lg transition-colors">
                         <Trash2 size={13} /> Supprimer
                       </button>
                     </div>

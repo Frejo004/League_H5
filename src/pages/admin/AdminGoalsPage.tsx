@@ -7,44 +7,45 @@ import { useAddGoal, useDeleteGoal, useAddAssist, useDeleteAssist } from '@/hook
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchWithTeams } from '@/hooks/useMatches'
 import type { GoalWithPlayer, AssistWithPlayer } from '@/types/database'
+import clsx from 'clsx'
 
 function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   const [expanded, setExpanded] = useState(false)
   const { data: detail, isLoading } = useMatch(expanded ? match.id : undefined)
   const { data: homePlayers } = usePlayersByTeam(expanded ? match.home_team_id : undefined)
   const { data: awayPlayers } = usePlayersByTeam(expanded ? match.away_team_id : undefined)
-  const addGoal      = useAddGoal()
-  const deleteGoal   = useDeleteGoal()
-  const addAssist    = useAddAssist()
+  const addGoal = useAddGoal()
+  const deleteGoal = useDeleteGoal()
+  const addAssist = useAddAssist()
   const deleteAssist = useDeleteAssist()
 
   const home = match.home_team as { id: string; name: string; color: string }
   const away = match.away_team as { id: string; name: string; color: string }
 
   // ── Form state ──────────────────────────────────────────────────────────────
-  const [goalTeam,   setGoalTeam]   = useState(home.id)
+  const [goalTeam, setGoalTeam] = useState(home.id)
   const [goalPlayer, setGoalPlayer] = useState('')
   const [goalMinute, setGoalMinute] = useState('')
-  const [isOwnGoal,  setIsOwnGoal]  = useState(false)
-  const [goalError,  setGoalError]  = useState<string | null>(null)
+  const [isOwnGoal, setIsOwnGoal] = useState(false)
+  const [goalError, setGoalError] = useState<string | null>(null)
 
   const [assistGoalId, setAssistGoalId] = useState('')
   const [assistPlayer, setAssistPlayer] = useState('')
-  const [assistError,  setAssistError]  = useState<string | null>(null)
+  const [assistError, setAssistError] = useState<string | null>(null)
 
   // Reset player selection when team or own-goal changes
   useEffect(() => { setGoalPlayer('') }, [goalTeam, isOwnGoal])
 
   // ── Derived data ────────────────────────────────────────────────────────────
-  const goals   = (detail?.goals   ?? []) as GoalWithPlayer[]
-  const assists = (detail?.assists  ?? []) as AssistWithPlayer[]
+  const goals = (detail?.goals ?? []) as GoalWithPlayer[]
+  const assists = (detail?.assists ?? []) as AssistWithPlayer[]
   const assistMap = new Map(assists.map(a => [a.goal_id, a]))
 
   // Buts par équipe déjà enregistrés
   const homeGoalsCount = goals.filter(g => g.team_id === home.id && !g.is_own_goal).length
-                       + goals.filter(g => g.team_id === away.id &&  g.is_own_goal).length
+    + goals.filter(g => g.team_id === away.id && g.is_own_goal).length
   const awayGoalsCount = goals.filter(g => g.team_id === away.id && !g.is_own_goal).length
-                       + goals.filter(g => g.team_id === home.id &&  g.is_own_goal).length
+    + goals.filter(g => g.team_id === home.id && g.is_own_goal).length
 
   const homeScoreMax = match.home_score ?? 0
   const awayScoreMax = match.away_score ?? 0
@@ -52,7 +53,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   // Limite atteinte pour l'équipe sélectionnée
   const scoringTeamIsHome = goalTeam === home.id
   const currentCount = scoringTeamIsHome ? homeGoalsCount : awayGoalsCount
-  const maxCount     = scoringTeamIsHome ? homeScoreMax   : awayScoreMax
+  const maxCount = scoringTeamIsHome ? homeScoreMax : awayScoreMax
   const limitReached = currentCount >= maxCount
 
   // Joueurs éligibles selon l'équipe et le type de but
@@ -60,7 +61,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   // - CSC         → joueurs de l'équipe ADVERSE (c'est eux qui mettent le but dans leur propre cage)
   const scoringTeamPlayers = goalTeam === home.id ? (homePlayers ?? []) : (awayPlayers ?? [])
   const ownGoalTeamPlayers = goalTeam === home.id ? (awayPlayers ?? []) : (homePlayers ?? [])
-  const eligiblePlayers    = isOwnGoal ? ownGoalTeamPlayers : scoringTeamPlayers
+  const eligiblePlayers = isOwnGoal ? ownGoalTeamPlayers : scoringTeamPlayers
 
   // Joueurs éligibles pour la passe (même équipe que le buteur, sauf le buteur lui-même)
   const goalsWithoutAssist = goals.filter(g => !assistMap.has(g.id) && !g.is_own_goal)
@@ -106,77 +107,87 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   }
 
   return (
-    <div className="card">
-      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between gap-4">
+    <div className={clsx(
+      "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
+      expanded ? "glass-morphism border border-white/20 shadow-2xl" : "glass-morphism border border-white/5 hover:border-white/10"
+    )}>
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between gap-4 relative z-10">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: home.color }} />
-          <span className="text-white font-semibold text-sm truncate">{home.name}</span>
-          <span className="text-slate-400 text-sm font-bold tabular-nums">
-            {match.home_score ?? '—'} – {match.away_score ?? '—'}
+          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: home.color }} />
+          <span className="text-white font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="text-slate-300 text-lg font-black tabular-nums drop-shadow-md mx-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            {match.home_score ?? '—'} <span className="text-[#FFDF73] text-sm">-</span> {match.away_score ?? '—'}
           </span>
-          <span className="text-white font-semibold text-sm truncate">{away.name}</span>
-          <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: away.color }} />
+          <span className="text-white font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
+          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {/* Progression buts enregistrés */}
-          <span className="text-xs text-slate-600">
+          <span className="text-[10px] font-bold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded border border-white/5 text-[#FFDF73]">
             {goals.length}/{(match.home_score ?? 0) + (match.away_score ?? 0)} buts
           </span>
-          <span className="text-xs text-slate-500">J{match.matchday}</span>
-          {expanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">J{match.matchday}</span>
+          {expanded ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-slate-400" />}
         </div>
       </button>
 
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-surface-border space-y-5">
+        <div className="mt-5 pt-5 border-t border-white/10 space-y-5 relative z-10">
           {isLoading ? (
             <div className="flex justify-center py-4"><LoadingSpinner /></div>
           ) : (
             <>
               {/* ── Buts enregistrés ── */}
               {goals.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                     Buts enregistrés ({goals.length}/{(match.home_score ?? 0) + (match.away_score ?? 0)})
                   </p>
-                  {goals.map(g => {
-                    const assist = assistMap.get(g.id)
-                    const teamColor = g.team_id === home.id ? home.color : away.color
-                    return (
-                      <div key={g.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-surface-raised">
-                        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: teamColor }} />
-                        <span className="text-white text-sm flex-1">
-                          {g.is_own_goal ? '⚽ CSC — ' : '⚽ '}
-                          {g.players ? `${g.players.first_name} ${g.players.last_name}` : '—'}
-                          {g.minute ? ` (${g.minute}')` : ''}
-                          {assist?.players && (
-                            <span className="text-slate-500 text-xs ml-2">
-                              Passe : {assist.players.first_name} {assist.players.last_name}
-                            </span>
-                          )}
-                        </span>
-                        {assist && (
-                          <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id, seasonId: match.season_id })}
-                            className="text-slate-600 hover:text-red-400 transition-colors p-0.5" title="Supprimer la passe">
-                            <Trash2 size={11} />
-                          </button>
-                        )}
-                        <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id, seasonId: match.season_id })}
-                          className="text-slate-600 hover:text-red-400 transition-colors p-0.5" title="Supprimer le but">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    )
-                  })}
+                  <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                    {goals.map(g => {
+                      const assist = assistMap.get(g.id)
+                      const teamColor = g.team_id === home.id ? home.color : away.color
+                      return (
+                        <div key={g.id} className="flex items-center gap-3 py-2 px-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
+                          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
+                          <span className="text-white text-sm flex-1 font-black uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                            <span className="text-[#FFDF73] mr-1">{g.is_own_goal ? '⚽ CSC' : '⚽'}</span>
+                            {g.players ? `${g.players.first_name} ${g.players.last_name}` : '—'}
+                            {g.minute ? <span className="text-slate-400 font-normal ml-1">({g.minute}')</span> : ''}
+                            {assist?.players && (
+                              <span className="text-emerald-400 text-xs ml-3 font-normal tracking-wide">
+                                🅰 Passe : {assist.players.first_name} {assist.players.last_name}
+                              </span>
+                            )}
+                          </span>
+                          <div className="flex gap-1 shrink-0">
+                            {assist && (
+                              <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id, seasonId: match.season_id })}
+                                className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Supprimer la passe">
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                            <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id, seasonId: match.season_id })}
+                              className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Supprimer le but">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
               {/* ── Ajouter un but ── */}
               {goals.length < (match.home_score ?? 0) + (match.away_score ?? 0) ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Ajouter un but</p>
-                  <form onSubmit={handleAddGoal} className="space-y-2">
-                    {goalError && <p className="text-red-400 text-xs">{goalError}</p>}
+                <div className="space-y-3 bg-black/20 p-4 rounded-xl border border-white/5">
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFDF73] shadow-[0_0_5px_#FFDF73]"></span>
+                    Ajouter un but
+                  </p>
+                  <form onSubmit={handleAddGoal} className="space-y-3">
+                    {goalError && <p className="text-red-400 text-xs font-bold uppercase tracking-wider">{goalError}</p>}
 
                     <div className="grid grid-cols-2 gap-2">
                       {/* Équipe qui marque */}
@@ -309,8 +320,8 @@ export function AdminGoalsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !completedMatches.length ? (
-        <div className="card text-center py-8">
-          <p className="text-slate-400 text-sm">
+        <div className="card glass-morphism text-center py-8 border border-white/10">
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
             Aucun match terminé. Marquez des matchs comme "Terminé" dans l'onglet Calendrier.
           </p>
         </div>

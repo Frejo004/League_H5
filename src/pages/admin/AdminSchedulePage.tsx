@@ -7,10 +7,11 @@ import { useMatches, useCreateMatch, useUpdateMatch, type MatchWithTeams } from 
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchStatus } from '@/types/database'
+import clsx from 'clsx'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
   { value: 'scheduled', label: 'Programmé' },
-  { value: 'live',      label: '🔴 En direct' },
+  { value: 'live', label: '🔴 En direct' },
   { value: 'completed', label: 'Terminé' },
   { value: 'cancelled', label: 'Annulé' },
 ]
@@ -84,44 +85,44 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
   const dateLabel = match.scheduled_at
     ? new Intl.DateTimeFormat('fr-FR', {
-        day: '2-digit', month: '2-digit',
-        hour: '2-digit', minute: '2-digit',
-      }).format(new Date(match.scheduled_at))
+      day: '2-digit', month: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    }).format(new Date(match.scheduled_at))
     : 'À venir'
 
   return (
-    <div className="border-b border-surface-border/40 last:border-b-0">
+    <div className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
       {/* Match row */}
-      <div className="flex items-center gap-3 px-4 py-2.5">
+      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
         {/* Home */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: home.color }} />
-          <span className="text-sm text-slate-200 truncate font-medium">{home.name}</span>
+        <div className="flex items-center justify-end gap-2.5 flex-1 min-w-0">
+          <span className="text-sm font-black text-white uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: home.color }} />
         </div>
 
         {/* Score / date */}
-        <div className="shrink-0 text-center min-w-[100px]">
+        <div className="shrink-0 text-center min-w-[90px] px-2">
           {match.status === 'completed' ? (
-            <span className="text-sm font-bold text-white tabular-nums">
-              {match.home_score} – {match.away_score}
+            <span className="text-xl font-black tabular-nums text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match.home_score} <span className="text-[#FFDF73] text-sm mx-0.5">-</span> {match.away_score}
             </span>
           ) : (
-            <span className={`text-xs font-medium ${match.scheduled_at ? 'text-slate-300' : 'text-slate-600'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${match.scheduled_at ? 'text-[#FFDF73]' : 'text-slate-600'}`}>
               {dateLabel}
             </span>
           )}
         </div>
 
         {/* Away */}
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className="text-sm text-slate-200 truncate font-medium text-right">{away.name}</span>
-          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: away.color }} />
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
+          <span className="text-sm font-black text-white uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
         </div>
 
         {/* Edit button */}
         <button
           onClick={() => setEditing(!editing)}
-          className="text-slate-600 hover:text-slate-300 p-1 shrink-0 transition-colors"
+          className="text-slate-500 hover:text-white bg-black/20 hover:bg-white/10 p-2 rounded-lg shrink-0 transition-colors border border-white/5"
         >
           <Pencil size={13} />
         </button>
@@ -129,43 +130,43 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
       {/* Edit panel */}
       {editing && (
-        <div className="px-4 pb-3 space-y-2 bg-surface-raised border-t border-surface-border/40">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+        <div className="px-5 pb-5 pt-2 space-y-4 bg-black/40 border-t border-white/10 shadow-inner">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
-              <label className="label">Date & heure</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Date & heure</label>
               <input
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
-                className="input text-sm py-1.5"
+                className="input text-sm py-2 bg-black/40 border-white/10"
               />
             </div>
             <div>
-              <label className="label">Score (dom – ext)</label>
-              <div className="flex items-center gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Score (dom – ext)</label>
+              <div className="flex items-center gap-2">
                 <input type="number" value={homeScore} onChange={e => setHomeScore(e.target.value)}
-                  className="input text-sm py-1.5 text-center" min={0} placeholder="0" />
-                <span className="text-slate-500 shrink-0">–</span>
+                  className="input text-base font-black tabular-nums py-2 text-center bg-black/40 border-white/10" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+                <span className="text-slate-500 shrink-0 font-bold">–</span>
                 <input type="number" value={awayScore} onChange={e => setAwayScore(e.target.value)}
-                  className="input text-sm py-1.5 text-center" min={0} placeholder="0" />
+                  className="input text-base font-black tabular-nums py-2 text-center bg-black/40 border-white/10" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
               </div>
             </div>
             <div>
-              <label className="label">Statut</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Statut</label>
               <select value={status} onChange={e => setStatus(e.target.value as MatchStatus)}
-                className="input text-sm py-1.5">
+                className="input text-sm py-2 bg-black/40 border-white/10">
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={updateMatch.isPending}
-              className="btn-primary text-sm py-1.5 flex items-center gap-1.5">
-              {updateMatch.isPending ? <LoadingSpinner size="sm" /> : <Check size={13} />}
+              className="btn-primary text-xs font-bold uppercase tracking-wider py-2 px-4 flex items-center gap-1.5">
+              {updateMatch.isPending ? <LoadingSpinner size="sm" /> : <Check size={14} />}
               Enregistrer
             </button>
-            <button onClick={() => setEditing(false)} className="btn-secondary text-sm py-1.5">
-              <X size={13} />
+            <button onClick={() => setEditing(false)} className="btn-secondary py-2 px-3 bg-surface-raised border border-white/10 hover:bg-white/10">
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -213,12 +214,12 @@ export function AdminSchedulePage() {
             )
           )
           .map(([homeId, awayId]) => ({
-            season_id:    season.id,
+            season_id: season.id,
             home_team_id: homeId,
             away_team_id: awayId,
             matchday,
             scheduled_at: null as string | null,
-            venue:        null as string | null,
+            venue: null as string | null,
           }))
       })
 
@@ -265,31 +266,32 @@ export function AdminSchedulePage() {
 
       {/* Generate panel */}
       {season && teamList.length >= 2 && (
-        <div className="card space-y-3">
-          <div className="flex items-start justify-between gap-4">
+        <div className="relative overflow-hidden p-5 rounded-2xl glass-morphism border border-[#FFDF73]/20 bg-gradient-to-r from-[#FFDF73]/10 to-transparent space-y-3">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-[#FFDF73]/10 to-transparent pointer-events-none" />
+          <div className="flex items-start justify-between gap-4 relative z-10">
             <div>
-              <p className="text-sm font-semibold text-white flex items-center gap-2">
-                <Zap size={14} className="text-primary-400" />
+              <p className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                <Zap size={16} className="text-[#FFDF73]" />
                 Génération automatique
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mt-1.5">
                 {teamList.length} équipes → {totalMatches} matchs
-                ({teamList.length - 1} journées aller + {teamList.length - 1} journées retour)
+                <span className="block mt-0.5 text-[#FFDF73]/70">({teamList.length - 1} journées aller + {teamList.length - 1} journées retour)</span>
               </p>
             </div>
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="btn-primary flex items-center gap-1.5 shrink-0"
+              className="btn-primary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)] py-2.5 px-4"
             >
               {generating ? <LoadingSpinner size="sm" /> : <Calendar size={14} />}
               {generating ? 'Génération…' : 'Générer le calendrier'}
             </button>
           </div>
 
-          {genError && <p className="text-red-400 text-xs">{genError}</p>}
+          {genError && <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{genError}</p>}
           {genSuccess && (
-            <p className="text-green-400 text-xs flex items-center gap-1.5">
+            <p className="text-green-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
               <Check size={12} /> Calendrier généré avec succès !
             </p>
           )}
@@ -297,8 +299,8 @@ export function AdminSchedulePage() {
       )}
 
       {teamList.length < 2 && season && (
-        <div className="card text-center py-6">
-          <p className="text-slate-400 text-sm">
+        <div className="card glass-morphism text-center py-6 border border-amber-500/20 bg-amber-500/5">
+          <p className="text-amber-500 text-xs font-bold uppercase tracking-widest">
             Il faut au moins 2 équipes pour générer un calendrier.
           </p>
         </div>
@@ -308,23 +310,26 @@ export function AdminSchedulePage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !matches?.length ? (
-        <div className="card text-center py-8">
-          <p className="text-slate-500 text-sm">
+        <div className="card glass-morphism text-center py-8 border border-white/10">
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
             Aucun match. Cliquez sur "Générer le calendrier" pour créer tous les matchs aller-retour.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {matchdays.map(day => {
             const dayMatches = (matches ?? []).filter(m => m.matchday === day)
             const isRetour = day > (matchdays.length / 2)
             return (
-              <div key={day} className="card p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface-border bg-surface-raised">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              <div key={day} className="card p-0 overflow-hidden glass-morphism border border-white/10">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-black/40">
+                  <span className="text-lg font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Journée {day}
                   </span>
-                  <span className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
+                  <span className={clsx(
+                    "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm",
+                    isRetour ? "bg-slate-300 text-black" : "bg-[#FFDF73] text-black"
+                  )}>
                     {isRetour ? 'Retour' : 'Aller'}
                   </span>
                 </div>

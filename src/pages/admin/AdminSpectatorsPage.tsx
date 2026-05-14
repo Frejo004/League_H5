@@ -33,10 +33,10 @@ export function AdminSpectatorsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-white">
+      <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
         Demandes d'accès spectateurs
         {pending.length > 0 && (
-          <span className="ml-2 badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+          <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(234,179,8,0.3)]">
             {pending.length} en attente
           </span>
         )}
@@ -45,36 +45,36 @@ export function AdminSpectatorsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !spectators?.length ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400">Aucune demande d'accès.</p>
+        <div className="card glass-morphism text-center py-12 border border-white/10">
+          <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Aucune demande d'accès.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {pending.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-3">En attente</h3>
-              <div className="space-y-2">
+              <h3 className="text-sm font-bold text-yellow-500/80 uppercase tracking-widest mb-3 px-1">En attente</h3>
+              <div className="space-y-3">
                 {pending.map(s => {
                   const profile = s.profiles
                   return (
-                    <div key={s.id} className="card flex items-center justify-between gap-4 border-yellow-500/20">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 text-sm font-bold flex-shrink-0">
+                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-yellow-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-yellow-500/5 to-transparent">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 text-xl font-black flex-shrink-0 shadow-[0_0_15px_rgba(234,179,8,0.2)]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-white font-medium truncate">{profile.full_name ?? 'Inconnu'}</p>
-                          <p className="text-sm text-slate-400 truncate">{profile.email}</p>
-                          <p className="text-xs text-slate-600 mt-0.5">
-                            Demande reçue le {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(s.requested_at))}
+                          <p className="text-lg text-white font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-xs font-medium text-slate-400 truncate">{profile.email}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">
+                            Reçue le {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(s.requested_at))}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                         <button
                           onClick={() => handleUpdate(s.id, 'approved', s.user_id)}
                           disabled={updateStatus.isPending}
-                          className="btn-primary flex items-center gap-1.5 text-sm py-1.5"
+                          className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)]"
                         >
                           <Check size={14} />
                           Approuver
@@ -82,7 +82,7 @@ export function AdminSpectatorsPage() {
                         <button
                           onClick={() => handleUpdate(s.id, 'rejected', s.user_id)}
                           disabled={updateStatus.isPending}
-                          className="btn-danger flex items-center gap-1.5 text-sm py-1.5"
+                          className="flex-1 sm:flex-none btn-danger flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)]"
                         >
                           <X size={14} />
                           Refuser
@@ -97,22 +97,22 @@ export function AdminSpectatorsPage() {
 
           {reviewed.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-3">Traités</h3>
-              <div className="space-y-2">
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 px-1 mt-8">Traités</h3>
+              <div className="space-y-3">
                 {reviewed.map(s => {
                   const profile = s.profiles
                   return (
-                    <div key={s.id} className="card flex items-center justify-between gap-4 opacity-75">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-surface-border flex items-center justify-center text-slate-300 text-sm font-bold flex-shrink-0">
+                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-white/5 flex items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-slate-300 text-lg font-black flex-shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-white font-medium truncate">{profile.full_name ?? 'Inconnu'}</p>
-                          <p className="text-sm text-slate-400 truncate">{profile.email}</p>
+                          <p className="text-base text-white font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-xs text-slate-400 truncate">{profile.email}</p>
                         </div>
                       </div>
-                      <span className={clsx('badge', STATUS_STYLES[s.status])}>
+                      <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm', STATUS_STYLES[s.status])}>
                         {STATUS_LABELS[s.status]}
                       </span>
                     </div>
