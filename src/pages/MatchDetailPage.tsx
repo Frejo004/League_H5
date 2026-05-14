@@ -4,7 +4,7 @@ import { useMatch } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useRealtimeMatch } from '@/hooks/useRealtime'
-import { useMatchEvents } from '@/hooks/useMatchLive'
+import { useLiveClock, useMatchEvents } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
@@ -128,6 +128,13 @@ export function MatchDetailPage() {
   // Événements live
   const { data: liveEvents = [] } = useMatchEvents(id)
 
+  const clock = useLiveClock(
+    match?.live_started_at ?? null,
+    match?.live_period as 1 | 2 | null,
+    match?.status ?? 'scheduled',
+    (match as any)?.halftime_at
+  )
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -150,7 +157,7 @@ export function MatchDetailPage() {
 
   const home = match.home_team as TeamRef
   const away = match.away_team as TeamRef
-  const goals   = match.goals   as GoalWithPlayer[]
+  const goals = match.goals as GoalWithPlayer[]
   const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
@@ -190,168 +197,146 @@ export function MatchDetailPage() {
     ? allMatchPlayers.find(p => p.id === topMvpId) ?? null
     : null
   const mvpVoteCount = topMvpId ? (voteMap.get(topMvpId) ?? 0) : 0
-
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
 
   return (
-    <div className="space-y-4 pb-24 relative min-h-screen">
+    <div className="space-y-6 pb-24 relative min-h-screen">
       {/* Alerte de but broadcast */}
-      <GoalAlert 
-        matchId={id!} 
-        homeTeam={match.home_team} 
-        awayTeam={match.away_team} 
+      <GoalAlert
+        matchId={id!}
+        homeTeam={match.home_team}
+        awayTeam={match.away_team}
       />
 
-      {/* Header / Banner Match */}
-      <div className="flex items-center justify-between">
-        <Breadcrumbs items={[
-          { label: 'Matchs', to: '/matches' },
-          { label: match ? `${match.home_team.name} vs ${match.away_team.name}` : 'Détails' }
-        ]} />
+      {/* ── Broadcast Hero Banner ── */}
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] mx-1 sm:mx-0">
 
-        {/* Bouton partage — Web Share API (iOS/Android natif) */}
-        {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
-          <button
-            onClick={async () => {
-              const home = match.home_team as TeamRef
-              const away = match.away_team as TeamRef
-              const score = isCompleted
-                ? `${match.home_score} – ${match.away_score}`
-                : '🔴 LIVE'
-              try {
-                await navigator.share({
-                  title: `${home.name} ${score} ${away.name}`,
-                  text: isCompleted
-                    ? `Résultat : ${home.name} ${match.home_score} – ${match.away_score} ${away.name} · League H5`
-                    : `Match en direct : ${home.name} vs ${away.name} · League H5`,
-                  url: window.location.href,
-                })
-              } catch {
-                // Annulé par l'utilisateur — pas d'erreur
-              }
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
-                       text-slate-400 hover:text-white border border-white/10 hover:border-white/20
-                       hover:bg-white/5 transition-all"
-          >
-            <Share2 size={13} />
-            Partager
-          </button>
-        )}
-      </div>
+        {/* Dynamic Mesh Background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px] opacity-30 animate-pulse-slow"
+            style={{ backgroundColor: home.color }}
+          />
+          <div
+            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px] opacity-30 animate-pulse-slow"
+            style={{ backgroundColor: away.color }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/80 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
+        </div>
 
-      {/* ── Score header — Broadcast Style ── */}
-      <div className="relative overflow-hidden rounded-2xl glass-morphism border border-white/10 shadow-2xl mx-2 mt-2 group">
-
-        {/* Mesh gradient de fond qui s'anime */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay"
-             style={{ background: 'linear-gradient(45deg, #0f1420, #161c2d, #0d1117)', backgroundSize: '400% 400%', animation: 'mesh-gradient 10s ease infinite' }} />
-
-        <div className="relative z-10 flex flex-col items-center">
-          
-          {/* Top Bar : Date / Live */}
-          <div className="w-full flex items-center justify-between px-4 py-2 bg-black/40 border-b border-white/5 backdrop-blur-md">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">J.{match.matchday}</span>
-            {isLive ? (
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">LIVE</span>
+        {/* Header Content */}
+        <div className="relative z-10 p-6 sm:p-8">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Saison Mai 2026</span>
+              <div className="opacity-60 hover:opacity-100 transition-opacity">
+                <Breadcrumbs items={[
+                  { label: 'Matchs', to: '/matches' },
+                  { label: `${home.name} vs ${away.name}`, to: '#' }
+                ]} />
               </div>
-            ) : (
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                {match.status === 'completed' ? 'TERMINE' : match.status === 'cancelled' ? 'ANNULE' : 'A VENIR'}
-              </span>
-            )}
-            {(match.played_at || match.scheduled_at) && !isLive && (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <Calendar size={10} />
-                {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(match.played_at ?? match.scheduled_at))}
-              </span>
+            </div>
+
+            {/* Bouton partage */}
+            {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
+              <button
+                onClick={async () => {
+                  const score = isCompleted ? `${match.home_score} – ${match.away_score}` : '🔴 LIVE'
+                  try {
+                    await navigator.share({
+                      title: `${home.name} ${score} ${away.name}`,
+                      text: isCompleted
+                        ? `Résultat : ${home.name} ${match.home_score} – ${match.away_score} ${away.name} · League H5`
+                        : `Match en direct : ${home.name} vs ${away.name} · League H5`,
+                      url: window.location.href,
+                    })
+                  } catch { }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
+                          text-white/40 hover:text-white border border-white/10 hover:border-white/20
+                          hover:bg-white/5 transition-all backdrop-blur-md"
+              >
+                <Share2 size={12} />
+                Partager
+              </button>
             )}
           </div>
 
-          {/* Main Score Area */}
-          <div className="flex items-stretch w-full relative">
-            {/* Ligne séparatrice oblique (décoration) */}
-            <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-gradient-to-b from-transparent via-white/10 to-transparent -translate-x-1/2 transform -skew-x-12" />
-
-            {/* Domicile */}
-            <div className="flex-1 flex items-center justify-between pl-6 pr-4 py-6 relative overflow-hidden">
-              <div className="absolute inset-0 opacity-20 pointer-events-none"
-                   style={{ background: `radial-gradient(ellipse at left, ${home.color} 0%, transparent 70%)` }} />
-              
-              <div className="flex flex-col items-start min-w-0 z-10">
-                <span className={clsx(
-                  'text-2xl font-black uppercase tracking-widest truncate max-w-full drop-shadow-lg',
-                  homeWon ? 'text-white text-glow-sm' : 'text-slate-200'
-                )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  {home.name}
-                </span>
-                {home.logo_url && (
-                  <img src={home.logo_url} alt={home.name} className="w-10 h-10 object-contain mt-1 drop-shadow-md" />
-                )}
+          {/* Teams & Scoreboard — New Format */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-center justify-between w-full max-w-2xl mb-4">
+              {/* Team Home */}
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 flex items-center justify-center p-2 shadow-xl border border-white/5">
+                  {home.logo_url 
+                    ? <img src={home.logo_url} alt="" className="w-full h-full object-contain" />
+                    : <span className="text-3xl font-black text-white">{home.name[0]}</span>
+                  }
+                </div>
+                <span className="text-sm font-bold text-white uppercase tracking-tight">{home.name}</span>
               </div>
-              <span className={clsx(
-                'text-6xl font-black tabular-nums z-10 drop-shadow-2xl',
-                homeWon ? 'text-white text-glow' : 'text-slate-300'
-              )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {(isCompleted || isLive) ? (match.home_score ?? 0) : ''}
-              </span>
+
+              {/* Center Score */}
+              <div className="flex flex-col items-center px-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    {(isLive || isCompleted) ? (match.home_score ?? 0) : ''}
+                  </span>
+                  <span className="text-3xl font-black text-white/20">—</span>
+                  <span className="text-5xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    {(isLive || isCompleted) ? (match.away_score ?? 0) : ''}
+                  </span>
+                </div>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1">
+                  {isLive ? clock.label : isCompleted ? 'Terminé' : 'À venir'}
+                </span>
+              </div>
+
+              {/* Team Away */}
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 flex items-center justify-center p-2 shadow-xl border border-white/5">
+                  {away.logo_url 
+                    ? <img src={away.logo_url} alt="" className="w-full h-full object-contain" />
+                    : <span className="text-3xl font-black text-white">{away.name[0]}</span>
+                  }
+                </div>
+                <span className="text-sm font-bold text-white uppercase tracking-tight">{away.name}</span>
+              </div>
             </div>
 
-            {/* Extérieur */}
-            <div className="flex-1 flex items-center justify-between pr-6 pl-4 py-6 relative overflow-hidden flex-row-reverse">
-              <div className="absolute inset-0 opacity-20 pointer-events-none"
-                   style={{ background: `radial-gradient(ellipse at right, ${away.color} 0%, transparent 70%)` }} />
-              
-              <div className="flex flex-col items-end min-w-0 z-10">
-                <span className={clsx(
-                  'text-2xl font-black uppercase tracking-widest truncate max-w-full text-right drop-shadow-lg',
-                  awayWon ? 'text-white text-glow-sm' : 'text-slate-200'
-                )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  {away.name}
-                </span>
-                {away.logo_url && (
-                  <img src={away.logo_url} alt={away.name} className="w-10 h-10 object-contain mt-1 drop-shadow-md" />
-                )}
+            {/* Scorers List — Under Header */}
+            {(isLive || isCompleted) && (goals.length > 0) && (
+              <div className="flex w-full max-w-2xl mt-2 px-4 gap-8">
+                {/* Home Scorers */}
+                <div className="flex-1 flex flex-col items-end text-right space-y-0.5">
+                  {goals.filter(g => g.team_id === home.id).map(g => (
+                    <div key={g.id} className="text-[11px] font-medium text-slate-400">
+                      {g.players?.last_name} {g.minute}'
+                    </div>
+                  ))}
+                </div>
+                {/* Center Icon */}
+                <div className="flex flex-col items-center py-1">
+                  <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                    <span className="text-[10px]">⚽</span>
+                  </div>
+                </div>
+                {/* Away Scorers */}
+                <div className="flex-1 flex flex-col items-start text-left space-y-0.5">
+                  {goals.filter(g => g.team_id === away.id).map(g => (
+                    <div key={g.id} className="text-[11px] font-medium text-slate-400">
+                      {g.players?.last_name} {g.minute}'
+                    </div>
+                  ))}
+                </div>
               </div>
-              <span className={clsx(
-                'text-6xl font-black tabular-nums z-10 drop-shadow-2xl',
-                awayWon ? 'text-white text-glow' : 'text-slate-300'
-              )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {(isCompleted || isLive) ? (match.away_score ?? 0) : ''}
-              </span>
-            </div>
-
+            )}
           </div>
-
-          {/* Bottom Bar: Live Clock or Upcoming Time */}
-          {isLive && (
-            <div className="w-full bg-red-500/20 border-t border-red-500/30 p-2 flex justify-center backdrop-blur-md">
-              <LiveClock
-                liveStartedAt={match.live_started_at ?? null}
-                livePeriod={match.live_period ?? null}
-                halftimeAt={(match as { halftime_at?: string | null }).halftime_at ?? null}
-                status={match.status}
-                homeColor={home.color}
-                awayColor={away.color}
-                className="w-full max-w-[200px]"
-              />
-            </div>
-          )}
-          {!isLive && !isCompleted && match.scheduled_at && (
-            <div className="w-full bg-black/40 border-t border-white/5 p-2 flex justify-center backdrop-blur-md">
-               <span className="text-xl font-black text-white tabular-nums tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                 {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at))}
-               </span>
-            </div>
-          )}
-
         </div>
       </div>
+
 
       {/* Venue & Stats globales */}
       <div className="card mx-2">
@@ -588,9 +573,9 @@ export function MatchDetailPage() {
           <div className="grid grid-cols-2 gap-2">
             {allMatchPlayers.map(p => {
               const voteCount = voteMap.get(p.id) ?? 0
-              const isMyVote  = myVote?.player_id === p.id
-              const isTop     = p.id === topMvpId && voteCount > 0
-              const pct       = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
+              const isMyVote = myVote?.player_id === p.id
+              const isTop = p.id === topMvpId && voteCount > 0
+              const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
 
               return (
                 <button

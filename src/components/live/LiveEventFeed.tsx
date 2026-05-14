@@ -40,123 +40,125 @@ interface LiveEventFeedProps {
 export function LiveEventFeed({
   events, homeTeamId, homeColor, awayColor, className,
 }: LiveEventFeedProps) {
-  // Afficher les événements du plus récent au plus ancien (sauf kickoff en premier)
-  const sorted = [...events].reverse()
+  // Trier par minute croissante pour calculer le score cumulé
+  const chronological = [...events].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+  
+  // Calculer le score à chaque étape
+  let homeScore = 0
+  let awayScore = 0
+  const eventsWithScore = chronological.map(event => {
+    if (event.type === 'goal' || event.type === 'own_goal') {
+      if (event.team_id === homeTeamId) homeScore++
+      else awayScore++
+    }
+    return { ...event, currentScore: `${homeScore}-${awayScore}` }
+  })
+
+  // Inverser pour l'affichage (plus récent en haut)
+  const sorted = eventsWithScore.reverse()
 
   if (events.length === 0) {
     return (
-      <div className={clsx('flex flex-col items-center justify-center py-8 gap-2', className)}>
-        <span className="text-2xl">⏳</span>
-        <p className="text-slate-500 text-sm">En attente d'événements…</p>
+      <div className={clsx('flex flex-col items-center justify-center py-12 gap-3 opacity-50', className)}>
+        <div className="w-12 h-12 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center">
+          <span className="animate-pulse">⏳</span>
+        </div>
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">En attente d'actions...</p>
       </div>
     )
   }
 
   return (
-    <div className={clsx('space-y-0', className)}>
-      {sorted.map((event, idx) => {
-        const isHome = event.team_id === homeTeamId
-        const color = event.team_id
-          ? (isHome ? homeColor : awayColor)
-          : '#64748b'
+    <div className={clsx('relative py-4 max-w-2xl mx-auto', className)}>
+      {/* Ligne centrale */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 transform -translate-x-1/2" />
 
-        const isSystemEvent = ['kickoff', 'halftime', 'fulltime'].includes(event.type)
-        const playerName = event.player
-          ? `${event.player.first_name} ${event.player.last_name}`
-          : null
-        const player2Name = event.player2
-          ? `${event.player2.first_name} ${event.player2.last_name}`
-          : null
+      <div className="space-y-6 relative">
+        {sorted.map((event, idx) => {
+          const isHome = event.team_id === homeTeamId
+          const isSystem = ['kickoff', 'halftime', 'fulltime'].includes(event.type)
+          
+          const playerName = event.player ? `${event.player.first_name} ${event.player.last_name}` : null
+          const player2Name = event.player2 ? `${event.player2.first_name} ${event.player2.last_name}` : null
 
-        if (isSystemEvent) {
           return (
-            <div
-              key={event.id}
-              className="flex items-center gap-3 py-3 border-b border-white/[0.04] last:border-0"
-            >
-              <div className="flex-1 h-px bg-white/[0.06]" />
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-base">{EVENT_ICONS[event.type]}</span>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {EVENT_LABELS[event.type]}
-                </span>
-                {event.minute !== null && (
-                  <span className="text-[10px] text-slate-700 font-mono">{event.minute}'</span>
+            <div key={event.id} className="relative flex items-center justify-center min-h-[40px]">
+              
+              {/* Côté Gauche (Home) */}
+              <div className="flex-1 flex justify-end pr-8">
+                {isHome && !isSystem && (
+                  <div className="flex flex-col items-end text-right">
+                    <div className="flex items-center gap-3">
+                      {(event.type === 'goal' || event.type === 'own_goal') && (
+                         <span className="px-2 py-0.5 rounded-full bg-blue-600 text-[10px] font-black text-white shadow-lg">
+                           {event.currentScore}
+                         </span>
+                      )}
+                      <span className="text-xs font-black text-white uppercase tracking-tight">{playerName}</span>
+                      <span className="text-[10px] font-bold text-slate-500">{event.minute}'</span>
+                    </div>
+                    {event.type === 'substitution' && player2Name && (
+                      <span className="text-[10px] text-slate-500 mt-0.5">↑ {player2Name}</span>
+                    )}
+                    {event.type === 'goal' && player2Name && (
+                      <span className="text-[9px] text-slate-600 italic mt-0.5">Pass: {player2Name}</span>
+                    )}
+                  </div>
+                )}
+                {isSystem && isHome && (
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{EVENT_LABELS[event.type]}</span>
                 )}
               </div>
-              <div className="flex-1 h-px bg-white/[0.06]" />
+
+              {/* Icône Centrale */}
+              <div className="z-10 w-8 h-8 rounded-full bg-[#1a1f2e] border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden ring-4 ring-[#0f1420]">
+                {event.type === 'goal' ? (
+                  <span className="text-xs">⚽</span>
+                ) : event.type === 'yellow_card' ? (
+                  <div className="w-2.5 h-3.5 bg-yellow-400 rounded-sm shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
+                ) : event.type === 'red_card' ? (
+                  <div className="w-2.5 h-3.5 bg-red-500 rounded-sm shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                ) : event.type === 'substitution' ? (
+                  <span className="text-green-400 text-xs font-black">⇄</span>
+                ) : event.type === 'halftime' ? (
+                   <span className="text-[10px]">⏸</span>
+                ) : event.type === 'fulltime' ? (
+                   <span className="text-[10px]">🏆</span>
+                ) : (
+                  <span className="text-[10px]">🏁</span>
+                )}
+              </div>
+
+              {/* Côté Droit (Away) */}
+              <div className="flex-1 flex justify-start pl-8">
+                {!isHome && !isSystem && (
+                  <div className="flex flex-col items-start text-left">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-slate-500">{event.minute}'</span>
+                      <span className="text-xs font-black text-white uppercase tracking-tight">{playerName}</span>
+                      {(event.type === 'goal' || event.type === 'own_goal') && (
+                         <span className="px-2 py-0.5 rounded-full bg-blue-600 text-[10px] font-black text-white shadow-lg">
+                           {event.currentScore}
+                         </span>
+                      )}
+                    </div>
+                    {event.type === 'substitution' && player2Name && (
+                      <span className="text-[10px] text-slate-500 mt-0.5">↑ {player2Name}</span>
+                    )}
+                    {event.type === 'goal' && player2Name && (
+                      <span className="text-[9px] text-slate-600 italic mt-0.5">Pass: {player2Name}</span>
+                    )}
+                  </div>
+                )}
+                {isSystem && !isHome && (
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{EVENT_LABELS[event.type]}</span>
+                )}
+              </div>
+
             </div>
           )
-        }
-
-        return (
-          <div
-            key={event.id}
-            className={clsx(
-              'flex items-start gap-3 py-3 border-b border-white/[0.04] last:border-0',
-              'animate-fade-in-up',
-              idx === 0 && 'bg-white/[0.02] rounded-lg px-2',
-            )}
-          >
-            {/* Minute */}
-            <div className="shrink-0 w-8 text-right">
-              {event.minute !== null && (
-                <span className="text-xs font-black tabular-nums" style={{ color }}>
-                  {event.minute}'
-                </span>
-              )}
-            </div>
-
-            {/* Icône */}
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0 mt-0.5"
-              style={{ backgroundColor: color + '20', border: `1px solid ${color}40` }}
-            >
-              {EVENT_ICONS[event.type]}
-            </div>
-
-            {/* Contenu */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color }}>
-                  {event.team?.name ?? EVENT_LABELS[event.type]}
-                </span>
-                {event.type === 'own_goal' && (
-                  <span className="text-[9px] text-slate-600 bg-slate-700/30 px-1.5 py-0.5 rounded">CSC</span>
-                )}
-              </div>
-
-              {playerName && (
-                <p className="text-sm font-semibold text-white mt-0.5">{playerName}</p>
-              )}
-
-              {event.type === 'substitution' && player2Name && (
-                <p className="text-xs text-slate-500 mt-0.5">
-                  ↑ {player2Name}
-                </p>
-              )}
-
-              {event.type === 'goal' && player2Name && (
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Passe déc. {player2Name}
-                </p>
-              )}
-
-              {event.description && (
-                <p className="text-xs text-slate-400 mt-1 italic">{event.description}</p>
-              )}
-            </div>
-
-            {/* Indicateur côté */}
-            {event.team_id && (
-              <div
-                className="w-1 self-stretch rounded-full shrink-0"
-                style={{ backgroundColor: color + '60' }}
-              />
-            )}
-          </div>
-        )
-      })}
+        })}
+      </div>
     </div>
   )
 }
