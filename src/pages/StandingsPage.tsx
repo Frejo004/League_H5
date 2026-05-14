@@ -9,21 +9,10 @@ import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { exportCSV } from '@/hooks/useExport'
+import { FormBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import type { StandingRow } from '@/hooks/useStandings'
 
-function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
-  return (
-    <span className={clsx(
-      'inline-flex items-center justify-center w-5 h-5 rounded-md text-white text-[9px] font-black shrink-0',
-      result === 'W' && 'bg-green-500/80',
-      result === 'D' && 'bg-slate-600',
-      result === 'L' && 'bg-red-500/80',
-    )}>
-      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
-    </span>
-  )
-}
 
 type FilterType = 'all' | 'home' | 'away'
 

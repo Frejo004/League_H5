@@ -3,6 +3,7 @@ import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, Chev
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
+import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useUpdateTeam } from '@/hooks/useTeams'
@@ -37,17 +38,8 @@ function formatDate(dateStr: string) {
   }).format(d)
 }
 
-// ── Positions ─────────────────────────────────────────────────────────────────
-
-const POSITIONS: { value: PlayerPosition; label: string }[] = [
-  { value: 'goalkeeper', label: 'Gardien'   },
-  { value: 'defender',   label: 'Défenseur' },
-  { value: 'midfielder', label: 'Milieu'    },
-  { value: 'forward',    label: 'Attaquant' },
-]
-
 function positionLabel(pos: PlayerPosition | null) {
-  return POSITIONS.find(p => p.value === pos)?.label ?? '—'
+  return pos ? POSITION_LABELS[pos] : '—'
 }
 
 // ── Ligne joueur éditable ─────────────────────────────────────────────────────
@@ -218,8 +210,8 @@ function PlayerRow({
                          text-white text-sm focus:outline-none focus:border-primary-500"
             >
               <option value="">— Non définie —</option>
-              {POSITIONS.map(pos => (
-                <option key={pos.value} value={pos.value}>{pos.label}</option>
+              {Object.entries(POSITION_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>
@@ -241,18 +233,6 @@ function formatShortDate(dateStr: string | null) {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(new Date(dateStr))
 }
 
-function ResultBadge({ result }: { result: 'W' | 'D' | 'L' }) {
-  return (
-    <span className={clsx(
-      'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold shrink-0',
-      result === 'W' && 'bg-green-600 text-white',
-      result === 'D' && 'bg-slate-500 text-white',
-      result === 'L' && 'bg-red-600 text-white',
-    )}>
-      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
-    </span>
-  )
-}
 
 function PlayerStatsDrawer({
   player,
@@ -647,15 +627,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
       className="flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors border-b border-surface-border/40 last:border-b-0"
     >
       {/* Résultat badge */}
-      <div className={clsx(
-        'w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0',
-        result === 'W' && 'bg-green-500/20 text-green-400',
-        result === 'D' && 'bg-slate-500/20 text-slate-400',
-        result === 'L' && 'bg-red-500/20 text-red-400',
-        !result && 'bg-surface-raised text-slate-600',
-      )}>
-        {result ?? (isCancelled ? '✕' : '·')}
-      </div>
+      <ResultBadge result={result} variant="ghost" />
 
       {/* Adversaire */}
       <div className="flex items-center gap-2 flex-1 min-w-0">

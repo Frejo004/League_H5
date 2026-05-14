@@ -5,28 +5,11 @@ import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
+import { POSITION_LABELS, FormBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import type { Player, PlayerPosition, TeamRef, TeamWithCaptain } from '@/types/database'
 
-const POSITION_LABELS: Record<PlayerPosition, string> = {
-  goalkeeper: 'Gardien',
-  defender: 'Défenseur',
-  midfielder: 'Milieu',
-  forward: 'Attaquant',
-}
-
-function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
-  return (
-    <span className={clsx(
-      'inline-flex items-center justify-center w-6 h-6 rounded-md text-white text-[10px] font-black',
-      result === 'W' && 'bg-green-500/80',
-      result === 'D' && 'bg-slate-600',
-      result === 'L' && 'bg-red-500/80',
-    )}>
-      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
-    </span>
-  )
-}
 
 export function TeamDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -62,14 +45,11 @@ export function TeamDetailPage() {
   return (
     <div className="space-y-4 pb-10">
 
-      {/* Back */}
-      <Link
-        to="/teams"
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
-      >
-        <ArrowLeft size={15} />
-        Retour aux équipes
-      </Link>
+      {/* Navigation */}
+      <Breadcrumbs items={[
+        { label: 'Équipes', to: '/teams' },
+        { label: team.name }
+      ]} />
 
       {/* ── Team hero ── */}
       <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface-card/80 p-6">

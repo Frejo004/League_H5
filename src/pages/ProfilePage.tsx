@@ -164,7 +164,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function ProfilePage() {
-  const { profile, user, refreshProfile } = useAuth()
+  const { profile, user, refreshProfile, signOut } = useAuth()
   const qc = useQueryClient()
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
@@ -458,6 +458,17 @@ export function ProfilePage() {
         </form>
       </SectionCard>
 
+      {/* ── Déconnexion ── */}
+      <div className="pt-4 border-t border-slate-800/50 mt-4">
+        <button
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+                     bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold transition-all
+                     border border-red-500/20"
+        >
+          <span>Se déconnecter</span>
+        </button>
+      </div>
     </div>
   )
 }

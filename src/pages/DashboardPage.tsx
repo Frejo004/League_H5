@@ -33,7 +33,6 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
   value: number
   icon: typeof Calendar
   color: string
-  bg: string
   trend?: string
 }) {
   return (
@@ -406,20 +405,14 @@ export function DashboardPage() {
             En cours
           </span>
         }
-        stats={[
-          { label: 'Matchs joués', value: completedMatches.length },
-          { label: 'Équipes',      value: teams?.length ?? 0 },
-          { label: 'Buteurs',      value: scorers?.filter(s => s.goals > 0).length ?? 0 },
-          { label: 'À venir',      value: upcomingMatches.length },
-        ]}
       />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Matchs joués" value={completedMatches.length}                              icon={Calendar} color="#3b82f6" bg="blue" />
-        <KpiCard label="Équipes"      value={teams?.length ?? 0}                                   icon={Users}    color="#8b5cf6" bg="violet" />
-        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0}        icon={Target}   color="#f97316" bg="orange" />
-        <KpiCard label="À venir"      value={upcomingMatches.length}                               icon={Calendar} color="#2563eb" bg="blue" />
+        <KpiCard label="Matchs joués" value={completedMatches.length}                       icon={Calendar} color="#3b82f6" />
+        <KpiCard label="Équipes"      value={teams?.length ?? 0}                            icon={Users}    color="#8b5cf6" />
+        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0} icon={Target}   color="#f97316" />
+        <KpiCard label="À venir"      value={upcomingMatches.length}                        icon={Calendar} color="#2563eb" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

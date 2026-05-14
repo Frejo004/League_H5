@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
+import { useLandingStats } from '@/hooks/useLandingStats'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Composants internes
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,10 +45,14 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
   )
 }
 
-function StatPill({ value, label }: { value: string; label: string }) {
+function StatPill({ value, label, isLoading }: { value: string | number; label: string; isLoading?: boolean }) {
   return (
     <div className="text-center px-6 py-4 rounded-2xl border border-white/[0.06] bg-white/[0.03]">
-      <p className="text-3xl font-black text-white tabular-nums">{value}</p>
+      {isLoading ? (
+        <div className="h-9 w-12 bg-white/5 rounded mx-auto animate-pulse" />
+      ) : (
+        <p className="text-3xl font-black text-white tabular-nums">{value}</p>
+      )}
       <p className="text-xs text-slate-500 mt-1 font-medium">{label}</p>
     </div>
   )
@@ -57,6 +63,8 @@ function StatPill({ value, label }: { value: string; label: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LandingPage() {
+  const { data: stats, isLoading } = useLandingStats()
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -130,7 +138,7 @@ export function LandingPage() {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#C8F135]/10 border border-[#C8F135]/30 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C8F135] animate-pulse" />
             <span className="text-[11px] font-bold text-[#C8F135] uppercase tracking-widest">
-              Saison Mai 2026 en cours
+              {isLoading ? 'Chargement...' : `${stats?.seasonName ?? 'Saison'} en cours`}
             </span>
           </div>
 
@@ -176,8 +184,8 @@ export function LandingPage() {
       {/* ── Stats ── */}
       <section className="px-6 py-12 border-t border-white/[0.06]">
         <div className="max-w-3xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatPill value="5" label="Équipes" />
-          <StatPill value="30+" label="Joueurs" />
+          <StatPill value={stats?.teams ?? 0} label="Équipes" isLoading={isLoading} />
+          <StatPill value={stats?.players ? `${stats.players}+` : 0} label="Joueurs" isLoading={isLoading} />
           <StatPill value="2×20'" label="Format match" />
           <StatPill value="🔴" label="Live disponible" />
         </div>

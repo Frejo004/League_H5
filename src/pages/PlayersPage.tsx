@@ -11,16 +11,16 @@ import type { PlayerPosition, PlayerWithTeam, TeamWithCaptain } from '@/types/da
 
 const POSITION_LABELS: Record<PlayerPosition, string> = {
   goalkeeper: 'Gardien',
-  defender:   'Défenseur',
+  defender: 'Défenseur',
   midfielder: 'Milieu',
-  forward:    'Attaquant',
+  forward: 'Attaquant',
 }
 
 const POSITION_COLORS: Record<PlayerPosition, string> = {
   goalkeeper: 'text-yellow-400 bg-yellow-400/10',
-  defender:   'text-blue-400 bg-blue-400/10',
+  defender: 'text-blue-400 bg-blue-400/10',
   midfielder: 'text-green-400 bg-green-400/10',
-  forward:    'text-orange-400 bg-orange-400/10',
+  forward: 'text-orange-400 bg-orange-400/10',
 }
 
 type SortKey = 'name' | 'jersey' | 'position'
@@ -31,11 +31,11 @@ export function PlayersPage() {
   const { data: players, isLoading: playersLoading } = usePlayers(season?.id)
   const { data: teams } = useTeams(season?.id)
 
-  const [search,     setSearch]     = useState('')
+  const [search, setSearch] = useState('')
   const [filterTeam, setFilterTeam] = useState('')
-  const [filterPos,  setFilterPos]  = useState<PlayerPosition | ''>('')
-  const [sortKey,    setSortKey]    = useState<SortKey>('name')
-  const [page,       setPage]       = useState(1)
+  const [filterPos, setFilterPos] = useState<PlayerPosition | ''>('')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [page, setPage] = useState(1)
 
   // Reset page quand les filtres changent
   useEffect(() => { setPage(1) }, [search, filterTeam, filterPos, sortKey])
@@ -45,9 +45,9 @@ export function PlayersPage() {
   const filtered = (players ?? [])
     .filter(p => {
       const fullName = `${p.first_name} ${p.last_name}`.toLowerCase()
-      return (!search     || fullName.includes(search.toLowerCase()))
-          && (!filterTeam || p.team_id === filterTeam)
-          && (!filterPos  || p.position === filterPos)
+      return (!search || fullName.includes(search.toLowerCase()))
+        && (!filterTeam || p.team_id === filterTeam)
+        && (!filterPos || p.position === filterPos)
     })
     .sort((a, b) => {
       if (sortKey === 'jersey') return (a.jersey_number ?? 99) - (b.jersey_number ?? 99)
@@ -71,8 +71,8 @@ export function PlayersPage() {
         subtitle={season?.name}
         icon={<User size={20} className="text-cyan-400" />}
         stats={players?.length ? [
-          { label: 'Joueurs',  value: players.length },
-          { label: 'Équipes',  value: teams?.length ?? 0 },
+          { label: 'Joueurs', value: players.length },
+          { label: 'Équipes', value: teams?.length ?? 0 },
           { label: 'Gardiens', value: players.filter(p => p.position === 'goalkeeper').length },
           { label: 'Attaquants', value: players.filter(p => p.position === 'forward').length },
         ] : undefined}
@@ -208,7 +208,7 @@ export function PlayersPage() {
               const team = p.teams
               const teamWithCaptain = teams?.find(t => t.id === p.team_id) as TeamWithCaptain | undefined
               const isCaptain = teamWithCaptain?.captain_player_id === p.id
-              
+
               return (
                 <Link
                   key={p.id}

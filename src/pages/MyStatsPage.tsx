@@ -8,34 +8,16 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useScorers } from '@/hooks/useScorers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
+import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const POSITION_LABELS: Record<string, string> = {
-  goalkeeper: 'Gardien',
-  defender:   'Défenseur',
-  midfielder: 'Milieu',
-  forward:    'Attaquant',
-}
 
 function formatShortDate(dateStr: string | null) {
   if (!dateStr) return '—'
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(new Date(dateStr))
 }
 
-function ResultBadge({ result }: { result: 'W' | 'D' | 'L' }) {
-  return (
-    <span className={clsx(
-      'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold shrink-0',
-      result === 'W' && 'bg-green-600 text-white',
-      result === 'D' && 'bg-slate-500 text-white',
-      result === 'L' && 'bg-red-600 text-white',
-    )}>
-      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
-    </span>
-  )
-}
 
 // ── Composant interne qui charge les stats une fois le playerId connu ─────────
 
@@ -45,7 +27,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
   const { data: scorers } = useScorers(seasonId)
 
   if (isLoading) return <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
-  if (!profile)  return (
+  if (!profile) return (
     <div className="card">
       <div className="empty-state py-8">
         <Shield size={24} className="text-slate-600 mb-2" />
@@ -66,7 +48,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
   let cumGoals = 0
   let cumAssists = 0
   const evolution = chronoMatches.map(m => {
-    cumGoals   += m.goals_in_match
+    cumGoals += m.goals_in_match
     cumAssists += m.assists_in_match
     return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
   })
@@ -120,10 +102,10 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
       {/* ── Stats saison ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { label: 'Matchs joués',    value: profile.matches_played,  icon: Calendar, color: 'text-blue-400',   highlight: false },
-          { label: 'Buts',            value: profile.goals,           icon: Target,   color: 'text-orange-400', highlight: false },
-          { label: 'Passes déc.',     value: profile.assists,         icon: Zap,      color: 'text-violet-400', highlight: false },
-          { label: 'Homme du match',  value: mvpData?.total_mvp ?? 0, icon: Star,     color: 'text-amber-400',  highlight: (mvpData?.total_mvp ?? 0) > 0 },
+          { label: 'Matchs joués', value: profile.matches_played, icon: Calendar, color: 'text-blue-400', highlight: false },
+          { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400', highlight: false },
+          { label: 'Passes déc.', value: profile.assists, icon: Zap, color: 'text-violet-400', highlight: false },
+          { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400', highlight: (mvpData?.total_mvp ?? 0) > 0 },
         ].map(({ label, value, icon: Icon, color, highlight }) => (
           <div
             key={label}
@@ -208,8 +190,8 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
           </div>
 
           {profile.recent_matches.map((m, i) => {
-            const isHome  = m.home_team.id === profile.team_id
-            const opp     = isHome ? m.away_team : m.home_team
+            const isHome = m.home_team.id === profile.team_id
+            const opp = isHome ? m.away_team : m.home_team
             const myScore = isHome ? m.home_score : m.away_score
             const opScore = isHome ? m.away_score : m.home_score
 

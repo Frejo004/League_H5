@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { NavLink, useLocation, Link } from 'react-router-dom'
+import { NavLink, useLocation, Link, useSearchParams } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
@@ -236,6 +236,8 @@ export default function Header() {
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
+  const [searchParams] = useSearchParams()
+  const currentTab = searchParams.get('tab') || 'seasons'
 
   // Récupérer le thème et les couleurs associées
   const { resolvedTheme } = useTheme()
@@ -440,20 +442,25 @@ export default function Header() {
               borderTop: `1px solid ${BORDER}`,
             }}
           >
-            {ADMIN_SUBNAV.map(({ label }, i) => (
-              <button
-                key={i}
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-colors"
-                style={{
-                  fontFamily: "'Barlow', sans-serif",
-                  color: NAV_OFF,
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
-              >
-                {label}
-              </button>
-            ))}
+            {ADMIN_SUBNAV.map(({ label, to, tab }, i) => {
+              const isActive = currentTab === tab
+              return (
+                <Link
+                  key={i}
+                  to={`${to}?tab=${tab}`}
+                  className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-colors"
+                  style={{
+                    fontFamily: "'Barlow', sans-serif",
+                    color: isActive ? ACCENT : NAV_OFF,
+                    backgroundColor: isActive ? `${ACCENT}15` : 'transparent',
+                  }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'white' }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                >
+                  {label}
+                </Link>
+              )
+            })}
           </div>
         )}
       </header>
@@ -489,19 +496,6 @@ export default function Header() {
 
         {/* Droite */}
         <div className="flex items-center gap-2.5">
-          {season && (
-            <span
-              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold hidden sm:block"
-              style={{
-                fontFamily: "'Barlow', sans-serif",
-                backgroundColor: 'rgba(128,128,128,0.1)',
-                border: `1px solid ${BORDER}`,
-                color: colors.TEXT_SECONDARY,
-              }}
-            >
-              {season.name}
-            </span>
-          )}
           <GlobalSearch />
           <ThemeToggle />
 
@@ -526,7 +520,6 @@ export default function Header() {
             </NavLink>
           )}
 
-          <RoleBadge role={effectiveRole} />
           <Avatar profile={profile} role={effectiveRole} />
           <button
             onClick={() => setMobileOpen(true)}

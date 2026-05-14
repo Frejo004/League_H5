@@ -19,6 +19,8 @@ export function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) { setError('Veuillez entrer un email valide.'); return }
     if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas.'); return }
     if (password.length < 8)          { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
     setIsLoading(true)

@@ -170,12 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id, fetchProfile])
 
   async function signOut() {
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* ignore */ }
+    }
     setSession(null)
     setProfile(null)
     window.location.href = '/auth/login'
-    try { await supabase.auth.signOut() } catch {
-      try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* ignore */ }
-    }
   }
 
   const role = profile?.role ?? null

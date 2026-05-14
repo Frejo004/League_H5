@@ -5,27 +5,10 @@ import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useScorers } from '@/hooks/useScorers'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { SkeletonPlayerProfile } from '@/components/ui/SkeletonLoader'
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
+import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 
-const POSITION_LABELS: Record<string, string> = {
-  goalkeeper: 'Gardien',
-  defender: 'Défenseur',
-  midfielder: 'Milieu',
-  forward: 'Attaquant',
-}
-
-function ResultBadge({ result }: { result: 'W' | 'D' | 'L' }) {
-  return (
-    <span className={clsx(
-      'inline-flex items-center justify-center w-5 h-5 rounded text-white text-[9px] font-bold shrink-0',
-      result === 'W' && 'bg-green-600',
-      result === 'D' && 'bg-slate-500',
-      result === 'L' && 'bg-red-600',
-    )}>
-      {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
-    </span>
-  )
-}
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -61,12 +44,11 @@ export function PlayerProfilePage() {
   return (
     <div className="space-y-3 pb-10 animate-fade-in-up">
 
-      {/* Back */}
-      <Link to="/players"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">
-        <ArrowLeft size={14} />
-        Joueurs
-      </Link>
+      {/* Navigation */}
+      <Breadcrumbs items={[
+        { label: 'Joueurs', to: '/players' },
+        { label: `${player.first_name} ${player.last_name}` }
+      ]} />
 
       {/* ── Hero card ── */}
       <div className="card">

@@ -23,7 +23,8 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
-    if (!email.includes('@')) { setError('Veuillez entrer un email valide'); return }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) { setError('Veuillez entrer un email valide'); return }
     if (password.length < 6)  { setError('Le mot de passe doit contenir au moins 6 caractères'); return }
     setIsLoading(true)
     try {

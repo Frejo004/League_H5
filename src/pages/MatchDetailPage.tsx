@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { LiveClock } from '@/components/live/LiveClock'
 import { LiveEventFeed } from '@/components/live/LiveEventFeed'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
@@ -193,13 +194,12 @@ export function MatchDetailPage() {
   return (
     <div className="space-y-3 pb-10">
 
-      {/* Back + Share */}
+      {/* Navigation + Share */}
       <div className="flex items-center justify-between">
-        <Link to="/matches"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">
-          <ArrowLeft size={14} />
-          Matchs
-        </Link>
+        <Breadcrumbs items={[
+          { label: 'Matchs', to: '/matches' },
+          { label: match ? `${match.home_team.name} vs ${match.away_team.name}` : 'Détails' }
+        ]} />
 
         {/* Bouton partage — Web Share API (iOS/Android natif) */}
         {(isCompleted || isLive) && typeof navigator !== 'undefined' && 'share' in navigator && (
