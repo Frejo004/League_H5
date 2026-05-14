@@ -94,94 +94,100 @@ export function PageHero({
 }: PageHeroProps) {
   return (
     <div className={clsx(
-      'relative overflow-hidden rounded-2xl border border-surface-border',
-      compact ? 'min-h-[120px]' : 'min-h-[160px]',
+      'relative overflow-hidden rounded-2xl border border-white/10 group',
+      compact ? 'min-h-[130px]' : 'min-h-[180px]',
       className
     )}>
-
-      {/* ── Photo de fond ── */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
-        style={{ backgroundImage: `url(${imageUrl})` }}
-      />
-
-      {/* ── Overlays empilés ── */}
-      {/* 1. Assombrir la photo */}
-      <div className="absolute inset-0 bg-black/65" />
-      {/* 2. Gradient directionnel pour lisibilité du texte */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-      {/* 3. Gradient bas pour les stats */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-      {/* 4. Accent couleur subtil */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${accentColor}40 0%, transparent 70%)` }}
-      />
-
-      {/* ── Pattern SVG terrain ── */}
-      <div
-        className="absolute inset-0 opacity-100"
-        style={{ backgroundImage: patternUrl(pattern), backgroundRepeat: 'repeat' }}
-      />
-
-      {/* ── Ligne accent en haut ── */}
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5"
-        style={{ background: `linear-gradient(90deg, ${accentColor}, transparent 60%)` }}
-      />
-
-      {/* ── Contenu ── */}
-      <div className={clsx(
-        'relative z-10 flex flex-col justify-between h-full',
-        compact ? 'p-4' : 'p-5'
-      )}>
-
-        {/* Top row : titre + badge */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            {icon && (
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0
-                           border border-white/10 backdrop-blur-sm"
-                style={{ backgroundColor: `${accentColor}30` }}
-              >
-                {icon}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className={clsx(
-                'font-black text-white tracking-tight leading-tight drop-shadow-lg',
-                compact ? 'text-xl' : 'text-2xl'
-              )}>
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="text-sm text-white/60 mt-0.5 truncate">{subtitle}</p>
-              )}
-            </div>
-          </div>
-
-          {badge && (
-            <div className="shrink-0">{badge}</div>
-          )}
-        </div>
-
-        {/* Bottom row : stats */}
-        {stats && stats.length > 0 && (
-          <div className="flex items-center gap-5 mt-4 pt-3 border-t border-white/10">
-            {stats.map((s, i) => (
-              <div key={i} className="text-center">
-                <p className="text-xl font-black text-white tabular-nums drop-shadow">{s.value}</p>
-                <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {children && (
-          <div className="mt-3">{children}</div>
-        )}
-      </div>
-    </div>
+ 
+       {/* ── Photo de fond ── */}
+       <div
+         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
+         style={{ backgroundImage: `url(${imageUrl})` }}
+       />
+ 
+       {/* ── Overlays empilés ── */}
+       {/* 1. Assombrir la photo */}
+       <div className="absolute inset-0 bg-black/60 transition-opacity duration-700 group-hover:opacity-50" />
+       
+       {/* 2. Mesh Gradient animé pour le "wow" effect */}
+       <div className="absolute inset-0 bg-mesh opacity-20 pointer-events-none" />
+       
+       {/* 3. Gradient directionnel pour lisibilité du texte */}
+       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+       
+       {/* 4. Accent couleur subtil */}
+       <div
+         className="absolute inset-0 opacity-30"
+         style={{ background: `radial-gradient(circle at 0% 50%, ${accentColor}40 0%, transparent 70%)` }}
+       />
+ 
+       {/* ── Pattern SVG terrain ── */}
+       <div
+         className="absolute inset-0 opacity-40 mix-blend-overlay"
+         style={{ backgroundImage: patternUrl(pattern), backgroundRepeat: 'repeat' }}
+       />
+ 
+       {/* ── Contenu ── */}
+       <div className={clsx(
+         'relative z-10 flex flex-col justify-between h-full',
+         compact ? 'p-5' : 'p-6'
+       )}>
+ 
+         {/* Top row : titre + badge */}
+         <div className="flex items-start justify-between gap-4">
+           <div className="flex items-center gap-4 min-w-0">
+             {icon && (
+               <div
+                 className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0
+                            glass-morphism shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+                 style={{ border: `1px solid ${accentColor}40` }}
+               >
+                 <div style={{ color: accentColor }}>{icon}</div>
+               </div>
+             )}
+             <div className="min-w-0">
+               <h1 className={clsx(
+                 'font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]',
+                 compact ? 'text-2xl' : 'text-3xl'
+               )}
+               style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                 {title}
+               </h1>
+               {subtitle && (
+                 <p className="text-sm text-white/70 mt-1 font-medium tracking-wide drop-shadow-md">{subtitle}</p>
+               )}
+             </div>
+           </div>
+ 
+           {badge && (
+             <div className="shrink-0 animate-fadeIn">{badge}</div>
+           )}
+         </div>
+ 
+         {/* Bottom row : stats ou enfants */}
+         <div className="flex items-end justify-between gap-4 mt-4">
+           {stats && stats.length > 0 && (
+             <div className="flex items-center gap-6 px-4 py-2.5 rounded-2xl glass-morphism border border-white/5">
+               {stats.map((s, i) => (
+                 <div key={i} className="text-center">
+                   <p className="text-2xl font-black text-white tabular-nums drop-shadow-lg">{s.value}</p>
+                   <p className="text-[9px] text-white/50 uppercase tracking-[0.2em] font-black mt-0.5">{s.label}</p>
+                 </div>
+               ))}
+             </div>
+           )}
+ 
+           {children && (
+             <div className="flex-1 flex justify-end">{children}</div>
+           )}
+         </div>
+       </div>
+ 
+       {/* ── Ligne accent en bas ── */}
+       <div
+         className="absolute bottom-0 left-0 right-0 h-1 opacity-50"
+         style={{ background: `linear-gradient(90deg, ${accentColor}, transparent 80%)` }}
+       />
+     </div>
   )
 }

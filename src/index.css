@@ -154,6 +154,15 @@
     from { transform: scaleY(0); }
     to   { transform: scaleY(1); }
   }
+  @keyframes floating {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes mesh-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -185,6 +194,10 @@ html {
   --color-chat-bubble-in:  #1e2530;
   --color-chat-action-bar: #1a2030;
   --color-chat-input-bg:   #0D1117;
+  
+  --glass-bg: rgba(22, 28, 45, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
 }
 
 body {
@@ -196,6 +209,53 @@ body {
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37,99,235,0.08) 0%, transparent 60%);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.bg-mesh {
+  background: linear-gradient(-45deg, #0f1420, #1e2640, #161c2d, #0d1117);
+  background-size: 400% 400%;
+  animation: mesh-gradient 15s ease infinite;
+}
+
+/* Texture premium type carbone/grille de sport */
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Angles biseautés façon Broadcast Sportif */
+.clip-angled {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.clip-angled-br {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+.clip-angled-tl {
+  clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%, 0 16px);
+}
+
+.glass-morphism {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Effet de lueur textuelle premium */
+.text-glow {
+  text-shadow: 0 0 20px currentColor;
+}
+.text-glow-sm {
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* Ligne de séparation avec dégradé radial */
+.divider-radial {
+  background: radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%);
+  height: 1px;
+  width: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════════

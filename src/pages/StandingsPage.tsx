@@ -57,27 +57,47 @@ function computeFilteredStandings(
 // ── Podium top 3 ─────────────────────────────────────────────────────────────
 function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
   const configs = {
-    1: { emoji: '🥇', glow: '#f59e0b', size: 'w-14 h-14', textSize: 'text-2xl', pts: 'text-yellow-400' },
-    2: { emoji: '🥈', glow: '#94a3b8', size: 'w-12 h-12', textSize: 'text-xl',  pts: 'text-slate-300' },
-    3: { emoji: '🥉', glow: '#b45309', size: 'w-12 h-12', textSize: 'text-xl',  pts: 'text-amber-600' },
+    1: { label: '1ER', glow: '#FFDF73', border: 'border-[#FFDF73]/50', bg: 'from-[#FFDF73]/20 via-[#B8860B]/5 to-transparent', size: 'w-16 h-16', textSize: 'text-3xl' },
+    2: { label: '2E', glow: '#E2E8F0', border: 'border-slate-300/50', bg: 'from-slate-300/20 via-slate-500/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
+    3: { label: '3E', glow: '#D97706', border: 'border-amber-600/50', bg: 'from-amber-600/20 via-amber-800/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
   }
   const c = configs[rank]
 
   return (
     <Link to={`/teams/${row.team_id}`}
-      className="flex flex-col items-center gap-2 p-3 rounded-2xl border border-white/6 hover:border-white/12 transition-all duration-200 hover:-translate-y-1 group"
-      style={{ background: `linear-gradient(135deg, ${c.glow}10 0%, #111827 70%)` }}>
-      <span className="text-lg">{c.emoji}</span>
-      <div className={clsx('rounded-2xl flex items-center justify-center text-white font-black shadow-lg', c.size, c.textSize)}
+      className={clsx(
+        "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-2 group overflow-hidden",
+        c.border
+      )}>
+      {/* Background radial glow */}
+      <div className="absolute inset-0 opacity-40 pointer-events-none"
+           style={{ background: `radial-gradient(circle at center 20%, ${c.glow}40 0%, transparent 70%)` }} />
+      <div className={`absolute inset-0 bg-gradient-to-b ${c.bg} pointer-events-none`} />
+
+      {/* Rank Label */}
+      <div className="absolute top-0 left-0 bg-black/60 px-2 py-1 rounded-br-lg border-b border-r border-white/10 z-10">
+        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: c.glow }}>{c.label}</span>
+      </div>
+
+      <div className={clsx('relative rounded-xl flex items-center justify-center text-white font-black shadow-2xl z-10 ring-2 ring-black/50', c.size, c.textSize)}
         style={{ backgroundColor: row.team_color }}>
         {row.team_logo
-          ? <img src={row.team_logo} alt="" className="w-10 h-10 object-contain rounded-xl" />
+          ? <img src={row.team_logo} alt="" className="w-3/4 h-3/4 object-contain drop-shadow-md" />
           : row.team_name[0]
         }
       </div>
-      <p className="text-xs font-bold text-white text-center truncate w-full">{row.team_name}</p>
-      <p className={clsx('text-xl font-black tabular-nums', c.pts)}>{row.points}</p>
-      <p className="text-[10px] text-slate-600">pts</p>
+      
+      <div className="text-center relative z-10 w-full mt-1">
+        <p className="text-sm font-black text-white truncate uppercase tracking-wider w-full" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+          {row.team_name}
+        </p>
+        <div className="flex items-baseline justify-center gap-1 mt-1">
+          <span className="text-3xl font-black tabular-nums leading-none" style={{ color: c.glow, fontFamily: "'Barlow Condensed', sans-serif" }}>
+            {row.points}
+          </span>
+          <span className="text-[9px] text-white/50 uppercase font-bold tracking-widest">pts</span>
+        </div>
+      </div>
     </Link>
   )
 }
@@ -229,100 +249,110 @@ export function StandingsPage() {
                     )}
                   >
                     {/* Desktop row */}
-                    <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-3">
+                    <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-2.5">
                       <div className="flex justify-center">
-                        {i < 3 ? (
-                          <span className={clsx(
-                            'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black',
-                            i === 0 && 'bg-yellow-500/20 text-yellow-400',
-                            i === 1 && 'bg-slate-500/20 text-slate-300',
-                            i === 2 && 'bg-amber-700/20 text-amber-600',
-                          )}>
-                            {i + 1}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-600 font-bold tabular-nums">{i + 1}</span>
-                        )}
+                        <span className={clsx(
+                          'w-7 h-7 flex items-center justify-center text-[13px] font-black',
+                          isFirst ? 'bg-[#FFDF73] text-black rounded shadow-[0_0_10px_rgba(255,223,115,0.5)]' :
+                          i === 1 ? 'bg-slate-300 text-black rounded' :
+                          i === 2 ? 'bg-amber-600 text-white rounded' :
+                          'text-slate-500 tabular-nums'
+                        )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {i + 1}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0 border border-white/10 shadow-lg"
                           style={{ backgroundColor: row.team_color }}>
                           {row.team_logo
-                            ? <img src={row.team_logo} alt="" className="w-6 h-6 object-contain rounded-md" />
+                            ? <img src={row.team_logo} alt="" className="w-6 h-6 object-contain" />
                             : row.team_name[0]
                           }
                         </div>
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className={clsx('text-sm font-semibold truncate group-hover:text-white transition-colors', isFirst ? 'text-white' : 'text-slate-300')}>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className={clsx('text-[15px] font-black uppercase tracking-wider truncate group-hover:text-white transition-colors', isFirst ? 'text-white' : 'text-slate-200')}
+                                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {row.team_name}
                           </span>
                           {isMyTeam && (
-                            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                            <span className="text-[9px] font-bold text-primary-400 uppercase tracking-widest mt-0.5">
                               Mon équipe
                             </span>
                           )}
                         </div>
                       </div>
-                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.played}</span>
-                      <span className="text-center text-xs font-semibold text-green-400 tabular-nums">{row.won}</span>
-                      <span className="text-center text-xs text-slate-600 tabular-nums">{row.drawn}</span>
-                      <span className="text-center text-xs font-semibold text-red-400 tabular-nums">{row.lost}</span>
-                      <span className={clsx('text-center text-xs font-bold tabular-nums', row.goal_diff > 0 ? 'text-green-400' : row.goal_diff < 0 ? 'text-red-400' : 'text-slate-600')}>
+                      <span className="text-center text-xs text-slate-400 font-bold tabular-nums">{row.played}</span>
+                      <span className="text-center text-xs font-black text-emerald-400 tabular-nums bg-emerald-500/10 rounded py-0.5">{row.won}</span>
+                      <span className="text-center text-xs font-bold text-slate-500 tabular-nums">{row.drawn}</span>
+                      <span className="text-center text-xs font-black text-rose-400 tabular-nums bg-rose-500/10 rounded py-0.5">{row.lost}</span>
+                      <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-emerald-400' : row.goal_diff < 0 ? 'text-rose-400' : 'text-slate-500')}
+                            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                         {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                       </span>
-                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.goals_for}:{row.goals_against}</span>
-                      <div className="flex items-center gap-0.5 justify-center">
+                      <span className="text-center text-[11px] font-bold text-slate-500 tabular-nums tracking-widest">{row.goals_for}:{row.goals_against}</span>
+                      <div className="flex items-center gap-1 justify-center">
                         {row.form.length === 0
                           ? <span className="text-xs text-slate-700">—</span>
                           : row.form.slice(-5).map((r, idx) => <FormBadge key={idx} result={r} />)
                         }
                       </div>
-                      <span className={clsx('text-right text-base font-black tabular-nums', i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-white')}>
-                        {row.points}
-                      </span>
+                      <div className="text-right flex items-center justify-end">
+                        <span className={clsx(
+                          'text-2xl font-black tabular-nums px-2 rounded-lg',
+                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-500' : 'text-white'
+                        )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {row.points}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Mobile row — condensé */}
-                    <div className="lg:hidden grid grid-cols-[2rem_1fr_2rem_auto_3rem] gap-1 items-center px-3 py-3">
-                      <div className="flex justify-center">
-                        {i < 3 ? (
-                          <span className={clsx(
-                            'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black',
-                            i === 0 && 'bg-yellow-500/20 text-yellow-400',
-                            i === 1 && 'bg-slate-500/20 text-slate-300',
-                            i === 2 && 'bg-amber-700/20 text-amber-600',
-                          )}>
-                            {i + 1}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-600 font-bold tabular-nums">{i + 1}</span>
-                        )}
+                    <div className="lg:hidden grid grid-cols-[2rem_1fr_2rem_auto_2.5rem] gap-2 items-center px-3 py-3 relative overflow-hidden">
+                      {isFirst && <div className="absolute inset-0 bg-gradient-to-r from-[#FFDF73]/10 to-transparent pointer-events-none" />}
+                      <div className="flex justify-center relative z-10">
+                        <span className={clsx(
+                          'w-6 h-6 flex items-center justify-center text-[12px] font-black',
+                          isFirst ? 'bg-[#FFDF73] text-black rounded shadow-[0_0_10px_rgba(255,223,115,0.5)]' :
+                          i === 1 ? 'bg-slate-300 text-black rounded' :
+                          i === 2 ? 'bg-amber-600 text-white rounded' :
+                          'text-slate-500 tabular-nums'
+                        )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {i + 1}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-black shrink-0"
+                      <div className="flex items-center gap-2.5 min-w-0 relative z-10">
+                        <div className="w-7 h-7 rounded flex items-center justify-center text-white text-[9px] font-black shrink-0 border border-white/10"
                           style={{ backgroundColor: row.team_color }}>
                           {row.team_logo
-                            ? <img src={row.team_logo} alt="" className="w-5 h-5 object-contain rounded" />
+                            ? <img src={row.team_logo} alt="" className="w-5 h-5 object-contain" />
                             : row.team_name[0]
                           }
                         </div>
-                        <span className={clsx('text-sm font-semibold truncate', isFirst ? 'text-white' : 'text-slate-300')}>
-                          {row.team_name}
-                        </span>
-                        {isMyTeam && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
-                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className={clsx('text-[13px] font-black uppercase tracking-wide truncate', isFirst ? 'text-white' : 'text-slate-200')}
+                                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                            {row.team_name}
+                          </span>
+                          {isMyTeam && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0 mt-0.5 shadow-[0_0_5px_rgba(56,189,248,0.8)]" />
+                          )}
+                        </div>
                       </div>
-                      <span className="text-center text-xs text-slate-500 tabular-nums">{row.played}</span>
-                      <div className="flex items-center gap-0.5 justify-center">
+                      <span className="text-center text-[11px] font-bold text-slate-400 tabular-nums relative z-10">{row.played}</span>
+                      <div className="flex items-center gap-0.5 justify-center relative z-10">
                         {row.form.length === 0
                           ? <span className="text-[10px] text-slate-700">—</span>
                           : row.form.slice(-3).map((r, idx) => <FormBadge key={idx} result={r} />)
                         }
                       </div>
-                      <span className={clsx('text-right text-sm font-black tabular-nums', i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-600' : 'text-white')}>
-                        {row.points}
-                      </span>
+                      <div className="text-right flex justify-end relative z-10">
+                        <span className={clsx(
+                          'text-xl font-black tabular-nums',
+                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-500' : 'text-white'
+                        )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {row.points}
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 )

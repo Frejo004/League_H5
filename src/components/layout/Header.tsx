@@ -14,12 +14,13 @@ import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useChatUnread } from '@/hooks/useChatUnread'
 import type { UserRole } from '@/types/database'
+import clsx from 'clsx'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens - Adaptés au thème
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ACCENT   = '#C8F135'
+const ACCENT = '#C8F135'
 
 interface ThemeColors {
   BG_MAIN: string
@@ -60,71 +61,71 @@ interface NavItem { to: string; label: string; icon: typeof LayoutDashboard }
 
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
-    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
-    { to: '/matches',   label: 'Matchs',     icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',    icon: Target },
-    { to: '/teams',     label: 'Équipes',    icon: Users },
-    { to: '/players',   label: 'Joueurs',    icon: User },
-    { to: '/stats',     label: 'Stats',      icon: Star },
-    { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
-    { to: '/admin',     label: 'Admin',      icon: Settings },
+    { to: '/matches', label: 'Matchs', icon: Calendar },
+    { to: '/scorers', label: 'Buteurs', icon: Target },
+    { to: '/teams', label: 'Équipes', icon: Users },
+    { to: '/players', label: 'Joueurs', icon: User },
+    { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/admin', label: 'Admin', icon: Settings },
   ],
   captain: [
-    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
-    { to: '/matches',   label: 'Matchs',     icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',    icon: Target },
-    { to: '/teams',     label: 'Équipes',    icon: Users },
-    { to: '/players',   label: 'Joueurs',    icon: User },
-    { to: '/stats',     label: 'Stats',      icon: Star },
-    { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
-    { to: '/my-stats',  label: 'Mes Stats',  icon: Target },
-    { to: '/captain',   label: 'Mon Équipe', icon: Crown },
+    { to: '/matches', label: 'Matchs', icon: Calendar },
+    { to: '/scorers', label: 'Buteurs', icon: Target },
+    { to: '/teams', label: 'Équipes', icon: Users },
+    { to: '/players', label: 'Joueurs', icon: User },
+    { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/my-stats', label: 'Mes Stats', icon: Target },
+    { to: '/captain', label: 'Mon Équipe', icon: Crown },
   ],
   player: [
-    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
-    { to: '/matches',   label: 'Matchs',     icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',    icon: Target },
-    { to: '/teams',     label: 'Équipes',    icon: Users },
-    { to: '/players',   label: 'Joueurs',    icon: User },
-    { to: '/stats',     label: 'Stats',      icon: Star },
-    { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
-    { to: '/my-stats',  label: 'Mes Stats',  icon: Target },
-    { to: '/my-team',   label: 'Mon Équipe', icon: Users },
+    { to: '/matches', label: 'Matchs', icon: Calendar },
+    { to: '/scorers', label: 'Buteurs', icon: Target },
+    { to: '/teams', label: 'Équipes', icon: Users },
+    { to: '/players', label: 'Joueurs', icon: User },
+    { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/my-stats', label: 'Mes Stats', icon: Target },
+    { to: '/my-team', label: 'Mon Équipe', icon: Users },
   ],
   spectator: [
-    { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
-    { to: '/matches',   label: 'Matchs',     icon: Calendar },
-    { to: '/scorers',   label: 'Buteurs',    icon: Target },
-    { to: '/teams',     label: 'Équipes',    icon: Users },
-    { to: '/players',   label: 'Joueurs',    icon: User },
-    { to: '/palmares',  label: 'Palmarès',   icon: Star },
-    { to: '/rules',     label: 'Règlement',  icon: BookOpen },
+    { to: '/matches', label: 'Matchs', icon: Calendar },
+    { to: '/scorers', label: 'Buteurs', icon: Target },
+    { to: '/teams', label: 'Équipes', icon: Users },
+    { to: '/players', label: 'Joueurs', icon: User },
+    { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/rules', label: 'Règlement', icon: BookOpen },
   ],
 }
 
 const ADMIN_SUBNAV = [
-  { to: '/admin',           label: 'Saisons',        tab: 'seasons'    },
-  { to: '/admin',           label: 'Équipes',        tab: 'teams'      },
-  { to: '/admin',           label: 'Matchs',         tab: 'schedule'   },
-  { to: '/admin',           label: 'Scores',         tab: 'schedule'   },
-  { to: '/admin',           label: 'Buts & Passes',  tab: 'goals'      },
-  { to: '/admin',           label: 'Spectateurs',    tab: 'spectators' },
-  { to: '/admin',           label: 'Paramètres',     tab: 'settings'   },
+  { to: '/admin', label: 'Saisons', tab: 'seasons' },
+  { to: '/admin', label: 'Équipes', tab: 'teams' },
+  { to: '/admin', label: 'Matchs', tab: 'schedule' },
+  { to: '/admin', label: 'Scores', tab: 'schedule' },
+  { to: '/admin', label: 'Buts & Passes', tab: 'goals' },
+  { to: '/admin', label: 'Spectateurs', tab: 'spectators' },
+  { to: '/admin', label: 'Paramètres', tab: 'settings' },
 ]
 
 // Mobile bottom nav (5 items max)
 const MOBILE_NAV_BASE: NavItem[] = [
-  { to: '/',          label: 'Accueil',    icon: LayoutDashboard },
-  { to: '/matches',   label: 'Matchs',     icon: Calendar },
+  { to: '/', label: 'Accueil', icon: LayoutDashboard },
+  { to: '/matches', label: 'Matchs', icon: Calendar },
   { to: '/standings', label: 'Classement', icon: Trophy },
-  { to: '/players',   label: 'Joueurs',    icon: User },
+  { to: '/players', label: 'Joueurs', icon: User },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,9 +133,9 @@ const MOBILE_NAV_BASE: NavItem[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ROLE_COLORS: Record<UserRole, { badgeBg: string; badgeText: string; avatarBg: string; avatarText: string; label: string }> = {
-  admin:     { badgeBg: 'rgba(200,241,53,0.15)',  badgeText: '#C8F135', avatarBg: 'rgba(200,241,53,0.2)',  avatarText: '#C8F135', label: 'Admin'      },
-  captain:   { badgeBg: 'rgba(99,153,255,0.15)',  badgeText: '#6399FF', avatarBg: 'rgba(99,153,255,0.2)',  avatarText: '#6399FF', label: 'Capitaine'  },
-  player:    { badgeBg: 'rgba(255,180,50,0.15)',  badgeText: '#FFB432', avatarBg: 'rgba(255,180,50,0.2)',  avatarText: '#FFB432', label: 'Joueur'     },
+  admin: { badgeBg: 'rgba(200,241,53,0.15)', badgeText: '#C8F135', avatarBg: 'rgba(200,241,53,0.2)', avatarText: '#C8F135', label: 'Admin' },
+  captain: { badgeBg: 'rgba(99,153,255,0.15)', badgeText: '#6399FF', avatarBg: 'rgba(99,153,255,0.2)', avatarText: '#6399FF', label: 'Capitaine' },
+  player: { badgeBg: 'rgba(255,180,50,0.15)', badgeText: '#FFB432', avatarBg: 'rgba(255,180,50,0.2)', avatarText: '#FFB432', label: 'Joueur' },
   spectator: { badgeBg: 'rgba(160,160,160,0.15)', badgeText: 'rgba(255,255,255,0.5)', avatarBg: 'rgba(160,160,160,0.15)', avatarText: 'rgba(255,255,255,0.5)', label: 'Spectateur' },
 }
 
@@ -145,11 +146,11 @@ const ROLE_COLORS: Record<UserRole, { badgeBg: string; badgeText: string; avatar
 function BallIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="10" stroke="#0D1117" strokeWidth="1.5" fill="#C8F135"/>
-      <path d="M12 2C12 2 9 6 9 12C9 18 12 22 12 22" stroke="#0D1117" strokeWidth="1.2"/>
-      <path d="M2 12H22" stroke="#0D1117" strokeWidth="1.2"/>
-      <path d="M4.5 6.5L12 9L19.5 6.5" stroke="#0D1117" strokeWidth="1"/>
-      <path d="M4.5 17.5L12 15L19.5 17.5" stroke="#0D1117" strokeWidth="1"/>
+      <circle cx="12" cy="12" r="10" stroke="#0D1117" strokeWidth="1.5" fill="#C8F135" />
+      <path d="M12 2C12 2 9 6 9 12C9 18 12 22 12 22" stroke="#0D1117" strokeWidth="1.2" />
+      <path d="M2 12H22" stroke="#0D1117" strokeWidth="1.2" />
+      <path d="M4.5 6.5L12 9L19.5 6.5" stroke="#0D1117" strokeWidth="1" />
+      <path d="M4.5 17.5L12 15L19.5 17.5" stroke="#0D1117" strokeWidth="1" />
     </svg>
   )
 }
@@ -171,8 +172,8 @@ function Brand({ border, textColor }: { border: string; textColor: string }) {
       {/* Titre */}
       <span
         className="text-lg tracking-tight leading-none select-none"
-        style={{ 
-          fontFamily: "'Barlow Condensed', sans-serif", 
+        style={{
+          fontFamily: "'Barlow Condensed', sans-serif",
           fontWeight: 800,
           color: textColor
         }}
@@ -231,7 +232,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
-  const chatRef  = useRef<HTMLDivElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
@@ -260,30 +261,30 @@ export default function Header() {
 
   // Mobile bottom nav — ajoute Admin si admin, Mon Équipe si capitaine ou joueur
   const mobileNav: NavItem[] = isAdmin
-    ? [...MOBILE_NAV_BASE, { to: '/admin',    label: 'Admin',      icon: Settings }]
+    ? [...MOBILE_NAV_BASE, { to: '/admin', label: 'Admin', icon: Settings }]
     : isCaptain
-    ? [...MOBILE_NAV_BASE, { to: '/captain',  label: 'Mon Équipe', icon: Crown }]
-    : (role === 'player')
-    ? [...MOBILE_NAV_BASE, { to: '/my-team',  label: 'Mon Équipe', icon: Users }]
-    : MOBILE_NAV_BASE
+      ? [...MOBILE_NAV_BASE, { to: '/captain', label: 'Mon Équipe', icon: Crown }]
+      : (role === 'player')
+        ? [...MOBILE_NAV_BASE, { to: '/my-team', label: 'Mon Équipe', icon: Users }]
+        : MOBILE_NAV_BASE
 
   // Page title pour la mobile title bar
   const PAGE_TITLES: Record<string, string> = {
-    '/':          'Tableau de bord',
+    '/': 'Tableau de bord',
     '/standings': 'Classement',
-    '/matches':   'Matchs',
-    '/scorers':   'Buteurs',
-    '/teams':     'Équipes',
-    '/players':   'Joueurs',
-    '/stats':     'Statistiques',
-    '/admin':     'Administration',
-    '/captain':   'Mon Équipe',
-    '/my-stats':  'Mes Stats',
-    '/my-team':   'Mon Équipe',
-    '/profile':   'Mon Profil',
-    '/palmares':  'Palmarès',
-    '/rules':     'Règlement',
-    '/chat':      'Messages',
+    '/matches': 'Matchs',
+    '/scorers': 'Buteurs',
+    '/teams': 'Équipes',
+    '/players': 'Joueurs',
+    '/stats': 'Statistiques',
+    '/admin': 'Administration',
+    '/captain': 'Mon Équipe',
+    '/my-stats': 'Mes Stats',
+    '/my-team': 'Mon Équipe',
+    '/profile': 'Mon Profil',
+    '/palmares': 'Palmarès',
+    '/rules': 'Règlement',
+    '/chat': 'Messages',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/')
@@ -484,8 +485,8 @@ export default function Header() {
           </div>
           <span
             className="text-base leading-none"
-            style={{ 
-              fontFamily: "'Barlow Condensed', sans-serif", 
+            style={{
+              fontFamily: "'Barlow Condensed', sans-serif",
               fontWeight: 800,
               color: TEXT_PRIMARY
             }}
@@ -543,7 +544,7 @@ export default function Header() {
       >
         <span
           className="text-sm font-bold"
-          style={{ 
+          style={{
             fontFamily: "'Barlow Condensed', sans-serif",
             color: TEXT_PRIMARY
           }}
@@ -672,85 +673,110 @@ export default function Header() {
       {/* ════════════════════════════════════════════════════════════
           MOBILE BOTTOM NAV
           ════════════════════════════════════════════════════════════ */}
-      <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch"
-        style={{
-          backgroundColor: BG_MAIN,
-          borderTop: `1px solid ${BORDER}`,
-          height: 60,
-        }}
-        aria-label="Navigation bas"
-      >
-        {mobileNav.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
-            className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors"
-            style={({ isActive }) => ({
-              color: isActive ? ACCENT : NAV_OFF,
-            })}
-          >
-            {({ isActive }) => (
-              <>
-                {/* Active pill */}
-                {isActive && (
-                  <span
-                    className="absolute top-1.5 inset-x-1.5 h-8 rounded-xl animate-scale-in"
-                    style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }}
-                  />
-                )}
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} className="relative z-10" />
-                <span
-                  className="relative z-10 text-[9px] font-bold uppercase tracking-wider"
-                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-                >
-                  {label}
-                </span>
-              </>
-            )}
-          </NavLink>
-        ))}
+      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 pointer-events-none">
+        <nav
+          className="pointer-events-auto mx-auto max-w-sm rounded-2xl glass-morphism shadow-2xl flex items-stretch overflow-hidden border border-white/10"
+          style={{
+            height: 64,
+            background: 'rgba(13, 17, 23, 0.85)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)'
+          }}
+          aria-label="Navigation bas"
+        >
+          {mobileNav.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
+              className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-all duration-300 group"
+              style={({ isActive }) => ({
+                color: isActive ? ACCENT : NAV_OFF,
+              })}
+            >
+              {({ isActive }) => (
+                <>
+                  {/* Active pill background effect */}
+                  <div className={clsx(
+                    "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                    isActive ? "opacity-100" : "opacity-0 scale-50"
+                  )}>
+                    <div className="w-10 h-10 rounded-xl"
+                      style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }} />
+                  </div>
 
-        {/* Chat dans la bottom nav */}
-        {profile && (
-          <NavLink
-            to="/chat"
-            className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-colors"
-            style={({ isActive }) => ({ color: isActive ? ACCENT : NAV_OFF })}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
+                  {/* Icon floating animation */}
+                  <div className={clsx(
+                    "relative z-10 transition-transform duration-300 ease-out",
+                    isActive ? "-translate-y-1" : "group-hover:-translate-y-0.5"
+                  )}>
+                    <Icon size={isActive ? 22 : 20} strokeWidth={isActive ? 2.5 : 1.8} />
+                  </div>
+
+                  {/* Label dot animation */}
                   <span
-                    className="absolute top-1.5 inset-x-1.5 h-8 rounded-xl animate-scale-in"
-                    style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }}
-                  />
-                )}
-                <div className="relative z-10">
-                  <MessageCircle size={20} strokeWidth={isActive ? 2.5 : 1.8} />
-                  {totalChatUnread > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1.5 min-w-[14px] h-3.5 px-1 rounded-full
-                                 flex items-center justify-center text-[8px] font-black"
-                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
-                    >
-                      {totalChatUnread > 9 ? '9+' : totalChatUnread}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="relative z-10 text-[9px] font-bold uppercase tracking-wider"
-                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-                >
-                  Chat
-                </span>
-              </>
-            )}
-          </NavLink>
-        )}
-      </nav>
+                    className={clsx(
+                      "relative z-10 text-[9px] font-bold uppercase tracking-widest transition-all duration-300",
+                      isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 absolute bottom-2"
+                    )}
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    {label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+
+          {/* Chat dans la bottom nav */}
+          {profile && (
+            <NavLink
+              to="/chat"
+              className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-all duration-300 group"
+              style={({ isActive }) => ({ color: isActive ? ACCENT : NAV_OFF })}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className={clsx(
+                    "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                    isActive ? "opacity-100" : "opacity-0 scale-50"
+                  )}>
+                    <div className="w-10 h-10 rounded-xl"
+                      style={{ backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}25` }} />
+                  </div>
+
+                  <div className={clsx(
+                    "relative z-10 transition-transform duration-300 ease-out",
+                    isActive ? "-translate-y-1" : "group-hover:-translate-y-0.5"
+                  )}>
+                    <MessageCircle size={isActive ? 22 : 20} strokeWidth={isActive ? 2.5 : 1.8} />
+                    {totalChatUnread > 0 && (
+                      <span
+                        className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full
+                                   flex items-center justify-center text-[9px] font-black shadow-lg"
+                        style={{ backgroundColor: '#ef4444', color: '#fff' }}
+                      >
+                        {totalChatUnread > 9 ? '9+' : totalChatUnread}
+                      </span>
+                    )}
+                  </div>
+
+                  <span
+                    className={clsx(
+                      "relative z-10 text-[9px] font-bold uppercase tracking-widest transition-all duration-300",
+                      isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 absolute bottom-2"
+                    )}
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    Chat
+                  </span>
+                </>
+              )}
+            </NavLink>
+          )}
+        </nav>
+      </div>
     </>
   )
 }

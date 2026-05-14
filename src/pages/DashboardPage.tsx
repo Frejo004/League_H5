@@ -8,6 +8,7 @@ import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
+import { useCountUp } from '@/hooks/useCountUp'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -35,35 +36,43 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
   color: string
   trend?: string
 }) {
+  const animatedValue = useCountUp(value)
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 group transition-all duration-300 hover:-translate-y-1"
+    <div className="relative overflow-hidden rounded-2xl border p-4 group transition-all duration-500 hover:-translate-y-1.5"
       style={{ 
-        background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))',
-        borderColor: 'var(--color-surface-border)'
+        background: 'rgba(22, 28, 45, 0.4)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderColor: 'rgba(255, 255, 255, 0.08)'
       }}>
-      {/* Glow accent */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${color}12 0%, transparent 70%)` }} />
+      {/* Decorative gradient blob */}
+      <div className="absolute -top-10 -right-10 w-24 h-24 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
+        style={{ backgroundColor: color }} />
 
       {/* Top row */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-xl" style={{ backgroundColor: `${color}18`, border: `1px solid ${color}25` }}>
-          <Icon size={15} style={{ color }} />
+      <div className="flex items-start justify-between mb-4">
+        <div className="p-2.5 rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" 
+             style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
+          <Icon size={16} style={{ color }} />
         </div>
         {trend && (
-          <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+          <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-green-400/20">
             <TrendingUp size={9} /> {trend}
           </span>
         )}
       </div>
 
       {/* Value */}
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight" style={{ color: 'var(--color-text-primary)' }}>{value}</p>
-      <p className="text-xs mt-1.5 font-medium" style={{ color: 'var(--color-text-muted)' }}>{label}</p>
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-white drop-shadow-sm">
+        {animatedValue}
+      </p>
+      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-400 transition-colors">
+        {label}
+      </p>
 
-      {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ background: `linear-gradient(90deg, transparent, ${color}60, transparent)` }} />
+      {/* Interactive border glow */}
+      <div className="absolute inset-0 border border-transparent group-hover:border-white/10 rounded-2xl transition-all duration-500" />
     </div>
   )
 }
@@ -78,99 +87,117 @@ function MiniMatchCard({ match, variant, myTeamId }: {
   const awayWon = match.away_score! > match.home_score!
   const isDraw  = match.home_score === match.away_score
   const isMyMatch = myTeamId && (match.home_team_id === myTeamId || match.away_team_id === myTeamId)
-  const isMyTeamHome = match.home_team_id === myTeamId
-  const isMyTeamAway = match.away_team_id === myTeamId
 
   return (
     <Link
       to={`/matches/${match.id}`}
-      className={clsx(
-        "group flex items-center gap-3 px-4 py-3.5 transition-all duration-150 last:border-b-0",
-        isMyMatch && "border-l-2 border-l-primary-500/50"
-      )}
-      style={{ 
-        borderBottom: '1px solid var(--color-surface-border)',
-        backgroundColor: isMyMatch ? 'rgba(37,99,235,0.04)' : undefined
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-surface-raised, rgba(255,255,255,0.03))' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = isMyMatch ? 'rgba(37,99,235,0.04)' : '' }}
+      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
-      {/* Home */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
-          style={{ backgroundColor: match.home_team.color }}>
-          {match.home_team.logo_url
-            ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
-            : match.home_team.name[0]
-          }
-        </div>
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className={clsx(
-            'text-sm font-semibold truncate transition-colors',
-            variant === 'result' ? (homeWon ? '' : '') : ''
-          )}
-          style={{ color: variant === 'result' ? (homeWon ? 'var(--color-text-primary)' : 'var(--color-text-muted)') : 'var(--color-text-secondary)' }}>
-            {match.home_team.name}
-          </span>
-          {isMyTeamHome && (
-            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
-              Mon équipe
+      {/* Lueur arrière-plan */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
+      
+      {/* Conteneur principal biseauté */}
+      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card/80 border border-white/5">
+        
+        {/* Ligne d'accentuation (si c'est mon équipe) */}
+        {isMyMatch && (
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)]" />
+        )}
+
+        {/* DOMICILE (HOME) */}
+        <div className="flex-1 flex items-center justify-between p-3 pl-4 relative overflow-hidden">
+          {/* Dégradé couleur équipe */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
+               style={{ background: `linear-gradient(to right, ${match.home_team.color}, transparent)` }} />
+          
+          <div className="flex items-center gap-3 relative z-10 min-w-0">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
+              style={{ borderLeft: `3px solid ${match.home_team.color}` }}>
+              {match.home_team.logo_url
+                ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain" />
+                : match.home_team.name[0]
+              }
+            </div>
+            <span className={clsx(
+              'text-sm uppercase tracking-wide truncate',
+              variant === 'result' ? (homeWon ? 'font-black text-white' : 'font-semibold text-slate-400') : 'font-bold text-slate-200'
+            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match.home_team.name}
+            </span>
+          </div>
+
+          {/* Score Domicile (seulement si résultat) */}
+          {variant === 'result' && (
+            <span className={clsx(
+              'text-3xl font-black tabular-nums leading-none ml-3 z-10',
+              homeWon ? 'text-white text-glow-sm' : 'text-slate-500'
+            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match.home_score}
             </span>
           )}
         </div>
-      </div>
 
-      {/* Center */}
-      <div className="flex flex-col items-center gap-0.5 shrink-0 min-w-[72px]">
-        {variant === 'result' ? (
-          <>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface-raised, rgba(0,0,0,0.3))', borderColor: 'var(--color-surface-border)' }}>
-              <span className="text-base font-black tabular-nums"
-                style={{ color: homeWon ? 'var(--color-text-primary)' : isDraw ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
-                {match.home_score}
-              </span>
-              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>–</span>
-              <span className="text-base font-black tabular-nums"
-                style={{ color: awayWon ? 'var(--color-text-primary)' : isDraw ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
-                {match.away_score}
+        {/* CENTRE (SÉPARATEUR OU HEURE) */}
+        <div className="w-12 shrink-0 flex flex-col items-center justify-center relative bg-black/40 z-20"
+             style={{ clipPath: 'polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0% 100%)' }}>
+          {variant === 'result' ? (
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FT</span>
+              <div className="w-0.5 h-4 bg-surface-border mt-1" />
+            </div>
+          ) : match.scheduled_at ? (
+            <div className="flex flex-col items-center">
+              <span className="text-[11px] font-black text-primary-400 tracking-wider">
+                {formatTime(match.scheduled_at)}
               </span>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>FT</span>
-          </>
-        ) : match.scheduled_at ? (
-          <>
-            <span className="text-sm font-black tabular-nums bg-primary-600/20 px-2.5 py-1 rounded-lg border border-primary-600/20 text-primary-400">
-              {formatTime(match.scheduled_at)}
-            </span>
-            <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{formatDay(match.scheduled_at)}</span>
-          </>
-        ) : (
-          <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{ color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface-raised)' }}>À venir</span>
-        )}
-      </div>
+          ) : (
+            <span className="text-[10px] font-bold text-slate-500 uppercase">VS</span>
+          )}
+        </div>
 
-      {/* Away */}
-      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
-          {isMyTeamAway && (
-            <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
-              Mon équipe
+        {/* EXTÉRIEUR (AWAY) */}
+        <div className="flex-1 flex items-center justify-between p-3 pr-4 relative overflow-hidden flex-row-reverse">
+          {/* Dégradé couleur équipe */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
+               style={{ background: `linear-gradient(to left, ${match.away_team.color}, transparent)` }} />
+          
+          <div className="flex items-center gap-3 relative z-10 min-w-0 flex-row-reverse">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
+              style={{ borderRight: `3px solid ${match.away_team.color}` }}>
+              {match.away_team.logo_url
+                ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain" />
+                : match.away_team.name[0]
+              }
+            </div>
+            <span className={clsx(
+              'text-sm uppercase tracking-wide truncate text-right',
+              variant === 'result' ? (awayWon ? 'font-black text-white' : 'font-semibold text-slate-400') : 'font-bold text-slate-200'
+            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match.away_team.name}
+            </span>
+          </div>
+
+          {/* Score Extérieur (seulement si résultat) */}
+          {variant === 'result' && (
+            <span className={clsx(
+              'text-3xl font-black tabular-nums leading-none mr-3 z-10',
+              awayWon ? 'text-white text-glow-sm' : 'text-slate-500'
+            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match.away_score}
             </span>
           )}
-          <span className="text-sm font-semibold truncate text-right transition-colors"
-            style={{ color: variant === 'result' ? (awayWon ? 'var(--color-text-primary)' : 'var(--color-text-muted)') : 'var(--color-text-secondary)' }}>
-            {match.away_team.name}
-          </span>
-        </div>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
-          style={{ backgroundColor: match.away_team.color }}>
-          {match.away_team.logo_url
-            ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain rounded-md" />
-            : match.away_team.name[0]
-          }
         </div>
       </div>
+      
+      {/* Ligne date/journée (si à venir) */}
+      {variant === 'upcoming' && match.scheduled_at && (
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-card border border-white/10 px-3 py-0.5 rounded-full z-30 shadow-md">
+          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+            {formatDay(match.scheduled_at)}
+          </span>
+        </div>
+      )}
     </Link>
   )
 }

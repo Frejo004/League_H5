@@ -232,167 +232,160 @@ export function MatchDetailPage() {
         )}
       </div>
 
-      {/* ── Score header — style Sofascore ── */}
-      <div className="card overflow-hidden p-0">
+      {/* ── Score header — Broadcast Style ── */}
+      <div className="relative overflow-hidden rounded-2xl glass-morphism border border-white/10 shadow-2xl mx-2 mt-2 group">
 
-        {/* Bande de couleur des équipes en haut */}
-        <div className="flex h-1">
-          <div className="flex-1" style={{ backgroundColor: home.color }} />
-          <div className="flex-1" style={{ backgroundColor: away.color }} />
-        </div>
+        {/* Mesh gradient de fond qui s'anime */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay"
+             style={{ background: 'linear-gradient(45deg, #0f1420, #161c2d, #0d1117)', backgroundSize: '400% 400%', animation: 'mesh-gradient 10s ease infinite' }} />
 
-        <div className="p-4">
-          {/* Meta */}
-          <div className="flex items-center justify-center gap-2 mb-5 text-xs text-slate-500">
-            <span className="badge bg-surface-raised text-slate-500 border border-surface-border">
-              Journée {match.matchday}
-            </span>
-            {(match.played_at || match.scheduled_at) && (
-              <span className="flex items-center gap-1">
+        <div className="relative z-10 flex flex-col items-center">
+          
+          {/* Top Bar : Date / Live */}
+          <div className="w-full flex items-center justify-between px-4 py-2 bg-black/40 border-b border-white/5 backdrop-blur-md">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">J.{match.matchday}</span>
+            {isLive ? (
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">LIVE</span>
+              </div>
+            ) : (
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {match.status === 'completed' ? 'TERMINE' : match.status === 'cancelled' ? 'ANNULE' : 'A VENIR'}
+              </span>
+            )}
+            {(match.played_at || match.scheduled_at) && !isLive && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <Calendar size={10} />
-                {formatDate(match.played_at ?? match.scheduled_at)}
+                {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(match.played_at ?? match.scheduled_at))}
               </span>
             )}
           </div>
 
-          {/* Teams + score */}
-          <div className="flex items-center gap-2">
+          {/* Main Score Area */}
+          <div className="flex items-stretch w-full relative">
+            {/* Ligne séparatrice oblique (décoration) */}
+            <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-gradient-to-b from-transparent via-white/10 to-transparent -translate-x-1/2 transform -skew-x-12" />
 
-            {/* Home */}
-            <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-              <div
-                className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-xl overflow-hidden shadow-lg"
-                style={{ backgroundColor: home.color }}
-              >
-                {home.logo_url
-                  ? <img src={home.logo_url} alt={home.name} className="w-full h-full object-cover" />
-                  : home.name[0]
-                }
-              </div>
-              <p className={clsx(
-                'text-sm font-semibold text-center leading-tight truncate w-full',
-                homeWon ? 'text-white' : 'text-slate-400'
-              )}>
-                {home.name}
-              </p>
-            </div>
-
-            {/* Score */}
-            <div className="flex flex-col items-center gap-1.5 shrink-0 px-2">
-              {(isCompleted || isLive) ? (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className={clsx(
-                      'text-4xl font-black tabular-nums leading-none',
-                      homeWon ? 'text-white' : isLive ? 'text-white' : 'text-slate-500'
-                    )}>
-                      {match.home_score ?? 0}
-                    </span>
-                    <span className="text-slate-600 text-2xl font-light">–</span>
-                    <span className={clsx(
-                      'text-4xl font-black tabular-nums leading-none',
-                      awayWon ? 'text-white' : isLive ? 'text-white' : 'text-slate-500'
-                    )}>
-                      {match.away_score ?? 0}
-                    </span>
-                  </div>
-                  {isLive && (
-                    <LiveClock
-                      liveStartedAt={match.live_started_at ?? null}
-                      livePeriod={match.live_period ?? null}
-                      status={match.status}
-                      homeColor={home.color}
-                      awayColor={away.color}
-                      className="w-full"
-                    />
-                  )}
-                </div>
-              ) : match.scheduled_at ? (
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-xl font-black text-white tabular-nums">
-                    {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at))}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(match.scheduled_at))}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-2xl font-bold text-slate-500">VS</span>
-              )}
-              {isLive ? (
-                <LiveBadge size="md" />
-              ) : (
+            {/* Domicile */}
+            <div className="flex-1 flex items-center justify-between pl-6 pr-4 py-6 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-20 pointer-events-none"
+                   style={{ background: `radial-gradient(ellipse at left, ${home.color} 0%, transparent 70%)` }} />
+              
+              <div className="flex flex-col items-start min-w-0 z-10">
                 <span className={clsx(
-                  'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full',
-                  match.status === 'completed' ? 'text-green-400 bg-green-500/10 border border-green-500/20' :
-                  match.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
-                  'text-slate-500 bg-surface-raised border border-surface-border'
-                )}>
-                  {match.status === 'completed' ? 'Terminé' :
-                   match.status === 'cancelled' ? 'Annulé' : 'À venir'}
+                  'text-2xl font-black uppercase tracking-widest truncate max-w-full drop-shadow-lg',
+                  homeWon ? 'text-white text-glow-sm' : 'text-slate-200'
+                )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {home.name}
                 </span>
-              )}
+                {home.logo_url && (
+                  <img src={home.logo_url} alt={home.name} className="w-10 h-10 object-contain mt-1 drop-shadow-md" />
+                )}
+              </div>
+              <span className={clsx(
+                'text-6xl font-black tabular-nums z-10 drop-shadow-2xl',
+                homeWon ? 'text-white text-glow' : 'text-slate-300'
+              )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {(isCompleted || isLive) ? (match.home_score ?? 0) : ''}
+              </span>
             </div>
 
-            {/* Away */}
-            <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-              <div
-                className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-xl overflow-hidden shadow-lg"
-                style={{ backgroundColor: away.color }}
-              >
-                {away.logo_url
-                  ? <img src={away.logo_url} alt={away.name} className="w-full h-full object-cover" />
-                  : away.name[0]
-                }
+            {/* Extérieur */}
+            <div className="flex-1 flex items-center justify-between pr-6 pl-4 py-6 relative overflow-hidden flex-row-reverse">
+              <div className="absolute inset-0 opacity-20 pointer-events-none"
+                   style={{ background: `radial-gradient(ellipse at right, ${away.color} 0%, transparent 70%)` }} />
+              
+              <div className="flex flex-col items-end min-w-0 z-10">
+                <span className={clsx(
+                  'text-2xl font-black uppercase tracking-widest truncate max-w-full text-right drop-shadow-lg',
+                  awayWon ? 'text-white text-glow-sm' : 'text-slate-200'
+                )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {away.name}
+                </span>
+                {away.logo_url && (
+                  <img src={away.logo_url} alt={away.name} className="w-10 h-10 object-contain mt-1 drop-shadow-md" />
+                )}
               </div>
-              <p className={clsx(
-                'text-sm font-semibold text-center leading-tight truncate w-full',
-                awayWon ? 'text-white' : 'text-slate-400'
-              )}>
-                {away.name}
-              </p>
+              <span className={clsx(
+                'text-6xl font-black tabular-nums z-10 drop-shadow-2xl',
+                awayWon ? 'text-white text-glow' : 'text-slate-300'
+              )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {(isCompleted || isLive) ? (match.away_score ?? 0) : ''}
+              </span>
             </div>
+
           </div>
 
-          {/* Venue */}
-          {match.venue && (
-            <div className="flex items-center justify-center gap-1 mt-3 text-xs text-slate-600">
-              <MapPin size={10} />
-              {match.venue}
+          {/* Bottom Bar: Live Clock or Upcoming Time */}
+          {isLive && (
+            <div className="w-full bg-red-500/20 border-t border-red-500/30 p-2 flex justify-center backdrop-blur-md">
+              <LiveClock
+                liveStartedAt={match.live_started_at ?? null}
+                livePeriod={match.live_period ?? null}
+                status={match.status}
+                homeColor={home.color}
+                awayColor={away.color}
+                className="w-full max-w-[200px]"
+              />
+            </div>
+          )}
+          {!isLive && !isCompleted && match.scheduled_at && (
+            <div className="w-full bg-black/40 border-t border-white/5 p-2 flex justify-center backdrop-blur-md">
+               <span className="text-xl font-black text-white tabular-nums tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                 {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at))}
+               </span>
             </div>
           )}
 
-          {/* Barre de buts par équipe (si match terminé) */}
-          {isCompleted && (match.home_score! + match.away_score!) > 0 && (
-            <div className="mt-4 pt-3 border-t border-surface-border/50">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold tabular-nums" style={{ color: home.color }}>
-                  {match.home_score}
-                </span>
-                <div className="flex-1 flex h-1.5 rounded-full overflow-hidden bg-surface-raised">
-                  <div
-                    className="h-full rounded-l-full transition-all duration-700"
-                    style={{
-                      width: `${(match.home_score! / (match.home_score! + match.away_score!)) * 100}%`,
-                      backgroundColor: home.color,
-                    }}
-                  />
-                  <div
-                    className="h-full rounded-r-full transition-all duration-700"
-                    style={{
-                      width: `${(match.away_score! / (match.home_score! + match.away_score!)) * 100}%`,
-                      backgroundColor: away.color,
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-bold tabular-nums" style={{ color: away.color }}>
-                  {match.away_score}
-                </span>
-              </div>
-              <p className="text-center text-[10px] text-slate-600 mt-1">Buts</p>
-            </div>
-          )}
         </div>
+      </div>
+
+      {/* Venue & Stats globales */}
+      <div className="card mx-2">
+        {/* Venue */}
+        {match.venue && (
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-surface-raised py-2 rounded-lg border border-surface-border">
+            <MapPin size={12} className="text-[#FFDF73]" />
+            {match.venue}
+          </div>
+        )}
+
+        {/* Barre de buts par équipe (si match terminé) */}
+        {isCompleted && (match.home_score! + match.away_score!) > 0 && (
+          <div className="mt-3">
+            <p className="text-center text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1.5">Possession (Buts)</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black tabular-nums drop-shadow-md" style={{ color: home.color }}>
+                {match.home_score}
+              </span>
+              <div className="flex-1 flex h-2 rounded-full overflow-hidden bg-black/50 border border-white/5 ring-1 ring-black shadow-inner">
+                <div
+                  className="h-full rounded-l-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${(match.home_score! / (match.home_score! + match.away_score!)) * 100}%`,
+                    background: `linear-gradient(90deg, ${home.color}40, ${home.color})`,
+                    boxShadow: `0 0 10px ${home.color}80`
+                  }}
+                />
+                <div
+                  className="h-full rounded-r-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${(match.away_score! / (match.home_score! + match.away_score!)) * 100}%`,
+                    background: `linear-gradient(-90deg, ${away.color}40, ${away.color})`,
+                    boxShadow: `0 0 10px ${away.color}80`
+                  }}
+                />
+              </div>
+              <span className="text-sm font-black tabular-nums drop-shadow-md" style={{ color: away.color }}>
+                {match.away_score}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Contrôles admin live ── */}

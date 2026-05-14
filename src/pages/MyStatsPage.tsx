@@ -57,66 +57,88 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
   return (
     <div className="space-y-4">
 
-      {/* ── Hero joueur ── */}
-      <div className="card flex items-center gap-4">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0 ring-2 ring-surface-border"
-          style={{ backgroundColor: profile.team.color }}
-        >
-          {profile.avatar_url
-            ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
-            : `${profile.first_name[0]}${profile.last_name[0]}`
-          }
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-bold text-white">
-              {profile.first_name} {profile.last_name}
-            </h2>
-            {profile.jersey_number && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-surface-raised text-slate-400 border border-surface-border">
-                #{profile.jersey_number}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: profile.team.color }} />
-              <span className="text-sm text-slate-400">{profile.team.name}</span>
+      {/* ── Hero joueur Premium ── */}
+      <div className="relative overflow-hidden rounded-2xl p-[2px]"
+           style={{ background: 'linear-gradient(135deg, #FFDF73 0%, #B8860B 50%, #FFDF73 100%)' }}>
+        
+        <div className="relative bg-slate-900 h-full rounded-2xl overflow-hidden p-6 flex items-center gap-5 bg-grid-pattern">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#B8860B]/10 via-transparent to-[#B8860B]/30 pointer-events-none" />
+
+          {/* Avatar avec glow or */}
+          <div className="relative shrink-0 z-10">
+            <div className="absolute inset-0 bg-[#FFDF73] blur-lg opacity-40 rounded-full" />
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center text-slate-800 text-3xl font-black shrink-0 border-2 border-[#FFDF73] shadow-2xl relative bg-slate-800"
+            >
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full mix-blend-luminosity opacity-80" />
+              ) : (
+                <span className="text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {profile.first_name[0]}{profile.last_name[0]}
+                </span>
+              )}
             </div>
-            {profile.position && (
-              <span className="text-sm text-slate-500">
-                {POSITION_LABELS[profile.position] ?? profile.position}
-              </span>
-            )}
+            {/* Fallback si logo_url n'existe pas dans le type (on le retire pour éviter l'erreur) */}
+            {/* Si un logo est ajouté plus tard dans le type, on pourra le remettre ici */}
           </div>
+
+          <div className="flex-1 min-w-0 z-10">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFDF73] to-white uppercase tracking-widest"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {profile.first_name} {profile.last_name}
+              </h2>
+              {profile.jersey_number && (
+                <span className="text-lg font-black text-[#FFDF73] px-2 py-0.5 rounded bg-black/40 border border-[#B8860B]/30 shadow-inner"
+                      style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  #{profile.jersey_number}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 font-bold text-slate-300 text-sm tracking-wide">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: profile.team.color }} />
+                {profile.team.name}
+              </div>
+              {profile.position && (
+                <span className="text-xs font-bold text-[#FFDF73] uppercase tracking-widest bg-black/30 px-2 py-0.5 rounded border border-[#B8860B]/20">
+                  {POSITION_LABELS[profile.position] ?? profile.position}
+                </span>
+              )}
+            </div>
+          </div>
+          {rankDisplay && (
+            <div className="text-center shrink-0 z-10 hidden sm:block border-l border-[#B8860B]/30 pl-5">
+              <p className="text-4xl font-black text-[#FFDF73] drop-shadow-lg" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                #{rankDisplay}
+              </p>
+              <p className="text-[10px] text-[#FFDF73]/70 font-bold uppercase tracking-widest mt-0.5">Buteurs</p>
+            </div>
+          )}
         </div>
-        {rankDisplay && (
-          <div className="text-center shrink-0">
-            <p className="text-2xl font-bold text-orange-400">#{rankDisplay}</p>
-            <p className="text-[10px] text-slate-600 uppercase tracking-wider">Buteurs</p>
-          </div>
-        )}
       </div>
 
-      {/* ── Stats saison ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* ── Stats saison (KPIs Premium) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Matchs joués', value: profile.matches_played, icon: Calendar, color: 'text-blue-400', highlight: false },
-          { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400', highlight: false },
-          { label: 'Passes déc.', value: profile.assists, icon: Zap, color: 'text-violet-400', highlight: false },
-          { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400', highlight: (mvpData?.total_mvp ?? 0) > 0 },
+          { label: 'Matchs joués', value: profile.matches_played, icon: Calendar, color: 'text-slate-300', highlight: false },
+          { label: 'Buts', value: profile.goals, icon: Target, color: 'text-[#FFDF73]', highlight: false },
+          { label: 'Passes déc.', value: profile.assists, icon: Zap, color: 'text-emerald-400', highlight: false },
+          { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-500', highlight: (mvpData?.total_mvp ?? 0) > 0 },
         ].map(({ label, value, icon: Icon, color, highlight }) => (
           <div
             key={label}
             className={clsx(
-              'stat-card text-center',
-              highlight && 'border-amber-500/30 bg-amber-500/5'
+              'relative p-4 rounded-2xl glass-morphism border border-white/5 flex flex-col justify-center items-center gap-1 transition-all duration-300 hover:-translate-y-1',
+              highlight && 'border-[#B8860B]/30 bg-gradient-to-b from-[#B8860B]/10 to-transparent'
             )}
           >
-            <Icon size={16} className={clsx('mx-auto mb-1.5', color)} />
-            <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+            <Icon size={18} className={clsx('mb-1 opacity-80', color)} />
+            <p className={clsx('text-3xl font-black tabular-nums leading-none', highlight ? 'text-[#FFDF73] text-glow-sm' : 'text-white')}
+               style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {value}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-center">{label}</p>
           </div>
         ))}
       </div>

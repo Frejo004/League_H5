@@ -12,6 +12,7 @@ import {
 import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
 import { useLandingStats } from '@/hooks/useLandingStats'
+import { useCountUp } from '@/hooks/useCountUp'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Composants internes
@@ -25,35 +26,46 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-white/[0.06] p-5 group
-                 hover:-translate-y-1 transition-all duration-300"
-      style={{ background: 'linear-gradient(135deg, #161c2d 0%, #0f1420 100%)' }}
+      className="relative overflow-hidden rounded-2xl border border-white/[0.08] p-5 group
+                 hover:-translate-y-1.5 transition-all duration-500"
+      style={{ 
+        background: 'rgba(22, 28, 45, 0.3)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
+      }}
     >
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${color}10 0%, transparent 70%)` }}
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `radial-gradient(circle at 0% 0%, ${color}15 0%, transparent 70%)` }}
       />
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-        style={{ backgroundColor: color + '20', border: `1px solid ${color}30` }}
+        className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110"
+        style={{ backgroundColor: color + '15', border: `1px solid ${color}30` }}
       >
-        <Icon size={18} style={{ color }} />
+        <Icon size={19} style={{ color }} />
       </div>
-      <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
-      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+      <h3 className="text-[13px] font-black text-white mb-1.5 uppercase tracking-wide">{title}</h3>
+      <p className="text-[11px] text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors">{desc}</p>
     </div>
   )
 }
 
 function StatPill({ value, label, isLoading }: { value: string | number; label: string; isLoading?: boolean }) {
+  const numericValue = typeof value === 'number' ? value : parseInt(String(value)) || 0
+  const isNumeric = !isNaN(numericValue) && typeof value !== 'string' || (typeof value === 'string' && value.includes('+'))
+  const animatedValue = useCountUp(numericValue)
+  const displayValue = isNumeric ? (typeof value === 'string' && value.includes('+') ? `${animatedValue}+` : animatedValue) : value
+
   return (
-    <div className="text-center px-6 py-4 rounded-2xl border border-white/[0.06] bg-white/[0.03]">
+    <div className="text-center px-4 py-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm group hover:bg-white/[0.05] transition-all duration-500">
       {isLoading ? (
         <div className="h-9 w-12 bg-white/5 rounded mx-auto animate-pulse" />
       ) : (
-        <p className="text-3xl font-black text-white tabular-nums">{value}</p>
+        <p className="text-3xl font-black text-white tabular-nums tracking-tighter group-hover:scale-110 transition-transform duration-500">
+          {displayValue}
+        </p>
       )}
-      <p className="text-xs text-slate-500 mt-1 font-medium">{label}</p>
+      <p className="text-[10px] text-slate-500 mt-1.5 font-bold uppercase tracking-widest">{label}</p>
     </div>
   )
 }
