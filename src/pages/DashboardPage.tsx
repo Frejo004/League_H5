@@ -12,6 +12,7 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
+import { useLiveClock } from '@/hooks/useMatchLive'
 import { clsx } from 'clsx'
 
 function formatTime(dateStr: string) {
@@ -300,6 +301,54 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
   )
 }
 
+// ── Live Match Banner Item (with clock) ──────────────────────────────────────
+function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
+  const clock = useLiveClock(
+    match.live_started_at,
+    match.live_period as 1 | 2,
+    match.status,
+    match.halftime_at
+  )
+
+  return (
+    <Link
+      to={`/matches/${match.id}`}
+      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-red-500/20 transition-all group"
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
+          style={{ backgroundColor: match.home_team.color }}>
+          {match.home_team.logo_url
+            ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
+            : match.home_team.name[0]}
+        </div>
+        <span className="text-sm font-semibold text-white truncate">{match.home_team.name}</span>
+      </div>
+
+      <div className="flex flex-col items-center gap-1 px-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl font-black text-white tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
+          <span className="text-slate-600 font-bold">–</span>
+          <span className="text-2xl font-black text-white tabular-nums drop-shadow-md">{match.away_score ?? 0}</span>
+        </div>
+        <span className="text-[10px] font-black text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse border border-red-400/20">
+          {clock.label}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+        <span className="text-sm font-semibold text-white truncate text-right">{match.away_team.name}</span>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
+          style={{ backgroundColor: match.away_team.color }}>
+          {match.away_team.logo_url
+            ? <img src={match.away_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
+            : match.away_team.name[0]}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
@@ -383,35 +432,7 @@ export function DashboardPage() {
           </div>
           <div className="space-y-2">
             {liveMatches.map(match => (
-              <Link
-                key={match.id}
-                to={`/matches/${match.id}`}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-red-500/20 transition-all"
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
-                    style={{ backgroundColor: match.home_team.color }}>
-                    {match.home_team.logo_url
-                      ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
-                      : match.home_team.name[0]}
-                  </div>
-                  <span className="text-sm font-semibold text-white truncate">{match.home_team.name}</span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xl font-black text-white tabular-nums">{match.home_score ?? 0}</span>
-                  <span className="text-slate-600">–</span>
-                  <span className="text-xl font-black text-white tabular-nums">{match.away_score ?? 0}</span>
-                </div>
-                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                  <span className="text-sm font-semibold text-white truncate text-right">{match.away_team.name}</span>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
-                    style={{ backgroundColor: match.away_team.color }}>
-                    {match.away_team.logo_url
-                      ? <img src={match.away_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
-                      : match.away_team.name[0]}
-                  </div>
-                </div>
-              </Link>
+              <LiveMatchBannerItem key={match.id} match={match} />
             ))}
           </div>
         </div>

@@ -1,6 +1,8 @@
--- Migration: Activer le Realtime pour la table matches
--- Permet aux spectateurs de voir les changements de score, de période et de chrono (mi-temps) en temps réel.
+-- Migration simplifiée et robuste pour activer le Realtime
+-- SET TABLE remplace la liste actuelle, évitant les erreurs de doublons
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.goals;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.assists;
+ALTER PUBLICATION supabase_realtime SET TABLE 
+  public.matches, 
+  public.goals, 
+  public.assists, 
+  public.match_events;

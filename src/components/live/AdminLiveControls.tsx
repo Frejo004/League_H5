@@ -267,11 +267,13 @@ export function AdminLiveControls({
                 className="input text-sm font-medium py-2 bg-black/40 border-white/10"
               >
                 <option value="">— Sélectionner —</option>
-                {(eventType === 'own_goal' ? otherPlayers : currentPlayers).map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.first_name} {p.last_name}
-                  </option>
-                ))}
+                {(eventType === 'own_goal' ? otherPlayers : currentPlayers)
+                  .filter(p => p.id !== eventPlayer2) // Ne pas afficher le joueur déjà sélectionné comme entrant
+                  .map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.first_name} {p.last_name}
+                    </option>
+                  ))}
               </select>
             </div>
           )}
@@ -288,11 +290,13 @@ export function AdminLiveControls({
                 className="input text-sm font-medium py-2 bg-black/40 border-white/10"
               >
                 <option value="">— Aucun —</option>
-                {currentPlayers.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.first_name} {p.last_name}
-                  </option>
-                ))}
+                {currentPlayers
+                  .filter(p => p.id !== eventPlayer) // Ne pas afficher le joueur déjà sélectionné comme sortant
+                  .map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.first_name} {p.last_name}
+                    </option>
+                  ))}
               </select>
             </div>
           )}

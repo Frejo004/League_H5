@@ -12,6 +12,8 @@ import { LiveBadge } from '@/components/live/LiveBadge'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { LiveClock } from '@/components/live/LiveClock'
 import { LiveEventFeed } from '@/components/live/LiveEventFeed'
+import { LiveTableWidget } from '@/components/live/LiveTableWidget'
+import { GoalAlert } from '@/components/live/GoalAlert'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { clsx } from 'clsx'
@@ -192,9 +194,15 @@ export function MatchDetailPage() {
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
 
   return (
-    <div className="space-y-3 pb-10">
+    <div className="space-y-4 pb-24 relative min-h-screen">
+      {/* Alerte de but broadcast */}
+      <GoalAlert 
+        matchId={id!} 
+        homeTeam={match.home_team} 
+        awayTeam={match.away_team} 
+      />
 
-      {/* Navigation + Share */}
+      {/* Header / Banner Match */}
       <div className="flex items-center justify-between">
         <Breadcrumbs items={[
           { label: 'Matchs', to: '/matches' },
@@ -421,6 +429,21 @@ export function MatchDetailPage() {
               homeColor={home.color}
               awayColor={away.color}
             />
+
+            {/* ── Virtual Standing ── */}
+            {match.status === 'live' && (
+              <div className="mt-8 pt-8 border-t border-white/5">
+                <LiveTableWidget
+                  seasonId={match.season_id}
+                  matchId={id!}
+                  homeId={match.home_team_id}
+                  awayId={match.away_team_id}
+                  homeScore={match.home_score ?? 0}
+                  awayScore={match.away_score ?? 0}
+                  status={match.status}
+                />
+              </div>
+            )}
           </div>
           {/* Réactions spectateurs */}
           <div className="px-4 py-3 border-t border-surface-border/50">
