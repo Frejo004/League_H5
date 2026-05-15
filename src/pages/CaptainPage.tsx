@@ -799,21 +799,25 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
   // Broadcast tactical updates to other players
   const broadcastUpdate = useCallback((type: 'formation' | 'player_selected', data: any) => {
     if (!nextMatch) return
-    const channel = supabase.channel(`tactics-team-${teamId}-${nextMatch.id}`)
+    // Unification du canal tactique au niveau du match
+    const channel = supabase.channel(`tactics-match-${nextMatch.id}`)
     channel.send({
       type: 'broadcast',
       event: 'tactical_update',
-      payload: { type, ...data, captainName: profile?.full_name ?? 'Le Capitaine' }
+      payload: { type, ...data, teamId, captainName: profile?.full_name ?? 'Le Capitaine' }
     })
   }, [teamId, nextMatch, profile])
 
   // Listen for broadcasts (for players)
   useEffect(() => {
     if (!nextMatch || !readonly) return
-    const channel = supabase.channel(`tactics-team-${teamId}-${nextMatch.id}`)
+    const channel = supabase.channel(`tactics-match-${nextMatch.id}`)
     channel
       .on('broadcast', { event: 'tactical_update' }, ({ payload }) => {
-        const { type, captainName, formation, playerName, playerId } = payload
+        const { type, teamId: updateTeamId, captainName, formation, playerName, playerId } = payload
+        
+        // On ne traite que si c'est notre équipe
+        if (updateTeamId !== teamId) return
 
         let title = 'Tactique mise à jour'
         let message = `${captainName} a modifié la formation.`

@@ -246,7 +246,7 @@ export function useRealtimeTactics(teamId?: string, matchId?: string) {
         if (item.team_id !== teamId) return
 
         console.log('📋 Realtime: Tactical update received', payload)
-        qc.invalidateQueries({ queryKey: ['match-lineups', matchId] })
+        qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
 
         // Si c'est une mise à jour d'un titulaire, on peut notifier
         if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
@@ -261,4 +261,34 @@ export function useRealtimeTactics(teamId?: string, matchId?: string) {
 
     return () => { supabase.removeChannel(channel) }
   }, [teamId, matchId, qc])
+}
+
+export function useRealtimeMatchTactics(matchId?: string) {
+  const qc = useQueryClient()
+
+  useEffect(() => {
+    if (!matchId) return
+
+    // On écoute à la fois les changements DB (si activés) et les broadcast (plus fiable)
+    const channel = supabase
+      .channel(`tactics-match-${matchId}`)
+      // 1. Changements en base de données
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'match_lineups', 
+        filter: `match_id=eq.${matchId}` 
+      }, () => {
+        console.log('📋 Realtime: DB Tactical update')
+        qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
+      })
+      // 2. Broadcast (Émis par le dashboard capitaine)
+      .on('broadcast', { event: 'tactical_update' }, () => {
+        console.log('📋 Realtime: Broadcast Tactical update')
+        qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [matchId, qc])
 }
