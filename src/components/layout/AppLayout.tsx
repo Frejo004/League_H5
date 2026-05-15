@@ -174,7 +174,7 @@ export function AppLayout() {
 
         <main
           key={location.pathname}
-          className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6 animate-fade-in-up"
+          className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6 animate-fade-in"
           style={{ animationDuration: '200ms', animationFillMode: 'both' }}
         >
           <ErrorBoundary key={location.pathname}>

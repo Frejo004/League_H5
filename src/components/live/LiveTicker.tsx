@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Radio } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches } from '@/hooks/useMatches'
@@ -45,24 +45,32 @@ function TickerItem({ match }: { match: any }) {
 export function GlobalLiveTicker() {
   const { data: season } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
-  
+  const location = useLocation()
+
+  // Extraire l'ID du match de l'URL si on est sur /matches/:id
+  const currentMatchId = location.pathname.startsWith('/matches/')
+    ? location.pathname.split('/')[2]
+    : null
+
   useRealtimeMatches(season?.id)
 
-  const liveMatches = (matches ?? []).filter(m => m.status === 'live')
+  const liveMatches = (matches ?? [])
+    .filter(m => m.status === 'live')
+    .filter(m => m.id !== currentMatchId) // Ne pas afficher le match qu'on regarde déjà
 
   if (liveMatches.length === 0) return null
 
   return (
     <div className="flex items-center w-full overflow-hidden border-b border-red-500/20"
-         style={{ 
-           height: 34, 
-           background: 'linear-gradient(90deg, rgba(239,68,68,0.12) 0%, rgba(15,20,32,1) 50%, rgba(239,68,68,0.12) 100%)' 
-         }}>
+      style={{
+        height: 34,
+        background: 'linear-gradient(90deg, rgba(239,68,68,0.12) 0%, rgba(15,20,32,1) 50%, rgba(239,68,68,0.12) 100%)'
+      }}>
       <div className="flex items-center px-4 h-full bg-red-600 shrink-0">
         <Radio size={12} className="text-white animate-pulse mr-1.5" />
         <span className="text-[10px] font-black text-white uppercase tracking-widest">LIVE</span>
       </div>
-      
+
       <div className="flex items-center flex-1 overflow-x-auto scrollbar-none h-full">
         {liveMatches.map(match => (
           <TickerItem key={match.id} match={match} />
@@ -70,7 +78,7 @@ export function GlobalLiveTicker() {
       </div>
 
       <div className="hidden lg:flex items-center px-4 h-full shrink-0">
-         <LiveBadge size="sm" className="scale-75 origin-right" />
+        <LiveBadge size="sm" className="scale-75 origin-right" />
       </div>
     </div>
   )

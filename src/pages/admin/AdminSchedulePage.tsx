@@ -143,6 +143,15 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
             <span className="text-xl font-black tabular-nums text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score} <span className="text-[#FFDF73] text-sm mx-0.5">-</span> {match.away_score}
             </span>
+          ) : match.status === 'live' ? (
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl font-black tabular-nums text-red-500 animate-pulse" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {match.home_score ?? 0} <span className="text-slate-600 text-sm mx-0.5">-</span> {match.away_score ?? 0}
+              </span>
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pulse">
+                LIVE
+              </span>
+            </div>
           ) : match.status === 'cancelled' ? (
             <span className="text-[10px] font-black uppercase tracking-widest text-red-500/60 bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">
               Annulé
