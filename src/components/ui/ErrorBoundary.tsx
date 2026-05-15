@@ -38,8 +38,27 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // En production, on pourrait envoyer l'erreur à un service de monitoring
     console.error('[ErrorBoundary]', error, info.componentStack)
+
+    // Détection automatique des erreurs de chargement de chunks (nouveaux déploiements Vercel)
+    const errorMsg = error.message.toLowerCase()
+    const isChunkError = 
+      errorMsg.includes('failed to fetch dynamically imported module') ||
+      errorMsg.includes('loading chunk') ||
+      errorMsg.includes('dynamically imported module')
+
+    if (isChunkError) {
+      // Éviter une boucle infinie de rechargement
+      const lastReload = sessionStorage.getItem('last_chunk_reload')
+      const now = Date.now()
+      
+      // Si on a déjà rechargé il y a moins de 10 secondes, on ne recommence pas
+      if (!lastReload || now - parseInt(lastReload) > 10000) {
+        sessionStorage.setItem('last_chunk_reload', now.toString())
+        console.warn('[ErrorBoundary] Chunk error detected, reloading page...')
+        window.location.reload()
+      }
+    }
   }
 
   handleReset = () => {
