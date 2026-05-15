@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
 // Helper : envoyer une notification locale si permission accordée
-function pushLocal(title: string, body: string, tag?: string, url?: string) {
+export function pushLocal(title: string, body: string, tag?: string, url?: string) {
   if (typeof Notification === 'undefined') return
   if (Notification.permission !== 'granted') return
   if (document.visibilityState === 'visible') return

@@ -3,7 +3,8 @@ import { useMatches } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { pushLocal } from '@/hooks/useRealtime'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -127,6 +128,40 @@ export function useNotifications() {
 
   // Sync readIds → localStorage à chaque changement
   useEffect(() => { saveReadIds(readIds) }, [readIds])
+
+  // Realtime : Invalider les requêtes quand un nouveau spectateur demande l'accès
+  const qc = useQueryClient()
+  useEffect(() => {
+    if (!isAdmin) return
+
+    const channel = supabase
+      .channel('admin-notifications-spectators')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spectators' }, async (payload) => {
+        qc.invalidateQueries({ queryKey: ['notifications_spectators'] })
+        qc.invalidateQueries({ queryKey: ['spectators'] })
+
+        // Si c'est une nouvelle demande, on envoie une notification push locale
+        if (payload.eventType === 'INSERT') {
+          const newReq = payload.new as any
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', newReq.user_id)
+            .single()
+          
+          const name = profile?.full_name ?? profile?.email ?? 'Un nouvel utilisateur'
+          pushLocal(
+            'Demande d\'accès',
+            `${name} souhaite rejoindre la ligue`,
+            `spectator-${newReq.id}`,
+            '/admin?tab=spectators'
+          )
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [isAdmin, qc])
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {
