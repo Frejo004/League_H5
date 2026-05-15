@@ -502,8 +502,40 @@ export default function Header() {
             </Link>
 
             {/* Droite */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <GlobalSearch />
+
+              {/* Cloche notifications mobile */}
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(v => !v)}
+                  className="relative p-1.5 rounded-lg transition-colors"
+                  style={{ color: notifOpen ? TEXT_PRIMARY : NAV_OFF }}
+                  aria-label="Notifications"
+                >
+                  <Bell size={19} />
+                  {count > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                                 flex items-center justify-center text-[9px] font-black"
+                      style={{
+                        backgroundColor: hasUrgent ? '#ef4444' : ACCENT,
+                        color: hasUrgent ? 'white' : '#0D1117',
+                      }}
+                    >
+                      {count > 9 ? '9+' : count}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <NotificationPanel
+                    notifications={notifications}
+                    onClose={() => setNotifOpen(false)}
+                    onMarkAllRead={markAllRead}
+                    onMarkRead={markRead}
+                  />
+                )}
+              </div>
 
               {/* Icône Chat mobile */}
               {profile && (

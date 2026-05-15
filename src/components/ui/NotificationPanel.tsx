@@ -83,7 +83,7 @@ export function NotificationPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-80 z-50 animate-scale-in origin-top-right"
+      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] z-50 animate-scale-in origin-top-right"
       style={{
         backgroundColor: '#161B22',
         border: '1px solid rgba(255,255,255,0.08)',
