@@ -100,7 +100,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
 
   const matchTime = scheduledAt ? new Date(scheduledAt).getTime() : 0
   const isLocked = matchTime > 0 && (matchTime - Date.now() < 3600000)
-  const canEdit = (isAdmin || (isCaptain && activeTeam.captain_id === profile?.id)) && !isLocked
+  const canEdit = (isCaptain && activeTeam.captain_id === profile?.id) && !isLocked
 
   if (isLoading) return <div className="p-8 text-center text-slate-500">Chargement des compositions...</div>
 
@@ -403,32 +403,40 @@ function PlayerRow({ lineup, isStarter }: { lineup: any, isStarter?: boolean }) 
   )
 }
 
-export function PitchView({ players, teamColor, formation, isOpponent = false }: any) {
+export function PitchView({ players, teamColor, formation }: any) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   return (
-    <div className="relative aspect-[3/4] w-full max-w-sm mx-auto bg-[#1a4d2e] rounded-xl overflow-hidden border-2 border-white/10 shadow-2xl">
+    <div className="relative aspect-[16/10] w-full max-w-2xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl">
+      {/* Texture & Lignes Landscape */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#2d6a4f_0%,#1b4332_100%)] opacity-40" />
-      <div className="absolute inset-4 border-2 border-white/20 rounded-sm">
-        <div className="absolute top-1/2 inset-x-0 h-0.5 bg-white/20 -translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute inset-6 border-2 border-white/20 rounded-sm">
+        {/* Surface de réparation à gauche pour la vue d'une seule équipe */}
+        <div className="absolute inset-y-1/4 left-0 w-24 border-2 border-l-0 border-white/10" />
+        <div className="absolute top-1/2 left-0 w-32 h-32 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
       </div>
+
       <AnimatePresence>
         {players.map((l: any, idx: number) => {
           const coord = coords[idx] || { x: 50, y: 50 }
-          const x = isOpponent ? 100 - coord.x : coord.x
-          const y = isOpponent ? coord.y : 100 - coord.y
+          
+          // Paysage : GK à gauche (X proche de 0), ST à droite (X proche de 100)
+          const posX = 100 - coord.y // GK (85) -> 15%, ST (20) -> 80%
+          const posY = coord.x
+
           return (
             <motion.div
               key={l.player_id}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1, left: `${x}%`, top: `${y}%` }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1, left: `${posX}%`, top: `${posY}%` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-10"
             >
-              <div className="w-10 h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white font-black text-xs" style={{ backgroundColor: teamColor }}>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white shadow-2xl flex items-center justify-center text-white font-black text-xs sm:text-sm" style={{ backgroundColor: teamColor }}>
                 {l.player?.jersey_number || (idx + 1)}
               </div>
-              <div className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
-                <p className="text-[8px] font-black text-white uppercase tracking-tighter whitespace-nowrap">{l.player?.last_name}</p>
+              <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-xl">
+                <p className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-tight whitespace-nowrap">
+                  {l.player?.last_name}
+                </p>
               </div>
             </motion.div>
           )

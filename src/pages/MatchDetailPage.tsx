@@ -14,8 +14,8 @@ import { LiveClock } from '@/components/live/LiveClock'
 import { LiveEventFeed } from '@/components/live/LiveEventFeed'
 import { LiveTableWidget } from '@/components/live/LiveTableWidget'
 import { GoalAlert } from '@/components/live/GoalAlert'
-import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
+import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { useState } from 'react'
 import { clsx } from 'clsx'
@@ -230,6 +230,26 @@ export function MatchDetailPage() {
   if (isScheduled) {
     return (
       <div className="space-y-6 pb-20 px-1 animate-fade-in">
+        {/* Admin Controls */}
+        {isAdmin && (
+          <div className="mx-1">
+             <AdminLiveControls 
+               matchId={match.id}
+               status={match.status}
+               liveStartedAt={match.live_started_at}
+               halftimeAt={(match as any).halftime_at}
+               livePeriod={match.live_period as any}
+               homeTeam={home}
+               awayTeam={away}
+               homeScore={displayHomeScore}
+               awayScore={displayAwayScore}
+               events={liveEvents}
+               homePlayers={homePlayers || []}
+               awayPlayers={awayPlayers || []}
+             />
+          </div>
+        )}
+
         <Breadcrumbs items={[{ label: 'Matchs', to: '/matches' }, { label: `${home.name} vs ${away.name}` }]} />
 
         <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900 shadow-2xl">
@@ -331,6 +351,26 @@ export function MatchDetailPage() {
 
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
+      {/* Admin Controls en Direct */}
+      {isAdmin && isLive && (
+        <div className="mx-1 mb-6">
+           <AdminLiveControls 
+             matchId={match.id}
+             status={match.status}
+             liveStartedAt={match.live_started_at}
+             halftimeAt={(match as any).halftime_at}
+             livePeriod={match.live_period as any}
+             homeTeam={home}
+             awayTeam={away}
+             homeScore={displayHomeScore}
+             awayScore={displayAwayScore}
+             events={liveEvents}
+             homePlayers={homePlayers || []}
+             awayPlayers={awayPlayers || []}
+           />
+        </div>
+      )}
+
       {/* Alerte de but broadcast */}
       <GoalAlert
         matchId={id!}
