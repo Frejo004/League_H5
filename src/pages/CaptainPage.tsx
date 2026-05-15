@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -21,6 +21,7 @@ import { MatchLineups, FORMATIONS, PitchView } from '@/components/matches/MatchL
 import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
 import type { TeamWithCaptain, Player, PlayerPosition } from '@/types/database'
 import type { MatchWithTeams } from '@/hooks/useMatches'
+import { pushLocal, useRealtimeTactics } from '@/hooks/useRealtime'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ function PlayerRow({
 }) {
   const updatePlayer = useUpdatePlayer()
   const [editing, setEditing] = useState(false)
-  const [jersey, setJersey]   = useState(player.jersey_number?.toString() ?? '')
+  const [jersey, setJersey] = useState(player.jersey_number?.toString() ?? '')
   const [position, setPosition] = useState<PlayerPosition | ''>(player.position ?? '')
   const [error, setError] = useState('')
 
@@ -270,7 +271,7 @@ function PlayerStatsDrawer({
   let cumGoals = 0
   let cumAssists = 0
   const evolution = chronoMatches.map(m => {
-    cumGoals   += m.goals_in_match
+    cumGoals += m.goals_in_match
     cumAssists += m.assists_in_match
     return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
   })
@@ -330,10 +331,10 @@ function PlayerStatsDrawer({
               {/* ── Stats saison ── */}
               <div className="grid grid-cols-4 gap-2">
                 {[
-                  { label: 'Matchs',  value: profile.matches_played, icon: Calendar, color: 'text-blue-400'   },
-                  { label: 'Buts',    value: profile.goals,          icon: Target,   color: 'text-orange-400' },
-                  { label: 'Passes',  value: profile.assists,        icon: Zap,      color: 'text-violet-400' },
-                  { label: 'MVP',     value: mvpData?.total_mvp ?? 0, icon: Star,    color: 'text-amber-400'  },
+                  { label: 'Matchs', value: profile.matches_played, icon: Calendar, color: 'text-blue-400' },
+                  { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400' },
+                  { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400' },
+                  { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400' },
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div
                     key={label}
@@ -421,8 +422,8 @@ function PlayerStatsDrawer({
                   </div>
 
                   {profile.recent_matches.map((m, i) => {
-                    const isHome  = m.home_team.id === profile.team_id
-                    const opp     = isHome ? m.away_team : m.home_team
+                    const isHome = m.home_team.id === profile.team_id
+                    const opp = isHome ? m.away_team : m.home_team
                     const myScore = isHome ? m.home_score : m.away_score
                     const opScore = isHome ? m.away_score : m.home_score
 
@@ -529,7 +530,7 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
   if (isLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
 
   const pending = (players ?? []).filter(p => !p.user_id)
-  const linked  = (players ?? []).filter(p => !!p.user_id)
+  const linked = (players ?? []).filter(p => !!p.user_id)
 
   if (pending.length === 0 && linked.length === 0) {
     return (
@@ -567,11 +568,11 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         {pending.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                 En attente ({pending.length})
-               </p>
-               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                En attente ({pending.length})
+              </p>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
             </div>
             <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
               {pending.map((p, i) => (
@@ -592,11 +593,11 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         {linked.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                 Comptes liés ({linked.length})
-               </p>
-               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                Comptes liés ({linked.length})
+              </p>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
             </div>
             <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
               {linked.map((p, i) => (
@@ -624,7 +625,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
   const isCancelled = match.status === 'cancelled'
   const isHome = match.home_team_id === teamId
   const oppTeam = isHome ? match.away_team : match.home_team
-  const myScore  = isHome ? match.home_score : match.away_score
+  const myScore = isHome ? match.home_score : match.away_score
   const oppScore = isHome ? match.away_score : match.home_score
 
   let result: 'W' | 'D' | 'L' | null = null
@@ -704,26 +705,26 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
   const filtered = teamMatches.filter(m => {
     if (filter === 'upcoming') return m.status === 'scheduled'
-    if (filter === 'past')     return m.status === 'completed'
+    if (filter === 'past') return m.status === 'completed'
     return true
   })
 
   const upcoming = teamMatches.filter(m => m.status === 'scheduled').length
-  const played   = teamMatches.filter(m => m.status === 'completed').length
+  const played = teamMatches.filter(m => m.status === 'completed').length
 
   return (
     <div className="space-y-6">
       {/* Résumé rapide premium */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Joués',    value: played,              color: 'text-white', icon: Check },
-          { label: 'À venir',  value: upcoming,            color: 'text-blue-400', icon: Calendar },
-          { label: 'Total',    value: teamMatches.length,  color: 'text-slate-500', icon: TrendingUp },
+          { label: 'Joués', value: played, color: 'text-white', icon: Check },
+          { label: 'À venir', value: upcoming, color: 'text-blue-400', icon: Calendar },
+          { label: 'Total', value: teamMatches.length, color: 'text-slate-500', icon: TrendingUp },
         ].map(s => (
           <div key={s.label} className="glass-morphism p-4 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="relative z-10">
-               <p className={clsx('text-2xl font-black tabular-nums', s.color)}>{s.value}</p>
-               <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">{s.label}</p>
+              <p className={clsx('text-2xl font-black tabular-nums', s.color)}>{s.value}</p>
+              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">{s.label}</p>
             </div>
             <s.icon size={40} className="absolute -bottom-2 -right-2 text-white/[0.03] group-hover:text-white/10 transition-colors" />
           </div>
@@ -755,7 +756,7 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
             <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-               <Calendar size={20} className="text-slate-600" />
+              <Calendar size={20} className="text-slate-600" />
             </div>
             <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match trouvé</p>
             <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">Modifiez vos filtres ou revenez plus tard.</p>
@@ -774,70 +775,148 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
 // ── Onglet Tactique ──────────────────────────────────────────────────────────
 
-function TabTactique({ teamId, seasonId, teamColor }: { teamId: string; seasonId: string; teamColor: string }) {
-  const { data: matches, isLoading: matchesLoading } = useMatches(seasonId)
+export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: { teamId: string, teamColor: string, seasonId: string, readonly?: boolean }) {
+  const { profile, user } = useAuth()
+  const { data: matches } = useMatches(seasonId)
   const { data: players } = usePlayersByTeam(teamId)
   const updateLineup = useUpdateMatchLineup()
 
   const nextMatch = useMemo(() => {
     return (matches ?? [])
-      .filter(m => (m.home_team_id === teamId || m.away_team_id === teamId) && m.status === 'scheduled')
-      .sort((a, b) => new Date(a.scheduled_at || 0).getTime() - new Date(b.scheduled_at || 0).getTime())[0]
+      .filter(m => (m.home_team_id === teamId || m.away_team_id === teamId) && m.status === 'scheduled' && m.scheduled_at)
+      .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())[0]
   }, [matches, teamId])
 
   const { data: lineups, isLoading: lineupLoading } = useMatchLineups(nextMatch?.id || '')
-  
+
   const teamLineup = useMemo(() => {
     return lineups?.filter(l => l.team_id === teamId) ?? []
   }, [lineups, teamId])
+
+  // Realtime
+  useRealtimeTactics(teamId, nextMatch?.id)
+
+  // Broadcast tactical updates to other players
+  const broadcastUpdate = useCallback((type: 'formation' | 'player_selected', data: any) => {
+    if (!nextMatch) return
+    const channel = supabase.channel(`tactics-team-${teamId}-${nextMatch.id}`)
+    channel.send({
+      type: 'broadcast',
+      event: 'tactical_update',
+      payload: { type, ...data, captainName: profile?.full_name ?? 'Le Capitaine' }
+    })
+  }, [teamId, nextMatch, profile])
+
+  // Listen for broadcasts (for players)
+  useEffect(() => {
+    if (!nextMatch || !readonly) return
+    const channel = supabase.channel(`tactics-team-${teamId}-${nextMatch.id}`)
+    channel
+      .on('broadcast', { event: 'tactical_update' }, ({ payload }) => {
+        const { type, captainName, formation, playerName, playerId } = payload
+
+        let title = 'Tactique mise à jour'
+        let message = `${captainName} a modifié la formation.`
+
+        if (type === 'player_selected') {
+          if (playerId === profile?.id || playerId === user?.id) {
+            title = 'Tu es titulaire ! ⚽'
+            message = `Le capitaine t'a sélectionné pour le match contre ${nextMatch.home_team_id === teamId ? (nextMatch.away_team as any)?.name : (nextMatch.home_team as any)?.name}`
+          } else {
+            message = `${captainName} a sélectionné ${playerName} dans le 5 majeur.`
+          }
+        } else if (type === 'formation') {
+          message = `${captainName} a choisi la formation ${formation}.`
+        }
+
+        pushLocal(title, message, `tactics-${nextMatch.id}`, `/my-team?tab=tactique`)
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [nextMatch, readonly, teamId, profile, user])
 
   const currentFormation = useMemo(() => {
     const firstPos = teamLineup.find(l => l.is_starter && l.position?.includes(':'))?.position
     return firstPos?.split(':')[0] || '2-1-1'
   }, [teamLineup])
 
-  if (matchesLoading || lineupLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
+  if (lineupLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
 
   if (!nextMatch) {
     return (
-      <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
-        <Layout size={40} className="mx-auto mb-4 text-slate-700" />
-        <p className="text-slate-400 font-black uppercase tracking-widest">Aucun match à venir</p>
-        <p className="text-slate-600 text-xs mt-2 font-bold uppercase tracking-widest">Revenez plus tard pour préparer votre tactique.</p>
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center glass-morphism rounded-[2rem] border border-white/5">
+        <Calendar size={40} className="text-slate-700 mb-4" />
+        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match programmé</p>
+        <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">La tactique sera disponible dès qu'un match sera planifié.</p>
       </div>
     )
   }
 
   const handleSelectFormation = async (formationKey: string) => {
-    const starters = teamLineup.filter(l => l.is_starter).map(l => l.player_id)
-    const substitutes = teamLineup.filter(l => !l.is_starter).map(l => l.player_id)
-    
-    // Si pas de titulaires encore, on prend les 5 premiers joueurs
-    let finalStarters = starters
-    let finalSubs = substitutes
-    
-    if (finalStarters.length === 0 && players && players.length >= 5) {
-      finalStarters = players.slice(0, 5).map(p => p.id)
-      finalSubs = players.slice(5).map(p => p.id)
-    } else if (finalStarters.length < 5 && players) {
-        // Compléter si possible
-        const available = players.filter(p => !finalStarters.includes(p.id) && !finalSubs.includes(p.id))
-        const needed = 5 - finalStarters.length
-        finalStarters = [...finalStarters, ...available.slice(0, needed).map(p => p.id)]
-    }
+    try {
+      const starters = teamLineup.filter(l => l.is_starter).map(l => l.player_id)
+      const substitutes = teamLineup.filter(l => !l.is_starter).map(l => l.player_id)
 
-    const formationCoords = FORMATIONS[formationKey].coords
-    const startersWithPositions = finalStarters.slice(0, 5).map((pid, idx) => ({
-      id: pid,
-      pos: `${formationKey}:${formationCoords[idx].pos}`
-    }))
+      const formationCoords = FORMATIONS[formationKey].coords
+      const startersWithPositions = starters.slice(0, 5).map((pid, idx) => ({
+        id: pid,
+        pos: `${formationKey}:${formationCoords[idx].pos}`
+      }))
 
-    await updateLineup.mutateAsync({
-      matchId: nextMatch.id,
-      teamId,
-      starters: startersWithPositions as any,
-      substitutes: finalSubs
-    })
+      await updateLineup.mutateAsync({
+        matchId: nextMatch.id,
+        teamId: teamId,
+        starters: startersWithPositions,
+        substitutes
+      })
+
+      broadcastUpdate('formation', { formation: FORMATIONS[formationKey].label })
+    } catch (err) { }
+  }
+
+  const handleTogglePlayer = async (playerId: string) => {
+    try {
+      const starters = teamLineup.filter(l => l.is_starter).map(l => l.player_id)
+      const substitutes = teamLineup.filter(l => !l.is_starter).map(l => l.player_id)
+
+      let nextStarters = [...starters]
+      let nextSubs = [...substitutes]
+      const isAlreadyIn = starters.includes(playerId)
+      const isAdding = !isAlreadyIn && !substitutes.includes(playerId)
+
+      if (isAlreadyIn) {
+        nextStarters = nextStarters.filter(id => id !== playerId)
+        nextSubs = [...nextSubs, playerId]
+      } else if (substitutes.includes(playerId)) {
+        nextSubs = nextSubs.filter(id => id !== playerId)
+        if (nextStarters.length < 5) nextStarters = [...nextStarters, playerId]
+      } else {
+        if (nextStarters.length < 5) nextStarters = [...nextStarters, playerId]
+        else nextSubs = [...nextSubs, playerId]
+      }
+
+      const formationCoords = FORMATIONS[currentFormation].coords
+      const finalStarters = nextStarters.slice(0, 5).map((pid, idx) => ({
+        id: pid,
+        pos: `${currentFormation}:${formationCoords[idx].pos}`
+      }))
+
+      await updateLineup.mutateAsync({
+        matchId: nextMatch.id,
+        teamId: teamId,
+        starters: finalStarters,
+        substitutes: nextSubs
+      })
+
+      if (isAdding && !isAlreadyIn) {
+        const p = players?.find(p => p.id === playerId)
+        broadcastUpdate('player_selected', {
+          playerId: p?.user_id,
+          playerName: `${p?.first_name} ${p?.last_name}`
+        })
+      }
+    } catch (err) { }
   }
 
   return (
@@ -858,53 +937,106 @@ function TabTactique({ teamId, seasonId, teamColor }: { teamId: string; seasonId
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
-        {/* Sélecteur de Tactique */}
-        <div className="space-y-6">
-          <div className="px-2">
-            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-               <Layout size={12} className="text-primary-500" />
-               Tactiques Disponibles
-            </h4>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.keys(FORMATIONS).map(key => (
-                <button
-                  key={key}
-                  disabled={updateLineup.isPending}
-                  onClick={() => handleSelectFormation(key)}
-                  className={clsx(
-                    "relative flex flex-col items-center justify-center p-5 rounded-2xl border transition-all duration-300",
-                    currentFormation === key 
-                      ? "bg-primary-600 border-primary-500 text-white shadow-[0_0_20px_rgba(200,241,53,0.2)]" 
-                      : "glass-morphism border-white/5 text-slate-500 hover:bg-white/5"
-                  )}
-                >
-                  <span className="text-base font-black tracking-tight">{FORMATIONS[key].label}</span>
-                  <span className="text-[9px] font-bold uppercase opacity-60 mt-0.5">{FORMATIONS[key].style}</span>
-                  {currentFormation === key && (
-                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
-                  )}
-                </button>
-              ))}
+        <div className="space-y-8">
+          {/* Sélecteur de Tactique */}
+          <div className="space-y-4">
+            <div className="px-2">
+              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Layout size={12} className="text-primary-500" />
+                1. Choisir la Tactique
+              </h4>
+              <div className={clsx(
+                "grid gap-3",
+                readonly ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4"
+              )}>
+                {Object.keys(FORMATIONS).map(key => (
+                  <button
+                    key={key}
+                    disabled={updateLineup.isPending || readonly}
+                    onClick={() => handleSelectFormation(key)}
+                    className={clsx(
+                      "relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300",
+                      currentFormation === key
+                        ? "bg-primary-600 border-primary-500 text-white shadow-[0_0_20px_rgba(200,241,53,0.2)]"
+                        : "glass-morphism border-white/5 text-slate-500 hover:bg-white/5",
+                      readonly && "cursor-default"
+                    )}
+                  >
+                    <span className="text-sm font-black tracking-tight">{FORMATIONS[key].label}</span>
+                    <span className="text-[8px] font-bold uppercase opacity-60 mt-0.5">{FORMATIONS[key].style}</span>
+                    {currentFormation === key && (
+                      <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          
-          <button
-            onClick={() => window.location.href = `/matches/${nextMatch.id}`}
-            className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-          >
-            Gérer les titulaires complets
-          </button>
+
+          {/* Fiche de Match (Sélection Joueurs) */}
+          <div className="space-y-4">
+            <div className="px-2 flex items-center justify-between">
+              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <UserCheck size={12} className="text-primary-500" />
+                2. Fiche de Match (5 Majeur)
+              </h4>
+              <span className="text-[10px] font-black text-slate-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                {teamLineup.filter(l => l.is_starter).length} / 5 titulaires
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {(players ?? [])
+                .sort((a, b) => (a.jersey_number ?? 99) - (b.jersey_number ?? 99))
+                .map(player => {
+                  const isStarter = teamLineup.some(l => l.player_id === player.id && l.is_starter)
+                  const isSub = teamLineup.some(l => l.player_id === player.id && !l.is_starter)
+
+                  return (
+                    <button
+                      key={player.id}
+                      disabled={updateLineup.isPending || readonly}
+                      onClick={() => handleTogglePlayer(player.id)}
+                      className={clsx(
+                        "flex items-center gap-3 p-3 rounded-2xl border transition-all text-left group",
+                        isStarter ? "bg-primary-500/10 border-primary-500/30" :
+                          isSub ? "bg-blue-500/10 border-blue-500/30" :
+                            "bg-white/2 border-white/5 opacity-60 hover:opacity-100 hover:bg-white/5",
+                        readonly && "cursor-default"
+                      )}
+                    >
+                      <div className={clsx(
+                        "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all",
+                        isStarter || isSub ? "bg-black/60 text-white" : "bg-white/5 text-slate-600"
+                      )}>
+                        {player.jersey_number ?? '—'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={clsx("text-xs font-bold truncate", (isStarter || isSub) ? "text-white" : "text-slate-400")}>
+                          {player.first_name} {player.last_name}
+                        </p>
+                      </div>
+                      {isStarter ? (
+                        <div className="px-2 py-1 rounded-lg bg-primary-500 text-black text-[8px] font-black uppercase">Starter</div>
+                      ) : isSub ? (
+                        <div className="px-2 py-1 rounded-lg bg-blue-500 text-white text-[8px] font-black uppercase">Banc</div>
+                      ) : null}
+                    </button>
+                  )
+                })}
+            </div>
+          </div>
         </div>
 
         {/* Aperçu Pitch */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">
-             Aperçu Tactique
+            Aperçu Tactique
           </h4>
           <div className="relative w-full mx-auto lg:mx-0">
-            <PitchView 
-              players={teamLineup.filter(l => l.is_starter)} 
-              teamColor={teamColor} 
+            <PitchView
+              players={teamLineup.filter(l => l.is_starter)}
+              teamColor={teamColor}
               formation={currentFormation}
               className="aspect-[3/4]"
             />
@@ -914,6 +1046,14 @@ function TabTactique({ teamId, seasonId, teamColor }: { teamId: string; seasonId
               </div>
             )}
           </div>
+
+          <Link
+            to={`/matches/${nextMatch.id}`}
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <ChevronRight size={14} />
+            Détails du match complet
+          </Link>
         </div>
       </div>
     </div>
@@ -941,7 +1081,7 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
     )
   }
 
-  const totalGoals   = teamScorers.reduce((s, r) => s + r.goals, 0)
+  const totalGoals = teamScorers.reduce((s, r) => s + r.goals, 0)
   const totalAssists = teamScorers.reduce((s, r) => s + r.assists, 0)
 
   return (
@@ -950,15 +1090,15 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
           <div className="relative z-10">
-             <p className="text-3xl font-black text-orange-400 tabular-nums">{totalGoals}</p>
-             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Buts marqués</p>
+            <p className="text-3xl font-black text-orange-400 tabular-nums">{totalGoals}</p>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Buts marqués</p>
           </div>
           <Target size={60} className="absolute -bottom-4 -right-4 text-orange-500/5 group-hover:text-orange-500/10 transition-colors" />
         </div>
         <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
           <div className="relative z-10">
-             <p className="text-3xl font-black text-blue-400 tabular-nums">{totalAssists}</p>
-             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Passes décisives</p>
+            <p className="text-3xl font-black text-blue-400 tabular-nums">{totalAssists}</p>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Passes décisives</p>
           </div>
           <Zap size={60} className="absolute -bottom-4 -right-4 text-blue-500/5 group-hover:text-blue-500/10 transition-colors" />
         </div>
@@ -1018,12 +1158,12 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
 // ── Contenu équipe partagé (capitaine + joueur) ───────────────────────────────
 
-export function TeamView({ 
-  teamId, 
-  teamColor, 
-  seasonId, 
-  readonly = false 
-}: { 
+export function TeamView({
+  teamId,
+  teamColor,
+  seasonId,
+  readonly = false
+}: {
   teamId: string
   teamColor: string
   seasonId: string
@@ -1037,7 +1177,7 @@ export function TeamView({
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -1055,7 +1195,7 @@ export function TeamView({
             )}
           >
             {activeTab === id && (
-              <motion.div 
+              <motion.div
                 layoutId="activeTabBackground"
                 className="absolute inset-0 bg-white/5 border border-white/10 rounded-xl shadow-lg"
               />
@@ -1067,7 +1207,7 @@ export function TeamView({
       </div>
 
       {/* Contenu onglet */}
-      <motion.div 
+      <motion.div
         key={activeTab}
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
@@ -1082,8 +1222,8 @@ export function TeamView({
         {activeTab === 'stats' && (
           <TabStats teamId={teamId} seasonId={seasonId} />
         )}
-        {activeTab === 'tactique' && !readonly && (
-          <TabTactique teamId={teamId} seasonId={seasonId} teamColor={teamColor} />
+        {activeTab === 'tactique' && (
+          <TabTactique teamId={teamId} seasonId={seasonId} teamColor={teamColor} readonly={readonly} />
         )}
       </motion.div>
     </motion.div>
@@ -1095,10 +1235,10 @@ export function TeamView({
 type Tab = 'joueurs' | 'matchs' | 'stats' | 'tactique'
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
-  { id: 'joueurs', label: 'Joueurs',  icon: Users    },
-  { id: 'matchs',  label: 'Matchs',   icon: Calendar },
-  { id: 'tactique', label: 'Tactique', icon: Layout   },
-  { id: 'stats',   label: 'Stats',    icon: Target   },
+  { id: 'joueurs', label: 'Joueurs', icon: Users },
+  { id: 'matchs', label: 'Matchs', icon: Calendar },
+  { id: 'tactique', label: 'Tactique', icon: Layout },
+  { id: 'stats', label: 'Stats', icon: Target },
 ]
 
 export function CaptainPage() {
@@ -1220,118 +1360,118 @@ export function CaptainPage() {
         <>
           {/* Premium Team Hero */}
           <div className="relative overflow-hidden rounded-[2rem] glass-morphism border border-white/10 shadow-2xl mb-6">
-             {/* Background Mesh/Glow */}
-             <div 
-               className="absolute inset-0 opacity-20 blur-3xl -z-10"
-               style={{ backgroundColor: myTeamTyped.color ?? '#8b5cf6' }}
-             />
-             <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-             
-             <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 p-8">
-                {/* Logo Section */}
-                <div className="relative group">
-                  <div
-                    className="w-24 h-24 rounded-3xl flex items-center justify-center text-white font-black text-4xl overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-105"
-                    style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
-                  >
-                    {myTeamTyped.logo_url
-                      ? <img src={myTeamTyped.logo_url} alt="" className="w-full h-full object-cover" />
-                      : myTeamTyped.name[0]
-                    }
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <Camera size={24} className="text-white animate-pulse" />
-                    </div>
+            {/* Background Mesh/Glow */}
+            <div
+              className="absolute inset-0 opacity-20 blur-3xl -z-10"
+              style={{ backgroundColor: myTeamTyped.color ?? '#8b5cf6' }}
+            />
+            <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 p-8">
+              {/* Logo Section */}
+              <div className="relative group">
+                <div
+                  className="w-24 h-24 rounded-3xl flex items-center justify-center text-white font-black text-4xl overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                  style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
+                >
+                  {myTeamTyped.logo_url
+                    ? <img src={myTeamTyped.logo_url} alt="" className="w-full h-full object-cover" />
+                    : myTeamTyped.name[0]
+                  }
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera size={24} className="text-white animate-pulse" />
                   </div>
-                  
-                  {/* Hidden Input & Button trigger */}
-                  <button
-                    onClick={() => logoRef.current?.click()}
-                    disabled={logoUploading}
-                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
+                </div>
+
+                {/* Hidden Input & Button trigger */}
+                <button
+                  onClick={() => logoRef.current?.click()}
+                  disabled={logoUploading}
+                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
                                border-4 border-[#161B22] flex items-center justify-center transition-all shadow-xl
                                hover:scale-110 active:scale-95 disabled:opacity-50"
-                  >
-                    {logoUploading ? <LoadingSpinner size="sm" /> : <Pencil size={12} className="text-white" />}
-                  </button>
-                  <input
-                    ref={logoRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handleLogoChange}
-                  />
+                >
+                  {logoUploading ? <LoadingSpinner size="sm" /> : <Pencil size={12} className="text-white" />}
+                </button>
+                <input
+                  ref={logoRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleLogoChange}
+                />
+              </div>
+
+              {/* Info Section */}
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1.5">
+                    <Crown size={10} />
+                    Capitaine
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    {season.name}
+                  </span>
                 </div>
 
-                {/* Info Section */}
-                <div className="flex-1 text-center md:text-left space-y-2">
-                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-                      <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1.5">
-                        <Crown size={10} />
-                        Capitaine
-                      </span>
-                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                        {season.name}
-                      </span>
-                   </div>
-
-                   {editingName ? (
-                     <div className="space-y-2">
-                        <input
-                          autoFocus
-                          value={teamName}
-                          onChange={e => setTeamName(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') saveTeamName(); if (e.key === 'Escape') cancelEditName() }}
-                          className="w-full max-w-md px-4 py-3 rounded-2xl bg-black/40 border border-primary-500
+                {editingName ? (
+                  <div className="space-y-2">
+                    <input
+                      autoFocus
+                      value={teamName}
+                      onChange={e => setTeamName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveTeamName(); if (e.key === 'Escape') cancelEditName() }}
+                      className="w-full max-w-md px-4 py-3 rounded-2xl bg-black/40 border border-primary-500
                                      text-white text-2xl font-black focus:outline-none shadow-inner"
-                          maxLength={40}
-                        />
-                        <div className="flex gap-2">
-                           <button onClick={saveTeamName} className="px-4 py-1.5 rounded-lg bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-500">Sauver</button>
-                           <button onClick={cancelEditName} className="px-4 py-1.5 rounded-lg bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10">Annuler</button>
-                        </div>
-                        {nameError && <p className="text-[10px] text-red-400 mt-1">{nameError}</p>}
-                     </div>
-                   ) : (
-                     <div className="group flex items-center justify-center md:justify-start gap-3">
-                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter truncate">
-                           {myTeamTyped.name}
-                        </h1>
-                        <button 
-                           onClick={startEditName}
-                           className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                           <Pencil size={18} />
-                        </button>
-                     </div>
-                   )}
-                   {logoError && <p className="text-xs text-red-400 font-bold">{logoError}</p>}
-                </div>
-
-                {/* Quick Stats Summary */}
-                {myTeamTyped && standings && (
-                  <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
-                    <div className="text-center">
-                        <p className="text-2xl font-black text-white">
-                          #{standings.findIndex(s => s.team_id === myTeamTyped.id) + 1 || '—'}
-                        </p>
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Rang</p>
+                      maxLength={40}
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={saveTeamName} className="px-4 py-1.5 rounded-lg bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-500">Sauver</button>
+                      <button onClick={cancelEditName} className="px-4 py-1.5 rounded-lg bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10">Annuler</button>
                     </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-black text-white">
-                          {standings.find(s => s.team_id === myTeamTyped.id)?.points ?? 0}
-                        </p>
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Points</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-black text-white">
-                          {standings.find(s => s.team_id === myTeamTyped.id)?.played ?? 0}
-                        </p>
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Matchs</p>
-                    </div>
+                    {nameError && <p className="text-[10px] text-red-400 mt-1">{nameError}</p>}
+                  </div>
+                ) : (
+                  <div className="group flex items-center justify-center md:justify-start gap-3">
+                    <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter truncate">
+                      {myTeamTyped.name}
+                    </h1>
+                    <button
+                      onClick={startEditName}
+                      className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Pencil size={18} />
+                    </button>
                   </div>
                 )}
-             </div>
+                {logoError && <p className="text-xs text-red-400 font-bold">{logoError}</p>}
+              </div>
+
+              {/* Quick Stats Summary */}
+              {myTeamTyped && standings && (
+                <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-white">
+                      #{standings.findIndex(s => s.team_id === myTeamTyped.id) + 1 || '—'}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Rang</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-white">
+                      {standings.find(s => s.team_id === myTeamTyped.id)?.points ?? 0}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Points</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-white">
+                      {standings.find(s => s.team_id === myTeamTyped.id)?.played ?? 0}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Matchs</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Onglets */}

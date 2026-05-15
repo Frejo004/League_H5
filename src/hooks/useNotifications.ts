@@ -16,7 +16,8 @@ export type NotifType =
   | 'mvp_vote_open'
   | 'invite_pending'
   | 'invite_expiring'
-  | 'spectator_request'  // nouvelle demande d'accès spectateur (admin)
+  | 'spectator_request'
+  | 'tactique_selected'
 
 export interface Notification {
   id: string
@@ -110,6 +111,28 @@ function useMyVotedMatches(userId?: string, matchIds?: string[]) {
   })
 }
 
+function useMyNextLineup(userId?: string, matchId?: string) {
+  return useQuery({
+    queryKey: ['notifications_my_lineup', userId, matchId],
+    enabled: !!userId && !!matchId,
+    staleTime: 1000 * 60 * 5,
+    queryFn: async () => {
+      // Trouve le player_id de l'user
+      const { data: p } = await supabase.from('players').select('id').eq('user_id', userId!).maybeSingle()
+      if (!p) return null
+
+      const { data, error } = await supabase
+        .from('match_lineups')
+        .select('is_starter, team_id, matches(home_team_id, away_team:teams!away_team_id(name), home_team:teams!home_team_id(name))')
+        .eq('match_id', matchId!)
+        .eq('player_id', p.id)
+        .maybeSingle()
+      if (error) throw error
+      return data
+    },
+  })
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Hook principal
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,6 +145,14 @@ export function useNotifications() {
   const isPrivileged = isAdmin || isCaptain
   const { data: invites } = useActiveInvites(isPrivileged)
   const { data: pendingSpectators } = usePendingSpectators(isAdmin)
+
+  const nextMatch = useMemo(() => {
+    return (matches ?? [])
+      .filter(m => m.status === 'scheduled' && m.scheduled_at)
+      .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())[0]
+  }, [matches])
+
+  const { data: myLineup } = useMyNextLineup(user?.id, nextMatch?.id)
 
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
@@ -269,6 +300,21 @@ export function useNotifications() {
           urgent:    true,
         })
       }
+    }
+
+    // ── 6. Sélection tactique (User est titulaire pour le prochain match) ───
+    if (myLineup?.is_starter && nextMatch) {
+      const isHome = myLineup.team_id === (nextMatch as any).home_team_id
+      const opp = isHome ? (nextMatch.away_team as any)?.name : (nextMatch.home_team as any)?.name
+      notifs.push({
+        id: `tactique-starter-${nextMatch.id}`,
+        type: 'tactique_selected',
+        title: 'Tu es titulaire ! ⚽',
+        message: `Tu fais partie du 5 majeur pour le match contre ${opp || 'l\'adversaire'}`,
+        href: '/my-team?tab=tactique',
+        createdAt: nextMatch.scheduled_at ? new Date(nextMatch.scheduled_at) : new Date(),
+        urgent: true,
+      })
     }
 
     return notifs.sort((a, b) => {

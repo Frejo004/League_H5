@@ -224,3 +224,41 @@ export function useRealtimeTeams(seasonId?: string) {
     }
   }, [seasonId, qc])
 }
+
+// ── Realtime pour la tactique d'une équipe ────────────────────────────────────
+
+export function useRealtimeTactics(teamId?: string, matchId?: string) {
+  const qc = useQueryClient()
+
+  useEffect(() => {
+    if (!teamId || !matchId) return
+
+    const channel = supabase
+      .channel(`tactics-team-${teamId}-${matchId}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'match_lineups', 
+        filter: `match_id=eq.${matchId}` 
+      }, async (payload) => {
+        // On vérifie si c'est bien notre équipe (le filtre match_id est plus large)
+        const item = (payload.new as any) || (payload.old as any)
+        if (item.team_id !== teamId) return
+
+        console.log('📋 Realtime: Tactical update received', payload)
+        qc.invalidateQueries({ queryKey: ['match-lineups', matchId] })
+
+        // Si c'est une mise à jour d'un titulaire, on peut notifier
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          const p = payload.new as any
+          if (p.is_starter) {
+            // On peut optionnellement envoyer une notification locale
+            // pushLocal('Tactique mise à jour', 'Le capitaine a modifié la composition', `tactics-${matchId}`)
+          }
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [teamId, matchId, qc])
+}
