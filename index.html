@@ -32,5 +32,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Sync theme-color meta tag
+      function updateThemeColor() {
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const color = theme === 'light' ? '#f8fafc' : '#0D1117';
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', color);
+      }
+      const observer = new MutationObserver(updateThemeColor);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      updateThemeColor();
+    </script>
   </body>
 </html>

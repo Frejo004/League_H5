@@ -470,95 +470,102 @@ export default function Header() {
           MOBILE HEADER
           ════════════════════════════════════════════════════════════ */}
 
-      {/* ── Topbar mobile (56px) ── */}
-      <header
-        className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14"
-        style={{ backgroundColor: BG_MAIN, borderBottom: `1px solid ${BORDER}` }}
-      >
-        {/* Brand */}
-        <Link to="/" className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: ACCENT }}
-          >
-            <BallIcon />
+      {/* ── Header mobile complet (Topbar + Titlebar) ── */}
+      <div className="lg:hidden sticky top-0 z-30 flex flex-col w-full shadow-sm">
+        {/* Topbar (56px) */}
+        <header
+          style={{
+            backgroundColor: BG_MAIN,
+            borderBottom: `1px solid ${BORDER}`,
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 h-14">
+            {/* Brand */}
+            <Link to="/" className="flex items-center gap-2">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: ACCENT }}
+              >
+                <BallIcon />
+              </div>
+              <span
+                className="text-base leading-none"
+                style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 800,
+                  color: TEXT_PRIMARY
+                }}
+              >
+                LEAGUE <span style={{ color: ACCENT }}>H5</span>
+              </span>
+            </Link>
+
+            {/* Droite */}
+            <div className="flex items-center gap-2">
+              <GlobalSearch />
+
+              {/* Icône Chat mobile */}
+              {profile && (
+                <NavLink
+                  to="/chat"
+                  className="relative p-1.5 rounded-lg transition-colors"
+                  style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
+                  aria-label="Messages"
+                >
+                  <MessageCircle size={19} />
+                  {totalChatUnread > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                             flex items-center justify-center text-[9px] font-black"
+                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                    >
+                      {totalChatUnread > 9 ? '9+' : totalChatUnread}
+                    </span>
+                  )}
+                </NavLink>
+              )}
+
+              <Avatar profile={profile} role={effectiveRole} />
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="p-1.5 rounded-lg"
+                style={{ color: NAV_OFF }}
+                aria-label="Ouvrir le menu"
+              >
+                <Menu size={20} />
+              </button>
+            </div>
           </div>
+        </header>
+
+        {/* Page title bar mobile (38px) */}
+        <div
+          className="flex items-center px-4 gap-2"
+          style={{
+            height: 38,
+            backgroundColor: BG_SUB,
+            borderBottom: `1px solid ${BORDER}`,
+          }}
+        >
           <span
-            className="text-base leading-none"
+            className="text-sm font-bold"
             style={{
               fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 800,
               color: TEXT_PRIMARY
             }}
           >
-            LEAGUE <span style={{ color: ACCENT }}>H5</span>
+            {pageTitle}
           </span>
-        </Link>
-
-        {/* Droite */}
-        <div className="flex items-center gap-2.5">
-          <GlobalSearch />
-          <ThemeToggle />
-
-          {/* Icône Chat mobile */}
-          {profile && (
-            <NavLink
-              to="/chat"
-              className="relative p-1.5 rounded-lg transition-colors"
-              style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
-              aria-label="Messages"
+          {season && (
+            <span
+              className="text-xs ml-1"
+              style={{ color: NAV_OFF, fontFamily: "'Barlow', sans-serif" }}
             >
-              <MessageCircle size={19} />
-              {totalChatUnread > 0 && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
-                             flex items-center justify-center text-[9px] font-black"
-                  style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
-                >
-                  {totalChatUnread > 9 ? '9+' : totalChatUnread}
-                </span>
-              )}
-            </NavLink>
+              · {season.name}
+            </span>
           )}
-
-          <Avatar profile={profile} role={effectiveRole} />
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-1.5 rounded-lg"
-            style={{ color: NAV_OFF }}
-            aria-label="Ouvrir le menu"
-          >
-            <Menu size={20} />
-          </button>
         </div>
-      </header>
-
-      {/* ── Page title bar mobile ── */}
-      <div
-        className="lg:hidden flex items-center px-4 gap-2"
-        style={{
-          height: 38,
-          backgroundColor: BG_SUB,
-          borderBottom: `1px solid ${BORDER}`,
-        }}
-      >
-        <span
-          className="text-sm font-bold"
-          style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
-            color: TEXT_PRIMARY
-          }}
-        >
-          {pageTitle}
-        </span>
-        {season && (
-          <span
-            className="text-xs ml-1"
-            style={{ color: NAV_OFF, fontFamily: "'Barlow', sans-serif" }}
-          >
-            · {season.name}
-          </span>
-        )}
       </div>
 
       {/* ── Drawer mobile ── */}
@@ -577,31 +584,37 @@ export default function Header() {
           >
             {/* Header drawer */}
             <div
-              className="flex items-center justify-between px-5 h-14 shrink-0"
-              style={{ borderBottom: `1px solid ${BORDER}` }}
+              className="flex flex-col shrink-0"
+              style={{
+                backgroundColor: BG_MAIN,
+                borderBottom: `1px solid ${BORDER}`,
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+              }}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: ACCENT }}
-                >
-                  <BallIcon />
+              <div className="flex items-center justify-between px-5 h-14">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: ACCENT }}
+                  >
+                    <BallIcon />
+                  </div>
+                  <span
+                    className="text-base leading-none"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+                  >
+                    LEAGUE <span style={{ color: ACCENT }}>H5</span>
+                  </span>
                 </div>
-                <span
-                  className="text-base leading-none"
-                  style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="p-1.5 rounded-lg"
+                  style={{ color: NAV_OFF }}
+                  aria-label="Fermer"
                 >
-                  LEAGUE <span style={{ color: ACCENT }}>H5</span>
-                </span>
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="p-1.5 rounded-lg"
-                style={{ color: NAV_OFF }}
-                aria-label="Fermer"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Nav items */}
@@ -624,6 +637,11 @@ export default function Header() {
                   {label}
                 </NavLink>
               ))}
+
+              {/* Theme Toggle dans le menu mobile */}
+              <div className="pt-2 px-1">
+                <ThemeToggle showLabel={true} className="w-full justify-start gap-3" />
+              </div>
             </nav>
 
             {/* Footer drawer */}
@@ -673,7 +691,10 @@ export default function Header() {
       {/* ════════════════════════════════════════════════════════════
           MOBILE BOTTOM NAV
           ════════════════════════════════════════════════════════════ */}
-      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 pointer-events-none">
+      <div
+        className="lg:hidden fixed left-4 right-4 z-30 pointer-events-none"
+        style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         <nav
           className="pointer-events-auto mx-auto max-w-sm rounded-2xl glass-morphism shadow-2xl flex items-stretch overflow-hidden border border-white/10"
           style={{
