@@ -3,26 +3,27 @@
  * Affiché une seule fois, 5s après le premier chargement
  */
 import { useState, useEffect } from 'react'
-import { Bell, X } from 'lucide-react'
-import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { Bell, X, CheckCircle } from 'lucide-react'
+import { useNotificationSW } from '@/hooks/useNotificationSW'
 import { useAuth } from '@/hooks/useAuth'
 
 const LS_KEY = 'lh5_push_asked'
 
 export function PushNotificationBanner() {
   const { user } = useAuth()
-  const { permission, isSupported, subscribe } = usePushNotifications(user?.id)
+  const { permission, isSupported, requestPermission } = useNotificationSW()
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (!isSupported) return
+    if (!isSupported || !user) return
     if (permission === 'granted' || permission === 'denied') return
     if (localStorage.getItem(LS_KEY)) return
 
     const t = setTimeout(() => setShow(true), 5000)
     return () => clearTimeout(t)
-  }, [isSupported, permission])
+  }, [isSupported, permission, user])
 
   const dismiss = () => {
     setShow(false)
@@ -31,9 +32,14 @@ export function PushNotificationBanner() {
 
   const handleSubscribe = async () => {
     setLoading(true)
-    await subscribe()
+    const granted = await requestPermission()
     setLoading(false)
-    dismiss()
+    if (granted) {
+      setSuccess(true)
+      setTimeout(dismiss, 1500)
+    } else {
+      dismiss()
+    }
   }
 
   if (!show) return null
@@ -60,31 +66,41 @@ export function PushNotificationBanner() {
 
         <div className="flex items-start gap-3 pr-6">
           <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center shrink-0">
-            <Bell size={18} className="text-primary-400" />
+            {success
+              ? <CheckCircle size={18} className="text-green-400" />
+              : <Bell size={18} className="text-primary-400" />
+            }
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Activer les notifications</p>
+            <p className="text-sm font-bold text-white">
+              {success ? 'Notifications activées !' : 'Activer les notifications'}
+            </p>
             <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-              Soyez alerté des matchs, résultats et votes MVP en temps réel.
+              {success
+                ? 'Vous recevrez des alertes pour les matchs et résultats.'
+                : 'Soyez alerté des matchs, résultats et votes MVP en temps réel.'
+              }
             </p>
           </div>
         </div>
 
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={handleSubscribe}
-            disabled={loading}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white bg-primary-600 hover:bg-primary-500 transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Activation…' : 'Activer'}
-          </button>
-          <button
-            onClick={dismiss}
-            className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-300 hover:bg-white/8 transition-colors"
-          >
-            Plus tard
-          </button>
-        </div>
+        {!success && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleSubscribe}
+              disabled={loading}
+              className="flex-1 py-2 rounded-xl text-sm font-bold text-white bg-primary-600 hover:bg-primary-500 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Activation…' : 'Activer'}
+            </button>
+            <button
+              onClick={dismiss}
+              className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:text-slate-300 hover:bg-white/8 transition-colors"
+            >
+              Plus tard
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

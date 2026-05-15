@@ -7,18 +7,34 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
-// Helper : envoyer une notification locale si permission accordée
-export function pushLocal(title: string, body: string, tag?: string, url?: string) {
+/**
+ * Helper : envoyer une notification via le Service Worker actif (iOS PWA + desktop)
+ * - Si l'app est au premier plan → ne fait rien (le badge UI suffit)
+ * - Si l'app est en arrière-plan → notification système
+ */
+export async function pushLocal(title: string, body: string, tag?: string, url?: string) {
   if (typeof Notification === 'undefined') return
   if (Notification.permission !== 'granted') return
   if (document.visibilityState === 'visible') return
 
-  const n = new Notification(title, {
-    body,
-    icon: '/logo-h5.png',
-    badge: '/logo-h5.png',
-    tag,
-  })
+  try {
+    // Utilise le SW déjà enregistré par VitePWA (évite les conflits de scope)
+    const reg = await navigator.serviceWorker.ready
+    if (reg?.active) {
+      reg.active.postMessage({
+        type: 'SHOW_NOTIFICATION',
+        title,
+        body,
+        tag: tag ?? 'league-h5',
+        url: url ?? '/',
+        icon: '/logo-h5.png',
+      })
+      return
+    }
+  } catch { /* no SW */ }
+
+  // Fallback : Notification API directe (desktop sans SW)
+  const n = new Notification(title, { body, icon: '/logo-h5.png', badge: '/logo-h5.png', tag })
   if (url) n.onclick = () => { window.focus(); window.location.href = url; n.close() }
 }
 

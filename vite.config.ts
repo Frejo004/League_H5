@@ -9,7 +9,11 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: ['favicon.svg', 'icons.svg', 'logo-h5.png'],
       manifest: {
         name: 'League H5',
@@ -36,7 +40,6 @@ export default defineConfig({
             purpose: 'any maskable',
           },
         ],
-        // Raccourcis pour iOS/Android
         shortcuts: [
           {
             name: 'Matchs',
@@ -57,47 +60,10 @@ export default defineConfig({
             icons: [{ src: '/logo-h5.png', sizes: '96x96' }],
           },
         ],
-        // Catégorie pour les stores
         categories: ['sports', 'social'],
       },
-      workbox: {
-        // Cache les assets statiques
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Stratégie réseau d'abord pour les API, cache pour les assets
-        runtimeCaching: [
-          {
-            // Supabase API — network first, fallback cache
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
-              networkTimeoutSeconds: 10,
-            },
-          },
-          {
-            // Images Unsplash (heroes) — cache first
-            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'hero-images',
-              expiration: { maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 },
-            },
-          },
-          {
-            // Avatars Supabase Storage — stale while revalidate
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'avatars',
-              expiration: { maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 },
-            },
-          },
-        ],
-      },
-      // Afficher le prompt d'installation sur iOS (Safari)
       devOptions: {
-        enabled: false, // désactivé en dev pour éviter les conflits HMR
+        enabled: false,
       },
     }),
   ],
