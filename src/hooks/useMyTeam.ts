@@ -1,25 +1,53 @@
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { usePlayers } from './usePlayers'
-import { useTeams } from './useTeams'
+import { supabase } from '@/lib/supabase'
 
 /**
- * Hook pour récupérer l'équipe du joueur connecté
- * Retourne l'ID de l'équipe et les informations complètes de l'équipe
+ * Hook pour récupérer l'équipe du joueur connecté.
+ * Fait une requête directe filtrée par user_id au lieu de charger
+ * tous les joueurs de la saison.
  */
 export function useMyTeam(seasonId?: string) {
   const { profile } = useAuth()
-  const { data: players } = usePlayers(seasonId)
-  const { data: teams } = useTeams(seasonId)
 
-  // Trouver le joueur correspondant au profil connecté
-  const myPlayer = players?.find(p => p.user_id === profile?.id)
-  
-  // Trouver l'équipe du joueur
-  const myTeam = teams?.find(t => t.id === myPlayer?.team_id)
+  const query = useQuery({
+    queryKey: ['my-team', seasonId, profile?.id],
+    enabled: !!seasonId && !!profile?.id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      // Trouver le joueur lié au profil connecté dans cette saison
+      const { data: player, error: playerErr } = await supabase
+        .from('players')
+        .select('id, team_id, first_name, last_name, jersey_number, position, avatar_url, user_id, is_active')
+        .eq('user_id', profile!.id)
+        .eq('season_id', seasonId!)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (playerErr) throw playerErr
+      if (!player) return { myTeamId: null, myTeam: null, myPlayer: null }
+
+      // Récupérer l'équipe
+      const { data: team, error: teamErr } = await supabase
+        .from('teams')
+        .select('id, name, color, logo_url, captain_id, season_id')
+        .eq('id', player.team_id)
+        .maybeSingle()
+
+      if (teamErr) throw teamErr
+
+      return {
+        myTeamId: player.team_id,
+        myTeam: team ?? null,
+        myPlayer: player,
+      }
+    },
+  })
 
   return {
-    myTeamId: myPlayer?.team_id ?? null,
-    myTeam: myTeam ?? null,
-    myPlayer: myPlayer ?? null,
+    myTeamId: query.data?.myTeamId ?? null,
+    myTeam: query.data?.myTeam ?? null,
+    myPlayer: query.data?.myPlayer ?? null,
+    isLoading: query.isLoading,
   }
 }

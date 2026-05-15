@@ -106,13 +106,9 @@ export function usePlayerProfile(playerId?: string) {
       const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
       const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
       const totalAssists  = seasonAssists.length
-      // matchesPlayed = tous les matchs de l'équipe où le joueur a participé
-      // (marqué OU passé). Pour un comptage exact incluant les matchs sans
-      // contribution, il faudrait une table match_players — non implémentée.
-      const matchesPlayed = new Set([
-        ...seasonGoals.map(g => g.match_id),
-        ...seasonAssists.map(a => a.match_id),
-      ]).size
+      // matchesPlayed = tous les matchs terminés de l'équipe dans la saison
+      // (indépendamment des contributions du joueur)
+      const matchesPlayed = matches.length
 
       // Goals/assists par match pour l'affichage
       const goalsByMatch   = new Map<string, number>()

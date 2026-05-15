@@ -35,6 +35,7 @@ const PalmaresPage        = lazyPage(() => import('@/pages/PalmaresPage'), 'Palm
 const RulesPage           = lazyPage(() => import('@/pages/RulesPage'), 'RulesPage')
 const LandingPage         = lazyPage(() => import('@/pages/LandingPage'), 'LandingPage')
 const ChatPage            = lazyPage(() => import('@/pages/ChatPage'), 'ChatPage')
+const PlayoffsPage        = lazyPage(() => import('@/pages/PlayoffsPage'), 'PlayoffsPage')
 const NotFoundPage        = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
 
 function SuspenseWrapper() {
@@ -88,6 +89,7 @@ export const router = createBrowserRouter(
                 { path: '/rules',         element: <RulesPage /> },
                 { path: '/profile',       element: <ProfilePage /> },
                 { path: '/chat',          element: <ChatPage /> },
+                { path: '/playoffs',      element: <PlayoffsPage /> },
               ],
             },
           ],

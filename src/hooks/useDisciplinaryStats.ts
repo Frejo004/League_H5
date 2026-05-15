@@ -34,8 +34,11 @@ export function useDisciplinaryStats(seasonId?: string) {
   const { data: matches } = useMatches(seasonId)
 
   return useQuery({
-    queryKey: ['disciplinary-stats', seasonId],
-    enabled: !!seasonId,
+    // On inclut le nombre de matchs dans la queryKey pour que la query se relance
+    // automatiquement quand les matchs changent (ex: nouveau match terminé)
+    queryKey: ['disciplinary-stats', seasonId, matches?.length ?? 0],
+    // On attend que les matchs soient chargés ET qu'il y en ait au moins un
+    enabled: !!seasonId && !!matches && matches.length > 0,
     staleTime: 60_000,
     queryFn: async (): Promise<{
       players: PlayerDiscipline[]

@@ -3,7 +3,7 @@ import { Zap, Pencil, Check, X, Calendar } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
-import { useMatches, useCreateMatch, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
+import { useMatches, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchStatus } from '@/types/database'
@@ -277,12 +277,12 @@ export function AdminSchedulePage() {
   const { data: season } = useActiveSeason()
   const { data: teams } = useTeams(season?.id)
   const { data: matches, isLoading } = useMatches(season?.id)
-  const createMatch = useCreateMatch()
   const qc = useQueryClient()
 
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState<string | null>(null)
   const [genSuccess, setGenSuccess] = useState(false)
+  const [showGenConfirm, setShowGenConfirm] = useState(false)
 
   const matchdays = [...new Set((matches ?? []).map(m => m.matchday))].sort((a, b) => a - b)
   const teamList = teams ?? []
@@ -290,17 +290,23 @@ export function AdminSchedulePage() {
   // ── Génération automatique aller-retour ──────────────────────────────────
   async function handleGenerate() {
     if (!season || teamList.length < 2) return
+    // Si des matchs existent déjà, demander confirmation via modale custom
     if ((matches ?? []).length > 0) {
-      if (!confirm('Des matchs existent déjà. Voulez-vous quand même générer le calendrier complet ?')) return
+      setShowGenConfirm(true)
+      return
     }
+    await performGenerate()
+  }
 
+  async function performGenerate() {
+    if (!season || teamList.length < 2) return
+    setShowGenConfirm(false)
     setGenerating(true)
     setGenError(null)
     setGenSuccess(false)
 
     try {
       const rounds = generateRoundRobin(teamList.map(t => t.id))
-
       // Construire tous les matchs à créer en filtrant ceux qui existent déjà
       const allMatchesToCreate = rounds.flatMap((round, i) => {
         const matchday = i + 1
@@ -352,6 +358,38 @@ export function AdminSchedulePage() {
 
   return (
     <div className="space-y-4">
+
+      {/* Modale de confirmation génération calendrier */}
+      {showGenConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#070b14]/90 backdrop-blur-md" onClick={() => setShowGenConfirm(false)} />
+          <div className="relative w-full max-w-sm bg-[#0f1420] border border-white/10 rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            <div className="w-16 h-16 rounded-full bg-[#FFDF73]/20 border border-[#FFDF73]/30 flex items-center justify-center mx-auto mb-6">
+              <Calendar size={28} className="text-[#FFDF73]" />
+            </div>
+            <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              Regénérer le calendrier ?
+            </h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 text-center leading-relaxed">
+              Des matchs existent déjà. Les nouveaux matchs seront ajoutés sans supprimer les existants.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={performGenerate}
+                className="w-full py-3.5 rounded-2xl bg-[#C8F135] text-black text-[11px] font-black uppercase tracking-widest hover:bg-[#d4f55a] transition-all active:scale-95"
+              >
+                Confirmer la génération
+              </button>
+              <button
+                onClick={() => setShowGenConfirm(false)}
+                className="mt-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Trophy, Download } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Trophy, Download, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
@@ -12,6 +12,7 @@ import { exportCSV } from '@/hooks/useExport'
 import { FormBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import type { StandingRow } from '@/hooks/useStandings'
+import type { MatchWithTeams } from '@/hooks/useMatches'
 
 
 type FilterType = 'all' | 'home' | 'away'
@@ -52,6 +53,191 @@ function computeFilteredStandings(
       return { ...row, ...s, goal_diff: s.goals_for - s.goals_against }
     })
     .sort((a, b) => b.points - a.points || b.goal_diff - a.goal_diff || b.goals_for - a.goals_for)
+}
+
+// ── Graphique d'évolution des points par journée ─────────────────────────────
+
+function FormChart({
+  standings,
+  matches,
+}: {
+  standings: StandingRow[]
+  matches: MatchWithTeams[]
+}) {
+  const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
+
+  // Calculer les points cumulés par journée pour chaque équipe
+  const chartData = useMemo(() => {
+    const completedMatches = matches
+      .filter(m => m.status === 'completed' && m.home_score !== null)
+      .sort((a, b) => a.matchday - b.matchday)
+
+    const matchdays = [...new Set(completedMatches.map(m => m.matchday))].sort((a, b) => a - b)
+    if (matchdays.length === 0) return null
+
+    // Points cumulés par équipe par journée
+    const teamPoints = new Map<string, number[]>()
+    const teamCumulative = new Map<string, number>()
+
+    for (const row of standings) {
+      teamPoints.set(row.team_id, [0])
+      teamCumulative.set(row.team_id, 0)
+    }
+
+    for (const day of matchdays) {
+      const dayMatches = completedMatches.filter(m => m.matchday === day)
+
+      // Copier les points actuels avant la journée
+      const snapshot = new Map(teamCumulative)
+
+      for (const m of dayMatches) {
+        const hs = m.home_score!
+        const as_ = m.away_score!
+        const homePoints = hs > as_ ? 3 : hs === as_ ? 1 : 0
+        const awayPoints = as_ > hs ? 3 : hs === as_ ? 1 : 0
+        teamCumulative.set(m.home_team_id, (teamCumulative.get(m.home_team_id) ?? 0) + homePoints)
+        teamCumulative.set(m.away_team_id, (teamCumulative.get(m.away_team_id) ?? 0) + awayPoints)
+      }
+
+      for (const [teamId, pts] of teamCumulative) {
+        teamPoints.get(teamId)?.push(pts)
+      }
+    }
+
+    const maxPoints = Math.max(...[...teamCumulative.values()])
+    return { matchdays, teamPoints, maxPoints, teamCount: standings.length }
+  }, [standings, matches])
+
+  if (!chartData || chartData.matchdays.length < 2) return null
+
+  const { matchdays, teamPoints, maxPoints } = chartData
+  const W = 600
+  const H = 200
+  const PAD = { top: 16, right: 24, bottom: 28, left: 32 }
+  const chartW = W - PAD.left - PAD.right
+  const chartH = H - PAD.top - PAD.bottom
+  const totalPoints = matchdays.length + 1  // +1 pour le point de départ à 0
+
+  const xScale = (i: number) => PAD.left + (i / (totalPoints - 1)) * chartW
+  const yScale = (pts: number) => PAD.top + chartH - (maxPoints > 0 ? (pts / maxPoints) * chartH : 0)
+
+  // Top 5 équipes seulement pour la lisibilité
+  const topTeams = standings.slice(0, Math.min(5, standings.length))
+
+  return (
+    <div className="card space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp size={16} className="text-primary-400" />
+        <h3 className="text-xs font-black text-white uppercase tracking-widest">Évolution du classement</h3>
+        <span className="text-[10px] text-slate-600 font-bold">— Points cumulés par journée</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full"
+          style={{ minWidth: 320, maxHeight: 200 }}
+          aria-label="Graphique d'évolution des points"
+        >
+          {/* Grilles horizontales */}
+          {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+            const y = PAD.top + chartH * (1 - pct)
+            const pts = Math.round(maxPoints * pct)
+            return (
+              <g key={pct}>
+                <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
+                  stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                <text x={PAD.left - 4} y={y + 4} textAnchor="end"
+                  fill="rgba(255,255,255,0.25)" fontSize="9" fontFamily="monospace">
+                  {pts}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* Labels journées */}
+          {[0, ...matchdays].map((_, i) => {
+            const x = xScale(i)
+            const label = i === 0 ? 'Dép.' : `J${matchdays[i - 1]}`
+            return (
+              <text key={i} x={x} y={H - 6} textAnchor="middle"
+                fill="rgba(255,255,255,0.25)" fontSize="9" fontFamily="monospace">
+                {label}
+              </text>
+            )
+          })}
+
+          {/* Lignes par équipe */}
+          {topTeams.map(row => {
+            const pts = teamPoints.get(row.team_id) ?? []
+            if (pts.length < 2) return null
+            const isHovered = hoveredTeam === row.team_id
+            const isOther = hoveredTeam !== null && !isHovered
+
+            const pathD = pts.map((p, i) =>
+              `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p)}`
+            ).join(' ')
+
+            return (
+              <g key={row.team_id}
+                onMouseEnter={() => setHoveredTeam(row.team_id)}
+                onMouseLeave={() => setHoveredTeam(null)}
+                style={{ cursor: 'pointer' }}
+              >
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={row.team_color}
+                  strokeWidth={isHovered ? 2.5 : isOther ? 0.8 : 1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={isOther ? 0.25 : 1}
+                  style={{ transition: 'all 0.2s ease' }}
+                />
+                {/* Point final */}
+                {pts.length > 0 && (
+                  <circle
+                    cx={xScale(pts.length - 1)}
+                    cy={yScale(pts[pts.length - 1])}
+                    r={isHovered ? 4 : 2.5}
+                    fill={row.team_color}
+                    opacity={isOther ? 0.25 : 1}
+                    style={{ transition: 'all 0.2s ease' }}
+                  />
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Légende */}
+      <div className="flex flex-wrap gap-3">
+        {topTeams.map(row => (
+          <button
+            key={row.team_id}
+            onMouseEnter={() => setHoveredTeam(row.team_id)}
+            onMouseLeave={() => setHoveredTeam(null)}
+            className={clsx(
+              'flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wider',
+              hoveredTeam === row.team_id
+                ? 'border-white/20 bg-white/8 text-white'
+                : 'border-white/5 bg-transparent text-slate-500 hover:text-slate-300',
+            )}
+          >
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.team_color }} />
+            {row.team_name}
+            <span className="text-slate-600 font-black">{row.points}pts</span>
+          </button>
+        ))}
+        {standings.length > 5 && (
+          <span className="text-[10px] text-slate-700 font-bold self-center">
+            +{standings.length - 5} équipes masquées
+          </span>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // ── Podium top 3 ─────────────────────────────────────────────────────────────
@@ -371,6 +557,11 @@ export function StandingsPage() {
               ))}
             </div>
           </div>
+
+          {/* Graphique d'évolution */}
+          {matches && standings.length >= 2 && (
+            <FormChart standings={standings} matches={matches} />
+          )}
         </div>
       )}
     </div>

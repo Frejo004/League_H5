@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target } from 'lucide-react'
+import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams, Link } from 'react-router-dom'
 import { AdminSeasonsPage } from './admin/AdminSeasonsPage'
 import { AdminTeamsPage } from './admin/AdminTeamsPage'
 import { AdminSchedulePage } from './admin/AdminSchedulePage'
@@ -19,7 +19,6 @@ const TABS = [
   { id: 'spectators', label: 'Spectateurs', icon: Eye },
   { id: 'settings',   label: 'Paramètres',  icon: SlidersHorizontal },
 ] as const
-
 type TabId = typeof TABS[number]['id']
 
 export function AdminPage() {
@@ -89,7 +88,27 @@ export function AdminPage() {
         {activeTab === 'schedule'   && <AdminSchedulePage />}
         {activeTab === 'goals'      && <AdminGoalsPage />}
         {activeTab === 'spectators' && <AdminSpectatorsPage />}
-        {activeTab === 'settings'   && <AdminSettingsPage />}
+        {activeTab === 'settings'   && (
+          <div className="space-y-4">
+            <AdminSettingsPage />
+            <div className="flex items-center gap-3 p-4 rounded-2xl border border-primary-500/20 bg-primary-500/5">
+              <Swords size={16} className="text-primary-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-white uppercase tracking-wider">Phase finale</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                  Gérer le bracket et les matchs de playoffs
+                </p>
+              </div>
+              <Link
+                to="/playoffs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-primary-500 transition-colors shrink-0"
+              >
+                <Swords size={12} />
+                Voir le bracket
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

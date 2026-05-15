@@ -49,14 +49,27 @@ export function useUpdateMatchLineup() {
       starters: string[] | { id: string, pos: string }[], 
       substitutes: string[] 
     }) => {
-      // 1. Supprimer l'ancienne compo pour cette équipe
+      // 1. Récupérer les numéros de maillot des joueurs concernés
+      const allPlayerIds = [
+        ...starters.map(s => typeof s === 'string' ? s : s.id),
+        ...substitutes,
+      ]
+      const { data: playersData } = await supabase
+        .from('players')
+        .select('id, jersey_number')
+        .in('id', allPlayerIds)
+      const jerseyMap = new Map<string, number | null>(
+        (playersData ?? []).map(p => [p.id, p.jersey_number])
+      )
+
+      // 2. Supprimer l'ancienne compo pour cette équipe
       await supabase
         .from('match_lineups')
         .delete()
         .eq('match_id', matchId)
         .eq('team_id', teamId)
 
-      // 2. Préparer les nouveaux records
+      // 3. Préparer les nouveaux records avec jersey_number
       const entries = [
         ...starters.map(s => {
           const pid = typeof s === 'string' ? s : s.id
@@ -66,7 +79,8 @@ export function useUpdateMatchLineup() {
             team_id: teamId,
             player_id: pid,
             is_starter: true,
-            position: pos
+            position: pos,
+            jersey_number: jerseyMap.get(pid) ?? null,
           }
         }),
         ...substitutes.map(pid => ({
@@ -74,13 +88,14 @@ export function useUpdateMatchLineup() {
           team_id: teamId,
           player_id: pid,
           is_starter: false,
-          position: null
+          position: null,
+          jersey_number: jerseyMap.get(pid) ?? null,
         }))
       ]
 
       if (entries.length === 0) return
 
-      // 3. Insérer
+      // 4. Insérer
       const { error } = await supabase.from('match_lineups').insert(entries)
       if (error) throw error
     },

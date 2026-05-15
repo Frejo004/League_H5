@@ -116,8 +116,13 @@ export function useRealtimeMatches(seasonId?: string) {
   useEffect(() => {
     if (!seasonId) return
 
-    const channelName = `matches-season-${seasonId}-${Math.random().toString(36).slice(2, 9)}`
-    
+    // Nom de canal stable (pas de Math.random) pour éviter les fuites de canaux
+    const channelName = `matches-season-${seasonId}`
+
+    // Nettoyer un éventuel canal existant avant d'en créer un nouveau
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
+    if (existing) supabase.removeChannel(existing)
+
     const channel = supabase
       .channel(channelName)
       // 1. Changements sur les matchs (scores, statut, etc.)

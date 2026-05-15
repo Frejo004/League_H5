@@ -1,6 +1,6 @@
 /**
  * RulesPage — Règlement de la High Five Ligue
- * Reproduit fidèlement le document officiel de la ligue
+ * Les équipes et joueurs sont chargés dynamiquement depuis la DB.
  */
 
 import {
@@ -9,48 +9,55 @@ import {
   Check, Star, Footprints, Crown,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useActiveSeason } from '@/hooks/useSeasons'
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Données
+// Hook — équipes + joueurs de la saison active
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TEAMS = [
-  {
-    rank: 1,
-    name: 'CODE LOCK FC',
-    color: '#e11d48',
-    initials: 'CL',
-    players: ['Armel', 'Giovanni', 'Marcel', 'Mounzir', 'Emery', 'Halil'],
-  },
-  {
-    rank: 2,
-    name: 'FAGEP FC',
-    color: '#f59e0b',
-    initials: 'FA',
-    players: ['Elisée', 'Primous', 'Gabriel', 'Ange Calvias', 'Brunel Famous', 'Fréjus'],
-  },
-  {
-    rank: 3,
-    name: 'SCAB-W FC',
-    color: '#16a34a',
-    initials: 'SW',
-    players: ['Rhetice', 'Sahid', 'Warris', 'Clément Akouègnon', 'Bhrayane', 'Silvinoh'],
-  },
-  {
-    rank: 4,
-    name: 'STAR-J FC',
-    color: '#f59e0b',
-    initials: 'SJ',
-    players: ['Jean-Marie', 'Steven Romain', 'Sergio', 'Tobi', 'Raoul R7', 'Augustin'],
-  },
-  {
-    rank: 5,
-    name: 'BASTON FC',
-    color: '#7c3aed',
-    initials: 'BA',
-    players: ['Fred', '23Nov', 'Wifak', 'Emile', 'Arsène', 'Breton'],
-  },
-]
+interface TeamWithPlayers {
+  id: string
+  name: string
+  color: string
+  logo_url: string | null
+  players: Array<{ id: string; first_name: string; last_name: string; jersey_number: number | null }>
+}
+
+function useTeamsWithPlayers(seasonId?: string) {
+  return useQuery({
+    queryKey: ['rules-teams', seasonId],
+    enabled: !!seasonId,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<TeamWithPlayers[]> => {
+      const { data: teams, error: teamsErr } = await supabase
+        .from('teams')
+        .select('id, name, color, logo_url')
+        .eq('season_id', seasonId!)
+        .order('name', { ascending: true })
+      if (teamsErr) throw teamsErr
+
+      const { data: players, error: playersErr } = await supabase
+        .from('players')
+        .select('id, team_id, first_name, last_name, jersey_number')
+        .in('team_id', (teams ?? []).map(t => t.id))
+        .eq('is_active', true)
+        .order('jersey_number', { ascending: true })
+      if (playersErr) throw playersErr
+
+      return (teams ?? []).map(team => ({
+        ...team,
+        players: (players ?? []).filter(p => p.team_id === team.id),
+      }))
+    },
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Données statiques
+// ─────────────────────────────────────────────────────────────────────────────
 
 const POINTS = [
   { result: 'Victoire', points: '3 points', color: '#16a34a', bg: 'bg-green-500' },
@@ -102,7 +109,9 @@ function InfoBadge({ icon: Icon, label, value, color }: {
   )
 }
 
-function TeamCard({ team }: { team: typeof TEAMS[0] }) {
+function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
+  const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+
   return (
     <div
       className="rounded-2xl overflow-hidden border"
@@ -113,39 +122,48 @@ function TeamCard({ team }: { team: typeof TEAMS[0] }) {
         className="flex items-center gap-3 px-4 py-3 border-b"
         style={{ borderColor: team.color + '30' }}
       >
-        {/* Numéro */}
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
           style={{ backgroundColor: team.color }}
         >
-          {team.rank}
+          {rank}
         </div>
-        {/* Logo */}
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0 shadow-lg"
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0 shadow-lg overflow-hidden"
           style={{ backgroundColor: team.color }}
         >
-          {team.initials}
+          {team.logo_url
+            ? <img src={team.logo_url} alt={team.name} className="w-full h-full object-contain" />
+            : initials
+          }
         </div>
-        {/* Nom */}
         <div className="min-w-0">
           <p className="text-sm font-black text-white leading-tight truncate">{team.name}</p>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+            {team.players.length} joueur{team.players.length !== 1 ? 's' : ''}
+          </p>
         </div>
       </div>
 
       {/* Joueurs */}
       <div className="px-4 py-3 space-y-1.5">
-        {team.players.map((player, i) => (
-          <div key={player} className="flex items-center gap-2">
-            <span
-              className="text-[10px] font-bold tabular-nums w-4 shrink-0"
-              style={{ color: team.color + 'aa' }}
-            >
-              {i + 1}.
-            </span>
-            <span className="text-xs text-slate-300 font-medium">{player}</span>
-          </div>
-        ))}
+        {team.players.length === 0 ? (
+          <p className="text-xs text-slate-600 italic">Aucun joueur enregistré</p>
+        ) : (
+          team.players.map((player, i) => (
+            <div key={player.id} className="flex items-center gap-2">
+              <span
+                className="text-[10px] font-bold tabular-nums w-5 shrink-0 text-right"
+                style={{ color: team.color + 'aa' }}
+              >
+                {player.jersey_number ?? i + 1}.
+              </span>
+              <span className="text-xs text-slate-300 font-medium">
+                {player.first_name} {player.last_name}
+              </span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
@@ -156,28 +174,24 @@ function TeamCard({ team }: { team: typeof TEAMS[0] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function RulesPage() {
+  const { data: season } = useActiveSeason()
+  const { data: teams = [], isLoading: teamsLoading } = useTeamsWithPlayers(season?.id)
+
   return (
     <div className="space-y-6 pb-12 max-w-5xl mx-auto">
 
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden rounded-2xl border border-amber-500/30 p-6 text-center"
-        style={{
-          background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 50%, #0a0d1a 100%)',
-        }}
+        style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 50%, #0a0d1a 100%)' }}
       >
-        {/* Glow */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,158,11,0.15) 0%, transparent 70%)',
-          }}
+          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,158,11,0.15) 0%, transparent 70%)' }}
         />
-        {/* Barre dorée */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
 
         <div className="relative">
-          {/* Badge ligue */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 mb-4">
             <Trophy size={12} className="text-amber-400" />
             <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">Ligue officielle</span>
@@ -191,14 +205,14 @@ export function RulesPage() {
           </h1>
           <p className="text-slate-400 text-sm font-medium mb-6">
             Règlement officiel & organisation
+            {season && <span className="text-amber-500/70 ml-2">— {season.name}</span>}
           </p>
 
-          {/* Infos clés */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-left">
-            <InfoBadge icon={Calendar} label="Début de la ligue" value="Mai 2026" color="#f59e0b" />
-            <InfoBadge icon={Coins}    label="Cotisation mensuelle" value="1 000F par joueur" color="#16a34a" />
-            <InfoBadge icon={MapPin}   label="Terrain" value="2 séances mensuelles" color="#3b82f6" />
-            <InfoBadge icon={Clock}    label="Durée chaque samedi" value="1h30 de jeu" color="#8b5cf6" />
+            <InfoBadge icon={Calendar} label="Début de la ligue"     value="Mai 2026"              color="#f59e0b" />
+            <InfoBadge icon={Coins}    label="Cotisation mensuelle"   value="1 000F par joueur"     color="#16a34a" />
+            <InfoBadge icon={MapPin}   label="Terrain"                value="2 séances mensuelles"  color="#3b82f6" />
+            <InfoBadge icon={Clock}    label="Durée chaque samedi"    value="1h30 de jeu"           color="#8b5cf6" />
           </div>
         </div>
       </div>
@@ -218,9 +232,9 @@ export function RulesPage() {
             <div className="space-y-2.5">
               {[
                 'Chaque joueur doit verser une cotisation de 1 000F par mois.',
-                'Cette contribution permet d\'assurer la location du terrain (2 séances mensuelles).',
-                'En l\'absence de cotisation, les matchs ne pourront pas être organisés.',
-                'Le respect de cet engagement est indispensable pour garantir la continuité et la stabilité de la ligue.',
+                "Cette contribution permet d'assurer la location du terrain (2 séances mensuelles).",
+                "En l'absence de cotisation, les matchs ne pourront pas être organisés.",
+                "Le respect de cet engagement est indispensable pour garantir la continuité et la stabilité de la ligue.",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5">
@@ -238,19 +252,16 @@ export function RulesPage() {
             <p className="text-xs text-slate-400 mb-4">Des distinctions seront attribuées en fin de saison :</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { icon: Trophy,     label: 'Équipe Championne',  color: '#f59e0b' },
-                { icon: Star,       label: 'Deuxième Place',     color: '#94a3b8' },
-                { icon: Footprints, label: 'Meilleur Buteur',    color: '#f97316' },
-                { icon: Crown,      label: 'Meilleur Joueur',    color: '#a78bfa' },
+                { icon: Trophy,     label: 'Équipe Championne', color: '#f59e0b' },
+                { icon: Star,       label: 'Deuxième Place',    color: '#94a3b8' },
+                { icon: Footprints, label: 'Meilleur Buteur',   color: '#f97316' },
+                { icon: Crown,      label: 'Meilleur Joueur',   color: '#a78bfa' },
               ].map(({ icon: Icon, label, color }) => (
                 <div
                   key={label}
                   className="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-center"
                 >
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: color + '20' }}
-                  >
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '20' }}>
                     <Icon size={14} style={{ color }} />
                   </div>
                   <p className="text-[10px] font-semibold text-slate-400 leading-tight">{label}</p>
@@ -271,7 +282,7 @@ export function RulesPage() {
           </div>
         </div>
 
-        {/* Colonne centrale + droite — équipes */}
+        {/* Colonne centrale + droite */}
         <div className="lg:col-span-2 space-y-4">
 
           {/* Équipes participantes */}
@@ -281,12 +292,34 @@ export function RulesPage() {
               <div className="flex items-center gap-2 px-4">
                 <Users size={14} className="text-amber-400" />
                 <h2 className="text-sm font-black text-white uppercase tracking-widest">Équipes participantes</h2>
+                {teams.length > 0 && (
+                  <span className="text-[10px] font-bold text-amber-500/60 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    {teams.length}
+                  </span>
+                )}
               </div>
               <div className="flex-1 h-px bg-white/[0.06]" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {TEAMS.map(team => <TeamCard key={team.rank} team={team} />)}
-            </div>
+
+            {teamsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.02] h-40 animate-pulse" />
+                ))}
+              </div>
+            ) : teams.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                  Aucune équipe enregistrée pour cette saison
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {teams.map((team, i) => (
+                  <TeamCard key={team.id} team={team} rank={i + 1} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Grille règles */}
@@ -314,10 +347,7 @@ export function RulesPage() {
               <SectionTitle icon={BarChart2} title="Système de points" color="#16a34a" />
               <div className="space-y-2">
                 {POINTS.map(({ result, points, color, bg }) => (
-                  <div
-                    key={result}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-white/[0.06]"
-                  >
+                  <div key={result} className="flex items-center justify-between p-2.5 rounded-xl border border-white/[0.06]">
                     <div className="flex items-center gap-2.5">
                       <div className={clsx('w-3 h-3 rounded-sm shrink-0', bg)} />
                       <span className="text-sm font-semibold text-white">{result}</span>
@@ -351,10 +381,7 @@ export function RulesPage() {
               <SectionTitle icon={Users} title="Organisation des équipes" color="#f97316" />
               <p className="text-xs text-slate-400 mb-3">Chaque équipe devra :</p>
               <div className="space-y-2.5">
-                {[
-                  'Choisir un nom',
-                  'Désigner un capitaine',
-                ].map((item, i) => (
+                {['Choisir un nom', 'Désigner un capitaine'].map((item, i) => (
                   <div key={i} className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center shrink-0">
                       <Check size={9} className="text-orange-400" />
@@ -373,13 +400,15 @@ export function RulesPage() {
         className="relative overflow-hidden rounded-2xl border border-amber-500/20 py-5 px-6"
         style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 100%)' }}
       >
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-wrap justify-center">
             {['RESPECT', 'FAIR-PLAY', 'DISCIPLINE', 'PASSION'].map((value, i) => (
               <span key={value} className="flex items-center gap-3">
-                <span className="text-sm font-black text-amber-400 tracking-widest"
-                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <span
+                  className="text-sm font-black text-amber-400 tracking-widest"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                >
                   {value}
                 </span>
                 {i < 3 && <span className="text-amber-600 font-black">•</span>}

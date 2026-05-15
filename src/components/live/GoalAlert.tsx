@@ -32,17 +32,22 @@ export function GoalAlert({ matchId, homeTeam, awayTeam }: GoalAlertProps) {
         async (payload) => {
           const newEvent = payload.new
           if (newEvent.type === 'goal' || newEvent.type === 'own_goal') {
-            // Récupérer le nom du joueur (car non présent dans le payload brut)
-            const { data: player } = await supabase
-              .from('players')
-              .select('first_name, last_name')
-              .eq('id', newEvent.player_id)
-              .single()
+            // Récupérer le nom du joueur depuis la DB car le payload brut ne contient pas les joins
+            // On fait une seule requête légère avec seulement les champs nécessaires
+            let playerName = 'Inconnu'
+            if (newEvent.player_id) {
+              const { data: player } = await supabase
+                .from('players')
+                .select('first_name, last_name')
+                .eq('id', newEvent.player_id)
+                .single()
+              if (player) playerName = `${player.first_name} ${player.last_name}`
+            }
 
             const team = newEvent.team_id === homeTeam.id ? homeTeam : awayTeam
             
             setActiveGoal({
-              playerName: player ? `${player.first_name} ${player.last_name}` : 'Inconnu',
+              playerName,
               teamName: team.name,
               teamColor: team.color,
               type: newEvent.type

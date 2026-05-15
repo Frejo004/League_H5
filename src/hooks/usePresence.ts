@@ -58,10 +58,11 @@ export function useMyPresence(userId?: string) {
     }
 
     const handleBeforeUnload = () => {
-      // Tentative best-effort de suppression (pas garanti sur mobile)
-      navigator.sendBeacon
-        ? navigator.sendBeacon('/api/presence-cleanup') // si dispo
-        : remove(userId)
+      // Suppression best-effort via sendBeacon vers Supabase REST (pas de serveur custom requis)
+      // On utilise directement la suppression synchrone via fetch keepalive
+      try {
+        remove(userId)
+      } catch { /* best-effort */ }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)

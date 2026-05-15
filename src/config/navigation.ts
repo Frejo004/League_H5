@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Trophy, Calendar, Target,
-  Users, User, BarChart2, Star, BookOpen,
+  Users, User, BarChart2, Star, BookOpen, Swords,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -19,6 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/players',   icon: User,            label: 'Joueurs' },
   { to: '/stats',     icon: BarChart2,       label: 'Stats' },
   { to: '/palmares',  icon: Star,            label: 'Palmarès' },
+  { to: '/playoffs',  icon: Swords,          label: 'Playoffs' },
   { to: '/rules',     icon: BookOpen,        label: 'Règlement' },
 ]
 
@@ -42,4 +43,5 @@ export const PAGE_TITLES: Record<string, string> = {
   '/my-stats':  'Mes Stats',
   '/my-team':   'Mon Équipe',
   '/captain':   'Mon Équipe',
+  '/playoffs':  'Phase Finale',
 }

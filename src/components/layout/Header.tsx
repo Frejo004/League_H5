@@ -3,10 +3,11 @@ import { NavLink, useLocation, Link, useSearchParams } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useTheme, type ResolvedTheme } from '@/hooks/useTheme'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
@@ -229,6 +230,7 @@ function Avatar({ profile, role }: { profile: { full_name?: string | null; avata
 export default function Header() {
   const { profile, role, isAdmin, isCaptain, signOut } = useAuth()
   const { data: season } = useActiveSeason()
+  const { data: settings } = useSettings(season?.id)
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
@@ -255,7 +257,14 @@ export default function Header() {
   }, [mobileOpen])
 
   const effectiveRole: UserRole = role ?? 'spectator'
-  const navItems = NAV_BY_ROLE[effectiveRole]
+  // Injecter /playoffs dans la nav si activé dans les settings
+  const playoffEnabled = settings?.playoff_enabled ?? false
+  const playoffItem: NavItem = { to: '/playoffs', label: 'Playoffs', icon: Swords }
+  const navItems = playoffEnabled
+    ? NAV_BY_ROLE[effectiveRole].flatMap(item =>
+        item.to === '/palmares' ? [item, playoffItem] : [item]
+      )
+    : NAV_BY_ROLE[effectiveRole]
   const roleColors = ROLE_COLORS[effectiveRole]
 
   const isAdminPage = location.pathname.startsWith('/admin')
@@ -286,6 +295,7 @@ export default function Header() {
     '/palmares': 'Palmarès',
     '/rules': 'Règlement',
     '/chat': 'Messages',
+    '/playoffs': 'Phase Finale',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/')

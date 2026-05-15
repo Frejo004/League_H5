@@ -215,6 +215,8 @@ export function MatchDetailPage() {
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
 
   // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
+  // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
+  // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
   const liveScore = liveEvents.reduce((acc, event) => {
     if (event.type === 'goal' || event.type === 'own_goal') {
       const isHomeGoal = event.type === 'own_goal'
@@ -226,8 +228,8 @@ export function MatchDetailPage() {
     return acc
   }, { home: 0, away: 0 })
 
-  const displayHomeScore = (isLive || isCompleted) ? liveScore.home : (match.home_score ?? 0)
-  const displayAwayScore = (isLive || isCompleted) ? liveScore.away : (match.away_score ?? 0)
+  const displayHomeScore = isLive ? liveScore.home : (match.home_score ?? 0)
+  const displayAwayScore = isLive ? liveScore.away : (match.away_score ?? 0)
 
 
 
@@ -629,7 +631,9 @@ export function MatchDetailPage() {
           </div>
 
           {/* ── Contrôles admin live ── */}
-          {isAdmin && (match.status === 'scheduled' || match.status === 'live') && (
+          {/* Note: AdminLiveControls est déjà rendu en haut de page pour les matchs live.
+              On l'affiche ici uniquement pour les matchs "scheduled" qui ne sont pas encore live. */}
+          {isAdmin && match.status === 'scheduled' && (
             <AdminLiveControls
               matchId={match.id}
               status={match.status}

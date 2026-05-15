@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { useRealtimeTactics, pushLocal } from '@/hooks/useRealtime'
+import { useRealtimeMatchTactics } from '@/hooks/useRealtime'
 
 import type { TeamRef } from '@/types/database'
 
@@ -88,7 +88,8 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
   const [viewMode, setViewMode] = useState<'list' | 'pitch'>('pitch')
 
   // Activer les mises à jour temps réel pour les tactiques
-  useRealtimeTactics(matchId)
+  // On utilise useRealtimeMatchTactics (sans teamId) pour écouter les deux équipes
+  useRealtimeMatchTactics(matchId)
 
   const activeTeam = activeTab === 'away' ? awayTeam : homeTeam
   const teamLineup = lineups?.filter(l => l.team_id === activeTeam.id) ?? []

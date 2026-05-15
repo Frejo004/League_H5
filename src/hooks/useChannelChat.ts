@@ -8,6 +8,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { saveMentions } from '@/hooks/useTeamChat'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -299,11 +300,16 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, replyToId, senderId }: { content: string; replyToId?: string | null; senderId: string }) => {
-      const { error } = await supabase.from('channel_messages').insert({
+      const { data: newMsg, error } = await supabase.from('channel_messages').insert({
         channel_id: channelId!, sender_id: senderId,
         content: content.trim(), reply_to_id: replyToId ?? null,
-      })
+      }).select('id').single()
       if (error) throw error
+
+      // Enregistrer les mentions @
+      if (newMsg?.id) {
+        await saveMentions(content, newMsg.id, senderId, 'channel', channelId!)
+      }
     },
     onSuccess: () => qc.refetchQueries({ queryKey: CHANNEL_MSGS_KEY(channelId ?? '') }),
   })

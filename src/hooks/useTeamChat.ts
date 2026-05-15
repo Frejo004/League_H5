@@ -14,6 +14,79 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// saveMentions — extrait les @mentions d'un message et les enregistre en DB
+// Supporte @everyone (mentionne tous les membres) et @Prénom Nom
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function saveMentions(
+  content: string,
+  messageId: string,
+  mentionedBy: string,
+  context: 'team' | 'channel',
+  contextId: string,
+) {
+  // Regex : @mot ou @"plusieurs mots" — on capture tout ce qui suit @
+  const mentionRegex = /@([\w\u00C0-\u017E]+(?:\s[\w\u00C0-\u017E]+)?)/g
+  const rawMentions = [...content.matchAll(mentionRegex)].map(m => m[1].toLowerCase().trim())
+  if (rawMentions.length === 0) return
+
+  const isEveryone = rawMentions.includes('everyone') || rawMentions.includes('tout') || rawMentions.includes('tous')
+
+  // Récupérer les membres du contexte
+  let memberRows: { user_id: string }[] = []
+  if (context === 'team') {
+    const { data: players } = await supabase
+      .from('players')
+      .select('user_id')
+      .eq('team_id', contextId)
+      .eq('is_active', true)
+      .not('user_id', 'is', null)
+    memberRows = (players ?? []).filter(p => p.user_id) as { user_id: string }[]
+  } else {
+    // Canal global : récupérer tous les profils actifs
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', mentionedBy)
+    memberRows = (profiles ?? []).map(p => ({ user_id: p.id }))
+  }
+
+  let targetUserIds: string[] = []
+
+  if (isEveryone) {
+    targetUserIds = memberRows.map(m => m.user_id).filter(id => id !== mentionedBy)
+  } else {
+    // Résoudre les noms mentionnés → user_ids
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', memberRows.map(m => m.user_id))
+
+    for (const mention of rawMentions) {
+      const matched = (profiles ?? []).find(p =>
+        (p.full_name ?? '').toLowerCase().includes(mention)
+      )
+      if (matched && matched.id !== mentionedBy) {
+        targetUserIds.push(matched.id)
+      }
+    }
+    // Dédupliquer
+    targetUserIds = [...new Set(targetUserIds)]
+  }
+
+  if (targetUserIds.length === 0) return
+
+  // Insérer dans chat_mentions (ignorer les doublons)
+  await supabase.from('chat_mentions').insert(
+    targetUserIds.map(uid => ({
+      message_id: messageId,
+      mentioned_user_id: uid,
+      mentioned_by: mentionedBy,
+    }))
+  )
+}
+
 const MESSAGES_KEY  = (teamId: string) => ['team-chat', 'messages', teamId]
 const RECEIPTS_KEY  = (teamId: string) => ['team-chat', 'receipts', teamId]
 const PINNED_KEY    = (teamId: string) => ['team-chat', 'pinned', teamId]
@@ -291,13 +364,18 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useMutation({
     mutationFn: async ({ content, replyToId, senderId }: { content: string; replyToId?: string | null; senderId: string }) => {
-      const { error } = await supabase.from('team_messages').insert({
+      const { data: newMsg, error } = await supabase.from('team_messages').insert({
         team_id: teamId!,
         sender_id: senderId,
         content: content.trim(),
         reply_to_id: replyToId ?? null,
-      })
+      }).select('id').single()
       if (error) throw error
+
+      // Extraire et enregistrer les mentions @
+      if (newMsg?.id) {
+        await saveMentions(content, newMsg.id, senderId, 'team', teamId!)
+      }
     },
     onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
   })
