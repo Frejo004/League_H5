@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react'
+import { Users, ChevronRight, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
@@ -7,6 +7,20 @@ import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
+import { motion } from 'framer-motion'
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 10 },
+  visible: { opacity: 1, scale: 1, y: 0 }
+}
 
 export function TeamsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
@@ -18,7 +32,7 @@ export function TeamsPage() {
   const isLoading = seasonLoading || teamsLoading
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6 pb-10">
 
       {/* Hero */}
       <PageHero
@@ -55,52 +69,86 @@ export function TeamsPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
-          {teams.map((team, i) => {
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {teams.map((team) => {
             const playerCount = (team as unknown as { players?: { count: number }[] }).players?.[0]?.count ?? 0
             const isMyTeam = team.id === myTeamId
             return (
-              <Link
-                key={team.id}
-                to={`/teams/${team.id}`}
-                className={clsx(
-                  'flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors',
-                  i < teams.length - 1 && 'border-b border-surface-border/50',
-                  isMyTeam && 'bg-primary-600/5 border-l-2 border-l-primary-500/50'
-                )}
-              >
-                {/* Color swatch */}
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
-                  style={{ backgroundColor: team.color }}
+              <motion.div key={team.id} variants={itemVariants}>
+                <Link
+                  to={`/teams/${team.id}`}
+                  className={clsx(
+                    'group relative flex flex-col gap-4 p-5 rounded-3xl transition-all duration-300 glass-morphism overflow-hidden',
+                    isMyTeam ? 'ring-2 ring-primary-500/50 bg-primary-500/5' : 'hover:bg-white/5 hover:-translate-y-1'
+                  )}
                 >
-                  {team.logo_url
-                    ? <img src={team.logo_url} alt={team.name} className="w-8 h-8 object-contain rounded-md" />
-                    : team.name[0].toUpperCase()
-                  }
-                </div>
-
-                {/* Name */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-200 truncate">{team.name}</p>
-                    {isMyTeam && (
-                      <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 text-[9px] px-1.5 py-0.5 shrink-0">
-                        Mon équipe
-                      </span>
-                    )}
+                  {/* Decorative background logo */}
+                  <div className="absolute -right-8 -top-8 w-32 h-32 opacity-5 rotate-12 group-hover:rotate-45 transition-transform duration-700">
+                     {team.logo_url ? (
+                        <img src={team.logo_url} alt="" className="w-full h-full object-contain grayscale" />
+                     ) : (
+                        <Users size={128} className="text-white" />
+                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {playerCount} joueur{playerCount !== 1 ? 's' : ''}
-                  </p>
-                </div>
 
-                {/* Arrow */}
-                <span className="text-slate-600 text-xs">›</span>
-              </Link>
+                  <div className="flex items-center gap-4">
+                    {/* Logo */}
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {team.logo_url
+                        ? <img src={team.logo_url} alt={team.name} className="w-10 h-10 object-contain" />
+                        : team.name[0].toUpperCase()
+                      }
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-black text-white truncate group-hover:text-primary-400 transition-colors">
+                          {team.name}
+                        </h3>
+                        {isMyTeam && (
+                          <span className="text-[9px] font-black uppercase tracking-widest text-primary-400 bg-primary-400/10 px-2 py-0.5 rounded-full border border-primary-400/20">
+                            Mine
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-slate-500">
+                        <div className="flex items-center gap-1.5">
+                          <Users size={12} className="text-slate-600" />
+                          <span className="text-xs font-bold">{playerCount}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Trophy size={12} className="text-slate-600" />
+                          <span className="text-xs font-bold italic">Squad H5</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ChevronRight size={18} className="text-slate-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                  </div>
+
+                  {/* Progress/Capacity bar placeholder or accent line */}
+                  <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((playerCount / 10) * 100, 100)}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: team.color }}
+                    />
+                  </div>
+                </Link>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   )

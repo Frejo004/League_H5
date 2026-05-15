@@ -46,7 +46,7 @@ export function useUpdateMatchLineup() {
     }: { 
       matchId: string, 
       teamId: string, 
-      starters: string[], 
+      starters: string[] | { id: string, pos: string }[], 
       substitutes: string[] 
     }) => {
       // 1. Supprimer l'ancienne compo pour cette équipe
@@ -58,17 +58,23 @@ export function useUpdateMatchLineup() {
 
       // 2. Préparer les nouveaux records
       const entries = [
-        ...starters.map(pid => ({
-          match_id: matchId,
-          team_id: teamId,
-          player_id: pid,
-          is_starter: true
-        })),
+        ...starters.map(s => {
+          const pid = typeof s === 'string' ? s : s.id
+          const pos = typeof s === 'string' ? null : s.pos
+          return {
+            match_id: matchId,
+            team_id: teamId,
+            player_id: pid,
+            is_starter: true,
+            position: pos
+          }
+        }),
         ...substitutes.map(pid => ({
           match_id: matchId,
           team_id: teamId,
           player_id: pid,
-          is_starter: false
+          is_starter: false,
+          position: null
         }))
       ]
 

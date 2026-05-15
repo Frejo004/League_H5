@@ -19,6 +19,7 @@ import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { useState } from 'react'
 import { clsx } from 'clsx'
+import { BarChart2, Users as UsersIcon } from 'lucide-react'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
 
 function formatDate(dateStr: string | null) {
@@ -396,24 +397,30 @@ export function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex gap-1 p-1 bg-black/20 rounded-xl mx-2 border border-white/5">
+      {/* Tabs Navigation — High Visibility Style */}
+      <div className="flex gap-2 p-1.5 bg-slate-900/80 backdrop-blur-xl rounded-2xl mx-3 border border-white/10 shadow-2xl sticky top-20 z-30">
         <button
           onClick={() => setActiveTab('stats')}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-            activeTab === 'stats' ? "bg-[#C8F135] text-black shadow-lg" : "text-slate-500 hover:text-slate-300"
+            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
+            activeTab === 'stats' 
+              ? "bg-[#C8F135] text-black shadow-[0_0_20px_rgba(200,241,53,0.4)] scale-[1.02]" 
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           )}
         >
+          <BarChart2 size={14} />
           Résumé
         </button>
         <button
           onClick={() => setActiveTab('lineups')}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-            activeTab === 'lineups' ? "bg-[#C8F135] text-black shadow-lg" : "text-slate-500 hover:text-slate-300"
+            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
+            activeTab === 'lineups' 
+              ? "bg-[#C8F135] text-black shadow-[0_0_20px_rgba(200,241,53,0.4)] scale-[1.02]" 
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           )}
         >
+          <UsersIcon size={14} />
           Compos
         </button>
       </div>
@@ -746,7 +753,12 @@ export function MatchDetailPage() {
         </div>
       ) : (
         <div className="mx-2 animate-fade-in">
-          <MatchLineups matchId={id!} homeTeam={home} awayTeam={away} />
+          <MatchLineups 
+            matchId={id!} 
+            homeTeam={home} 
+            awayTeam={away} 
+            scheduledAt={match?.scheduled_at}
+          />
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
+import { motion, AnimatePresence } from 'framer-motion'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -13,8 +14,11 @@ import { useMatches } from '@/hooks/useMatches'
 import { useScorers } from '@/hooks/useScorers'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
+import { useStandings } from '@/hooks/useStandings'
 import { InviteButton } from '@/components/ui/InviteButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { MatchLineups, FORMATIONS, PitchView } from '@/components/matches/MatchLineups'
+import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
 import type { TeamWithCaptain, Player, PlayerPosition } from '@/types/database'
 import type { MatchWithTeams } from '@/hooks/useMatches'
 
@@ -549,56 +553,63 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         />
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Info — capitaine seulement */}
         {!readonly && (
-          <div className="card bg-primary-600/8 border-primary-600/20">
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Clique sur un joueur pour voir ses stats. <Pencil size={11} className="inline mb-0.5" /> pour modifier numéro/position.
-              Lien d'invitation expire après <strong className="text-white">7 jours</strong>.
+          <div className="glass-morphism p-4 rounded-2xl border border-white/5 bg-primary-500/5">
+            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              <span className="text-primary-400 font-black">TIP :</span> Cliquez sur un joueur pour voir ses statistiques détaillées. Utilisez l'icône <Pencil size={10} className="inline mx-1" /> pour mettre à jour les numéros de maillot et les positions.
             </p>
           </div>
         )}
 
         {/* Joueurs sans compte */}
         {pending.length > 0 && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-surface-border bg-surface-raised">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                En attente d'inscription ({pending.length})
-              </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 px-2">
+               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                 En attente ({pending.length})
+               </p>
+               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
             </div>
-            {pending.map((p, i) => (
-              <PlayerRow
-                key={p.id}
-                player={p}
-                isLast={i === pending.length - 1}
-                teamColor={teamColor}
-                onViewStats={setSelectedPlayer}
-                readonly={readonly}
-              />
-            ))}
+            <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+              {pending.map((p, i) => (
+                <PlayerRow
+                  key={p.id}
+                  player={p}
+                  isLast={i === pending.length - 1}
+                  teamColor={teamColor}
+                  onViewStats={setSelectedPlayer}
+                  readonly={readonly}
+                />
+              ))}
+            </div>
           </div>
         )}
 
         {/* Joueurs avec compte */}
         {linked.length > 0 && (
-          <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-surface-border bg-surface-raised">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Comptes liés ({linked.length})
-              </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 px-2">
+               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                 Comptes liés ({linked.length})
+               </p>
+               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
             </div>
-            {linked.map((p, i) => (
-              <PlayerRow
-                key={p.id}
-                player={p}
-                isLast={i === linked.length - 1}
-                teamColor={teamColor}
-                onViewStats={setSelectedPlayer}
-                readonly={readonly}
-              />
-            ))}
+            <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+              {linked.map((p, i) => (
+                <PlayerRow
+                  key={p.id}
+                  player={p}
+                  isLast={i === linked.length - 1}
+                  teamColor={teamColor}
+                  onViewStats={setSelectedPlayer}
+                  readonly={readonly}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -624,31 +635,32 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
   return (
     <Link
       to={`/matches/${match.id}`}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors border-b border-surface-border/40 last:border-b-0"
+      className="flex items-center gap-4 px-4 py-4 hover:bg-white/5 transition-all border-b border-white/[0.03] last:border-b-0 group"
     >
       {/* Résultat badge */}
-      <ResultBadge result={result} variant="ghost" />
+      <div className="shrink-0">
+        <ResultBadge result={result} variant="ghost" />
+      </div>
 
       {/* Adversaire */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
-          className="w-6 h-6 rounded shrink-0 flex items-center justify-center text-white text-[10px] font-bold"
+          className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-white text-xs font-black shadow-lg"
           style={{ backgroundColor: oppTeam.color }}
         >
           {oppTeam.name[0]}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-200 truncate">
+          <p className="text-sm font-black text-slate-200 uppercase tracking-tight group-hover:text-white transition-colors">
             {isHome ? 'vs' : '@'} {oppTeam.name}
           </p>
-          <div className="flex items-center gap-1 text-[10px] text-slate-500">
-            <span>J{match.matchday}</span>
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+            <span className="bg-white/5 px-1.5 py-0.5 rounded text-slate-400">J{match.matchday}</span>
             {match.venue && (
-              <>
-                <span>·</span>
-                <MapPin size={8} />
-                <span className="truncate">{match.venue}</span>
-              </>
+              <span className="flex items-center gap-1">
+                <MapPin size={10} className="text-slate-600" />
+                <span className="truncate max-w-[80px]">{match.venue}</span>
+              </span>
             )}
           </div>
         </div>
@@ -657,21 +669,23 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
       {/* Score ou date */}
       <div className="shrink-0 text-right">
         {isCompleted ? (
-          <span className={clsx(
-            'text-base font-bold tabular-nums',
-            result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-slate-300'
-          )}>
-            {myScore} – {oppScore}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className={clsx(
+              'text-lg font-black tabular-nums tracking-tighter',
+              result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-slate-300'
+            )}>
+              {myScore} – {oppScore}
+            </span>
+          </div>
         ) : isCancelled ? (
-          <span className="text-xs text-red-500 font-semibold">Annulé</span>
+          <span className="text-[10px] text-red-500 font-black uppercase tracking-widest bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">Annulé</span>
         ) : match.scheduled_at ? (
-          <div>
-            <p className="text-sm font-semibold text-white">{formatTime(match.scheduled_at)}</p>
-            <p className="text-[10px] text-slate-500">{formatDate(match.scheduled_at)}</p>
+          <div className="space-y-0.5">
+            <p className="text-sm font-black text-white tabular-nums">{formatTime(match.scheduled_at)}</p>
+            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{formatDate(match.scheduled_at)}</p>
           </div>
         ) : (
-          <span className="text-xs text-slate-600">À venir</span>
+          <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest">À venir</span>
         )}
       </div>
     </Link>
@@ -698,47 +712,209 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
   const played   = teamMatches.filter(m => m.status === 'completed').length
 
   return (
-    <div className="space-y-3">
-      {/* Résumé rapide */}
-      <div className="grid grid-cols-3 gap-2">
+    <div className="space-y-6">
+      {/* Résumé rapide premium */}
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Joués',    value: played,              color: 'text-white' },
-          { label: 'À venir',  value: upcoming,            color: 'text-blue-400' },
-          { label: 'Total',    value: teamMatches.length,  color: 'text-slate-400' },
+          { label: 'Joués',    value: played,              color: 'text-white', icon: Check },
+          { label: 'À venir',  value: upcoming,            color: 'text-blue-400', icon: Calendar },
+          { label: 'Total',    value: teamMatches.length,  color: 'text-slate-500', icon: TrendingUp },
         ].map(s => (
-          <div key={s.label} className="card py-3 text-center">
-            <p className={clsx('text-2xl font-bold', s.color)}>{s.value}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">{s.label}</p>
+          <div key={s.label} className="glass-morphism p-4 rounded-2xl border border-white/5 relative overflow-hidden group">
+            <div className="relative z-10">
+               <p className={clsx('text-2xl font-black tabular-nums', s.color)}>{s.value}</p>
+               <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">{s.label}</p>
+            </div>
+            <s.icon size={40} className="absolute -bottom-2 -right-2 text-white/[0.03] group-hover:text-white/10 transition-colors" />
           </div>
         ))}
       </div>
 
-      {/* Filtres */}
-      <div className="card p-0 overflow-hidden">
-        <div className="flex border-b border-surface-border">
+      {/* Filtres & Liste */}
+      <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+        <div className="flex p-1 bg-black/20 border-b border-white/5">
           {(['all', 'upcoming', 'past'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={clsx('sf-tab flex-1', filter === f && 'active')}
+              className={clsx(
+                'relative flex-1 py-2.5 rounded-xl transition-all duration-300 text-[10px] font-black uppercase tracking-widest',
+                filter === f ? 'text-white' : 'text-slate-500 hover:text-slate-400'
+              )}
             >
-              {f === 'all' ? 'Tous' : f === 'upcoming' ? 'À venir' : 'Passés'}
+              {filter === f && (
+                <motion.div layoutId="matchFilterBg" className="absolute inset-0 bg-white/5 border border-white/10 rounded-xl" />
+              )}
+              <span className="relative z-10">
+                {f === 'all' ? 'Tous' : f === 'upcoming' ? 'À venir' : 'Passés'}
+              </span>
             </button>
           ))}
         </div>
 
         {filtered.length === 0 ? (
-          <div className="empty-state py-8">
-            <Calendar size={20} className="text-slate-600 mb-2" />
-            <p className="text-slate-500 text-sm">Aucun match</p>
+          <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+               <Calendar size={20} className="text-slate-600" />
+            </div>
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match trouvé</p>
+            <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">Modifiez vos filtres ou revenez plus tard.</p>
           </div>
         ) : (
-          <div>
+          <div className="divide-y divide-white/[0.03]">
             {filtered.map(m => (
               <MatchRow key={m.id} match={m} teamId={teamId} />
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── Onglet Tactique ──────────────────────────────────────────────────────────
+
+function TabTactique({ teamId, seasonId, teamColor }: { teamId: string; seasonId: string; teamColor: string }) {
+  const { data: matches, isLoading: matchesLoading } = useMatches(seasonId)
+  const { data: players } = usePlayersByTeam(teamId)
+  const updateLineup = useUpdateMatchLineup()
+
+  const nextMatch = useMemo(() => {
+    return (matches ?? [])
+      .filter(m => (m.home_team_id === teamId || m.away_team_id === teamId) && m.status === 'scheduled')
+      .sort((a, b) => new Date(a.scheduled_at || 0).getTime() - new Date(b.scheduled_at || 0).getTime())[0]
+  }, [matches, teamId])
+
+  const { data: lineups, isLoading: lineupLoading } = useMatchLineups(nextMatch?.id || '')
+  
+  const teamLineup = useMemo(() => {
+    return lineups?.filter(l => l.team_id === teamId) ?? []
+  }, [lineups, teamId])
+
+  const currentFormation = useMemo(() => {
+    const firstPos = teamLineup.find(l => l.is_starter && l.position?.includes(':'))?.position
+    return firstPos?.split(':')[0] || '2-1-1'
+  }, [teamLineup])
+
+  if (matchesLoading || lineupLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
+
+  if (!nextMatch) {
+    return (
+      <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
+        <Layout size={40} className="mx-auto mb-4 text-slate-700" />
+        <p className="text-slate-400 font-black uppercase tracking-widest">Aucun match à venir</p>
+        <p className="text-slate-600 text-xs mt-2 font-bold uppercase tracking-widest">Revenez plus tard pour préparer votre tactique.</p>
+      </div>
+    )
+  }
+
+  const handleSelectFormation = async (formationKey: string) => {
+    const starters = teamLineup.filter(l => l.is_starter).map(l => l.player_id)
+    const substitutes = teamLineup.filter(l => !l.is_starter).map(l => l.player_id)
+    
+    // Si pas de titulaires encore, on prend les 5 premiers joueurs
+    let finalStarters = starters
+    let finalSubs = substitutes
+    
+    if (finalStarters.length === 0 && players && players.length >= 5) {
+      finalStarters = players.slice(0, 5).map(p => p.id)
+      finalSubs = players.slice(5).map(p => p.id)
+    } else if (finalStarters.length < 5 && players) {
+        // Compléter si possible
+        const available = players.filter(p => !finalStarters.includes(p.id) && !finalSubs.includes(p.id))
+        const needed = 5 - finalStarters.length
+        finalStarters = [...finalStarters, ...available.slice(0, needed).map(p => p.id)]
+    }
+
+    const formationCoords = FORMATIONS[formationKey].coords
+    const startersWithPositions = finalStarters.slice(0, 5).map((pid, idx) => ({
+      id: pid,
+      pos: `${formationKey}:${formationCoords[idx].pos}`
+    }))
+
+    await updateLineup.mutateAsync({
+      matchId: nextMatch.id,
+      teamId,
+      starters: startersWithPositions as any,
+      substitutes: finalSubs
+    })
+  }
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Header Match Compact */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-white/2 border border-white/5">
+        <div className="text-center md:text-left">
+          <p className="text-[9px] font-black text-primary-500 uppercase tracking-[0.3em]">Prochain Match</p>
+          <h3 className="text-base font-black text-white uppercase tracking-tight">
+            {nextMatch.home_team.name} <span className="text-slate-500 mx-1">vs</span> {nextMatch.away_team.name}
+          </h3>
+        </div>
+        <div className="text-center md:text-right">
+          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+            {formatDate(nextMatch.scheduled_at!)} · {formatTime(nextMatch.scheduled_at!)}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
+        {/* Sélecteur de Tactique */}
+        <div className="space-y-6">
+          <div className="px-2">
+            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+               <Layout size={12} className="text-primary-500" />
+               Tactiques Disponibles
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.keys(FORMATIONS).map(key => (
+                <button
+                  key={key}
+                  disabled={updateLineup.isPending}
+                  onClick={() => handleSelectFormation(key)}
+                  className={clsx(
+                    "relative flex flex-col items-center justify-center p-5 rounded-2xl border transition-all duration-300",
+                    currentFormation === key 
+                      ? "bg-primary-600 border-primary-500 text-white shadow-[0_0_20px_rgba(200,241,53,0.2)]" 
+                      : "glass-morphism border-white/5 text-slate-500 hover:bg-white/5"
+                  )}
+                >
+                  <span className="text-base font-black tracking-tight">{FORMATIONS[key].label}</span>
+                  <span className="text-[9px] font-bold uppercase opacity-60 mt-0.5">{FORMATIONS[key].style}</span>
+                  {currentFormation === key && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <button
+            onClick={() => window.location.href = `/matches/${nextMatch.id}`}
+            className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            Gérer les titulaires complets
+          </button>
+        </div>
+
+        {/* Aperçu Pitch */}
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">
+             Aperçu Tactique
+          </h4>
+          <div className="relative w-full mx-auto lg:mx-0">
+            <PitchView 
+              players={teamLineup.filter(l => l.is_starter)} 
+              teamColor={teamColor} 
+              formation={currentFormation}
+              className="aspect-[3/4]"
+            />
+            {updateLineup.isPending && (
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-20">
+                <LoadingSpinner size="lg" />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -757,12 +933,10 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
   if (teamScorers.length === 0) {
     return (
-      <div className="card">
-        <div className="empty-state py-8">
-          <Target size={20} className="text-slate-600 mb-2" />
-          <p className="text-slate-300 font-medium">Aucune statistique</p>
-          <p className="text-slate-500 text-sm mt-1">Disponible après les premiers matchs.</p>
-        </div>
+      <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
+        <Target size={40} className="mx-auto mb-4 text-slate-700" />
+        <p className="text-slate-400 font-black uppercase tracking-widest">Aucune statistique</p>
+        <p className="text-slate-600 text-xs mt-2 font-bold uppercase tracking-widest">Disponible après les premiers matchs.</p>
       </div>
     )
   }
@@ -771,69 +945,72 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
   const totalAssists = teamScorers.reduce((s, r) => s + r.assists, 0)
 
   return (
-    <div className="space-y-3">
-      {/* Totaux équipe */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="card py-3 text-center">
-          <p className="text-2xl font-bold text-orange-400">{totalGoals}</p>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Buts marqués</p>
+    <div className="space-y-6">
+      {/* Totaux équipe premium */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+          <div className="relative z-10">
+             <p className="text-3xl font-black text-orange-400 tabular-nums">{totalGoals}</p>
+             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Buts marqués</p>
+          </div>
+          <Target size={60} className="absolute -bottom-4 -right-4 text-orange-500/5 group-hover:text-orange-500/10 transition-colors" />
         </div>
-        <div className="card py-3 text-center">
-          <p className="text-2xl font-bold text-blue-400">{totalAssists}</p>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Passes décisives</p>
+        <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+          <div className="relative z-10">
+             <p className="text-3xl font-black text-blue-400 tabular-nums">{totalAssists}</p>
+             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Passes décisives</p>
+          </div>
+          <Zap size={60} className="absolute -bottom-4 -right-4 text-blue-500/5 group-hover:text-blue-500/10 transition-colors" />
         </div>
       </div>
 
-      {/* Tableau buteurs */}
-      <div className="card p-0 overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[2rem_1fr_3rem_3rem] gap-2 px-4 py-2.5 border-b border-surface-border">
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">#</span>
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Joueur</span>
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider text-center">Buts</span>
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider text-center">Passes</span>
+      {/* Tableau buteurs premium */}
+      <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+        <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 px-6 py-4 bg-white/5 border-b border-white/5">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">#</span>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Joueur</span>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Buts</span>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Passes</span>
         </div>
 
-        {teamScorers.map((row, i) => (
-          <div
-            key={row.player_id}
-            className={clsx(
-              'grid grid-cols-[2rem_1fr_3rem_3rem] gap-2 items-center px-4 py-2.5',
-              'border-b border-surface-border/50 last:border-b-0',
-              'hover:bg-surface-raised transition-colors'
-            )}
-          >
-            <span className={clsx(
-              'text-sm font-bold tabular-nums text-center',
-              i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : 'text-slate-600'
-            )}>
-              {i + 1}
-            </span>
+        <div className="divide-y divide-white/[0.03]">
+          {teamScorers.map((row, i) => (
+            <div
+              key={row.player_id}
+              className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 items-center px-6 py-4 hover:bg-white/5 transition-colors group"
+            >
+              <span className={clsx(
+                'text-xs font-black tabular-nums text-center',
+                i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-700' : 'text-slate-600'
+              )}>
+                {i + 1}
+              </span>
 
-            <div className="flex items-center gap-2 min-w-0">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                style={{ backgroundColor: row.team_color }}
-              >
-                {row.first_name[0]}{row.last_name[0]}
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0 shadow-lg transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: row.team_color }}
+                >
+                  {row.first_name[0]}{row.last_name[0]}
+                </div>
+                <p className="text-sm font-black text-slate-200 uppercase tracking-tight truncate group-hover:text-white">
+                  {row.first_name} {row.last_name}
+                </p>
               </div>
-              <p className="text-sm font-medium text-slate-200 truncate">
-                {row.first_name} {row.last_name}
-              </p>
+
+              <span className={clsx(
+                'text-lg font-black tabular-nums text-center tracking-tighter',
+                i === 0 ? 'text-orange-400' : 'text-white'
+              )}>
+                {row.goals}
+              </span>
+
+              <span className="text-sm font-bold text-slate-500 tabular-nums text-center group-hover:text-blue-400 transition-colors">
+                {row.assists || '—'}
+              </span>
             </div>
-
-            <span className={clsx(
-              'text-base font-bold tabular-nums text-center',
-              i === 0 ? 'text-orange-400' : 'text-white'
-            )}>
-              {row.goals}
-            </span>
-
-            <span className="text-sm text-slate-500 tabular-nums text-center">
-              {row.assists || '—'}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -841,12 +1018,12 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
 // ── Contenu équipe partagé (capitaine + joueur) ───────────────────────────────
 
-export function TeamView({
-  teamId,
-  teamColor,
-  seasonId,
-  readonly = false,
-}: {
+export function TeamView({ 
+  teamId, 
+  teamColor, 
+  seasonId, 
+  readonly = false 
+}: { 
   teamId: string
   teamColor: string
   seasonId: string
@@ -854,26 +1031,48 @@ export function TeamView({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>('joueurs')
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } }
+  }
+
   return (
-    <div className="card p-0 overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex border-b border-surface-border">
-        {TABS.map(({ id, label, icon: Icon }) => (
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="space-y-6"
+    >
+      {/* Tab bar premium */}
+      <div className="flex p-1 bg-black/40 backdrop-blur-md rounded-2xl border border-white/5">
+        {TABS.filter(t => !readonly || t.id !== 'tactique').map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveTab(id)}            className={clsx(
-              'sf-tab flex-1 flex items-center justify-center gap-1.5',
-              activeTab === id && 'active'
+            onClick={() => setActiveTab(id)}
+            className={clsx(
+              'relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all duration-300',
+              activeTab === id ? 'text-white' : 'text-slate-500 hover:text-slate-400'
             )}
           >
-            <Icon size={13} />
-            {label}
+            {activeTab === id && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-white/5 border border-white/10 rounded-xl shadow-lg"
+              />
+            )}
+            <Icon size={16} className="relative z-10" />
+            <span className="relative z-10 text-[10px] font-black uppercase tracking-widest">{label}</span>
           </button>
         ))}
       </div>
 
       {/* Contenu onglet */}
-      <div className="p-3">
+      <motion.div 
+        key={activeTab}
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         {activeTab === 'joueurs' && (
           <TabJoueurs teamId={teamId} teamColor={teamColor} seasonId={seasonId} readonly={readonly} />
         )}
@@ -883,18 +1082,22 @@ export function TeamView({
         {activeTab === 'stats' && (
           <TabStats teamId={teamId} seasonId={seasonId} />
         )}
-      </div>
-    </div>
+        {activeTab === 'tactique' && !readonly && (
+          <TabTactique teamId={teamId} seasonId={seasonId} teamColor={teamColor} />
+        )}
+      </motion.div>
+    </motion.div>
   )
 }
 
 // ── Page principale capitaine ─────────────────────────────────────────────────
 
-type Tab = 'joueurs' | 'matchs' | 'stats'
+type Tab = 'joueurs' | 'matchs' | 'stats' | 'tactique'
 
-const TABS: { id: Tab; label: string; icon: typeof Users }[] = [
+const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'joueurs', label: 'Joueurs',  icon: Users    },
   { id: 'matchs',  label: 'Matchs',   icon: Calendar },
+  { id: 'tactique', label: 'Tactique', icon: Layout   },
   { id: 'stats',   label: 'Stats',    icon: Target   },
 ]
 
@@ -903,6 +1106,7 @@ export function CaptainPage() {
   const { data: season } = useActiveSeason()
   const { data: teams } = useTeams(season?.id)
   const { data: allPlayers } = usePlayers(season?.id)
+  const { data: standings } = useStandings(season?.id)
 
   // Édition nom d'équipe
   const updateTeam = useUpdateTeam()
@@ -1014,104 +1218,120 @@ export function CaptainPage() {
         </div>
       ) : (
         <>
-          {/* Team info card */}
-          <div className="card flex items-center gap-3">
-            {/* Logo / couleur avec bouton upload */}
-            <div className="relative shrink-0">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg overflow-hidden"
-                style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
-              >
-                {myTeamTyped.logo_url
-                  ? <img src={myTeamTyped.logo_url} alt="" className="w-full h-full object-cover" />
-                  : myTeamTyped.name[0]
-                }
-              </div>
-              {/* Bouton caméra */}
-              <button
-                onClick={() => logoRef.current?.click()}
-                disabled={logoUploading}
-                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 hover:bg-primary-500
-                           border-2 border-surface-card flex items-center justify-center transition-colors
-                           disabled:opacity-50"
-                title="Changer le logo"
-                aria-label="Changer le logo de l'équipe"
-              >
-                {logoUploading
-                  ? <LoadingSpinner size="sm" />
-                  : <Camera size={9} className="text-white" />
-                }
-              </button>
-              <input
-                ref={logoRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              {editingName ? (
-                <div className="flex flex-col gap-1">
+          {/* Premium Team Hero */}
+          <div className="relative overflow-hidden rounded-[2rem] glass-morphism border border-white/10 shadow-2xl mb-6">
+             {/* Background Mesh/Glow */}
+             <div 
+               className="absolute inset-0 opacity-20 blur-3xl -z-10"
+               style={{ backgroundColor: myTeamTyped.color ?? '#8b5cf6' }}
+             />
+             <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+             
+             <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 p-8">
+                {/* Logo Section */}
+                <div className="relative group">
+                  <div
+                    className="w-24 h-24 rounded-3xl flex items-center justify-center text-white font-black text-4xl overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                    style={{ backgroundColor: myTeamTyped.color ?? '#16a34a' }}
+                  >
+                    {myTeamTyped.logo_url
+                      ? <img src={myTeamTyped.logo_url} alt="" className="w-full h-full object-cover" />
+                      : myTeamTyped.name[0]
+                    }
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <Camera size={24} className="text-white animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  {/* Hidden Input & Button trigger */}
+                  <button
+                    onClick={() => logoRef.current?.click()}
+                    disabled={logoUploading}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
+                               border-4 border-[#161B22] flex items-center justify-center transition-all shadow-xl
+                               hover:scale-110 active:scale-95 disabled:opacity-50"
+                  >
+                    {logoUploading ? <LoadingSpinner size="sm" /> : <Pencil size={12} className="text-white" />}
+                  </button>
                   <input
-                    autoFocus
-                    value={teamName}
-                    onChange={e => setTeamName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') saveTeamName(); if (e.key === 'Escape') cancelEditName() }}
-                    className="w-full px-2 py-1 rounded-lg bg-surface-raised border border-primary-500
-                               text-white text-sm font-semibold focus:outline-none"
-                    maxLength={40}
+                    ref={logoRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleLogoChange}
                   />
-                  {nameError && <p className="text-[10px] text-red-400">{nameError}</p>}
                 </div>
-              ) : (
-                <>
-                  <p className="font-semibold text-white">{myTeamTyped.name}</p>
-                  <p className="text-xs text-slate-500">{season.name}</p>
-                  {logoError && <p className="text-[10px] text-red-400 mt-0.5">{logoError}</p>}
-                </>
-              )}
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {!editingName ? (
-                <>
-                  <button
-                    onClick={startEditName}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-surface-raised transition-colors"
-                    title="Renommer l'équipe"
-                    aria-label="Renommer l'équipe"
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <Crown size={13} className="text-amber-400" />
-                  <span className="text-xs text-amber-400 font-semibold">Capitaine</span>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={saveTeamName}
-                    disabled={updateTeam.isPending}
-                    className="p-1.5 rounded-lg text-green-400 hover:bg-green-500/10 transition-colors disabled:opacity-50"
-                    title="Enregistrer"
-                    aria-label="Enregistrer le nom"
-                  >
-                    {updateTeam.isPending ? <LoadingSpinner size="sm" /> : <Check size={14} />}
-                  </button>
-                  <button
-                    onClick={cancelEditName}
-                    disabled={updateTeam.isPending}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                    title="Annuler"
-                    aria-label="Annuler"
-                  >
-                    <XIcon size={14} />
-                  </button>
-                </>
-              )}
-            </div>
+                {/* Info Section */}
+                <div className="flex-1 text-center md:text-left space-y-2">
+                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
+                      <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1.5">
+                        <Crown size={10} />
+                        Capitaine
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        {season.name}
+                      </span>
+                   </div>
+
+                   {editingName ? (
+                     <div className="space-y-2">
+                        <input
+                          autoFocus
+                          value={teamName}
+                          onChange={e => setTeamName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveTeamName(); if (e.key === 'Escape') cancelEditName() }}
+                          className="w-full max-w-md px-4 py-3 rounded-2xl bg-black/40 border border-primary-500
+                                     text-white text-2xl font-black focus:outline-none shadow-inner"
+                          maxLength={40}
+                        />
+                        <div className="flex gap-2">
+                           <button onClick={saveTeamName} className="px-4 py-1.5 rounded-lg bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-500">Sauver</button>
+                           <button onClick={cancelEditName} className="px-4 py-1.5 rounded-lg bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10">Annuler</button>
+                        </div>
+                        {nameError && <p className="text-[10px] text-red-400 mt-1">{nameError}</p>}
+                     </div>
+                   ) : (
+                     <div className="group flex items-center justify-center md:justify-start gap-3">
+                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter truncate">
+                           {myTeamTyped.name}
+                        </h1>
+                        <button 
+                           onClick={startEditName}
+                           className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                           <Pencil size={18} />
+                        </button>
+                     </div>
+                   )}
+                   {logoError && <p className="text-xs text-red-400 font-bold">{logoError}</p>}
+                </div>
+
+                {/* Quick Stats Summary */}
+                {myTeamTyped && standings && (
+                  <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                    <div className="text-center">
+                        <p className="text-2xl font-black text-white">
+                          #{standings.findIndex(s => s.team_id === myTeamTyped.id) + 1 || '—'}
+                        </p>
+                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Rang</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-black text-white">
+                          {standings.find(s => s.team_id === myTeamTyped.id)?.points ?? 0}
+                        </p>
+                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Points</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-black text-white">
+                          {standings.find(s => s.team_id === myTeamTyped.id)?.played ?? 0}
+                        </p>
+                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Matchs</p>
+                    </div>
+                  </div>
+                )}
+             </div>
           </div>
 
           {/* Onglets */}
