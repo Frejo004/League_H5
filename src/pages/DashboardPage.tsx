@@ -358,7 +358,6 @@ export function DashboardPage() {
   const { data: standings } = useStandings(season?.id)
   const { myTeamId } = useMyTeam(season?.id)
 
-  useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
 
   const [timedOut, setTimedOut] = useState(false)

@@ -106,9 +106,8 @@ export function useRealtimeMatch(matchId?: string) {
     return () => { supabase.removeChannel(channel) }
   }, [matchId, qc])
 }
-
 // ── Realtime pour la liste des matchs d'une saison ───────────────────────────
-// Utilisé dans DashboardPage, MatchesPage — met à jour les scores
+// Utilisé globalement dans Header (via LiveTicker) — met à jour les scores
 // et le classement en temps réel.
 
 export function useRealtimeMatches(seasonId?: string) {
@@ -117,8 +116,10 @@ export function useRealtimeMatches(seasonId?: string) {
   useEffect(() => {
     if (!seasonId) return
 
+    const channelName = `matches-season-${seasonId}-${Math.random().toString(36).slice(2, 9)}`
+    
     const channel = supabase
-      .channel(`matches-season-${seasonId}`)
+      .channel(channelName)
       // 1. Changements sur les matchs (scores, statut, etc.)
       .on(
         'postgres_changes',
@@ -132,13 +133,11 @@ export function useRealtimeMatches(seasonId?: string) {
           if (matchSeasonId !== seasonId) return
 
           console.log('🔄 Realtime: Match update for this season', payload)
-          // Invalider TOUT ce qui dépend des matchs de cette saison
           qc.invalidateQueries({ queryKey: ['matches', seasonId] })
           qc.invalidateQueries({ queryKey: ['standings', seasonId] })
           qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
           qc.invalidateQueries({ queryKey: ['landing-stats'] })
 
-          // Notification push quand un match passe en live
           const newMatch = payload.new as { id: string; status?: string }
           const oldMatch = payload.old as { status?: string }
           
@@ -161,7 +160,7 @@ export function useRealtimeMatches(seasonId?: string) {
           }
         }
       )
-      // 2. Changements sur les buts (impacte le score affiché dans la liste)
+      // 2. Changements sur les buts
       .on(
         'postgres_changes',
         {
@@ -170,14 +169,14 @@ export function useRealtimeMatches(seasonId?: string) {
           table: 'goals',
         },
         () => {
-          console.log('⚽ Realtime: Goal detected in matches list')
+          console.log('⚽ Realtime: Goal detected')
           qc.invalidateQueries({ queryKey: ['matches', seasonId] })
           qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
           qc.invalidateQueries({ queryKey: ['standings', seasonId] })
         }
       )
       .subscribe((status) => {
-        console.log(`📡 Realtime Status (Season ${seasonId}):`, status)
+        console.log(`📡 Realtime Status (${channelName}):`, status)
       })
 
     return () => {

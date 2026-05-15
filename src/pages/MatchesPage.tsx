@@ -177,7 +177,6 @@ export function MatchesPage() {
   const { data: matches, isLoading: matchesLoading } = useMatches(season?.id)
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
 
-  useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
 
   const isLoading    = seasonLoading || matchesLoading
