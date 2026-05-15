@@ -16,6 +16,8 @@ import { LiveTableWidget } from '@/components/live/LiveTableWidget'
 import { GoalAlert } from '@/components/live/GoalAlert'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
+import { MatchLineups } from '@/components/matches/MatchLineups'
+import { useState } from 'react'
 import { clsx } from 'clsx'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
 
@@ -111,6 +113,7 @@ function GoalEvent({
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const [activeTab, setActiveTab] = useState<'stats' | 'lineups'>('stats')
   const { user, isAdmin } = useAuth()
   const { data: match, isLoading } = useMatch(id)
   const { data: votes } = useMvpVotes(id)
@@ -392,6 +395,31 @@ export function MatchDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex gap-1 p-1 bg-black/20 rounded-xl mx-2 border border-white/5">
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+            activeTab === 'stats' ? "bg-[#C8F135] text-black shadow-lg" : "text-slate-500 hover:text-slate-300"
+          )}
+        >
+          Résumé
+        </button>
+        <button
+          onClick={() => setActiveTab('lineups')}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+            activeTab === 'lineups' ? "bg-[#C8F135] text-black shadow-lg" : "text-slate-500 hover:text-slate-300"
+          )}
+        >
+          Compos
+        </button>
+      </div>
+
+      {activeTab === 'stats' ? (
+        <div className="space-y-6 animate-fade-in">
 
 
       {/* Venue & Stats globales */}
@@ -713,6 +741,12 @@ export function MatchDetailPage() {
           <p className="text-[10px] text-slate-600 text-center">
             Clique sur un joueur pour voter · Tu peux changer ton vote
           </p>
+        </div>
+      )}
+        </div>
+      ) : (
+        <div className="mx-2 animate-fade-in">
+          <MatchLineups matchId={id!} homeTeam={home} awayTeam={away} />
         </div>
       )}
     </div>

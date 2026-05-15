@@ -581,6 +581,63 @@ export interface Database {
         }
         Relationships: []
       }
+      match_lineups: {
+        Row: {
+          id: string
+          match_id: string
+          team_id: string
+          player_id: string
+          is_starter: boolean
+          position: string | null
+          jersey_number: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          team_id: string
+          player_id: string
+          is_starter?: boolean
+          position?: string | null
+          jersey_number?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          team_id?: string
+          player_id?: string
+          is_starter?: boolean
+          position?: string | null
+          jersey_number?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lineups_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -688,6 +745,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
 export type MatchEventRow = Database['public']['Tables']['match_events']['Row']
 export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Row']
+export type MatchLineupRow = Database['public']['Tables']['match_lineups']['Row']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
@@ -695,7 +753,7 @@ export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Ro
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Sous-type équipe retourné dans les jointures (select partiel) */
-export type TeamRef = Pick<Team, 'id' | 'name' | 'color' | 'logo_url'>
+export type TeamRef = Pick<Team, 'id' | 'name' | 'color' | 'logo_url' | 'captain_id'>
 
 /** Sous-type joueur retourné dans les jointures (select partiel) */
 export type PlayerRef = Pick<Player, 'id' | 'first_name' | 'last_name' | 'jersey_number'>
