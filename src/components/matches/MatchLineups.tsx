@@ -71,9 +71,19 @@ export const FORMATIONS: Record<string, { label: string, style: string, coords: 
 }
 
 export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFormation, awayFormation }: MatchLineupsProps) {
-  const [activeTab, setActiveTab] = useState<'home' | 'away' | 'both'>('both')
-  const { data: lineups, isLoading } = useMatchLineups(matchId)
   const { isAdmin, isCaptain, profile } = useAuth()
+  
+  // Initialiser sur l'équipe du capitaine s'il fait partie du match
+  const defaultTab = useMemo(() => {
+    if (isCaptain) {
+      if (homeTeam.captain_id === profile?.id) return 'home'
+      if (awayTeam.captain_id === profile?.id) return 'away'
+    }
+    return 'both'
+  }, [isCaptain, homeTeam.captain_id, awayTeam.captain_id, profile?.id])
+
+  const [activeTab, setActiveTab] = useState<'home' | 'away' | 'both'>(defaultTab)
+  const { data: lineups, isLoading } = useMatchLineups(matchId)
   const [isEditing, setIsEditing] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'pitch'>('pitch')
 

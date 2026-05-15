@@ -121,9 +121,13 @@ function GoalEvent({
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [activeTab, setActiveTab] = useState<'stats' | 'lineups' | 'standings'>('stats')
-  const { user, isAdmin } = useAuth()
   const { data: match, isLoading } = useMatch(id)
+  
+  // Si le match est "à venir" (scheduled), on affiche les compositions par défaut
+  const isScheduled = match?.status === 'scheduled'
+  const [activeTab, setActiveTab] = useState<'stats' | 'lineups' | 'standings'>('lineups')
+  
+  const { user, isAdmin } = useAuth()
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
   const voteMvp = useVoteMvp()
@@ -225,7 +229,7 @@ export function MatchDetailPage() {
   const displayHomeScore = (isLive || isCompleted) ? liveScore.home : (match.home_score ?? 0)
   const displayAwayScore = (isLive || isCompleted) ? liveScore.away : (match.away_score ?? 0)
 
-  const isScheduled = match.status === 'scheduled'
+
 
   if (isScheduled) {
     return (
