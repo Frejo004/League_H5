@@ -119,45 +119,49 @@ export function useRealtimeMatches(seasonId?: string) {
 
     const channel = supabase
       .channel(`matches-season-${seasonId}`)
+      // 1. Changements sur les matchs (scores, statut, etc.)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'matches',
-          filter: `season_id=eq.${seasonId}`,
         },
         async (payload) => {
+          const matchSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+          if (matchSeasonId !== seasonId) return
+
+          console.log('🔄 Realtime: Match update for this season', payload)
+          // Invalider TOUT ce qui dépend des matchs de cette saison
           qc.invalidateQueries({ queryKey: ['matches', seasonId] })
           qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+          qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+          qc.invalidateQueries({ queryKey: ['landing-stats'] })
 
           // Notification push quand un match passe en live
-          const newMatch = payload.new as { status?: string; home_team_id?: string; away_team_id?: string }
+          const newMatch = payload.new as { id: string; status?: string }
           const oldMatch = payload.old as { status?: string }
-          if (
-            newMatch.status === 'live' &&
-            oldMatch.status !== 'live' &&
-            typeof Notification !== 'undefined' &&
-            Notification.permission === 'granted' &&
-            document.visibilityState !== 'visible'
-          ) {
-            // Récupérer les noms des équipes
+          
+          if (newMatch.status === 'live' && oldMatch.status !== 'live') {
             const { data: match } = await supabase
               .from('matches')
               .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
-              .eq('id', (payload.new as any).id)
+              .eq('id', newMatch.id)
               .single()
+            
             const home = (match as any)?.home_team?.name ?? 'Équipe A'
             const away = (match as any)?.away_team?.name ?? 'Équipe B'
-            new Notification('🔴 Match en direct !', {
-              body: `${home} vs ${away} vient de commencer`,
-              icon: '/logo-h5.png',
-              badge: '/logo-h5.png',
-              tag: `live-${(payload.new as any).id}`,
-            })
+            
+            pushLocal(
+              '🔴 Match en direct !',
+              `${home} vs ${away} vient de commencer`,
+              `live-${newMatch.id}`,
+              `/matches/${newMatch.id}`
+            )
           }
         }
       )
+      // 2. Changements sur les buts (impacte le score affiché dans la liste)
       .on(
         'postgres_changes',
         {
@@ -166,11 +170,15 @@ export function useRealtimeMatches(seasonId?: string) {
           table: 'goals',
         },
         () => {
+          console.log('⚽ Realtime: Goal detected in matches list')
+          qc.invalidateQueries({ queryKey: ['matches', seasonId] })
           qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
           qc.invalidateQueries({ queryKey: ['standings', seasonId] })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`📡 Realtime Status (Season ${seasonId}):`, status)
+      })
 
     return () => {
       supabase.removeChannel(channel)
@@ -190,22 +198,24 @@ export function useRealtimeTeams(seasonId?: string) {
 
     const channel = supabase
       .channel(`teams-season-${seasonId}`)
-      // Changement sur n'importe quelle équipe de la saison
+      // Changement sur n'importe quelle équipe
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'teams',
-          filter: `season_id=eq.${seasonId}`,
         },
-        () => {
+        (payload) => {
+          const teamSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+          if (teamSeasonId !== seasonId) return
+
+          console.log('🛡️ Realtime: Team update for this season')
           // Invalider toutes les queries qui contiennent des données d'équipes
-          qc.invalidateQueries({ queryKey: ['teams'] })
-          qc.invalidateQueries({ queryKey: ['matches'] })
-          qc.invalidateQueries({ queryKey: ['standings'] })
-          qc.invalidateQueries({ queryKey: ['scorers'] })
-          qc.invalidateQueries({ queryKey: ['mvp-ranking'] })
+          qc.invalidateQueries({ queryKey: ['teams', seasonId] })
+          qc.invalidateQueries({ queryKey: ['matches', seasonId] })
+          qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+          qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
         }
       )
       .subscribe()

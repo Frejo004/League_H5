@@ -12,6 +12,7 @@ import { useTheme, type ResolvedTheme } from '@/hooks/useTheme'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { GlobalLiveTicker } from '@/components/live/LiveTicker'
 import { useChatUnread } from '@/hooks/useChatUnread'
 import type { UserRole } from '@/types/database'
 import clsx from 'clsx'
@@ -464,6 +465,8 @@ export default function Header() {
             })}
           </div>
         )}
+
+        <GlobalLiveTicker />
       </header>
 
       {/* ════════════════════════════════════════════════════════════
@@ -598,6 +601,8 @@ export default function Header() {
             </span>
           )}
         </div>
+
+        <GlobalLiveTicker />
       </div>
 
       {/* ── Drawer mobile ── */}
