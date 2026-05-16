@@ -1,84 +1,62 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Radio } from 'lucide-react'
-import { useActiveSeason } from '@/hooks/useSeasons'
+import { motion } from 'framer-motion'
 import { useMatches } from '@/hooks/useMatches'
-import { useRealtimeMatches } from '@/hooks/useRealtime'
-import { useLiveClock } from '@/hooks/useMatchLive'
-import { LiveBadge } from './LiveBadge'
-import clsx from 'clsx'
+import { clsx } from 'clsx'
 
-function TickerItem({ match }: { match: any }) {
-  const clock = useLiveClock(
-    match.live_started_at,
-    match.live_period,
-    match.status,
-    match.halftime_at
-  )
+export function LiveTicker() {
+  const { data: matches } = useMatches()
+  
+  if (!matches || matches.length === 0) return null
 
-  return (
-    <Link
-      to={`/matches/${match.id}`}
-      className="flex items-center gap-3 px-4 py-1.5 h-full bg-red-500/5 hover:bg-red-500/10 border-x border-red-500/10 transition-all shrink-0"
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-black text-white truncate max-w-[80px] uppercase">
-          {match.home_team.name}
-        </span>
-        <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-white/5">
-          <span className="text-xs font-black text-white tabular-nums">{match.home_score ?? 0}</span>
-          <span className="text-[10px] text-slate-600">-</span>
-          <span className="text-xs font-black text-white tabular-nums">{match.away_score ?? 0}</span>
-        </div>
-        <span className="text-[10px] font-black text-white truncate max-w-[80px] uppercase">
-          {match.away_team.name}
-        </span>
-      </div>
-      <div className="flex items-center gap-1.5 ml-1">
-        <span className="text-[9px] font-black text-red-400 tabular-nums animate-pulse">
-          {clock.label}
-        </span>
-      </div>
-    </Link>
-  )
-}
-
-export function GlobalLiveTicker() {
-  const { data: season } = useActiveSeason()
-  const { data: matches } = useMatches(season?.id)
-  const location = useLocation()
-
-  // Extraire l'ID du match de l'URL si on est sur /matches/:id
-  const currentMatchId = location.pathname.startsWith('/matches/')
-    ? location.pathname.split('/')[2]
-    : null
-
-  useRealtimeMatches(season?.id)
-
-  const liveMatches = (matches ?? [])
-    .filter(m => m.status === 'live')
-    .filter(m => m.id !== currentMatchId) // Ne pas afficher le match qu'on regarde déjà
-
-  if (liveMatches.length === 0) return null
+  // On prend les matchs terminés récents et les matchs à venir
+  const tickerItems = matches
+    .filter(m => m.status === 'completed' || m.status === 'scheduled')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 10)
 
   return (
-    <div className="flex items-center w-full overflow-hidden border-b border-red-500/20"
-      style={{
-        height: 34,
-        background: 'linear-gradient(90deg, rgba(239,68,68,0.12) 0%, rgba(15,20,32,1) 50%, rgba(239,68,68,0.12) 100%)'
-      }}>
-      <div className="flex items-center px-4 h-full bg-red-600 shrink-0">
-        <Radio size={12} className="text-white animate-pulse mr-1.5" />
-        <span className="text-[10px] font-black text-white uppercase tracking-widest">LIVE</span>
+    <div className="fixed bottom-0 left-0 right-0 z-[60] bg-black/80 backdrop-blur-md border-t border-white/10 h-8 flex items-center overflow-hidden">
+      <div className="flex items-center h-full px-4 bg-[#C8F135] text-black text-[10px] font-black uppercase tracking-widest skew-x-[-20deg] ml-[-10px] pr-6 z-10">
+        <span className="skew-x-[20deg]">DIRECT</span>
       </div>
 
-      <div className="flex items-center flex-1 overflow-x-auto scrollbar-none h-full">
-        {liveMatches.map(match => (
-          <TickerItem key={match.id} match={match} />
-        ))}
-      </div>
-
-      <div className="hidden lg:flex items-center px-4 h-full shrink-0">
-        <LiveBadge size="sm" className="scale-75 origin-right" />
+      <div className="relative flex-1 overflow-hidden h-full flex items-center">
+        <motion.div 
+          animate={{ x: [0, -2000] }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+          className="flex items-center gap-12 whitespace-nowrap px-8"
+        >
+          {tickerItems.map((m, i) => (
+            <div key={i} className="flex items-center gap-4 group cursor-default">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {m.status === 'completed' ? 'Résultat' : 'À Venir'}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-white uppercase">{m.home_team?.name}</span>
+                <div className="bg-white/10 px-2 py-0.5 rounded text-[11px] font-black text-[#C8F135] tabular-nums">
+                  {m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'VS'}
+                </div>
+                <span className="text-[11px] font-black text-white uppercase">{m.away_team?.name}</span>
+              </div>
+              <div className="w-1 h-1 rounded-full bg-slate-700" />
+            </div>
+          ))}
+          {/* Doubler pour l'effet de boucle infinie sans saut */}
+          {tickerItems.map((m, i) => (
+            <div key={`dup-${i}`} className="flex items-center gap-4 group cursor-default">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {m.status === 'completed' ? 'Résultat' : 'À Venir'}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-white uppercase">{m.home_team?.name}</span>
+                <div className="bg-white/10 px-2 py-0.5 rounded text-[11px] font-black text-[#C8F135] tabular-nums">
+                  {m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'VS'}
+                </div>
+                <span className="text-[11px] font-black text-white uppercase">{m.away_team?.name}</span>
+              </div>
+              <div className="w-1 h-1 rounded-full bg-slate-700" />
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   )

@@ -327,8 +327,11 @@ export function useAdminMatchLive(matchId?: string) {
   })
 
   const togglePause = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc('toggle_match_pause', { p_match_id: matchId! })
+    mutationFn: async (reason?: string) => {
+      const { error } = await supabase.rpc('toggle_match_pause_v2', { 
+        p_match_id: matchId!,
+        p_reason: reason || undefined
+      })
       if (error) throw error
     },
     onSuccess: invalidate,

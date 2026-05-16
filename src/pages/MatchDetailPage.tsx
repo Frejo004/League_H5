@@ -17,7 +17,9 @@ import { GoalAlert } from '@/components/live/GoalAlert'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
-import { useMemo, useState } from 'react'
+import { GoalCelebration } from '@/components/live/GoalCelebration'
+import { LiveTicker } from '@/components/live/LiveTicker'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
@@ -181,6 +183,11 @@ export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: match, isLoading } = useMatch(id)
 
+  const [celebration, setCelebration] = useState<{ show: boolean, teamName: string, teamColor: string, playerName?: string }>({
+    show: false, teamName: '', teamColor: ''
+  })
+  const prevGoalsCount = useRef<number | null>(null)
+
   // Si le match est "à venir" (scheduled), on affiche les compositions par défaut
   const isScheduled = match?.status === 'scheduled'
   const [activeTab, setActiveTab] = useState<'stats' | 'lineups' | 'standings'>('lineups')
@@ -313,6 +320,25 @@ export function MatchDetailPage() {
     return stats
   }, [liveEvents, home.id, away.id])
 
+  // Trigger celebration on new goals
+  useEffect(() => {
+    if (!isLive) return
+    const goalsOnly = liveEvents.filter(e => e.type === 'goal' || e.type === 'own_goal')
+    if (prevGoalsCount.current !== null && goalsOnly.length > prevGoalsCount.current) {
+      const lastGoal = goalsOnly[goalsOnly.length - 1]
+      const team = lastGoal.team_id === home.id ? home : away
+      setCelebration({
+        show: true,
+        teamName: team.name,
+        teamColor: team.color,
+        playerName: lastGoal.player ? `${lastGoal.player.first_name} ${lastGoal.player.last_name}` : undefined
+      })
+      // Reset trigger after a delay
+      setTimeout(() => setCelebration(prev => ({ ...prev, show: false })), 100)
+    }
+    prevGoalsCount.current = goalsOnly.length
+  }, [liveEvents, isLive, home, away])
+
 
 
   if (isScheduled) {
@@ -337,6 +363,7 @@ export function MatchDetailPage() {
               events={liveEvents}
               homePlayers={homePlayers || []}
               awayPlayers={awayPlayers || []}
+              seasonId={match.season_id}
             />
           </div>
         )}
@@ -461,6 +488,7 @@ export function MatchDetailPage() {
             events={liveEvents}
             homePlayers={homePlayers || []}
             awayPlayers={awayPlayers || []}
+            seasonId={match.season_id}
           />
         </div>
       )}
@@ -745,6 +773,7 @@ export function MatchDetailPage() {
               events={liveEvents}
               homePlayers={(homePlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
               awayPlayers={(awayPlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
+              seasonId={match.season_id}
             />
           )}
 
@@ -1018,6 +1047,9 @@ export function MatchDetailPage() {
           />
         </div>
       )}
+
+      <GoalCelebration {...celebration} />
+      <LiveTicker />
     </div>
   )
 }

@@ -150,6 +150,7 @@ export interface Database {
           is_paused: boolean
           paused_at: string | null
           total_paused_seconds: number
+          last_pause_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -811,6 +812,17 @@ export interface Database {
       toggle_match_pause: {
         Args: { p_match_id: string }
         Returns: undefined
+      }
+      toggle_match_pause_v2: {
+        Args: {
+          p_match_id: string
+          p_reason?: string
+        }
+        Returns: {
+          success: boolean
+          is_paused: boolean
+          reason?: string
+        }
       }
     }
     Enums: {

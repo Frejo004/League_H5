@@ -7,6 +7,7 @@ import { Play, Pause, Square, Plus, Trash2, MessageSquare } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
+import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
 
@@ -26,13 +27,14 @@ interface AdminLiveControlsProps {
   events: MatchEvent[]
   homePlayers: Array<{ id: string; first_name: string; last_name: string }>
   awayPlayers: Array<{ id: string; first_name: string; last_name: string }>
+  seasonId: string
 }
 
 export function AdminLiveControls({
   matchId, status, liveStartedAt, halftimeAt, livePeriod,
   isPaused, pausedAt, totalPausedSeconds,
   homeTeam, awayTeam, homeScore, awayScore,
-  events, homePlayers, awayPlayers,
+  events, homePlayers, awayPlayers, seasonId
 }: AdminLiveControlsProps) {
   const { user } = useAuth()
   const { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent } = useAdminMatchLive(matchId)
@@ -46,6 +48,9 @@ export function AdminLiveControls({
   const [eventMinute, setEventMinute] = useState<string>('')
   const [eventComment, setEventComment] = useState<string>('')
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [pauseReason, setPauseReason] = useState('')
+
+  const { data: stats } = useDisciplinaryStats(seasonId)
 
   const isLive = status === 'live'
   const isScheduled = status === 'scheduled'
@@ -132,19 +137,30 @@ export function AdminLiveControls({
 
         {/* Bouton Pause/Reprendre */}
         {isLive && clock.phase !== 2 && (
-          <button
-            onClick={() => togglePause.mutate()}
-            disabled={togglePause.isPending}
-            className={clsx(
-              "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-bold uppercase tracking-widest transition-all",
-              isPaused 
-                ? "bg-green-500/20 border-green-500/40 text-green-400 hover:bg-green-500/30" 
-                : "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+          <div className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/20 p-1.5 rounded-xl">
+            {!isPaused && (
+              <input
+                type="text"
+                placeholder="Motif (ex: Blessure...)"
+                value={pauseReason}
+                onChange={e => setPauseReason(e.target.value)}
+                className="bg-black/40 border-none text-[10px] py-1.5 px-3 rounded-lg w-32 focus:ring-1 focus:ring-amber-500/50 text-amber-200 placeholder:text-amber-500/30 font-bold uppercase"
+              />
             )}
-          >
-            {togglePause.isPending ? <LoadingSpinner size="sm" /> : isPaused ? <Play size={14} /> : <Pause size={14} />}
-            {isPaused ? 'Reprendre' : 'Pause'}
-          </button>
+            <button
+              onClick={() => { togglePause.mutate(pauseReason); setPauseReason('') }}
+              disabled={togglePause.isPending}
+              className={clsx(
+                "flex items-center justify-center gap-2 px-4 py-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all",
+                isPaused 
+                  ? "bg-green-500/20 border-green-500/40 text-green-400 hover:bg-green-500/30" 
+                  : "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+              )}
+            >
+              {togglePause.isPending ? <LoadingSpinner size="sm" /> : isPaused ? <Play size={12} /> : <Pause size={12} />}
+              {isPaused ? 'Reprendre' : 'Pause'}
+            </button>
+          </div>
         )}
 
         {/* Bouton Mi-temps */}
@@ -199,19 +215,43 @@ export function AdminLiveControls({
                 Terminer
               </button>
             ) : (
-              <div className="flex items-center gap-3 bg-red-500/10 p-1.5 rounded-xl border border-red-500/20 ml-auto">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 ml-2">Score final :</span>
-                <button
-                  onClick={() => { endMatch.mutate({ homeScore, awayScore }); setConfirmEnd(false) }}
-                  disabled={endMatch.isPending}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)]"
-                >
-                  {endMatch.isPending ? <LoadingSpinner size="sm" /> : <Square size={12} />}
-                  Confirmer {homeScore}-{awayScore}
-                </button>
-                <button onClick={() => setConfirmEnd(false)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white px-2">
-                  Annuler
-                </button>
+              <div className="flex flex-col gap-3 ml-auto items-end">
+                {/* Alerte Cartons Jaunes */}
+                {(() => {
+                  const suspendedPlayers = [...homePlayers, ...awayPlayers].filter(p => {
+                    const pStats = stats?.players.find(s => s.player_id === p.id)
+                    // On vérifie s'il vient de prendre un jaune dans CE match et qu'il était déjà à 2
+                    const matchYellows = events?.filter(e => e.player_id === p.id && e.type === 'yellow_card').length || 0
+                    const totalYellows = (pStats?.yellow_cards || 0) + matchYellows
+                    return totalYellows >= 3
+                  })
+
+                  if (suspendedPlayers.length > 0) {
+                    return (
+                      <div className="bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg max-w-[300px]">
+                        <p className="text-[10px] font-black text-amber-400 uppercase leading-tight">
+                          ⚠️ Attention : {suspendedPlayers.length} joueur{suspendedPlayers.length > 1 ? 's' : ''} {suspendedPlayers.length > 1 ? 'ont' : 'a'} atteint 3 jaunes et sera suspendu.
+                        </p>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
+                <div className="flex items-center gap-3 bg-red-500/10 p-1.5 rounded-xl border border-red-500/20">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-2">Score final :</span>
+                  <button
+                    onClick={() => { endMatch.mutate({ homeScore, awayScore }); setConfirmEnd(false) }}
+                    disabled={endMatch.isPending}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                  >
+                    {endMatch.isPending ? <LoadingSpinner size="sm" /> : <Square size={12} />}
+                    Confirmer {homeScore}-{awayScore}
+                  </button>
+                  <button onClick={() => setConfirmEnd(false)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white px-2">
+                    Annuler
+                  </button>
+                </div>
               </div>
             )}
           </>
@@ -291,6 +331,37 @@ export function AdminLiveControls({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Suggestions de commentaires auto */}
+      {isLive && (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pt-2 relative z-10">
+          {(() => {
+            const homeShots = events?.filter(e => e.team_id === homeTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
+            const awayShots = events?.filter(e => e.team_id === awayTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
+            const fouls = events?.filter(e => e.type === 'foul').length || 0
+            
+            const suggestions = []
+            if (homeShots > 5 && homeShots > awayShots + 3) suggestions.push(`Domination totale de ${homeTeam.name} (${homeShots} tirs) !`)
+            if (awayShots > 5 && awayShots > homeShots + 3) suggestions.push(`Le siège continue devant le but de ${homeTeam.name} !`)
+            if (fouls > 6) suggestions.push(`Match très engagé physiquement (${fouls} fautes) !`)
+            if (homeScore > 3 || awayScore > 3) suggestions.push(`Quel festival offensif aujourd'hui !`)
+            
+            return suggestions.map((text, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setEventType('comment')
+                  setEventComment(text)
+                  setShowEventForm(true)
+                }}
+                className="shrink-0 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-[9px] font-bold text-primary-400 uppercase tracking-wider hover:bg-primary-500/20 transition-all"
+              >
+                💡 {text}
+              </button>
+            ))
+          })()}
         </div>
       )}
 
@@ -458,6 +529,57 @@ export function AdminLiveControls({
                   className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all p-1.5 rounded-lg"
                 >
                   <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Gestion des derniers événements (Correction) */}
+      {isLive && events && events.length > 0 && (
+        <div className="pt-6 border-t border-white/5 space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Dernières Actions (Correction)</p>
+            <span className="text-[9px] font-bold text-slate-600 uppercase">Supprimer pour annuler</span>
+          </div>
+          
+          <div className="space-y-2">
+            {[...events].reverse().slice(0, 5).map((ev) => (
+              <div key={ev.id} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5 group hover:border-red-500/30 transition-all">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-black text-slate-500 tabular-nums w-6">{ev.minute}'</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider">
+                        {ev.type === 'goal' ? '⚽ But' : 
+                         ev.type === 'yellow_card' ? '🟨 Carton Jaune' :
+                         ev.type === 'red_card' ? '🟥 Carton Rouge' :
+                         ev.type === 'substitution' ? '🔄 Remplacement' :
+                         ev.type === 'shot' ? '🎯 Tir' :
+                         ev.type === 'shot_on_target' ? '🎯 Tir Cadré' :
+                         ev.type === 'foul' ? '⚠️ Faute' :
+                         ev.type === 'corner' ? '🚩 Corner' : ev.type}
+                      </span>
+                      {ev.team && (
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
+                      )}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[150px]">
+                      {ev.player ? `${ev.player.first_name} ${ev.player.last_name}` : ev.team?.name || 'Match'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (confirm('Supprimer cet événement ?')) {
+                      deleteEvent.mutate(ev.id)
+                    }
+                  }}
+                  disabled={deleteEvent.isPending}
+                  className="p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                >
+                  <Trash2 size={14} />
                 </button>
               </div>
             ))}
