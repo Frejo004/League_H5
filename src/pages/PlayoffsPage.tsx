@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
+import type { MatchStatus } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -26,7 +27,7 @@ interface PlayoffMatch {
   away_team_id: string | null
   home_score: number | null
   away_score: number | null
-  status: string
+  status: MatchStatus
   matchday: number        // utilisé comme round (100=QF, 101=SF, 102=F)
   scheduled_at: string | null
   home_team?: { id: string; name: string; color: string; logo_url: string | null } | null
@@ -113,7 +114,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           home_team_id: qualifiedTeams[i].id,
           away_team_id: qualifiedTeams[n - 1 - i].id,
           matchday: PLAYOFF_MATCHDAY_START,
-          status: 'scheduled',
+          status: 'scheduled' as MatchStatus,
           home_score: null,
           away_score: null,
         })
@@ -126,10 +127,10 @@ function useGeneratePlayoffs(seasonId?: string) {
         const matchesInRound = n / Math.pow(2, r + 1)
         const roundMatches = Array.from({ length: matchesInRound }, () => ({
           season_id: seasonId,
-          home_team_id: null,
-          away_team_id: null,
+          home_team_id: null as any,
+          away_team_id: null as any,
           matchday: PLAYOFF_MATCHDAY_START + r,
-          status: 'scheduled',
+          status: 'scheduled' as MatchStatus,
           home_score: null,
           away_score: null,
         }))
