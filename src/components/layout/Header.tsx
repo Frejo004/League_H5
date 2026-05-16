@@ -23,37 +23,12 @@ import clsx from 'clsx'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ACCENT = '#C8F135'
+const NAV_OFF = 'var(--header-nav-off)'
+const TEXT_PRIMARY = 'var(--header-text)'
+const BG_MAIN = 'var(--header-bg)'
+const BORDER = 'var(--header-border)'
 
-interface ThemeColors {
-  BG_MAIN: string
-  BG_SUB: string
-  BORDER: string
-  NAV_OFF: string
-  NAV_HOV: string
-  TEXT_PRIMARY: string
-  TEXT_SECONDARY: string
-}
 
-const THEME_COLORS: Record<ResolvedTheme, ThemeColors> = {
-  dark: {
-    BG_MAIN: '#0D1117',
-    BG_SUB: '#161B22',
-    BORDER: 'rgba(255,255,255,0.08)',
-    NAV_OFF: 'rgba(255,255,255,0.5)',
-    NAV_HOV: 'rgba(255,255,255,0.85)',
-    TEXT_PRIMARY: '#ffffff',
-    TEXT_SECONDARY: 'rgba(255,255,255,0.7)',
-  },
-  light: {
-    BG_MAIN: '#ffffff',
-    BG_SUB: '#f8fafc',
-    BORDER: 'rgba(0,0,0,0.08)',
-    NAV_OFF: 'rgba(0,0,0,0.5)',
-    NAV_HOV: 'rgba(0,0,0,0.85)',
-    TEXT_PRIMARY: '#0f172a',
-    TEXT_SECONDARY: 'rgba(0,0,0,0.7)',
-  },
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Navigation par rôle
@@ -243,11 +218,6 @@ export default function Header() {
   const [searchParams] = useSearchParams()
   const currentTab = searchParams.get('tab') || 'seasons'
 
-  // Récupérer le thème et les couleurs associées
-  const { resolvedTheme } = useTheme()
-  const colors = THEME_COLORS[resolvedTheme]
-  const { BG_MAIN, BG_SUB, BORDER, NAV_OFF, NAV_HOV, TEXT_PRIMARY } = colors
-
   // Ferme le drawer à chaque navigation
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
   // Bloque le scroll body quand le drawer est ouvert
@@ -310,13 +280,13 @@ export default function Header() {
           ════════════════════════════════════════════════════════════ */}
       <header
         className="hidden lg:flex flex-col w-full shrink-0 z-30"
-        style={{ backgroundColor: BG_MAIN, borderBottom: `1px solid ${BORDER}` }}
+        style={{ backgroundColor: 'var(--header-bg)', borderBottom: `1px solid var(--header-border)` }}
       >
         {/* ── Main bar (56px) ── */}
         <div className="flex items-stretch h-14">
 
           {/* Brand — gauche */}
-          <Brand border={BORDER} textColor={TEXT_PRIMARY} />
+          <Brand border="var(--header-border)" textColor="var(--header-text)" />
 
           {/* Nav principale — flex-1, scrollable si débordement */}
           <nav
@@ -334,16 +304,16 @@ export default function Header() {
                            transition-colors duration-150 shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded"
                 style={({ isActive }) => ({
                   fontFamily: "'Barlow', sans-serif",
-                  color: isActive ? ACCENT : NAV_OFF,
-                  borderBottom: isActive ? `2px solid ${ACCENT}` : '2px solid transparent',
+                  color: isActive ? 'var(--accent)' : 'var(--header-nav-off)',
+                  borderBottom: isActive ? `2px solid var(--accent)` : '2px solid transparent',
                 })}
                 onMouseEnter={e => {
                   const el = e.currentTarget
-                  if (!el.getAttribute('aria-current')) el.style.color = NAV_HOV
+                  if (!el.getAttribute('aria-current')) el.style.color = 'var(--header-nav-hov)'
                 }}
                 onMouseLeave={e => {
                   const el = e.currentTarget
-                  if (!el.getAttribute('aria-current')) el.style.color = NAV_OFF
+                  if (!el.getAttribute('aria-current')) el.style.color = 'var(--header-nav-off)'
                 }}
               >
                 {label}
@@ -354,7 +324,7 @@ export default function Header() {
           {/* Zone droite — fixe à droite */}
           <div
             className="flex items-center gap-2 px-4 shrink-0"
-            style={{ borderLeft: `1px solid ${BORDER}` }}
+            style={{ borderLeft: `1px solid var(--header-border)` }}
           >
             {/* Recherche globale */}
             <GlobalSearch />
@@ -367,11 +337,11 @@ export default function Header() {
               <NavLink
                 to="/chat"
                 className="relative p-1.5 rounded-lg transition-colors"
-                style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = TEXT_PRIMARY }}
+                style={({ isActive }) => ({ color: isActive ? 'var(--header-text)' : 'var(--header-nav-off)' })}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-text)' }}
                 onMouseLeave={e => {
                   if (!location.pathname.startsWith('/chat'))
-                    (e.currentTarget as HTMLElement).style.color = NAV_OFF
+                    (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)'
                 }}
                 aria-label="Messages"
               >
@@ -380,7 +350,7 @@ export default function Header() {
                   <span
                     className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
                                flex items-center justify-center text-[9px] font-black"
-                    style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                    style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                   >
                     {totalChatUnread > 9 ? '9+' : totalChatUnread}
                   </span>
@@ -393,9 +363,9 @@ export default function Header() {
               <button
                 onClick={() => setNotifOpen(v => !v)}
                 className="relative p-1.5 rounded-lg transition-colors"
-                style={{ color: notifOpen ? TEXT_PRIMARY : NAV_OFF }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = TEXT_PRIMARY }}
-                onMouseLeave={e => { if (!notifOpen) (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                style={{ color: notifOpen ? 'var(--header-text)' : 'var(--header-nav-off)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-text)' }}
+                onMouseLeave={e => { if (!notifOpen) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
                 aria-label="Notifications"
               >
                 <Bell size={17} />
@@ -404,7 +374,7 @@ export default function Header() {
                     className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
                                flex items-center justify-center text-[9px] font-black"
                     style={{
-                      backgroundColor: hasUrgent ? '#ef4444' : ACCENT,
+                      backgroundColor: hasUrgent ? '#ef4444' : 'var(--accent)',
                       color: hasUrgent ? 'white' : '#0D1117',
                     }}
                   >
@@ -432,9 +402,9 @@ export default function Header() {
               <button
                 onClick={signOut}
                 className="p-1.5 rounded-lg transition-colors group"
-                style={{ color: NAV_OFF }}
+                style={{ color: 'var(--header-nav-off)' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
                 title="Se déconnecter"
                 aria-label="Se déconnecter"
               >
@@ -450,8 +420,8 @@ export default function Header() {
             className="flex items-center px-5 gap-1 overflow-x-auto"
             style={{
               height: 38,
-              backgroundColor: BG_SUB,
-              borderTop: `1px solid ${BORDER}`,
+              backgroundColor: 'var(--header-sub)',
+              borderTop: `1px solid var(--header-border)`,
             }}
           >
             {ADMIN_SUBNAV.map(({ label, to, tab }, i) => {
@@ -463,11 +433,11 @@ export default function Header() {
                   className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-colors"
                   style={{
                     fontFamily: "'Barlow', sans-serif",
-                    color: isActive ? ACCENT : NAV_OFF,
-                    backgroundColor: isActive ? `${ACCENT}15` : 'transparent',
+                    color: isActive ? 'var(--accent)' : 'var(--header-nav-off)',
+                    backgroundColor: isActive ? `var(--accent)15` : 'transparent',
                   }}
-                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'white' }}
-                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = NAV_OFF }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-hov)' }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
                 >
                   {label}
                 </Link>
@@ -488,8 +458,8 @@ export default function Header() {
         {/* Topbar (56px) */}
         <header
           style={{
-            backgroundColor: BG_MAIN,
-            borderBottom: `1px solid ${BORDER}`,
+            backgroundColor: 'var(--header-bg)',
+            borderBottom: `1px solid var(--header-border)`,
             paddingTop: 'env(safe-area-inset-top, 0px)',
           }}
         >
@@ -498,7 +468,7 @@ export default function Header() {
             <Link to="/" className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: ACCENT }}
+                style={{ backgroundColor: 'var(--accent)' }}
               >
                 <BallIcon />
               </div>
@@ -507,10 +477,10 @@ export default function Header() {
                 style={{
                   fontFamily: "'Barlow Condensed', sans-serif",
                   fontWeight: 800,
-                  color: TEXT_PRIMARY
+                  color: 'var(--header-text)'
                 }}
               >
-                LEAGUE <span style={{ color: ACCENT }}>H5</span>
+                LEAGUE <span style={{ color: 'var(--accent)' }}>H5</span>
               </span>
             </Link>
 
@@ -523,7 +493,7 @@ export default function Header() {
                 <button
                   onClick={() => setNotifOpen(v => !v)}
                   className="relative p-1.5 rounded-lg transition-colors"
-                  style={{ color: notifOpen ? TEXT_PRIMARY : NAV_OFF }}
+                  style={{ color: notifOpen ? 'var(--header-text)' : 'var(--header-nav-off)' }}
                   aria-label="Notifications"
                 >
                   <Bell size={19} />
@@ -532,7 +502,7 @@ export default function Header() {
                       className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
                                  flex items-center justify-center text-[9px] font-black"
                       style={{
-                        backgroundColor: hasUrgent ? '#ef4444' : ACCENT,
+                        backgroundColor: hasUrgent ? '#ef4444' : 'var(--accent)',
                         color: hasUrgent ? 'white' : '#0D1117',
                       }}
                     >
@@ -555,7 +525,7 @@ export default function Header() {
                 <NavLink
                   to="/chat"
                   className="relative p-1.5 rounded-lg transition-colors"
-                  style={({ isActive }) => ({ color: isActive ? TEXT_PRIMARY : NAV_OFF })}
+                  style={({ isActive }) => ({ color: isActive ? 'var(--header-text)' : 'var(--header-nav-off)' })}
                   aria-label="Messages"
                 >
                   <MessageCircle size={19} />
@@ -563,7 +533,7 @@ export default function Header() {
                     <span
                       className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
                              flex items-center justify-center text-[9px] font-black"
-                      style={{ backgroundColor: '#C8F135', color: '#0D1117' }}
+                      style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                     >
                       {totalChatUnread > 9 ? '9+' : totalChatUnread}
                     </span>
@@ -575,7 +545,7 @@ export default function Header() {
               <button
                 onClick={() => setMobileOpen(true)}
                 className="p-1.5 rounded-lg"
-                style={{ color: NAV_OFF }}
+                style={{ color: 'var(--header-nav-off)' }}
                 aria-label="Ouvrir le menu"
               >
                 <Menu size={20} />
@@ -589,15 +559,15 @@ export default function Header() {
           className="flex items-center px-4 gap-2"
           style={{
             height: 38,
-            backgroundColor: BG_SUB,
-            borderBottom: `1px solid ${BORDER}`,
+            backgroundColor: 'var(--header-sub)',
+            borderBottom: `1px solid var(--header-border)`,
           }}
         >
           <span
             className="text-sm font-bold"
             style={{
               fontFamily: "'Barlow Condensed', sans-serif",
-              color: TEXT_PRIMARY
+              color: 'var(--header-text)'
             }}
           >
             {pageTitle}

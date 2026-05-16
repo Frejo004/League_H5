@@ -244,7 +244,7 @@ function FormChart({
 function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
   const configs = {
     1: { label: '1ER', glow: '#FFDF73', border: 'border-[#FFDF73]/50', bg: 'from-[#FFDF73]/20 via-[#B8860B]/5 to-transparent', size: 'w-16 h-16', textSize: 'text-3xl' },
-    2: { label: '2E', glow: '#E2E8F0', border: 'border-slate-300/50', bg: 'from-slate-300/20 via-slate-500/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
+    2: { label: '2E', glow: 'var(--color-text-secondary, #E2E8F0)', border: 'border-slate-300/50', bg: 'from-slate-300/20 via-slate-500/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
     3: { label: '3E', glow: '#D97706', border: 'border-amber-600/50', bg: 'from-amber-600/20 via-amber-800/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
   }
   const c = configs[rank]
@@ -281,7 +281,7 @@ function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
           <span className="text-3xl font-black tabular-nums leading-none" style={{ color: c.glow, fontFamily: "'Barlow Condensed', sans-serif" }}>
             {row.points}
           </span>
-          <span className="text-[9px] text-white/50 uppercase font-bold tracking-widest">pts</span>
+          <span className="text-[9px] uppercase font-bold tracking-widest text-slate-500">pts</span>
         </div>
       </div>
     </Link>
@@ -347,7 +347,7 @@ export function StandingsPage() {
 
           {/* Table card */}
           <div className="overflow-hidden rounded-2xl border border-white/6"
-            style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+            style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
 
             {/* Filter tabs */}
             <div className="flex items-center justify-between px-3 py-3 border-b border-white/6">

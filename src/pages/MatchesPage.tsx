@@ -207,7 +207,7 @@ export function MatchesPage() {
 
       {isLoading ? (
         <div className="rounded-2xl border border-white/6 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
           {[1,2,3,4].map(i => <SkeletonMatchCard key={i} />)}
         </div>
       ) : !season ? (
@@ -226,7 +226,7 @@ export function MatchesPage() {
         </div>
       ) : (
         <div className="rounded-2xl border border-white/6 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #161c2d 0%, #111827 100%)' }}>
+          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
 
           {/* Matchday tabs — style pill */}
           <div className="flex items-center gap-1 px-3 py-3 border-b border-white/6 overflow-x-auto scrollbar-none">

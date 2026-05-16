@@ -561,7 +561,7 @@ export function DashboardPage() {
       {/* ── Widget matchs en cours ── */}
       {liveMatches.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4"
-          style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }}>
+          style={{ background: 'var(--card-bg, linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%))' }}>
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
           <div className="flex items-center gap-2 mb-3">
             <Radio size={14} className="text-red-400 animate-pulse" />

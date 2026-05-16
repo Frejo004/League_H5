@@ -193,7 +193,7 @@ export function RulesPage() {
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden rounded-2xl border border-amber-500/30 p-6 text-center"
-        style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 50%, #0a0d1a 100%)' }}
+        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0f1420 50%, #0a0d1a 100%))' }}
       >
         <div
           className="absolute inset-0 pointer-events-none"
@@ -637,7 +637,7 @@ export function RulesPage() {
       {/* ── Footer valeurs ── */}
       <div
         className="relative overflow-hidden rounded-2xl border border-amber-500/20 py-5 px-6"
-        style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 100%)' }}
+        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0f1420 100%))' }}
       >
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

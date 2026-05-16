@@ -222,8 +222,8 @@ function PlayoffMatchCard({
       isLive
         ? 'border-red-500/40 bg-red-500/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
         : isCompleted
-        ? 'border-white/10 bg-white/[0.02]'
-        : 'border-white/8 bg-black/20',
+          ? 'border-white/10 bg-white/[0.02]'
+          : 'border-white/8 bg-black/20',
     )}>
       {isLive && (
         <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30">
@@ -438,7 +438,7 @@ export function PlayoffsPage() {
 
       {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 p-6"
-        style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f1420 60%, #0a0d1a 100%)' }}>
+        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0f1420 60%, #0a0d1a 100%))' }}>
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 60% 80% at 10% 50%, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
@@ -534,8 +534,8 @@ export function PlayoffsPage() {
                 <div className={clsx(
                   'grid gap-3',
                   round.matches.length === 1 ? 'max-w-sm mx-auto' :
-                  round.matches.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-                  'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+                    round.matches.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+                      'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
                 )}>
                   {round.matches.map((match, matchIdx) => (
                     <PlayoffMatchCard

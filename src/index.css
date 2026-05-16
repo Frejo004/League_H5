@@ -198,6 +198,14 @@ html {
   --glass-bg: rgba(22, 28, 45, 0.4);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(12px);
+
+  /* Header */
+  --header-bg: #0D1117;
+  --header-sub: #161B22;
+  --header-border: rgba(255,255,255,0.08);
+  --header-nav-off: rgba(255,255,255,0.5);
+  --header-nav-hov: rgba(255,255,255,0.85);
+  --header-text: #ffffff;
 }
 
 body {
@@ -283,6 +291,14 @@ body {
   --color-chat-bubble-in:  #e2e8f0;
   --color-chat-action-bar: #f8fafc;
   --color-chat-input-bg:   #f8fafc;
+
+  /* Header — light mode */
+  --header-bg: #ffffff;
+  --header-sub: #f8fafc;
+  --header-border: rgba(0,0,0,0.08);
+  --header-nav-off: rgba(0,0,0,0.5);
+  --header-nav-hov: rgba(0,0,0,0.85);
+  --header-text: #0f172a;
 }
 
 :root[data-theme='light'] body {
@@ -493,6 +509,21 @@ body {
 :root[data-theme='light'] .text-white {
   color: #0f172a !important;
 }
+
+/* Exception: Keep text white on colored backgrounds (primary, red, blue, green, amber) */
+:root[data-theme='light'] [class*="bg-primary-"] .text-white,
+:root[data-theme='light'] [class*="bg-red-"] .text-white,
+:root[data-theme='light'] [class*="bg-blue-"] .text-white,
+:root[data-theme='light'] [class*="bg-green-"] .text-white,
+:root[data-theme='light'] [class*="bg-amber-"] .text-white,
+:root[data-theme='light'] .text-white[class*="bg-primary-"],
+:root[data-theme='light'] .text-white[class*="bg-red-"],
+:root[data-theme='light'] .text-white[class*="bg-blue-"],
+:root[data-theme='light'] .text-white[class*="bg-green-"],
+:root[data-theme='light'] .text-white[class*="bg-amber-"] {
+  color: #ffffff !important;
+}
+
 :root[data-theme='light'] .text-slate-100,
 :root[data-theme='light'] .text-slate-200 {
   color: #1e293b !important;
@@ -515,6 +546,7 @@ body {
 }
 
 /* Override border colors */
+:root[data-theme='light'] .border-white\/5,
 :root[data-theme='light'] .border-white\/6,
 :root[data-theme='light'] .border-white\/8,
 :root[data-theme='light'] .border-white\/10,
@@ -534,6 +566,24 @@ body {
 :root[data-theme='light'] .bg-white\/8,
 :root[data-theme='light'] .bg-white\/10 {
   background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Fix bg-black with opacity */
+:root[data-theme='light'] .bg-black\/20,
+:root[data-theme='light'] .bg-black\/30,
+:root[data-theme='light'] .bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+:root[data-theme='light'] .bg-black\/50,
+:root[data-theme='light'] .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Backdrops usually use bg-black/70 or 80. In light mode, a white translucent is better */
+:root[data-theme='light'] .bg-black\/70,
+:root[data-theme='light'] .bg-black\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Fix hover backgrounds */

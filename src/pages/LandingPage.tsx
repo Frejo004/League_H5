@@ -267,7 +267,7 @@ export function LandingPage() {
       {/* ── Valeurs ── */}
       <section
         className="px-6 py-8 border-t border-amber-500/20"
-        style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0D1117 100%)' }}
+        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0D1117 100%))' }}
       >
         <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-wrap justify-center">
