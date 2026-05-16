@@ -154,6 +154,7 @@ export interface LiveClockState {
   /** Secondes restantes dans la pause (null si pas en pause) */
   breakSecondsLeft: number | null
   totalElapsedSeconds: number | null
+  isPaused: boolean
 }
 
 export function useLiveClock(
@@ -161,15 +162,18 @@ export function useLiveClock(
   livePeriod: 1 | 2 | null,
   status: string,
   halftimeAt?: string | null,
+  isPaused: boolean = false,
+  pausedAt: string | null = null,
+  totalPausedSeconds: number = 0,
 ): LiveClockState {
   const [state, setState] = useState<LiveClockState>({
-    minute: 0, seconds: 0, phase: 1, label: "0'00\"", shortLabel: "0'", progress: 0, breakSecondsLeft: null, totalElapsedSeconds: null,
+    minute: 0, seconds: 0, phase: 1, label: "0'00\"", shortLabel: "0'", progress: 0, breakSecondsLeft: null, totalElapsedSeconds: null, isPaused: false
   })
 
   useEffect(() => {
     if (status !== 'live' || !liveStartedAt) {
       if (status === 'completed') {
-        setState({ minute: 20, seconds: 0, phase: 4, label: 'Terminé', shortLabel: 'FT', progress: 100, breakSecondsLeft: null, totalElapsedSeconds: null })
+        setState({ minute: 20, seconds: 0, phase: 4, label: 'Terminé', shortLabel: 'FT', progress: 100, breakSecondsLeft: null, totalElapsedSeconds: null, isPaused: false })
       }
       return
     }
@@ -180,7 +184,7 @@ export function useLiveClock(
       // ── Phase 2 : Pause mi-temps (on a halftimeAt mais pas encore livePeriod 2) ──
       if (halftimeAt && livePeriod === 1) {
         const startTime = new Date(halftimeAt).getTime()
-        if (isNaN(startTime)) return // Sécurité : date invalide
+        if (isNaN(startTime)) return
 
         const breakElapsedSec = (now - startTime) / 1000
         const breakTotalSec = BREAK_DURATION * 60
@@ -196,14 +200,28 @@ export function useLiveClock(
           progress: (HALF_DURATION / TOTAL_DURATION) * 100,
           breakSecondsLeft: Math.ceil(breakLeft),
           totalElapsedSeconds: HALF_DURATION * 60,
+          isPaused: false
         })
         return
       }
 
       const liveTime = new Date(liveStartedAt).getTime()
-      if (isNaN(liveTime)) return // Sécurité
+      if (isNaN(liveTime)) return
 
-      const elapsedSec = (now - liveTime) / 1000
+      // Temps écoulé brut en secondes
+      let elapsedSec = (now - liveTime) / 1000
+
+      // Ajuster pour la pause en cours
+      if (isPaused && pausedAt) {
+        const pausedNow = (now - new Date(pausedAt).getTime()) / 1000
+        elapsedSec -= pausedNow
+      }
+
+      // Déduire le cumul des pauses passées
+      elapsedSec -= (totalPausedSeconds || 0)
+      
+      // Sécurité : pas de temps négatif
+      elapsedSec = Math.max(0, elapsedSec)
 
       let phase: 1 | 2 | 3 | 4
       let minute: number
@@ -214,7 +232,6 @@ export function useLiveClock(
       let cappedSec: number
 
       if (livePeriod === 1) {
-        // 1ère mi-temps : 0-20 min
         cappedSec = Math.min(elapsedSec, HALF_DURATION * 60)
         minute = Math.floor(cappedSec / 60)
         seconds = Math.floor(cappedSec % 60)
@@ -223,7 +240,6 @@ export function useLiveClock(
         shortLabel = `${minute}'`
         progress = (cappedSec / 60 / TOTAL_DURATION) * 100
       } else {
-        // 2ème mi-temps : Cumulative (HALF_DURATION + temps écoulé)
         cappedSec = Math.min(elapsedSec, HALF_DURATION * 60)
         const currentHalfMinute = Math.floor(cappedSec / 60)
         minute = HALF_DURATION + currentHalfMinute
@@ -242,14 +258,15 @@ export function useLiveClock(
         shortLabel, 
         progress: Math.min(progress, 100), 
         breakSecondsLeft: null,
-        totalElapsedSeconds: cappedSec
+        totalElapsedSeconds: cappedSec,
+        isPaused
       })
     }
 
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [liveStartedAt, livePeriod, halftimeAt, status])
+  }, [liveStartedAt, livePeriod, halftimeAt, status, isPaused, pausedAt, totalPausedSeconds])
 
   return state
 }
@@ -265,9 +282,10 @@ export function useAdminMatchLive(matchId?: string) {
     qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
     qc.invalidateQueries({ queryKey: ['match-events', matchId] })
     qc.invalidateQueries({ queryKey: ['matches'] })
+    qc.invalidateQueries({ queryKey: ['standings'] })
+    qc.invalidateQueries({ queryKey: ['scorers'] })
   }, [qc, matchId])
 
-  // Démarrer le live
   const startLive = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! })
@@ -276,46 +294,46 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  // Signaler la mi-temps (stocker halftime_at, déclencher le décompte 5min)
   const signalHalftime = useMutation({
     mutationFn: async () => {
       const now = new Date().toISOString()
-      // 1. Stocker halftime_at
-      await supabase.from('matches').update({
-        halftime_at: now,
-      }).eq('id', matchId!)
-
-      // 2. Insérer l'événement 'halftime' (pour qu'il apparaisse dans le flux)
-      // On le met à 20' par défaut car c'est la fin théorique
-      const { data: user } = await supabase.auth.getUser()
-      if (user.user) {
+      await supabase.from('matches').update({ halftime_at: now }).eq('id', matchId!)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
         await supabase.from('match_events').insert({
           match_id: matchId!,
           type: 'halftime',
           minute: HALF_DURATION,
           period: 1,
-          created_by: user.user.id
+          created_by: user.id
         })
       }
     },
     onSuccess: invalidate,
   })
 
-  // Passer à la 2ème mi-temps (après le décompte)
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      // On ne rappelle plus match_halftime RPC ici car on a déjà géré l'événement dans signalHalftime
-      // On met juste à jour le début de la 2ème MT
       await supabase.from('matches').update({
         live_started_at: new Date().toISOString(),
         live_period: 2,
         halftime_at: null,
+        is_paused: false,
+        paused_at: null,
+        total_paused_seconds: 0
       }).eq('id', matchId!)
     },
     onSuccess: invalidate,
   })
 
-  // Terminer le match
+  const togglePause = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('toggle_match_pause', { p_match_id: matchId! })
+      if (error) throw error
+    },
+    onSuccess: invalidate,
+  })
+
   const endMatch = useMutation({
     mutationFn: async ({ homeScore, awayScore }: { homeScore: number; awayScore: number }) => {
       const { error } = await supabase.rpc('end_match_live', {
@@ -325,83 +343,42 @@ export function useAdminMatchLive(matchId?: string) {
       })
       if (error) throw error
     },
-    onSuccess: () => {
-      invalidate()
-      qc.invalidateQueries({ queryKey: ['standings'] })
-      qc.invalidateQueries({ queryKey: ['scorers'] })
-    },
+    onSuccess: invalidate,
   })
 
-  // Ajouter un événement (but, carton, commentaire…)
   const addEvent = useMutation({
     mutationFn: async (event: {
       type: MatchEventType
-      minute?: number | null
-      period?: 1 | 2
+      minute: number
+      period: 1 | 2
       team_id?: string | null
       player_id?: string | null
       player2_id?: string | null
       description?: string | null
-      created_by: string
     }) => {
-      const { error } = await supabase.from('match_events').insert({
-        match_id: matchId!, ...event,
+      const { error } = await supabase.rpc('add_match_event_v2', {
+        p_match_id: matchId!,
+        p_type: event.type,
+        p_minute: event.minute,
+        p_period: event.period,
+        p_team_id: event.team_id || undefined,
+        p_player_id: event.player_id || undefined,
+        p_player2_id: event.player2_id || undefined,
+        p_description: event.description || undefined,
       })
       if (error) throw error
-
-      // Si c'est un but, mettre à jour le score et la table 'goals'
-      if ((event.type === 'goal' || event.type === 'own_goal') && event.team_id) {
-        // 1. Récupérer le match actuel pour le score
-        const { data: match } = await supabase
-          .from('matches')
-          .select('id, home_team_id, away_team_id, home_score, away_score')
-          .eq('id', matchId!)
-          .single()
-
-        if (match) {
-          const isHome = event.type === 'own_goal'
-            ? event.team_id !== match.home_team_id  // CSC : point pour l'adversaire
-            : event.team_id === match.home_team_id
-
-          // 2. Mettre à jour le score global
-          await supabase.from('matches').update({
-            home_score: isHome ? (match.home_score ?? 0) + 1 : (match.home_score ?? 0),
-            away_score: !isHome ? (match.away_score ?? 0) + 1 : (match.away_score ?? 0),
-          }).eq('id', matchId!)
-
-          // 3. Insérer dans la table 'goals' pour la liste des buteurs (header)
-          if (event.player_id) {
-            const { data: newGoal, error: goalErr } = await supabase.from('goals').insert({
-              match_id: matchId!,
-              team_id: event.team_id,
-              player_id: event.player_id,
-              minute: event.minute ?? 0,
-              is_own_goal: event.type === 'own_goal'
-            }).select().single()
-
-            // 4. Si passeur, insérer dans 'assists'
-            if (!goalErr && newGoal && event.player2_id) {
-              await supabase.from('assists').insert({
-                match_id: matchId!,
-                goal_id: newGoal.id,
-                player_id: event.player2_id
-              })
-            }
-          }
-        }
-      }
     },
     onSuccess: invalidate,
   })
 
-  // Supprimer un événement
   const deleteEvent = useMutation({
     mutationFn: async (eventId: string) => {
-      const { error } = await supabase.from('match_events').delete().eq('id', eventId)
+      const { error } = await supabase.rpc('delete_match_event_v2', { p_event_id: eventId })
       if (error) throw error
     },
     onSuccess: invalidate,
   })
 
-  return { startLive, signalHalftime, startSecondHalf, endMatch, addEvent, deleteEvent }
+  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent }
 }
+

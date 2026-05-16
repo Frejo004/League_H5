@@ -147,7 +147,10 @@ export function MatchDetailPage() {
     match?.live_started_at ?? null,
     match?.live_period as 1 | 2 | null,
     match?.status ?? 'scheduled',
-    (match as any)?.halftime_at
+    (match as any)?.halftime_at,
+    match?.is_paused ?? false,
+    match?.paused_at ?? null,
+    match?.total_paused_seconds ?? 0
   )
 
   if (isLoading) {
@@ -249,6 +252,9 @@ export function MatchDetailPage() {
                awayTeam={away}
                homeScore={displayHomeScore}
                awayScore={displayAwayScore}
+               isPaused={match.is_paused ?? false}
+               pausedAt={match.paused_at ?? null}
+               totalPausedSeconds={match.total_paused_seconds ?? 0}
                events={liveEvents}
                homePlayers={homePlayers || []}
                awayPlayers={awayPlayers || []}
@@ -370,6 +376,9 @@ export function MatchDetailPage() {
              awayTeam={away}
              homeScore={displayHomeScore}
              awayScore={displayAwayScore}
+             isPaused={match.is_paused ?? false}
+             pausedAt={match.paused_at ?? null}
+             totalPausedSeconds={match.total_paused_seconds ?? 0}
              events={liveEvents}
              homePlayers={homePlayers || []}
              awayPlayers={awayPlayers || []}
@@ -644,6 +653,9 @@ export function MatchDetailPage() {
               awayTeam={away}
               homeScore={match.home_score ?? 0}
               awayScore={match.away_score ?? 0}
+              isPaused={match.is_paused ?? false}
+              pausedAt={match.paused_at ?? null}
+              totalPausedSeconds={match.total_paused_seconds ?? 0}
               events={liveEvents}
               homePlayers={(homePlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
               awayPlayers={(awayPlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}

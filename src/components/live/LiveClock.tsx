@@ -9,6 +9,9 @@ interface LiveClockProps {
   liveStartedAt: string | null
   livePeriod: 1 | 2 | null
   halftimeAt?: string | null
+  isPaused?: boolean
+  pausedAt?: string | null
+  totalPausedSeconds?: number
   status: string
   homeColor: string
   awayColor: string
@@ -16,9 +19,9 @@ interface LiveClockProps {
 }
 
 export function LiveClock({
-  liveStartedAt, livePeriod, halftimeAt, status, homeColor, awayColor, className,
+  liveStartedAt, livePeriod, halftimeAt, isPaused, pausedAt, totalPausedSeconds, status, homeColor, awayColor, className,
 }: LiveClockProps) {
-  const clock = useLiveClock(liveStartedAt, livePeriod, status, halftimeAt)
+  const clock = useLiveClock(liveStartedAt, livePeriod, status, halftimeAt, isPaused, pausedAt, totalPausedSeconds)
 
   const isLive = status === 'live'
   const isCompleted = status === 'completed'
@@ -35,21 +38,21 @@ export function LiveClock({
         {isLive && (
           <span className={clsx(
             "w-2 h-2 rounded-full shrink-0",
-            clock.phase === 2 ? "bg-blue-400 animate-pulse" : "bg-red-500 animate-pulse"
+            clock.phase === 2 ? "bg-blue-400 animate-pulse" : isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"
           )} />
         )}
         <span className={clsx(
           'font-black tabular-nums',
-          isLive ? 'text-2xl text-white' : 'text-lg text-slate-400',
+          isLive ? (isPaused ? 'text-amber-400' : 'text-white') : 'text-lg text-slate-400',
         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
           {isCompleted ? 'FT' : isLive ? clock.label : '—'}
         </span>
         {isLive && (
           <span className={clsx(
             "text-xs font-bold uppercase tracking-widest",
-            clock.phase === 2 ? "text-blue-400" : "text-slate-500"
+            clock.phase === 2 ? "text-blue-400" : isPaused ? "text-amber-500" : "text-slate-500"
           )}>
-            {clock.phase === 2 ? 'Pause' : livePeriod === 1 ? '1ère MT' : '2ème MT'}
+            {clock.phase === 2 ? 'Pause' : isPaused ? 'Match Suspendu' : livePeriod === 1 ? '1ère MT' : '2ème MT'}
           </span>
         )}
       </div>

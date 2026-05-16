@@ -145,6 +145,9 @@ export interface Database {
           halftime_at: string | null
           live_period: 1 | 2 | null
           live_minute: number | null
+          is_paused: boolean
+          paused_at: string | null
+          total_paused_seconds: number
           created_at: string
           updated_at: string
         }
@@ -164,6 +167,9 @@ export interface Database {
           halftime_at?: string | null
           live_period?: 1 | 2 | null
           live_minute?: number | null
+          is_paused?: boolean
+          paused_at?: string | null
+          total_paused_seconds?: number
           created_at?: string
           updated_at?: string
         }
@@ -183,6 +189,9 @@ export interface Database {
           halftime_at?: string | null
           live_period?: 1 | 2 | null
           live_minute?: number | null
+          is_paused?: boolean
+          paused_at?: string | null
+          total_paused_seconds?: number
           updated_at?: string
         }
         Relationships: []
@@ -195,6 +204,7 @@ export interface Database {
           team_id: string
           minute: number | null
           is_own_goal: boolean
+          match_event_id: string | null
           created_at: string
         }
         Insert: {
@@ -204,6 +214,7 @@ export interface Database {
           team_id: string
           minute?: number | null
           is_own_goal?: boolean
+          match_event_id?: string | null
           created_at?: string
         }
         Update: {
@@ -213,6 +224,7 @@ export interface Database {
           team_id?: string
           minute?: number | null
           is_own_goal?: boolean
+          match_event_id?: string | null
         }
         Relationships: []
       }
@@ -715,6 +727,27 @@ export interface Database {
           p_home_score: number
           p_away_score: number
         }
+        Returns: undefined
+      }
+      add_match_event_v2: {
+        Args: {
+          p_match_id: string
+          p_type: string
+          p_minute: number
+          p_period: number
+          p_team_id?: string
+          p_player_id?: string
+          p_player2_id?: string
+          p_description?: string
+        }
+        Returns: string
+      }
+      delete_match_event_v2: {
+        Args: { p_event_id: string }
+        Returns: undefined
+      }
+      toggle_match_pause: {
+        Args: { p_match_id: string }
         Returns: undefined
       }
     }
