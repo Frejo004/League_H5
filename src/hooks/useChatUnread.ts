@@ -27,7 +27,7 @@ export interface TeamUnread {
 async function fetchUnreadCounts(userId: string, isAdmin: boolean): Promise<TeamUnread[]> {
   const rpcName = isAdmin ? 'get_team_unread_counts_admin' : 'get_team_unread_counts'
 
-  const { data, error } = await supabase.rpc(rpcName)
+  const { data, error } = await supabase.rpc(rpcName as any)
   if (error) {
     // Fallback gracieux si la migration n'est pas encore appliquée
     console.warn('[useChatUnread] RPC non disponible, fallback désactivé:', error.message)
@@ -70,8 +70,6 @@ export function useChatUnreadRealtime(userId?: string) {
     }
 
     const channelName = `chat-unread-rt-${userId}`
-    supabase.removeChannel(supabase.channel(channelName))
-
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes',
@@ -102,7 +100,11 @@ export function useChatUnreadRealtime(userId?: string) {
         { event: '*', schema: 'public', table: 'chat_read_receipts' },
         () => qc.invalidateQueries({ queryKey: ['chat-unread', userId] })
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${channelName}):`, status)
+        }
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [userId, qc])

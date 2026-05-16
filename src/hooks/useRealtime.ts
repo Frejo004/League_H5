@@ -48,62 +48,81 @@ export function useRealtimeMatch(matchId?: string) {
   useEffect(() => {
     if (!matchId) return
 
-    const channel = supabase
-      .channel(`match-detail-${matchId}`)
-      // 1. Écouter les changements sur le match lui-même (Chrono, Période, Statut)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
-        async (payload) => {
-          console.log('🔄 Realtime: Match update received', payload)
-          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-          
-          const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
-          const oldMatch = payload.old as { status?: string }
-          if (newMatch.status === 'completed' && oldMatch.status !== 'completed') {
-            const { data: m } = await supabase
-              .from('matches')
-              .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
-              .eq('id', matchId).single()
-            const home = (m as any)?.home_team?.name ?? '?'
-            const away = (m as any)?.away_team?.name ?? '?'
-            pushLocal(
-              '🏁 Match terminé',
-              `${home} ${newMatch.home_score ?? 0} – ${newMatch.away_score ?? 0} ${away}`,
-              `match-end-${matchId}`,
-              `/matches/${matchId}`
-            )
-          }
+    const channelName = `match-detail-${matchId}`
+    const channel = supabase.channel(channelName)
+
+    channel
+      // 1. Match core updates
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'matches', 
+        filter: `id=eq.${matchId}` 
+      }, async (payload) => {
+        console.log('🔄 Realtime: Match update', payload)
+        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        
+        const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
+        const oldMatch = payload.old as { status?: string }
+        if (newMatch.status === 'completed' && oldMatch.status !== 'completed') {
+          const { data: m } = await supabase
+            .from('matches')
+            .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
+            .eq('id', matchId).single()
+          const home = (m as any)?.home_team?.name ?? '?'
+          const away = (m as any)?.away_team?.name ?? '?'
+          pushLocal(
+            '🏁 Match terminé',
+            `${home} ${newMatch.home_score ?? 0} – ${newMatch.away_score ?? 0} ${away}`,
+            `match-end-${matchId}`,
+            `/matches/${matchId}`
+          )
         }
-      )
-      // 2. Écouter les buts
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `match_id=eq.${matchId}` },
-        (payload) => {
-          console.log('⚽ Realtime: Goal update received', payload)
-          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
-          qc.invalidateQueries({ queryKey: ['scorers'] }) // Pour mettre à jour les classements en arrière-plan
-        }
-      )
-      // 3. Écouter les événements (C'est ICI que la période 2 est souvent déclenchée)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'match_events', filter: `match_id=eq.${matchId}` },
-        (payload) => {
-          console.log('📝 Realtime: Event update received', payload)
-          // CRITIQUE : Si on reçoit un événement, on rafraîchit TOUT le match car 
-          // le changement de période (1ère -> 2ème MT) génère souvent un événement kickoff
-          qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-          qc.invalidateQueries({ queryKey: ['match-events', matchId] })
-        }
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'assists', filter: `match_id=eq.${matchId}` },
-        () => qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'mvp_votes', filter: `match_id=eq.${matchId}` },
-        () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] })
-      )
+      })
+      // 2. Goals
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'goals', 
+        filter: `match_id=eq.${matchId}` 
+      }, () => {
+        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        qc.invalidateQueries({ queryKey: ['match-events', matchId] })
+        qc.invalidateQueries({ queryKey: ['scorers'] })
+      })
+      // 3. Events
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'match_events', 
+        filter: `match_id=eq.${matchId}` 
+      }, () => {
+        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        qc.invalidateQueries({ queryKey: ['match-events', matchId] })
+      })
+      // 4. Assists
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'assists', 
+        filter: `match_id=eq.${matchId}` 
+      }, () => qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] }))
+      // 5. MVP Votes
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'mvp_votes', 
+        filter: `match_id=eq.${matchId}` 
+      }, () => qc.invalidateQueries({ queryKey: ['mvp_votes', matchId] }))
       .subscribe((status) => {
-        console.log(`📡 Realtime Status (${matchId}):`, status)
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${matchId}):`, status)
+        }
       })
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { 
+      supabase.removeChannel(channel) 
+    }
   }, [matchId, qc])
 }
 // ── Realtime pour la liste des matchs d'une saison ───────────────────────────
@@ -116,72 +135,60 @@ export function useRealtimeMatches(seasonId?: string) {
   useEffect(() => {
     if (!seasonId) return
 
-    // Nom de canal stable (pas de Math.random) pour éviter les fuites de canaux
     const channelName = `matches-season-${seasonId}`
+    const channel = supabase.channel(channelName)
+    
+    channel
+      // 1. Match updates (scores, status, etc.)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'matches' 
+      }, async (payload) => {
+        const matchSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+        if (matchSeasonId !== seasonId) return
 
-    // Nettoyer un éventuel canal existant avant d'en créer un nouveau
-    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
-    if (existing) supabase.removeChannel(existing)
+        console.log('🔄 Realtime: Match update for season', seasonId)
+        qc.invalidateQueries({ queryKey: ['matches', seasonId] })
+        qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+        qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+        qc.invalidateQueries({ queryKey: ['landing-stats'] })
 
-    const channel = supabase
-      .channel(channelName)
-      // 1. Changements sur les matchs (scores, statut, etc.)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'matches',
-        },
-        async (payload) => {
-          const matchSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
-          if (matchSeasonId !== seasonId) return
-
-          console.log('🔄 Realtime: Match update for this season', payload)
-          qc.invalidateQueries({ queryKey: ['matches', seasonId] })
-          qc.invalidateQueries({ queryKey: ['standings', seasonId] })
-          qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
-          qc.invalidateQueries({ queryKey: ['landing-stats'] })
-
-          const newMatch = payload.new as { id: string; status?: string }
-          const oldMatch = payload.old as { status?: string }
+        const newMatch = payload.new as { id: string; status?: string }
+        const oldMatch = payload.old as { status?: string }
+        
+        if (newMatch.status === 'live' && oldMatch.status !== 'live') {
+          const { data: match } = await supabase
+            .from('matches')
+            .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
+            .eq('id', newMatch.id)
+            .single()
           
-          if (newMatch.status === 'live' && oldMatch.status !== 'live') {
-            const { data: match } = await supabase
-              .from('matches')
-              .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
-              .eq('id', newMatch.id)
-              .single()
-            
-            const home = (match as any)?.home_team?.name ?? 'Équipe A'
-            const away = (match as any)?.away_team?.name ?? 'Équipe B'
-            
-            pushLocal(
-              '🔴 Match en direct !',
-              `${home} vs ${away} vient de commencer`,
-              `live-${newMatch.id}`,
-              `/matches/${newMatch.id}`
-            )
-          }
+          const home = (match as any)?.home_team?.name ?? 'Équipe A'
+          const away = (match as any)?.away_team?.name ?? 'Équipe B'
+          
+          pushLocal(
+            '🔴 Match en direct !',
+            `${home} vs ${away} vient de commencer`,
+            `live-${newMatch.id}`,
+            `/matches/${newMatch.id}`
+          )
         }
-      )
-      // 2. Changements sur les buts
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'goals',
-        },
-        () => {
-          console.log('⚽ Realtime: Goal detected')
-          qc.invalidateQueries({ queryKey: ['matches', seasonId] })
-          qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
-          qc.invalidateQueries({ queryKey: ['standings', seasonId] })
-        }
-      )
+      })
+      // 2. Goal updates
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'goals' 
+      }, () => {
+        qc.invalidateQueries({ queryKey: ['matches', seasonId] })
+        qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+        qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+      })
       .subscribe((status) => {
-        console.log(`📡 Realtime Status (${channelName}):`, status)
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${channelName}):`, status)
+        }
       })
 
     return () => {
@@ -200,29 +207,29 @@ export function useRealtimeTeams(seasonId?: string) {
   useEffect(() => {
     if (!seasonId) return
 
-    const channel = supabase
-      .channel(`teams-season-${seasonId}`)
-      // Changement sur n'importe quelle équipe
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'teams',
-        },
-        (payload) => {
-          const teamSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
-          if (teamSeasonId !== seasonId) return
+    const channelName = `teams-season-${seasonId}`
+    const channel = supabase.channel(channelName)
 
-          console.log('🛡️ Realtime: Team update for this season')
-          // Invalider toutes les queries qui contiennent des données d'équipes
-          qc.invalidateQueries({ queryKey: ['teams', seasonId] })
-          qc.invalidateQueries({ queryKey: ['matches', seasonId] })
-          qc.invalidateQueries({ queryKey: ['standings', seasonId] })
-          qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+    channel
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'teams' 
+      }, (payload) => {
+        const teamSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+        if (teamSeasonId !== seasonId) return
+
+        console.log('🛡️ Realtime: Team update received')
+        qc.invalidateQueries({ queryKey: ['teams', seasonId] })
+        qc.invalidateQueries({ queryKey: ['matches', seasonId] })
+        qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+        qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
+      })
+      .subscribe((status) => {
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${channelName}):`, status)
         }
-      )
-      .subscribe()
+      })
 
     return () => {
       supabase.removeChannel(channel)
@@ -238,31 +245,27 @@ export function useRealtimeTactics(teamId?: string, matchId?: string) {
   useEffect(() => {
     if (!teamId || !matchId) return
 
-    const channel = supabase
-      .channel(`tactics-team-${teamId}-${matchId}`)
+    const channelName = `tactics-team-${teamId}-${matchId}`
+    const channel = supabase.channel(channelName)
+    
+    channel
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'match_lineups', 
         filter: `match_id=eq.${matchId}` 
       }, async (payload) => {
-        // On vérifie si c'est bien notre équipe (le filtre match_id est plus large)
         const item = (payload.new as any) || (payload.old as any)
         if (item.team_id !== teamId) return
 
-        console.log('📋 Realtime: Tactical update received', payload)
+        console.log('📋 Realtime: Tactical update')
         qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
-
-        // Si c'est une mise à jour d'un titulaire, on peut notifier
-        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-          const p = payload.new as any
-          if (p.is_starter) {
-            // On peut optionnellement envoyer une notification locale
-            // pushLocal('Tactique mise à jour', 'Le capitaine a modifié la composition', `tactics-${matchId}`)
-          }
+      })
+      .subscribe((status) => {
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${channelName}):`, status)
         }
       })
-      .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [teamId, matchId, qc])
@@ -274,10 +277,10 @@ export function useRealtimeMatchTactics(matchId?: string) {
   useEffect(() => {
     if (!matchId) return
 
-    // On écoute à la fois les changements DB (si activés) et les broadcast (plus fiable)
-    const channel = supabase
-      .channel(`tactics-match-${matchId}`)
-      // 1. Changements en base de données
+    const channelName = `tactics-match-${matchId}`
+    const channel = supabase.channel(channelName)
+    
+    channel
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -287,12 +290,15 @@ export function useRealtimeMatchTactics(matchId?: string) {
         console.log('📋 Realtime: DB Tactical update')
         qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
       })
-      // 2. Broadcast (Émis par le dashboard capitaine)
       .on('broadcast', { event: 'tactical_update' }, () => {
         console.log('📋 Realtime: Broadcast Tactical update')
         qc.invalidateQueries({ queryKey: ['match_lineups', matchId] })
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${channelName}):`, status)
+        }
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [matchId, qc])

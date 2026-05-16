@@ -51,15 +51,16 @@ export function useMatchEvents(matchId?: string) {
   useEffect(() => {
     if (!matchId) return
     const name = `match-events-${matchId}`
-    const existing = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
-    if (existing) supabase.removeChannel(existing)
-
     const ch = supabase.channel(name)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'match_events',
         filter: `match_id=eq.${matchId}`,
       }, () => qc.invalidateQueries({ queryKey: ['match-events', matchId] }))
-      .subscribe()
+      .subscribe((status) => {
+        if (status !== 'CLOSED') {
+          console.log(`📡 Realtime (${name}):`, status)
+        }
+      })
 
     return () => { supabase.removeChannel(ch) }
   }, [matchId, qc])

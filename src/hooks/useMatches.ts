@@ -57,6 +57,45 @@ export function useMatch(matchId?: string) {
   })
 }
 
+/**
+ * Hook pour récupérer un match par son slug
+ * @param slug - Le slug du match (ex: "psg-vs-om-j10")
+ * @param seasonId - L'ID de la saison (optionnel, utilise la saison active par défaut)
+ */
+export function useMatchBySlug(slug?: string, seasonId?: string) {
+  return useQuery({
+    queryKey: ['matches', 'slug', slug, seasonId],
+    enabled: !!slug,
+    queryFn: async () => {
+      let query = supabase
+        .from('matches')
+        .select(`
+          *,
+          home_team:teams!home_team_id(id, name, color, logo_url, captain_id),
+          away_team:teams!away_team_id(id, name, color, logo_url, captain_id),
+          seasons(id, name),
+          goals(*, players(id, first_name, last_name, jersey_number)),
+          assists(*, players(id, first_name, last_name))
+        `)
+        .eq('slug', slug!)
+      
+      if (seasonId) {
+        query = query.eq('season_id', seasonId)
+      }
+      
+      const { data, error } = await query.single()
+      if (error) throw error
+      return data as unknown as MatchDetail
+    },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: (query) => {
+      const data = query.state.data as MatchDetail | undefined
+      return data?.status === 'live' ? 5000 : false
+    },
+  })
+}
+
 export function useCreateMatch() {
   const qc = useQueryClient()
   return useMutation({

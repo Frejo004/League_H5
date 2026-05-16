@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { Target, Zap, Calendar, Star, GitCompare, TrendingUp } from 'lucide-react'
-import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { usePlayerProfile, usePlayerProfileBySlug } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useScorers } from '@/hooks/useScorers'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -9,6 +9,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import { useMemo, useState } from 'react'
+import { getRouteParamType, getMatchUrl } from '@/lib/routeHelpers'
 
 
 function formatDate(dateStr: string | null) {
@@ -285,9 +286,25 @@ function PlayerFormChart({ matches, teamColor }: {
 }
 
 export function PlayerProfilePage() {
-  const { id } = useParams<{ id: string }>()
+  const { idOrSlug } = useParams<{ idOrSlug: string }>()
   const { data: season } = useActiveSeason()
-  const { data: player, isLoading } = usePlayerProfile(id)
+  
+  // Déterminer si c'est un ID ou un slug
+  const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
+  
+  // Utiliser le hook approprié
+  const { data: playerById, isLoading: isLoadingById } = usePlayerProfile(
+    paramType === 'id' ? idOrSlug : undefined
+  )
+  const { data: playerBySlug, isLoading: isLoadingBySlug } = usePlayerProfileBySlug(
+    paramType === 'slug' ? idOrSlug : undefined,
+    season?.id
+  )
+  
+  // Sélectionner les bonnes données
+  const player = paramType === 'id' ? playerById : playerBySlug
+  const isLoading = paramType === 'id' ? isLoadingById : isLoadingBySlug
+  const id = player?.id
   const { data: scorers } = useScorers(season?.id)
   const { data: mvpData } = usePlayerMvp(id, season?.id)
 

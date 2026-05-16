@@ -59,6 +59,7 @@ export interface Database {
           id: string
           season_id: string
           name: string
+          slug: string
           color: string
           logo_url: string | null
           captain_id: string | null
@@ -69,6 +70,7 @@ export interface Database {
           id?: string
           season_id: string
           name: string
+          slug?: string
           color?: string
           logo_url?: string | null
           captain_id?: string | null
@@ -79,6 +81,7 @@ export interface Database {
           id?: string
           season_id?: string
           name?: string
+          slug?: string
           color?: string
           logo_url?: string | null
           captain_id?: string | null
@@ -94,6 +97,7 @@ export interface Database {
           user_id: string | null
           first_name: string
           last_name: string
+          slug: string
           jersey_number: number | null
           position: PlayerPosition | null
           avatar_url: string | null
@@ -108,6 +112,7 @@ export interface Database {
           user_id?: string | null
           first_name: string
           last_name: string
+          slug?: string
           jersey_number?: number | null
           position?: PlayerPosition | null
           avatar_url?: string | null
@@ -122,6 +127,7 @@ export interface Database {
           user_id?: string | null
           first_name?: string
           last_name?: string
+          slug?: string
           jersey_number?: number | null
           position?: PlayerPosition | null
           avatar_url?: string | null
@@ -136,6 +142,7 @@ export interface Database {
           season_id: string
           home_team_id: string
           away_team_id: string
+          slug: string
           matchday: number
           scheduled_at: string | null
           played_at: string | null
@@ -159,6 +166,7 @@ export interface Database {
           season_id: string
           home_team_id: string
           away_team_id: string
+          slug?: string
           matchday: number
           scheduled_at?: string | null
           played_at?: string | null
@@ -181,6 +189,7 @@ export interface Database {
           season_id?: string
           home_team_id?: string
           away_team_id?: string
+          slug?: string
           matchday?: number
           scheduled_at?: string | null
           played_at?: string | null

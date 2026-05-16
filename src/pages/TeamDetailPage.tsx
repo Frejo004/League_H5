@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Users, Target, Trophy, Crown, Shield, Zap, TrendingUp, Activity, ChevronRight, BarChart2 } from 'lucide-react'
-import { useTeam } from '@/hooks/useTeams'
+import { useTeam, useTeamBySlug } from '@/hooks/useTeams'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -11,6 +11,7 @@ import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMemo } from 'react'
 import type { Player, PlayerPosition, TeamRef, TeamWithCaptain, MatchWithTeams } from '@/types/database'
+import { getRouteParamType, getMatchUrl } from '@/lib/routeHelpers'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -236,9 +237,26 @@ function TeamGoalsChart({
 }
 
 export function TeamDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { idOrSlug } = useParams<{ idOrSlug: string }>()
   const { data: season } = useActiveSeason()
-  const { data: team, isLoading } = useTeam(id)
+  
+  // Déterminer si c'est un ID ou un slug
+  const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
+  
+  // Utiliser le hook approprié
+  const { data: teamById, isLoading: isLoadingById } = useTeam(
+    paramType === 'id' ? idOrSlug : undefined
+  )
+  const { data: teamBySlug, isLoading: isLoadingBySlug } = useTeamBySlug(
+    paramType === 'slug' ? idOrSlug : undefined,
+    season?.id
+  )
+  
+  // Sélectionner les bonnes données
+  const team = paramType === 'id' ? teamById : teamBySlug
+  const isLoading = paramType === 'id' ? isLoadingById : isLoadingBySlug
+  const id = team?.id
+  
   const { data: standings } = useStandings(season?.id)
   const { data: matches } = useMatches(season?.id)
 
@@ -534,7 +552,7 @@ export function TeamDetailPage() {
                   return (
                     <Link
                       key={m.id}
-                      to={`/matches/${m.id}`}
+                      to={getMatchUrl(m)}
                       className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all duration-200 border border-transparent hover:border-white/10"
                     >
                       <FormBadge result={result} />

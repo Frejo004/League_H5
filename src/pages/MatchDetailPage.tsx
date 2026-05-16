@@ -1,11 +1,12 @@
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2 } from 'lucide-react'
-import { useMatch } from '@/hooks/useMatches'
+import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useRealtimeMatch } from '@/hooks/useRealtime'
 import { useLiveClock, useMatchEvents } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
+import { useActiveSeason } from '@/hooks/useSeasons'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -18,6 +19,7 @@ import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
+import { getRouteParamType } from '@/lib/routeHelpers'
 import { LiveTicker } from '@/components/live/LiveTicker'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
@@ -182,8 +184,25 @@ function GoalEvent({
 type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings'
 
 export function MatchDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const { data: match, isLoading } = useMatch(id)
+  const { idOrSlug } = useParams<{ idOrSlug: string }>()
+  const { data: season } = useActiveSeason()
+  
+  // Déterminer si c'est un ID ou un slug
+  const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
+  
+  // Utiliser le hook approprié
+  const { data: matchById, isLoading: isLoadingById } = useMatch(
+    paramType === 'id' ? idOrSlug : undefined
+  )
+  const { data: matchBySlug, isLoading: isLoadingBySlug } = useMatchBySlug(
+    paramType === 'slug' ? idOrSlug : undefined,
+    season?.id
+  )
+  
+  // Sélectionner les bonnes données
+  const match = paramType === 'id' ? matchById : matchBySlug
+  const isLoading = paramType === 'id' ? isLoadingById : isLoadingBySlug
+  const id = match?.id
 
   const [celebration, setCelebration] = useState<{ key: number, teamName: string, teamColor: string, playerName?: string }>({
     key: 0, teamName: '', teamColor: ''
