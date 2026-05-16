@@ -30,6 +30,46 @@ export interface TeamDiscipline {
   fairplay_score: number
 }
 
+/**
+ * usePlayerDiscipline — Cartons d'un joueur spécifique sur une saison
+ * Utilisé dans le CompareModal et le profil joueur
+ */
+export function usePlayerDiscipline(playerId?: string, seasonId?: string) {
+  return useQuery({
+    queryKey: ['player-discipline', playerId, seasonId],
+    enabled: !!playerId && !!seasonId,
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ yellow_cards: number; red_cards: number; fairplay_score: number }> => {
+      // Récupérer les matchs de la saison pour filtrer les événements
+      const { data: matchData, error: matchErr } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('season_id', seasonId!)
+      if (matchErr) throw matchErr
+
+      const matchIds = (matchData ?? []).map(m => m.id)
+      if (matchIds.length === 0) return { yellow_cards: 0, red_cards: 0, fairplay_score: 0 }
+
+      const { data: events, error } = await supabase
+        .from('match_events')
+        .select('type')
+        .eq('player_id', playerId!)
+        .in('match_id', matchIds)
+        .in('type', ['yellow_card', 'red_card'])
+
+      if (error) throw error
+
+      const yellow_cards = (events ?? []).filter(e => e.type === 'yellow_card').length
+      const red_cards = (events ?? []).filter(e => e.type === 'red_card').length
+      return {
+        yellow_cards,
+        red_cards,
+        fairplay_score: yellow_cards + red_cards * 3,
+      }
+    },
+  })
+}
+
 export function useDisciplinaryStats(seasonId?: string) {
   const { data: matches } = useMatches(seasonId)
 

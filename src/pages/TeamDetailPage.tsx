@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Users, Target, Trophy, Crown, Shield, Zap, TrendingUp, Activity, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Users, Target, Trophy, Crown, Shield, Zap, TrendingUp, Activity, ChevronRight, BarChart2 } from 'lucide-react'
 import { useTeam } from '@/hooks/useTeams'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
@@ -9,7 +9,8 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { POSITION_LABELS, FormBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { Player, PlayerPosition, TeamRef, TeamWithCaptain } from '@/types/database'
+import { useMemo } from 'react'
+import type { Player, PlayerPosition, TeamRef, TeamWithCaptain, MatchWithTeams } from '@/types/database'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,6 +33,206 @@ const POSITION_FULL_LABELS: Record<string, string> = {
   'defender': 'Défenseurs',
   'midfielder': 'Milieux',
   'forward': 'Attaquants'
+}
+
+// ── Graphique buts pour/contre par journée ───────────────────────────────────
+function TeamGoalsChart({
+  matches,
+  teamId,
+  teamColor,
+}: {
+  matches: MatchWithTeams[]
+  teamId: string
+  teamColor: string
+}) {
+  const data = useMemo(() => {
+    return matches
+      .filter(m => m.status === 'completed' && m.played_at)
+      .sort((a, b) => a.matchday - b.matchday)
+      .map(m => {
+        const isHome = m.home_team_id === teamId
+        const scored   = isHome ? (m.home_score ?? 0) : (m.away_score ?? 0)
+        const conceded = isHome ? (m.away_score ?? 0) : (m.home_score ?? 0)
+        const result: 'W' | 'D' | 'L' =
+          scored > conceded ? 'W' : scored < conceded ? 'L' : 'D'
+        return { matchday: m.matchday, scored, conceded, result }
+      })
+  }, [matches, teamId])
+
+  if (data.length === 0) return null
+
+  const maxVal = Math.max(...data.map(d => Math.max(d.scored, d.conceded)), 1)
+
+  const W = 400
+  const H = 130
+  const PAD = { top: 14, right: 14, bottom: 26, left: 22 }
+  const cW = W - PAD.left - PAD.right
+  const cH = H - PAD.top - PAD.bottom
+
+  const xScale = (i: number) =>
+    data.length === 1 ? PAD.left + cW / 2 : PAD.left + (i / (data.length - 1)) * cW
+  const yScale = (v: number) => PAD.top + cH - (v / maxVal) * cH
+
+  const buildPath = (key: 'scored' | 'conceded') =>
+    data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i).toFixed(1)} ${yScale(d[key]).toFixed(1)}`).join(' ')
+
+  const scoredPath   = buildPath('scored')
+  const concededPath = buildPath('conceded')
+
+  const yTicks = maxVal <= 2 ? [0, 1, maxVal] : [0, Math.ceil(maxVal / 2), maxVal]
+
+  // Totaux
+  const totalScored   = data.reduce((s, d) => s + d.scored, 0)
+  const totalConceded = data.reduce((s, d) => s + d.conceded, 0)
+  const wins   = data.filter(d => d.result === 'W').length
+  const draws  = data.filter(d => d.result === 'D').length
+  const losses = data.filter(d => d.result === 'L').length
+
+  return (
+    <div className="glass-morphism rounded-3xl p-5 space-y-4 border border-white/5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={14} className="text-slate-400" />
+          <p className="text-xs font-black text-white uppercase tracking-widest">Buts par journée</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: teamColor }} />
+            <span className="text-[10px] text-slate-500 font-bold">Marqués</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+            <span className="text-[10px] text-slate-500 font-bold">Encaissés</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SVG */}
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 130 }}>
+        {/* Grille + labels Y */}
+        {yTicks.map(tick => (
+          <g key={tick}>
+            <line
+              x1={PAD.left} y1={yScale(tick)}
+              x2={W - PAD.right} y2={yScale(tick)}
+              stroke="rgba(255,255,255,0.06)" strokeWidth="1"
+            />
+            <text
+              x={PAD.left - 4} y={yScale(tick) + 3}
+              textAnchor="end"
+              fill="rgba(255,255,255,0.2)"
+              fontSize="7" fontFamily="monospace"
+            >
+              {tick}
+            </text>
+          </g>
+        ))}
+
+        {/* Bandes résultats */}
+        {data.map((d, i) => {
+          const bw = data.length === 1 ? cW : cW / (data.length - 1)
+          return (
+            <rect key={i}
+              x={xScale(i) - bw / 2} y={PAD.top}
+              width={bw} height={cH}
+              fill={d.result === 'W' ? '#22c55e' : d.result === 'L' ? '#ef4444' : '#f59e0b'}
+              opacity={0.05}
+            />
+          )
+        })}
+
+        {/* Zone remplie encaissés */}
+        {data.length > 1 && (
+          <path
+            d={`${concededPath} L ${xScale(data.length - 1).toFixed(1)} ${(PAD.top + cH).toFixed(1)} L ${xScale(0).toFixed(1)} ${(PAD.top + cH).toFixed(1)} Z`}
+            fill="#ef4444" opacity={0.07}
+          />
+        )}
+
+        {/* Zone remplie marqués */}
+        {data.length > 1 && (
+          <path
+            d={`${scoredPath} L ${xScale(data.length - 1).toFixed(1)} ${(PAD.top + cH).toFixed(1)} L ${xScale(0).toFixed(1)} ${(PAD.top + cH).toFixed(1)} Z`}
+            fill={teamColor} opacity={0.1}
+          />
+        )}
+
+        {/* Ligne encaissés */}
+        {data.length > 1 && (
+          <path d={concededPath} fill="none" stroke="#ef4444" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round" opacity={0.7} />
+        )}
+
+        {/* Ligne marqués */}
+        {data.length > 1 && (
+          <path d={scoredPath} fill="none" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{ stroke: teamColor }} />
+        )}
+
+        {/* Points encaissés */}
+        {data.map((d, i) => (
+          <circle key={`c-${i}`}
+            cx={xScale(i)} cy={yScale(d.conceded)}
+            r={d.conceded > 0 ? 2.5 : 1.5}
+            fill={d.conceded > 0 ? '#ef4444' : 'rgba(239,68,68,0.3)'}
+          />
+        ))}
+
+        {/* Points marqués */}
+        {data.map((d, i) => (
+          <circle key={`s-${i}`}
+            cx={xScale(i)} cy={yScale(d.scored)}
+            r={d.scored > 0 ? 3.5 : 2}
+            fill={d.scored > 0 ? teamColor : `${teamColor}50`}
+          />
+        ))}
+
+        {/* Labels journées */}
+        {data.map((d, i) => (
+          <text key={`lbl-${i}`}
+            x={xScale(i)} y={H - 6}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.2)"
+            fontSize="7" fontFamily="monospace"
+          >
+            J{d.matchday}
+          </text>
+        ))}
+      </svg>
+
+      {/* Résumé */}
+      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-white/5">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: teamColor, opacity: 0.8 }} />
+          <span className="text-[10px] text-slate-500 font-bold">
+            {totalScored} buts marqués
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-sm bg-red-400 opacity-80" />
+          <span className="text-[10px] text-slate-500 font-bold">
+            {totalConceded} buts encaissés
+          </span>
+        </div>
+      </div>
+
+      {/* Forme V/N/D */}
+      <div className="flex items-center gap-4 pt-1 border-t border-white/5">
+        {[
+          { label: 'Victoires', count: wins,   color: 'bg-green-500' },
+          { label: 'Nuls',      count: draws,  color: 'bg-amber-500' },
+          { label: 'Défaites',  count: losses, color: 'bg-red-500'   },
+        ].map(({ label, count, color }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <div className={clsx('w-2 h-2 rounded-sm opacity-70', color)} />
+            <span className="text-[10px] text-slate-500 font-bold">{count} {label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function TeamDetailPage() {
@@ -359,6 +560,21 @@ export function TeamDetailPage() {
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Goals chart par journée */}
+          {matches && matches.filter(m => m.home_team_id === id || m.away_team_id === id).length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3 px-2">
+                <BarChart2 size={20} className="text-primary-500" />
+                Évolution
+              </h2>
+              <TeamGoalsChart
+                matches={(matches ?? []).filter(m => m.home_team_id === id || m.away_team_id === id)}
+                teamId={id!}
+                teamColor={team.color}
+              />
             </div>
           )}
 

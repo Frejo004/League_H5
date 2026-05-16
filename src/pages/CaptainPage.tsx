@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout, UserCheck } from 'lucide-react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout, UserCheck, History, ClipboardList } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -773,6 +773,230 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
   )
 }
 
+// ── Drawer historique compo d'un match passé ─────────────────────────────────
+
+function LineupHistoryDrawer({
+  match,
+  teamId,
+  teamColor,
+  onClose,
+}: {
+  match: MatchWithTeams
+  teamId: string
+  teamColor: string
+  onClose: () => void
+}) {
+  const { data: lineups, isLoading } = useMatchLineups(match.id)
+
+  const teamLineup = useMemo(() => {
+    return (lineups ?? []).filter(l => l.team_id === teamId)
+  }, [lineups, teamId])
+
+  const starters = teamLineup.filter(l => l.is_starter)
+  const subs = teamLineup.filter(l => !l.is_starter)
+
+  const formation = useMemo(() => {
+    const firstPos = starters.find(l => l.position?.includes(':'))?.position
+    return firstPos?.split(':')[0] || '2-1-1'
+  }, [starters])
+
+  const isHome = match.home_team_id === teamId
+  const opp = isHome ? match.away_team : match.home_team
+  const myScore = isHome ? match.home_score : match.away_score
+  const oppScore = isHome ? match.away_score : match.home_score
+  const result: 'W' | 'D' | 'L' | null =
+    myScore !== null && oppScore !== null
+      ? myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
+      : null
+
+  // Ferme avec Escape
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose])
+
+  // Bloque le scroll body
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+
+      {/* Panel */}
+      <div
+        className="relative w-full sm:max-w-lg max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden animate-fade-in-up"
+        style={{ backgroundColor: '#161B22', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center gap-3 px-4 py-3 shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[9px] font-black text-primary-500 uppercase tracking-[0.3em]">J{match.matchday}</span>
+              <p className="text-sm font-black text-white truncate">
+                {isHome ? 'vs' : '@'} {opp.name}
+              </p>
+              {result && (
+                <span className={clsx(
+                  'text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider',
+                  result === 'W' ? 'bg-green-500/20 text-green-400' :
+                  result === 'L' ? 'bg-red-500/20 text-red-400' :
+                  'bg-slate-500/20 text-slate-400'
+                )}>
+                  {myScore}–{oppScore}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {match.played_at
+                ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }).format(new Date(match.played_at))
+                : '—'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+            aria-label="Fermer"
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+
+        {/* Contenu scrollable */}
+        <div className="overflow-y-auto flex-1 p-4 space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-12"><LoadingSpinner /></div>
+          ) : teamLineup.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <ClipboardList size={32} className="text-slate-700 mb-3" />
+              <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucune composition</p>
+              <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">
+                Aucune compo n'a été soumise pour ce match.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Formation + pitch */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Formation · {formation}
+                  </p>
+                  <span className="text-[10px] font-black text-slate-400 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
+                    {starters.length} titulaires · {subs.length} remplaçants
+                  </span>
+                </div>
+                <PitchView
+                  players={starters}
+                  teamColor={teamColor}
+                  formation={formation}
+                  className="aspect-[3/4] max-h-64"
+                />
+              </div>
+
+              {/* Liste titulaires */}
+              {starters.length > 0 && (
+                <div
+                  className="rounded-xl overflow-hidden"
+                  style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-2"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    <UserCheck size={12} className="text-primary-400" />
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                      Titulaires ({starters.length})
+                    </p>
+                  </div>
+                  {starters.map((l, i) => (
+                    <div
+                      key={l.id}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5',
+                        i < starters.length - 1 && 'border-b border-white/[0.04]'
+                      )}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0"
+                        style={{ backgroundColor: teamColor }}
+                      >
+                        {l.jersey_number ?? '—'}
+                      </div>
+                      <p className="text-sm text-white font-medium flex-1 truncate">
+                        {l.player ? `${l.player.first_name} ${l.player.last_name}` : '—'}
+                      </p>
+                      {l.position && (
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider shrink-0">
+                          {l.position.includes(':') ? l.position.split(':')[1] : l.position}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Liste remplaçants */}
+              {subs.length > 0 && (
+                <div
+                  className="rounded-xl overflow-hidden"
+                  style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-2"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    <Users size={12} className="text-blue-400" />
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                      Remplaçants ({subs.length})
+                    </p>
+                  </div>
+                  {subs.map((l, i) => (
+                    <div
+                      key={l.id}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5',
+                        i < subs.length - 1 && 'border-b border-white/[0.04]'
+                      )}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0 opacity-60"
+                        style={{ backgroundColor: teamColor }}
+                      >
+                        {l.jersey_number ?? '—'}
+                      </div>
+                      <p className="text-sm text-slate-400 font-medium flex-1 truncate">
+                        {l.player ? `${l.player.first_name} ${l.player.last_name}` : '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Lien vers le match */}
+              <Link
+                to={`/matches/${match.id}`}
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/3 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <ChevronRight size={13} />
+                Voir le match complet
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Onglet Tactique ──────────────────────────────────────────────────────────
 
 export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: { teamId: string, teamColor: string, seasonId: string, readonly?: boolean }) {
@@ -780,6 +1004,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
   const { data: matches } = useMatches(seasonId)
   const { data: players } = usePlayersByTeam(teamId)
   const updateLineup = useUpdateMatchLineup()
+  const [selectedHistoryMatch, setSelectedHistoryMatch] = useState<MatchWithTeams | null>(null)
 
   const nextMatch = useMemo(() => {
     return (matches ?? [])
@@ -844,6 +1069,13 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
     const firstPos = teamLineup.find(l => l.is_starter && l.position?.includes(':'))?.position
     return firstPos?.split(':')[0] || '2-1-1'
   }, [teamLineup])
+
+  // Matchs passés de l'équipe (terminés), triés du plus récent au plus ancien
+  const pastMatches = useMemo(() => {
+    return (matches ?? [])
+      .filter(m => (m.home_team_id === teamId || m.away_team_id === teamId) && m.status === 'completed')
+      .sort((a, b) => new Date(b.played_at ?? b.matchday).getTime() - new Date(a.played_at ?? a.matchday).getTime())
+  }, [matches, teamId])
 
   if (lineupLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
 
@@ -925,6 +1157,16 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* Drawer historique compo */}
+      {selectedHistoryMatch && (
+        <LineupHistoryDrawer
+          match={selectedHistoryMatch}
+          teamId={teamId}
+          teamColor={teamColor}
+          onClose={() => setSelectedHistoryMatch(null)}
+        />
+      )}
+
       {/* Header Match Compact */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-white/2 border border-white/5">
         <div className="text-center md:text-left">
@@ -1060,6 +1302,84 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
           </Link>
         </div>
       </div>
+
+      {/* ── Historique des compositions ── */}
+      {pastMatches.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <History size={13} className="text-slate-500" />
+            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              Historique des compositions ({pastMatches.length})
+            </h4>
+          </div>
+
+          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            {pastMatches.map((m, i) => {
+              const isHome = m.home_team_id === teamId
+              const opp = isHome ? m.away_team : m.home_team
+              const myScore = isHome ? m.home_score : m.away_score
+              const oppScore = isHome ? m.away_score : m.home_score
+              const result: 'W' | 'D' | 'L' | null =
+                myScore !== null && oppScore !== null
+                  ? myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
+                  : null
+
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedHistoryMatch(m)}
+                  className={clsx(
+                    'w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-white/5 transition-colors',
+                    i < pastMatches.length - 1 && 'border-b border-white/[0.04]'
+                  )}
+                >
+                  {/* Résultat */}
+                  <div className="shrink-0">
+                    <ResultBadge result={result} variant="ghost" />
+                  </div>
+
+                  {/* Adversaire */}
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div
+                      className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-black"
+                      style={{ backgroundColor: opp.color }}
+                    >
+                      {opp.name[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-slate-200 uppercase tracking-tight truncate">
+                        {isHome ? 'vs' : '@'} {opp.name}
+                      </p>
+                      <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                        J{m.matchday}
+                        {m.played_at && (
+                          <> · {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(m.played_at))}</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Score */}
+                  {myScore !== null && oppScore !== null && (
+                    <span className={clsx(
+                      'text-sm font-black tabular-nums shrink-0',
+                      result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-slate-300'
+                    )}>
+                      {myScore}–{oppScore}
+                    </span>
+                  )}
+
+                  {/* Icône compo */}
+                  <div className="shrink-0 flex items-center gap-1">
+                    <ClipboardList size={13} className="text-slate-600" />
+                    <ChevronRight size={13} className="text-slate-700" />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

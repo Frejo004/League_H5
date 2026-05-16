@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame, Radio } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame, Radio, Clock, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
@@ -8,7 +8,9 @@ import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
+import { useMatchLineups } from '@/hooks/useLineups'
 import { useCountUp } from '@/hooks/useCountUp'
+import { useAuth } from '@/hooks/useAuth'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -27,6 +29,142 @@ function formatDay(dateStr: string) {
   if (d.toDateString() === today.toDateString()) return "Aujourd'hui"
   if (d.toDateString() === tomorrow.toDateString()) return 'Demain'
   return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
+}
+
+// ── Statut composition pour un match ─────────────────────────────────────────
+function LineupStatusBadge({
+  matchId,
+  teamId,
+  isCaptain,
+}: {
+  matchId: string
+  teamId: string
+  isCaptain: boolean
+}) {
+  const { data: lineups, isLoading } = useMatchLineups(matchId)
+
+  const hasLineup = useMemo(() => {
+    if (!lineups) return false
+    return lineups.some(l => l.team_id === teamId && l.is_starter)
+  }, [lineups, teamId])
+
+  if (isLoading) return null
+
+  if (hasLineup) {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20">
+        <CheckCircle2 size={11} className="text-green-400 shrink-0" />
+        <span className="text-[10px] font-black text-green-400 uppercase tracking-wider">Compo soumise</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+        <AlertCircle size={11} className="text-amber-400 shrink-0" />
+        <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Compo manquante</span>
+      </div>
+      {isCaptain && (
+        <Link
+          to="/captain"
+          onClick={e => e.stopPropagation()}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-500/15 border border-primary-500/30 text-[10px] font-black text-primary-400 hover:bg-primary-500/25 transition-colors uppercase tracking-wider"
+        >
+          Soumettre <ChevronRight size={10} />
+        </Link>
+      )}
+    </div>
+  )
+}
+
+// ── Compte à rebours prochain match ──────────────────────────────────────────
+function useCountdown(targetDate: string | null) {
+  const [diff, setDiff] = useState<number | null>(null)
+  useEffect(() => {
+    if (!targetDate) return
+    const tick = () => setDiff(new Date(targetDate).getTime() - Date.now())
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [targetDate])
+  if (diff === null || diff <= 0) return null
+  const h = Math.floor(diff / 3_600_000)
+  const m = Math.floor((diff % 3_600_000) / 60_000)
+  const s = Math.floor((diff % 60_000) / 1_000)
+  if (h > 48) return null // trop loin, pas utile
+  return { h, m, s, totalMs: diff }
+}
+
+function NextMatchCountdown({ match, teamId, isCaptain }: {
+  match: MatchWithTeams
+  teamId?: string | null
+  isCaptain?: boolean
+}) {
+  const countdown = useCountdown(match.scheduled_at)
+  const isImminent = countdown ? countdown.h === 0 && countdown.m < 30 : false
+
+  return (
+    <div className={clsx(
+      'mx-4 mb-3 rounded-xl border overflow-hidden',
+      isImminent ? 'border-red-500/30' : 'border-primary-500/20',
+    )}>
+      {/* Compte à rebours */}
+      {countdown && (
+        <div className={clsx(
+          'flex items-center justify-center gap-3 px-4 py-2.5',
+          isImminent ? 'bg-red-500/8' : 'bg-primary-500/5',
+        )}>
+          <Clock size={13} className={isImminent ? 'text-red-400' : 'text-primary-400'} />
+          <span className={clsx(
+            'text-[10px] font-black uppercase tracking-widest',
+            isImminent ? 'text-red-300' : 'text-primary-300'
+          )}>
+            Prochain match dans
+          </span>
+          <div className={clsx(
+            'flex items-center gap-1 font-black tabular-nums',
+            isImminent && 'animate-pulse'
+          )}>
+            {countdown.h > 0 && (
+              <>
+                <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
+                  {String(countdown.h).padStart(2, '0')}
+                </span>
+                <span className="text-slate-600 text-sm">h</span>
+              </>
+            )}
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
+              {String(countdown.m).padStart(2, '0')}
+            </span>
+            <span className="text-slate-600 text-sm">m</span>
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
+              {String(countdown.s).padStart(2, '0')}
+            </span>
+            <span className="text-slate-600 text-sm">s</span>
+          </div>
+        </div>
+      )}
+
+      {/* Statut compo — uniquement si on connaît l'équipe */}
+      {teamId && (
+        <div className={clsx(
+          'flex items-center justify-between gap-2 px-4 py-2',
+          'border-t',
+          isImminent ? 'border-red-500/15 bg-red-500/4' : 'border-primary-500/10 bg-black/20',
+        )}>
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            Composition
+          </span>
+          <LineupStatusBadge
+            matchId={match.id}
+            teamId={teamId}
+            isCaptain={!!isCaptain}
+          />
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── KPI Card premium ──────────────────────────────────────────────────────────
@@ -357,6 +495,7 @@ export function DashboardPage() {
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
   const { myTeamId } = useMyTeam(season?.id)
+  const { isCaptain } = useAuth()
 
   useRealtimeTeams(season?.id)
 
@@ -475,6 +614,14 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="stagger-fast">
+              {/* Compte à rebours + statut compo pour le prochain match */}
+              {upcomingMatches[0]?.scheduled_at && (
+                <NextMatchCountdown
+                  match={upcomingMatches[0]}
+                  teamId={myTeamId}
+                  isCaptain={isCaptain}
+                />
+              )}
               {upcomingMatches.slice(0, 4).map(match => (
                 <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
               ))}

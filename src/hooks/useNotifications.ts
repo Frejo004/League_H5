@@ -18,6 +18,7 @@ export type NotifType =
   | 'invite_expiring'
   | 'spectator_request'
   | 'tactique_selected'
+  | 'mention'
 
 export interface Notification {
   id: string
