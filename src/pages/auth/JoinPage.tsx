@@ -11,7 +11,19 @@ import type { InvitePlayerInfo } from '@/hooks/usePlayerInvites'
 export function JoinPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const token = searchParams.get('token') ?? ''
+
+  // Handle token from URL: store in sessionStorage and clean URL
+  useEffect(() => {
+    const token = searchParams.get('token')
+    if (token) {
+      sessionStorage.setItem('invite_token', token)
+      // Remove token from URL to avoid leakage in history/referrer
+      navigate(window.location.pathname, { replace: true })
+    }
+  }, [searchParams, navigate])
+
+  // Get token from sessionStorage (if any)
+  const token = sessionStorage.getItem('invite_token') ?? ''
 
   const [playerInfo, setPlayerInfo]   = useState<InvitePlayerInfo | null>(null)
   const [tokenState, setTokenState]   = useState<'loading' | 'valid' | 'invalid'>('loading')
@@ -22,9 +34,15 @@ export function JoinPage() {
   const [isLoading, setIsLoading]     = useState(false)
   const [success, setSuccess]         = useState(false)
 
+  // Resolve token when it changes
   useEffect(() => {
-    if (!token) { setTokenState('invalid'); return }
+    if (!token) { 
+      setTokenState('invalid'); 
+      return 
+    }
     resolveInviteToken(token).then(info => {
+      // Clear token after use to prevent reuse
+      sessionStorage.removeItem('invite_token')
       if (!info || !info.is_valid) setTokenState('invalid')
       else { setPlayerInfo(info); setTokenState('valid') }
     })

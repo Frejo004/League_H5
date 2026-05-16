@@ -85,6 +85,20 @@ export function LiveEventFeed({
       displayMinute += 20
     }
 
+    // Cas spécial : Commentaire — affiché centré en pleine largeur
+    if (event.type === 'comment') {
+      return (
+        <div key={event.id} className="relative flex items-center justify-center py-4 animate-in fade-in duration-700">
+          <div className="max-w-xs px-5 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl text-center">
+            <p className="text-xs font-semibold text-slate-300 italic leading-relaxed">
+              💬 {event.description}
+            </p>
+            <span className="mt-1.5 block text-[10px] font-bold text-slate-600 tabular-nums">{displayMinute}'</span>
+          </div>
+        </div>
+      )
+    }
+
     // Cas spécial : Événements système (Pause / Reprise)
     if (event.type === 'pause' || event.type === 'resume') {
       const isPause = event.type === 'pause'

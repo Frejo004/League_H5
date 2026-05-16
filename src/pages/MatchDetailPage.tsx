@@ -179,18 +179,20 @@ function GoalEvent({
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
+type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings'
+
 export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: match, isLoading } = useMatch(id)
 
-  const [celebration, setCelebration] = useState<{ show: boolean, teamName: string, teamColor: string, playerName?: string }>({
-    show: false, teamName: '', teamColor: ''
+  const [celebration, setCelebration] = useState<{ key: number, teamName: string, teamColor: string, playerName?: string }>({
+    key: 0, teamName: '', teamColor: ''
   })
   const prevGoalsCount = useRef<number | null>(null)
 
   // Si le match est "à venir" (scheduled), on affiche les compositions par défaut
   const isScheduled = match?.status === 'scheduled'
-  const [activeTab, setActiveTab] = useState<'stats' | 'lineups' | 'standings'>('lineups')
+  const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
   const { user, isAdmin } = useAuth()
   const { data: votes } = useMvpVotes(id)
@@ -248,13 +250,12 @@ export function MatchDetailPage() {
     if (prevGoalsCount.current !== null && goalsOnly.length > prevGoalsCount.current) {
       const lastGoal = goalsOnly[goalsOnly.length - 1]
       const team = lastGoal.team_id === home.id ? home : away
-      setCelebration({
-        show: true,
+      setCelebration(prev => ({
+        key: prev.key + 1,
         teamName: team.name,
         teamColor: team.color,
         playerName: lastGoal.player ? `${lastGoal.player.first_name} ${lastGoal.player.last_name}` : undefined
-      })
-      setTimeout(() => setCelebration(prev => ({ ...prev, show: false })), 100)
+      }))
     }
     prevGoalsCount.current = goalsOnly.length
   }, [liveEvents, match])
@@ -466,6 +467,14 @@ export function MatchDetailPage() {
     )
   }
 
+  const tabs = [
+    { id: 'resume',    label: 'Résumé',       icon: BarChart2  },
+    { id: 'events',   label: 'Événements',   icon: Calendar   },
+    { id: 'stats',    label: 'Statistiques', icon: BarChart2  },
+    { id: 'lineups',  label: 'Compositions', icon: UsersIcon  },
+    { id: 'standings',label: 'Classement',   icon: Star       },
+  ]
+
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
       {/* Admin Controls en Direct */}
@@ -613,7 +622,7 @@ export function MatchDetailPage() {
                 </div>
 
                 {/* Match Status Badge — Chrono */}
-                <div className="mt-4 flex flex-col items-center gap-1">
+                <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-xs">
                   {isLive && clock.phase === 2 ? (
                     /* ── Pause mi-temps ── */
                     <div className="flex flex-col items-center gap-1">
@@ -631,17 +640,32 @@ export function MatchDetailPage() {
                     </div>
                   ) : isLive ? (
                     /* ── Match en cours ── */
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                      <span className={clsx(
-                        "w-1.5 h-1.5 rounded-full shrink-0",
-                        clock.isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"
-                      )} />
-                      <span className="text-sm font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                        {clock.label}
-                      </span>
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                        {clock.isPaused ? 'Suspendu' : clock.phase === 3 ? '2ème MT' : '1ère MT'}
-                      </span>
+                    <div className="flex flex-col items-center gap-2 w-full">
+                      <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                        <span className={clsx(
+                          "w-1.5 h-1.5 rounded-full shrink-0",
+                          clock.isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"
+                        )} />
+                        <span className="text-sm font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          {clock.label}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                          {clock.isPaused ? 'Suspendu' : clock.phase === 3 ? '2ème MT' : '1ère MT'}
+                        </span>
+                      </div>
+                      {/* Barre de progression */}
+                      <LiveClock
+                        liveStartedAt={match.live_started_at}
+                        livePeriod={match.live_period as 1 | 2 | null}
+                        halftimeAt={(match as any).halftime_at}
+                        isPaused={match.is_paused ?? false}
+                        pausedAt={match.paused_at ?? null}
+                        totalPausedSeconds={match.total_paused_seconds ?? 0}
+                        status={match.status}
+                        homeColor={home.color}
+                        awayColor={away.color}
+                        className="w-full"
+                      />
                     </div>
                   ) : isCompleted ? (
                     <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
@@ -704,58 +728,309 @@ export function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Tabs Navigation — High Visibility Style */}
-      <div className="flex gap-2 p-1.5 bg-slate-900/80 backdrop-blur-xl rounded-2xl mx-3 border border-white/10 shadow-2xl sticky top-20 z-30">
-        <button
-          onClick={() => setActiveTab('stats')}
-          className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
-            activeTab === 'stats'
-              ? "bg-[#C8F135] text-black shadow-[0_0_20px_rgba(200,241,53,0.4)] scale-[1.02]"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <BarChart2 size={14} />
-          Résumé
-        </button>
-        <button
-          onClick={() => setActiveTab('lineups')}
-          className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
-            activeTab === 'lineups'
-              ? "bg-[#C8F135] text-black shadow-[0_0_20px_rgba(200,241,53,0.4)] scale-[1.02]"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <UsersIcon size={14} />
-          Compos
-        </button>
+      {/* ── Tab Navigation — style Sofascore/Google ── */}
+      <div className="sticky top-[60px] z-30 bg-[#0f1420]/95 backdrop-blur-xl border-b border-white/10 shadow-lg">
+        <div className="flex overflow-x-auto scrollbar-hide">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as LiveTab)}
+              className={clsx(
+                "flex-shrink-0 flex items-center gap-1.5 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 border-b-2 whitespace-nowrap",
+                activeTab === tab.id
+                  ? "border-[#C8F135] text-[#C8F135]"
+                  : "border-transparent text-slate-500 hover:text-slate-300 hover:border-white/20"
+              )}
+            >
+              <tab.icon size={13} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {activeTab === 'stats' ? (
-        <div className="space-y-6 animate-fade-in">
+      {/* ── Tab Content ── */}
+      <AnimatePresence mode="wait">
 
-          <div className="mx-2">
-            <MatchStatsView
-              home={home}
-              away={away}
-              stats={matchStats}
-            />
-          </div>
-
-          {/* Venue & Stats globales */}
-          <div className="card mx-2">
-            {/* Venue */}
-            {match.venue && (
-              <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-surface-raised py-2 rounded-lg border border-surface-border">
-                <MapPin size={12} className="text-[#FFDF73]" />
-                {match.venue}
+        {/* ── Résumé ── */}
+        {activeTab === 'resume' && (
+          <motion.div
+            key="resume"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            {/* MVP banner */}
+            {isCompleted && mvpPlayer && (
+              <div
+                className="relative overflow-hidden rounded-xl border border-amber-500/25 p-4 flex items-center gap-4 mx-2"
+                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)' }}
+              >
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
+                <div className="relative w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 ring-2 ring-amber-500/30">
+                  <Star size={20} className="text-amber-400 fill-amber-400/50" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
+                    🏆 Homme du match
+                  </p>
+                  <p className="text-lg font-black text-white truncate leading-tight">
+                    {mvpPlayer.first_name} {mvpPlayer.last_name}
+                  </p>
+                </div>
+                <div className="relative text-right shrink-0">
+                  <p className="text-3xl font-black text-amber-400 tabular-nums leading-none">{mvpVoteCount}</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">vote{mvpVoteCount > 1 ? 's' : ''}</p>
+                </div>
               </div>
             )}
 
-            {/* Barre de buts par équipe (si match terminé) */}
+            {/* Goals timeline (if completed) */}
+            {isCompleted && (
+              <div className="card p-0 overflow-hidden mx-2">
+                <div className="flex items-center border-b border-surface-border bg-surface-raised/50">
+                  <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
+                      style={{ backgroundColor: home.color }}>
+                      {home.logo_url
+                        ? <img src={home.logo_url} alt="" className="w-full h-full object-cover" />
+                        : home.name[0]
+                      }
+                    </div>
+                    <span className="text-xs font-semibold text-slate-400 truncate">{home.name}</span>
+                  </div>
+                  <div className="w-20 shrink-0 flex items-center justify-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Buts</span>
+                  </div>
+                  <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
+                    <span className="text-xs font-semibold text-slate-400 truncate">{away.name}</span>
+                    <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
+                      style={{ backgroundColor: away.color }}>
+                      {away.logo_url
+                        ? <img src={away.logo_url} alt="" className="w-full h-full object-cover" />
+                        : away.name[0]
+                      }
+                    </div>
+                  </div>
+                </div>
+                {goals.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-slate-600">Aucun buteur enregistré</p>
+                  </div>
+                ) : (
+                  <div className="px-4">
+                    {sortedGoals.map(g => {
+                      const playerName = g.players
+                        ? `${g.players.first_name} ${g.players.last_name}`
+                        : '—'
+                      const assistName = assistMap.get(g.id) ?? null
+                      if (g.is_own_goal) {
+                        return (
+                          <GoalEvent
+                            key={g.id}
+                            side="own"
+                            playerName={playerName}
+                            minute={g.minute}
+                            teamColor={g.team_id === home.id ? home.color : away.color}
+                          />
+                        )
+                      }
+                      return (
+                        <GoalEvent
+                          key={g.id}
+                          side={g.team_id === home.id ? 'home' : 'away'}
+                          playerName={playerName}
+                          assistName={assistName}
+                          minute={g.minute}
+                          teamColor={g.team_id === home.id ? home.color : away.color}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MVP Vote */}
+            {isCompleted && allMatchPlayers.length > 0 && user && (
+              <div className="card space-y-4 mx-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Star size={16} className="text-amber-400 fill-amber-400/30" />
+                    <span className="text-sm font-bold text-white">Homme du match</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {totalVotes > 0 && (
+                      <span className="text-xs text-slate-500">
+                        {totalVotes} vote{totalVotes > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {myVote && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-green-400">
+                        <CheckCircle2 size={13} className="fill-green-400/20" />
+                        Voté
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {voteMvp.isPending && (
+                  <div className="flex items-center gap-2 text-xs text-slate-400 animate-pulse">
+                    <LoadingSpinner size="sm" />
+                    Enregistrement du vote…
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  {allMatchPlayers.map(p => {
+                    const voteCount = voteMap.get(p.id) ?? 0
+                    const isMyVote = myVote?.player_id === p.id
+                    const isTop = p.id === topMvpId && voteCount > 0
+                    const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => voteMvp.mutate({ matchId: id!, playerId: p.id, votedBy: user.id })}
+                        disabled={voteMvp.isPending}
+                        className={clsx(
+                          'relative flex items-center gap-2.5 p-3 rounded-xl border text-left',
+                          'transition-all duration-200 overflow-hidden',
+                          isMyVote
+                            ? 'border-amber-500/50 bg-amber-500/10'
+                            : 'border-surface-border bg-surface-raised hover:border-amber-500/30 hover:bg-amber-500/5',
+                          voteMvp.isPending && 'opacity-60 cursor-not-allowed'
+                        )}
+                      >
+                        {pct > 0 && (
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-xl transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: isMyVote ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)',
+                            }}
+                          />
+                        )}
+                        <div className={clsx(
+                          'relative z-10 w-8 h-8 rounded-full flex items-center justify-center',
+                          'text-xs font-bold shrink-0 transition-all duration-200',
+                          isMyVote ? 'bg-amber-500 text-black' : 'bg-surface-muted text-slate-400'
+                        )}>
+                          {p.first_name[0]}{p.last_name[0]}
+                          {isMyVote && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border border-surface-raised flex items-center justify-center">
+                              <CheckCircle2 size={8} className="text-white" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="relative z-10 min-w-0 flex-1">
+                          <p className={clsx(
+                            'text-xs font-semibold truncate transition-colors',
+                            isMyVote ? 'text-amber-300' : 'text-slate-200'
+                          )}>
+                            {p.first_name} {p.last_name}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {voteCount > 0 ? (
+                              <span className="text-[10px] text-slate-500">
+                                {voteCount} vote{voteCount > 1 ? 's' : ''} · {pct}%
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-600">Aucun vote</span>
+                            )}
+                          </div>
+                        </div>
+                        {isTop && (
+                          <Star size={13} className="relative z-10 text-amber-400 fill-amber-400 shrink-0 animate-score-pop" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-600 text-center">
+                  Clique sur un joueur pour voter · Tu peux changer ton vote
+                </p>
+              </div>
+            )}
+
+            {/* Venue info card */}
+            <div className="card mx-2">
+              {match.venue && (
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-surface-raised py-2 rounded-lg border border-surface-border">
+                  <MapPin size={12} className="text-[#FFDF73]" />
+                  {match.venue}
+                </div>
+              )}
+              {match.scheduled_at && (
+                <p className="text-center text-[10px] text-slate-600 mt-2 font-bold uppercase tracking-widest">
+                  {formatDate(match.scheduled_at)}
+                </p>
+              )}
+            </div>
+
+            {/* LiveReactionBar */}
+            {isLive && (
+              <div className="card mx-2">
+                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Réagir</p>
+                <LiveReactionBar matchId={match.id} />
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ── Événements ── */}
+        {activeTab === 'events' && (
+          <motion.div
+            key="events"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
+            {(isLive || isCompleted) && liveEvents.length > 0 ? (
+              <div className="card p-0 overflow-hidden mx-2">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-border">
+                  {isLive && <LiveBadge size="sm" />}
+                  <span className="text-sm font-bold text-white">Événements</span>
+                </div>
+                <div className="px-4 py-2">
+                  <LiveEventFeed
+                    events={liveEvents}
+                    homeTeamId={home.id}
+                    homeColor={home.color}
+                    awayColor={away.color}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="card text-center py-12 mx-2">
+                <Calendar size={32} className="mx-auto mb-4 text-slate-700" />
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Aucun événement</p>
+                <p className="text-slate-600 text-[10px] mt-1">Les événements apparaîtront ici en direct</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ── Statistiques ── */}
+        {activeTab === 'stats' && (
+          <motion.div
+            key="stats"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            <div className="mx-2">
+              <MatchStatsView
+                home={home}
+                away={away}
+                stats={matchStats}
+              />
+            </div>
+
+            {/* Goals possession bar (if completed) */}
             {isCompleted && (match.home_score! + match.away_score!) > 0 && (
-              <div className="mt-3">
+              <div className="card mx-2">
                 <p className="text-center text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1.5">Possession (Buts)</p>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-black tabular-nums drop-shadow-md" style={{ color: home.color }}>
@@ -785,304 +1060,56 @@ export function MatchDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
+        )}
 
-          {/* ── Contrôles admin live ── */}
-          {/* Note: AdminLiveControls est déjà rendu en haut de page pour les matchs live.
-              On l'affiche ici uniquement pour les matchs "scheduled" qui ne sont pas encore live. */}
-          {isAdmin && match.status === 'scheduled' && (
-            <AdminLiveControls
-              matchId={match.id}
-              status={match.status}
-              liveStartedAt={match.live_started_at ?? null}
-              halftimeAt={(match as { halftime_at?: string | null }).halftime_at ?? null}
-              livePeriod={match.live_period ?? null}
+        {/* ── Compositions ── */}
+        {activeTab === 'lineups' && (
+          <motion.div
+            key="lineups"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mx-2"
+          >
+            <MatchLineups
+              matchId={id!}
               homeTeam={home}
               awayTeam={away}
-              homeScore={match.home_score ?? 0}
-              awayScore={match.away_score ?? 0}
-              isPaused={match.is_paused ?? false}
-              pausedAt={match.paused_at ?? null}
-              totalPausedSeconds={match.total_paused_seconds ?? 0}
-              events={liveEvents}
-              homePlayers={(homePlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
-              awayPlayers={(awayPlayers ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name }))}
-              seasonId={match.season_id}
+              scheduledAt={match?.scheduled_at}
             />
-          )}
+          </motion.div>
+        )}
 
-          {/* ── Fil d'événements live ── */}
-          {isLive && (
-            <div className="card p-0 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-border">
-                <LiveBadge size="sm" />
-                <span className="text-sm font-bold text-white">Événements</span>
-              </div>
-              <div className="px-4 py-2">
-                <LiveEventFeed
-                  events={liveEvents}
-                  homeTeamId={home.id}
-                  homeColor={home.color}
-                  awayColor={away.color}
-                />
+        {/* ── Classement ── */}
+        {activeTab === 'standings' && (
+          <motion.div
+            key="standings"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mx-2"
+          >
+            <LiveTableWidget
+              seasonId={match.season_id}
+              matchId={id!}
+              homeId={home.id}
+              awayId={away.id}
+              homeScore={displayHomeScore}
+              awayScore={displayAwayScore}
+              status={match.status}
+            />
+          </motion.div>
+        )}
 
-                {/* ── Virtual Standing ── */}
-                {match.status === 'live' && (
-                  <div className="mt-8 pt-8 border-t border-white/5">
-                    <LiveTableWidget
-                      seasonId={match.season_id}
-                      matchId={id!}
-                      homeId={match.home_team_id}
-                      awayId={match.away_team_id}
-                      homeScore={match.home_score ?? 0}
-                      awayScore={match.away_score ?? 0}
-                      status={match.status}
-                    />
-                  </div>
-                )}
-              </div>
-              {/* Réactions spectateurs */}
-              <div className="px-4 py-3 border-t border-surface-border/50">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Réagir</p>
-                <LiveReactionBar matchId={match.id} />
-              </div>
-            </div>
-          )}
+      </AnimatePresence>
 
-          {/* ── Bandeau MVP du match ── */}
-          {isCompleted && mvpPlayer && (
-            <div
-              className="relative overflow-hidden rounded-xl border border-amber-500/25 p-4 flex items-center gap-4"
-              style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)' }}
-            >
-              {/* Glow */}
-              <div className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
-              <div className="relative w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 ring-2 ring-amber-500/30">
-                <Star size={20} className="text-amber-400 fill-amber-400/50" />
-              </div>
-              <div className="relative flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
-                  🏆 Homme du match
-                </p>
-                <p className="text-lg font-black text-white truncate leading-tight">
-                  {mvpPlayer.first_name} {mvpPlayer.last_name}
-                </p>
-              </div>
-              <div className="relative text-right shrink-0">
-                <p className="text-3xl font-black text-amber-400 tabular-nums leading-none">{mvpVoteCount}</p>
-                <p className="text-[10px] text-slate-600 mt-0.5">vote{mvpVoteCount > 1 ? 's' : ''}</p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Timeline buts — style Sofascore ── */}
-          {isCompleted && (
-            <div className="card p-0 overflow-hidden">
-
-              {/* Column headers */}
-              <div className="flex items-center border-b border-surface-border bg-surface-raised/50">
-                <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
-                    style={{ backgroundColor: home.color }}>
-                    {home.logo_url
-                      ? <img src={home.logo_url} alt="" className="w-full h-full object-cover" />
-                      : home.name[0]
-                    }
-                  </div>
-                  <span className="text-xs font-semibold text-slate-400 truncate">{home.name}</span>
-                </div>
-                <div className="w-20 shrink-0 flex items-center justify-center">
-                  <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Buts</span>
-                </div>
-                <div className="flex-1 px-4 py-2.5 flex items-center justify-center gap-2">
-                  <span className="text-xs font-semibold text-slate-400 truncate">{away.name}</span>
-                  <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-black overflow-hidden shrink-0"
-                    style={{ backgroundColor: away.color }}>
-                    {away.logo_url
-                      ? <img src={away.logo_url} alt="" className="w-full h-full object-cover" />
-                      : away.name[0]
-                    }
-                  </div>
-                </div>
-              </div>
-
-              {goals.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="text-sm text-slate-600">Aucun buteur enregistré</p>
-                </div>
-              ) : (
-                <div className="px-4">
-                  {sortedGoals.map(g => {
-                    const playerName = g.players
-                      ? `${g.players.first_name} ${g.players.last_name}`
-                      : '—'
-                    const assistName = assistMap.get(g.id) ?? null
-
-                    if (g.is_own_goal) {
-                      return (
-                        <GoalEvent
-                          key={g.id}
-                          side="own"
-                          playerName={playerName}
-                          minute={g.minute}
-                          teamColor={g.team_id === home.id ? home.color : away.color}
-                        />
-                      )
-                    }
-
-                    return (
-                      <GoalEvent
-                        key={g.id}
-                        side={g.team_id === home.id ? 'home' : 'away'}
-                        playerName={playerName}
-                        assistName={assistName}
-                        minute={g.minute}
-                        teamColor={g.team_id === home.id ? home.color : away.color}
-                      />
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── MVP Vote ── */}
-          {isCompleted && allMatchPlayers.length > 0 && user && (
-            <div className="card space-y-4">
-
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Star size={16} className="text-amber-400 fill-amber-400/30" />
-                  <span className="text-sm font-bold text-white">Homme du match</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {totalVotes > 0 && (
-                    <span className="text-xs text-slate-500">
-                      {totalVotes} vote{totalVotes > 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {myVote && (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-green-400">
-                      <CheckCircle2 size={13} className="fill-green-400/20" />
-                      Voté
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Feedback vote en attente */}
-              {voteMvp.isPending && (
-                <div className="flex items-center gap-2 text-xs text-slate-400 animate-pulse">
-                  <LoadingSpinner size="sm" />
-                  Enregistrement du vote…
-                </div>
-              )}
-
-              {/* Grille joueurs */}
-              <div className="grid grid-cols-2 gap-2">
-                {allMatchPlayers.map(p => {
-                  const voteCount = voteMap.get(p.id) ?? 0
-                  const isMyVote = myVote?.player_id === p.id
-                  const isTop = p.id === topMvpId && voteCount > 0
-                  const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
-
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => voteMvp.mutate({ matchId: id!, playerId: p.id, votedBy: user.id })}
-                      disabled={voteMvp.isPending}
-                      className={clsx(
-                        'relative flex items-center gap-2.5 p-3 rounded-xl border text-left',
-                        'transition-all duration-200 overflow-hidden',
-                        isMyVote
-                          ? 'border-amber-500/50 bg-amber-500/10'
-                          : 'border-surface-border bg-surface-raised hover:border-amber-500/30 hover:bg-amber-500/5',
-                        voteMvp.isPending && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      {/* Barre de progression en fond */}
-                      {pct > 0 && (
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-xl transition-all duration-500"
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: isMyVote
-                              ? 'rgba(245,158,11,0.12)'
-                              : 'rgba(255,255,255,0.04)',
-                          }}
-                        />
-                      )}
-
-                      {/* Avatar */}
-                      <div className={clsx(
-                        'relative z-10 w-8 h-8 rounded-full flex items-center justify-center',
-                        'text-xs font-bold shrink-0 transition-all duration-200',
-                        isMyVote
-                          ? 'bg-amber-500 text-black'
-                          : 'bg-surface-muted text-slate-400'
-                      )}>
-                        {p.first_name[0]}{p.last_name[0]}
-                        {isMyVote && (
-                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full
-                                       bg-green-500 border border-surface-raised
-                                       flex items-center justify-center">
-                            <CheckCircle2 size={8} className="text-white" />
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Infos */}
-                      <div className="relative z-10 min-w-0 flex-1">
-                        <p className={clsx(
-                          'text-xs font-semibold truncate transition-colors',
-                          isMyVote ? 'text-amber-300' : 'text-slate-200'
-                        )}>
-                          {p.first_name} {p.last_name}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {voteCount > 0 ? (
-                            <span className="text-[10px] text-slate-500">
-                              {voteCount} vote{voteCount > 1 ? 's' : ''} · {pct}%
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-600">Aucun vote</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Étoile top */}
-                      {isTop && (
-                        <Star
-                          size={13}
-                          className="relative z-10 text-amber-400 fill-amber-400 shrink-0 animate-score-pop"
-                        />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Légende */}
-              <p className="text-[10px] text-slate-600 text-center">
-                Clique sur un joueur pour voter · Tu peux changer ton vote
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="mx-2 animate-fade-in">
-          <MatchLineups
-            matchId={id!}
-            homeTeam={home}
-            awayTeam={away}
-            scheduledAt={match?.scheduled_at}
-          />
-        </div>
-      )}
-
-      <GoalCelebration {...celebration} />
+      <GoalCelebration
+        key={celebration.key}
+        teamName={celebration.teamName}
+        teamColor={celebration.teamColor}
+        playerName={celebration.playerName}
+      />
       <LiveTicker />
     </div>
   )

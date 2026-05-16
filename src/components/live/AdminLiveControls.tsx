@@ -3,13 +3,91 @@
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
 import { useState } from 'react'
-import { Play, Pause, Square, Plus, Trash2, MessageSquare } from 'lucide-react'
+import { Play, Pause, Square, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
 import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
+
+// ── Modal de confirmation suppression ────────────────────────────────────────
+function DeleteConfirmModal({
+  event,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  event: MatchEvent
+  onConfirm: () => void
+  onCancel: () => void
+  isPending: boolean
+}) {
+  const typeLabel: Record<string, string> = {
+    goal: '⚽ But', own_goal: '⚽ CSC', yellow_card: '🟨 Carton Jaune',
+    red_card: '🟥 Carton Rouge', substitution: '🔄 Remplacement',
+    shot: '🎯 Tir', shot_on_target: '🎯 Tir Cadré',
+    foul: '⚠️ Faute', corner: '🚩 Corner', comment: '💬 Commentaire',
+    kickoff: '🏁 Coup d\'envoi', halftime: '⏸️ Mi-temps', fulltime: '🏆 Fin',
+    pause: '⏸️ Pause', resume: '▶️ Reprise',
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      {/* Modal */}
+      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-[#0f1420] border border-red-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] p-6 space-y-5 animate-in zoom-in-95 fade-in duration-200">
+        {/* Icon */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shrink-0">
+            <AlertTriangle size={18} className="text-red-400" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-white uppercase tracking-wider">Supprimer l'action ?</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Cette action est irréversible</p>
+          </div>
+        </div>
+
+        {/* Event preview */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
+          <span className="text-xs font-black text-slate-400 tabular-nums w-8 shrink-0">
+            {event.minute !== null ? `${event.minute}'` : '—'}
+          </span>
+          <span className="text-xs font-black text-white uppercase tracking-wide flex-1">
+            {typeLabel[event.type] ?? event.type}
+          </span>
+          {event.player && (
+            <span className="text-[10px] text-slate-400 font-bold truncate max-w-[100px]">
+              {event.player.first_name} {event.player.last_name}
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-white/10 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/5 transition-all"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 border border-red-400/30 text-[11px] font-black text-white uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center justify-center gap-2"
+          >
+            {isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={13} />}
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface AdminLiveControlsProps {
   matchId: string
@@ -49,6 +127,7 @@ export function AdminLiveControls({
   const [eventComment, setEventComment] = useState<string>('')
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [pauseReason, setPauseReason] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<MatchEvent | null>(null)
 
   const { data: stats } = useDisciplinaryStats(seasonId)
 
@@ -82,6 +161,7 @@ export function AdminLiveControls({
   }
 
   return (
+    <>
     <div className={clsx(
       "relative overflow-hidden p-5 rounded-2xl glass-morphism border transition-all duration-500 space-y-5 shadow-2xl",
       isPaused ? "border-amber-500/30 bg-amber-500/5 shadow-amber-500/10" : "border-red-500/30 bg-red-500/5 shadow-red-500/10"
@@ -111,7 +191,7 @@ export function AdminLiveControls({
                   ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
                   : "bg-red-500/20 text-red-400 border-red-500/30"
             )}>
-              {clock.phase === 2 ? `Pause MT • ${clock.shortLabel.replace('Pause ', '')}` : livePeriod === 1 ? `1ère MT • ${clock.shortLabel}` : `2ème MT • ${clock.shortLabel}`}
+              {clock.phase === 2 ? `Pause MT • ${clock.shortLabel.replace('Pause ', '')}` : livePeriod === 1 ? `1ère MT • ${clock.label}` : `2ème MT • ${clock.label}`}
             </span>
           )}
         </div>
@@ -513,18 +593,24 @@ export function AdminLiveControls({
                   {ev.minute !== null ? `${ev.minute}'` : '—'}
                 </span>
                 <span className="flex-1 truncate text-xs font-bold tracking-wide uppercase">
-                  {ev.type === 'goal' && <span className="text-white"><span className="text-primary-400 mr-1">⚽ BUT</span> — {ev.player?.first_name} {ev.player?.last_name}</span>}
-                  {ev.type === 'own_goal' && <span className="text-white"><span className="text-red-400 mr-1">⚽ CSC</span> — {ev.player?.first_name} {ev.player?.last_name}</span>}
-                  {ev.type === 'yellow_card' && <span className="text-white"><span className="text-amber-400 mr-1">🟨 JAUNE</span> — {ev.player?.first_name} {ev.player?.last_name}</span>}
-                  {ev.type === 'red_card' && <span className="text-white"><span className="text-red-500 mr-1">🟥 ROUGE</span> — {ev.player?.first_name} {ev.player?.last_name}</span>}
-                  {ev.type === 'substitution' && <span className="text-slate-300"><span className="text-blue-400 mr-1">🔄</span> {ev.player?.first_name} → {ev.player2?.first_name}</span>}
+                  {ev.type === 'goal' && <span className="text-white"><span className="text-primary-400 mr-1">⚽ BUT</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
+                  {ev.type === 'own_goal' && <span className="text-white"><span className="text-red-400 mr-1">⚽ CSC</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
+                  {ev.type === 'yellow_card' && <span className="text-white"><span className="text-amber-400 mr-1">🟨 JAUNE</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
+                  {ev.type === 'red_card' && <span className="text-white"><span className="text-red-500 mr-1">🟥 ROUGE</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
+                  {ev.type === 'substitution' && <span className="text-slate-300"><span className="text-blue-400 mr-1">🔄 REMPL.</span>{ev.player?.first_name} → {ev.player2?.first_name}</span>}
                   {ev.type === 'comment' && <span className="text-slate-400 italic">💬 {ev.description}</span>}
                   {ev.type === 'kickoff' && <span className="text-green-400">🏁 DÉBUT</span>}
                   {ev.type === 'halftime' && <span className="text-blue-400">⏸️ MI-TEMPS</span>}
-                  {ev.type === 'fulltime' && <span className="text-red-400">🏆 FIN</span>}
+                  {ev.type === 'fulltime' && <span className="text-red-400">🏆 FIN DU MATCH</span>}
+                  {ev.type === 'shot' && <span className="text-slate-300"><span className="text-slate-400 mr-1">🎯 TIR</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
+                  {ev.type === 'shot_on_target' && <span className="text-slate-300"><span className="text-cyan-400 mr-1">🎯 TIR CADRÉ</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
+                  {ev.type === 'foul' && <span className="text-slate-300"><span className="text-orange-400 mr-1">⚠️ FAUTE</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
+                  {ev.type === 'corner' && <span className="text-slate-300"><span className="text-purple-400 mr-1">🚩 CORNER</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
+                  {ev.type === 'pause' && <span className="text-amber-400">⏸️ PAUSE{ev.description ? ` — ${ev.description}` : ''}</span>}
+                  {ev.type === 'resume' && <span className="text-emerald-400">▶️ REPRISE DU JEU</span>}
                 </span>
                 <button
-                  onClick={() => deleteEvent.mutate(ev.id)}
+                  onClick={() => setDeleteTarget(ev)}
                   title="Annuler cet événement"
                   className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all p-1.5 rounded-lg"
                 >
@@ -571,11 +657,7 @@ export function AdminLiveControls({
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (confirm('Supprimer cet événement ?')) {
-                      deleteEvent.mutate(ev.id)
-                    }
-                  }}
+                  onClick={() => setDeleteTarget(ev)}
                   disabled={deleteEvent.isPending}
                   className="p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                 >
@@ -587,6 +669,21 @@ export function AdminLiveControls({
         </div>
       )}
     </div>
+
+    {/* Modal de confirmation suppression */}
+    {deleteTarget && (
+      <DeleteConfirmModal
+        event={deleteTarget}
+        isPending={deleteEvent.isPending}
+        onConfirm={() => {
+          deleteEvent.mutate(deleteTarget.id, {
+            onSettled: () => setDeleteTarget(null),
+          })
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    )}
+    </>
   )
 }
 

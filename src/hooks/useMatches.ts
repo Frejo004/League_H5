@@ -48,6 +48,12 @@ export function useMatch(matchId?: string) {
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
+    // Rafraîchissement automatique toutes les 5s quand le match est live
+    // pour s'assurer que live_started_at, live_period, is_paused sont toujours à jour
+    refetchInterval: (query) => {
+      const data = query.state.data as MatchDetail | undefined
+      return data?.status === 'live' ? 5000 : false
+    },
   })
 }
 
