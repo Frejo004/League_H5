@@ -218,6 +218,47 @@ export function MatchDetailPage() {
     match?.total_paused_seconds ?? 0
   )
 
+  // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
+  const matchStats = useMemo(() => {
+    const homeId = match?.home_team_id
+    const awayId = match?.away_team_id
+    const stats = {
+      home: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 },
+      away: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 }
+    }
+    liveEvents.forEach(ev => {
+      const side = ev.team_id === homeId ? 'home' : 'away'
+      if (ev.type === 'shot') stats[side].shots++
+      if (ev.type === 'shot_on_target') {
+        stats[side].shotsOnTarget++
+        stats[side].shots++
+      }
+      if (ev.type === 'foul') stats[side].fouls++
+      if (ev.type === 'corner') stats[side].corners++
+    })
+    return stats
+  }, [liveEvents, match?.home_team_id, match?.away_team_id])
+
+  // Trigger celebration on new goals — doit être avant tout early return (règles des hooks)
+  useEffect(() => {
+    if (!match || match.status !== 'live') return
+    const home = match.home_team as TeamRef
+    const away = match.away_team as TeamRef
+    const goalsOnly = liveEvents.filter(e => e.type === 'goal' || e.type === 'own_goal')
+    if (prevGoalsCount.current !== null && goalsOnly.length > prevGoalsCount.current) {
+      const lastGoal = goalsOnly[goalsOnly.length - 1]
+      const team = lastGoal.team_id === home.id ? home : away
+      setCelebration({
+        show: true,
+        teamName: team.name,
+        teamColor: team.color,
+        playerName: lastGoal.player ? `${lastGoal.player.first_name} ${lastGoal.player.last_name}` : undefined
+      })
+      setTimeout(() => setCelebration(prev => ({ ...prev, show: false })), 100)
+    }
+    prevGoalsCount.current = goalsOnly.length
+  }, [liveEvents, match])
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -298,48 +339,6 @@ export function MatchDetailPage() {
 
   const displayHomeScore = isLive ? liveScore.home : (match.home_score ?? 0)
   const displayAwayScore = isLive ? liveScore.away : (match.away_score ?? 0)
-
-  // Calcul des statistiques de match
-  const matchStats = useMemo(() => {
-    const stats = {
-      home: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 },
-      away: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 }
-    }
-
-    liveEvents.forEach(ev => {
-      const side = ev.team_id === home.id ? 'home' : 'away'
-      if (ev.type === 'shot') stats[side].shots++
-      if (ev.type === 'shot_on_target') {
-        stats[side].shotsOnTarget++
-        stats[side].shots++
-      }
-      if (ev.type === 'foul') stats[side].fouls++
-      if (ev.type === 'corner') stats[side].corners++
-    })
-
-    return stats
-  }, [liveEvents, home.id, away.id])
-
-  // Trigger celebration on new goals
-  useEffect(() => {
-    if (!isLive) return
-    const goalsOnly = liveEvents.filter(e => e.type === 'goal' || e.type === 'own_goal')
-    if (prevGoalsCount.current !== null && goalsOnly.length > prevGoalsCount.current) {
-      const lastGoal = goalsOnly[goalsOnly.length - 1]
-      const team = lastGoal.team_id === home.id ? home : away
-      setCelebration({
-        show: true,
-        teamName: team.name,
-        teamColor: team.color,
-        playerName: lastGoal.player ? `${lastGoal.player.first_name} ${lastGoal.player.last_name}` : undefined
-      })
-      // Reset trigger after a delay
-      setTimeout(() => setCelebration(prev => ({ ...prev, show: false })), 100)
-    }
-    prevGoalsCount.current = goalsOnly.length
-  }, [liveEvents, isLive, home, away])
-
-
 
   if (isScheduled) {
     return (
@@ -613,11 +612,46 @@ export function MatchDetailPage() {
                   </div>
                 </div>
 
-                {/* Match Status Badge */}
-                <div className="mt-4 px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    {isLive ? clock.label : isCompleted ? 'Match Terminé' : 'À venir'}
-                  </span>
+                {/* Match Status Badge — Chrono */}
+                <div className="mt-4 flex flex-col items-center gap-1">
+                  {isLive && clock.phase === 2 ? (
+                    /* ── Pause mi-temps ── */
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">
+                        Mi-temps
+                      </span>
+                      <div className="px-4 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+                        <span className="text-sm font-black text-blue-300 tabular-nums tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          HT {displayHomeScore}-{displayAwayScore}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-blue-400/60 tabular-nums">
+                        Pause {Math.floor((clock.breakSecondsLeft ?? 0) / 60)}:{String(Math.floor((clock.breakSecondsLeft ?? 0) % 60)).padStart(2, '0')}
+                      </span>
+                    </div>
+                  ) : isLive ? (
+                    /* ── Match en cours ── */
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                      <span className={clsx(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        clock.isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"
+                      )} />
+                      <span className="text-sm font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        {clock.label}
+                      </span>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                        {clock.isPaused ? 'Suspendu' : clock.phase === 3 ? '2ème MT' : '1ère MT'}
+                      </span>
+                    </div>
+                  ) : isCompleted ? (
+                    <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Match Terminé</span>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">À venir</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

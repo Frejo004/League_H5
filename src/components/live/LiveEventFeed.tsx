@@ -205,18 +205,20 @@ export function LiveEventFeed({
           </div>
         )}
 
-        {/* SÉPARATEUR MI-TEMPS */}
-        <div className="relative py-8 flex flex-col items-center justify-center gap-3">
-          <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
-          <div className="relative px-4 bg-[#0f1420] flex flex-col items-center gap-1.5">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">MI-TEMPS</span>
-            <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md shadow-xl">
-              <span className="text-sm font-black text-white tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                HT {halftimeEvent ? getScoreAt(events, halftimeEvent) : '0-0'}
-              </span>
+        {/* SÉPARATEUR MI-TEMPS — visible dès qu'il y a un event halftime OU des events de 2ème MT */}
+        {(halftimeEvent || period2.length > 0) && (
+          <div className="relative py-8 flex flex-col items-center justify-center gap-3">
+            <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
+            <div className="relative px-4 bg-[#0f1420] flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">Mi-temps</span>
+              <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 backdrop-blur-md shadow-xl">
+                <span className="text-sm font-black text-blue-300 tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  HT {halftimeEvent ? getScoreAt(events, halftimeEvent) : '0-0'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 1ÈRE MI-TEMPS */}
         <div className="space-y-6">
