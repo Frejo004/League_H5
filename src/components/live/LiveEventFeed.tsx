@@ -212,6 +212,21 @@ export function LiveEventFeed({
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 transform -translate-x-1/2" />
 
       <div className="space-y-8 relative">
+        {/* FIN DU MATCH */}
+        {fulltimeEvent && (
+          <div className="relative py-8 flex flex-col items-center justify-center gap-3 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
+            <div className="relative px-4 bg-[#0f1420] flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">Fin du match</span>
+              <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-md shadow-xl">
+                <span className="text-sm font-black text-emerald-300 tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  FT {getScoreAt(events, fulltimeEvent)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2ÈME MI-TEMPS */}
         {period2.length > 0 && (
           <div className="space-y-6">

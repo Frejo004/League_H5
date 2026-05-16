@@ -465,15 +465,15 @@ export default function Header() {
         >
           <div className="flex items-center justify-between px-4 h-14">
             {/* Brand */}
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-1.5">
               <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <BallIcon />
               </div>
               <span
-                className="text-base leading-none"
+                className="text-sm leading-none"
                 style={{
                   fontFamily: "'Barlow Condensed', sans-serif",
                   fontWeight: 800,
@@ -544,11 +544,11 @@ export default function Header() {
               <Avatar profile={profile} role={effectiveRole} />
               <button
                 onClick={() => setMobileOpen(true)}
-                className="p-1.5 rounded-lg"
+                className="p-1 rounded-lg"
                 style={{ color: 'var(--header-nav-off)' }}
                 aria-label="Ouvrir le menu"
               >
-                <Menu size={20} />
+                <Menu size={18} />
               </button>
             </div>
           </div>
@@ -715,8 +715,8 @@ export default function Header() {
         <nav
           className="pointer-events-auto mx-auto max-w-sm rounded-2xl glass-morphism shadow-2xl flex items-stretch overflow-hidden border border-white/10"
           style={{
-            height: 64,
-            background: 'rgba(13, 17, 23, 0.85)',
+            height: 56,
+            background: 'rgba(13, 17, 23, 0.9)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)'
           }}

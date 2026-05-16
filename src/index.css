@@ -892,7 +892,7 @@ body {
   background-color: #161c2d;
   border: 1px solid #2d3a5a;
   border-radius: 12px;
-  padding: 1.25rem;  /* More generous padding */
+  padding: 1rem;  /* Optimized for mobile */
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .card:hover { border-color: #3a4766; }
@@ -907,7 +907,7 @@ body {
   background-color: #161c2d;
   border: 1px solid #2563eb;
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1rem;
   box-shadow: 0 0 0 1px rgba(37,99,235,0.1), 0 4px 24px rgba(37,99,235,0.08);
 }
 
@@ -921,7 +921,7 @@ body {
   background-color: #161c2d;
   border: 1px solid #2d3a5a;
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1rem;
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   text-decoration: none;
@@ -951,7 +951,7 @@ body {
   background-color: #161c2d;
   border: 1px solid #2d3a5a;
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1rem;
   position: relative;
   overflow: hidden;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;

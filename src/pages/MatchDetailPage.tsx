@@ -590,7 +590,7 @@ export function MatchDetailPage() {
                             hover:bg-white/5 transition-all backdrop-blur-md"
                 >
                   <Share2 size={12} />
-                  Partager
+                  <span className="hidden sm:inline">Partager</span>
                 </button>
               )}
             </div>
@@ -600,14 +600,14 @@ export function MatchDetailPage() {
           <div className="flex flex-col items-center">
             <div className="flex items-center justify-between w-full max-w-2xl mb-6">
               {/* Team Home */}
-              <div className="flex-1 flex flex-col items-center gap-3">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/5 flex items-center justify-center p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+              <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-[2rem] bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {home.logo_url
                     ? <img src={home.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
-                    : <span className="text-4xl font-black text-white">{home.name[0]}</span>
+                    : <span className="text-3xl sm:text-4xl font-black text-white">{home.name[0]}</span>
                   }
                 </div>
-                <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">{home.name}</span>
+                <span className="text-[10px] sm:text-sm font-black text-white uppercase tracking-wider text-center">{home.name}</span>
               </div>
 
               {/* Center Score — Boxed Style */}
@@ -615,26 +615,26 @@ export function MatchDetailPage() {
                 <div className="flex items-center gap-2 sm:gap-4">
                   {/* Box Home */}
                   <div className={clsx(
-                    "w-14 h-16 sm:w-20 sm:h-24 rounded-2xl border flex items-center justify-center transition-all duration-500",
+                    "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayHomeScore > displayAwayScore
                       ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
                       : "bg-white/5 border-white/10 shadow-2xl"
                   )}>
-                    <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    <span className="text-3xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayHomeScore : ''}
                     </span>
                   </div>
 
-                  <span className="text-2xl font-black text-white/20 italic">—</span>
+                  <span className="text-xl sm:text-2xl font-black text-white/20 italic">—</span>
 
                   {/* Box Away */}
                   <div className={clsx(
-                    "w-14 h-16 sm:w-20 sm:h-24 rounded-2xl border flex items-center justify-center transition-all duration-500",
+                    "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayAwayScore > displayHomeScore
                       ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
                       : "bg-white/5 border-white/10 shadow-2xl"
                   )}>
-                    <span className="text-4xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    <span className="text-3xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayAwayScore : ''}
                     </span>
                   </div>
@@ -699,14 +699,14 @@ export function MatchDetailPage() {
               </div>
 
               {/* Team Away */}
-              <div className="flex-1 flex flex-col items-center gap-3">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/5 flex items-center justify-center p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+              <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-[2rem] bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {away.logo_url
                     ? <img src={away.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
-                    : <span className="text-4xl font-black text-white">{away.name[0]}</span>
+                    : <span className="text-3xl sm:text-4xl font-black text-white">{away.name[0]}</span>
                   }
                 </div>
-                <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">{away.name}</span>
+                <span className="text-[10px] sm:text-sm font-black text-white uppercase tracking-wider text-center">{away.name}</span>
               </div>
             </div>
 
@@ -795,7 +795,7 @@ export function MatchDetailPage() {
                   <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
                     🏆 Homme du match
                   </p>
-                  <p className="text-lg font-black text-white truncate leading-tight">
+                  <p className="text-base sm:text-lg font-black text-white truncate leading-tight">
                     {mvpPlayer.first_name} {mvpPlayer.last_name}
                   </p>
                 </div>
