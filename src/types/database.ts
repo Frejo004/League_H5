@@ -16,6 +16,8 @@ export type MatchEventType =
   | 'substitution'
   | 'kickoff' | 'halftime' | 'fulltime'
   | 'comment'
+  | 'pause' | 'resume'
+  | 'shot' | 'shot_on_target' | 'foul' | 'corner'
 
 export interface Database {
   public: {
@@ -540,6 +542,66 @@ export interface Database {
           created_by?: string
         }
         Relationships: []
+      }
+      suspensions: {
+        Row: {
+          id: string
+          player_id: string
+          season_id: string
+          match_id_trigger: string | null
+          reason: string
+          matches_count: number
+          matches_served: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          season_id: string
+          match_id_trigger?: string | null
+          reason: string
+          matches_count?: number
+          matches_served?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          season_id?: string
+          match_id_trigger?: string | null
+          reason?: string
+          matches_count?: number
+          matches_served?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspensions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_match_id_trigger_fkey"
+            columns: ["match_id_trigger"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       live_reactions: {
         Row: {

@@ -4,9 +4,27 @@
  * Basé sur la table match_events (type = 'yellow_card' | 'red_card')
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
+
+export interface Suspension {
+  id: string
+  player_id: string
+  season_id: string
+  match_id_trigger: string | null
+  reason: string
+  matches_count: number
+  matches_served: number
+  is_active: boolean
+  created_at: string
+  player?: { 
+    id: string;
+    first_name: string; 
+    last_name: string; 
+    team?: { id: string; name: string; color: string } 
+  }
+}
 
 export interface PlayerDiscipline {
   player_id: string
@@ -95,11 +113,11 @@ export function useDisciplinaryStats(seasonId?: string) {
         .from('match_events')
         .select(`
           type, team_id, player_id,
-          team:teams!match_events_team_id_fkey(id, name, color),
-          player:players!match_events_player_id_fkey(id, first_name, last_name)
+          team:teams(id, name, color),
+          player:players(id, first_name, last_name)
         `)
         .in('match_id', matchIds)
-        .in('type', ['yellow_card', 'red_card'])
+        .in('type', ['yellow_card', 'red_card']) as any
 
       if (error) throw error
       if (!events?.length) return { players: [], teams: [], totalYellow: 0, totalRed: 0 }
@@ -166,4 +184,71 @@ export function useDisciplinaryStats(seasonId?: string) {
       return { players, teams, totalYellow, totalRed }
     },
   })
+}
+
+export function useSuspensions(seasonId?: string) {
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: ['suspensions', seasonId],
+    enabled: !!seasonId,
+    queryFn: async (): Promise<Suspension[]> => {
+      const { data, error } = await supabase
+        .from('suspensions')
+        .select(`
+          *,
+          player:players(
+            id,
+            first_name, 
+            last_name,
+            team:teams(id, name, color)
+          )
+        `)
+        .eq('season_id', seasonId!)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as any
+    },
+  })
+
+  const addSuspension = useMutation({
+    mutationFn: async (payload: Partial<Suspension>) => {
+      const { data, error } = await supabase.from('suspensions').insert(payload as any).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
+  })
+
+  const toggleSuspension = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('suspensions').update({ is_active } as any).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
+  })
+
+  const deleteSuspension = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('suspensions').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
+  })
+
+  const updateServed = useMutation({
+    mutationFn: async ({ id, matches_served }: { id: string; matches_served: number }) => {
+      const { error } = await supabase.from('suspensions').update({ matches_served } as any).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
+  })
+
+  return { 
+    ...query, 
+    addSuspension, 
+    toggleSuspension, 
+    deleteSuspension, 
+    updateServed 
+  }
 }

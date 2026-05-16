@@ -23,7 +23,10 @@ DECLARE
     v_paused_at TIMESTAMPTZ;
     v_total_paused_seconds INTEGER;
     v_match_status TEXT;
+    v_live_started_at TIMESTAMPTZ;
+    v_live_period INTEGER;
     v_user_role TEXT;
+    v_minute INTEGER;
 BEGIN
     -- Vérification admin
     v_user_role := (SELECT role FROM public.profiles WHERE id = auth.uid());
@@ -31,12 +34,20 @@ BEGIN
         RAISE EXCEPTION 'Accès refusé: rôle admin requis';
     END IF;
 
-    SELECT is_paused, paused_at, total_paused_seconds, status 
-    INTO v_is_paused, v_paused_at, v_total_paused_seconds, v_match_status
+    SELECT is_paused, paused_at, total_paused_seconds, status, live_started_at, live_period
+    INTO v_is_paused, v_paused_at, v_total_paused_seconds, v_match_status, v_live_started_at, v_live_period
     FROM public.matches WHERE id = p_match_id;
 
     IF v_match_status != 'live' THEN
         RAISE EXCEPTION 'Impossible de mettre en pause un match qui n''est pas en direct';
+    END IF;
+
+    -- Calcul de la minute actuelle pour l'événement
+    IF v_live_started_at IS NOT NULL THEN
+        v_minute := (EXTRACT(EPOCH FROM (v_now - v_live_started_at))::INTEGER - v_total_paused_seconds) / 60;
+        IF v_minute < 0 THEN v_minute := 0; END IF;
+    ELSE
+        v_minute := 0;
     END IF;
 
     IF v_is_paused THEN
@@ -49,6 +60,10 @@ BEGIN
             total_paused_seconds = v_total_paused_seconds,
             updated_at = v_now
         WHERE id = p_match_id;
+
+        -- Événement de reprise
+        INSERT INTO public.match_events (match_id, type, minute, period, description)
+        VALUES (p_match_id, 'resume', v_minute, COALESCE(v_live_period, 1), 'Reprise du jeu');
     ELSE
         -- Mise en pause
         UPDATE public.matches 
@@ -56,6 +71,10 @@ BEGIN
             paused_at = v_now,
             updated_at = v_now
         WHERE id = p_match_id;
+
+        -- Événement de pause
+        INSERT INTO public.match_events (match_id, type, minute, period, description)
+        VALUES (p_match_id, 'pause', v_minute, COALESCE(v_live_period, 1), 'Match suspendu par l''arbitre');
     END IF;
 
     RETURN jsonb_build_object('success', true, 'is_paused', NOT v_is_paused);

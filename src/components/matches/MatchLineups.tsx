@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Users, UserCheck, Shield, Edit3, Save, Layout, Calendar } from 'lucide-react'
+import { Users, UserCheck, Shield, Edit3, Save, Layout, Calendar, ShieldAlert, UserX } from 'lucide-react'
 import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useAuth } from '@/hooks/useAuth'
+import { useActiveSeason } from '@/hooks/useSeasons'
+import { useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -72,7 +74,7 @@ export const FORMATIONS: Record<string, { label: string, style: string, coords: 
 
 export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFormation, awayFormation }: MatchLineupsProps) {
   const { isAdmin, isCaptain, profile } = useAuth()
-  
+
   // Initialiser sur l'équipe du capitaine s'il fait partie du match
   const defaultTab = useMemo(() => {
     if (isCaptain) {
@@ -83,7 +85,15 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
   }, [isCaptain, homeTeam.captain_id, awayTeam.captain_id, profile?.id])
 
   const [activeTab, setActiveTab] = useState<'home' | 'away' | 'both'>(defaultTab)
+  const { data: season } = useActiveSeason()
+  const { data: suspensions = [] } = useSuspensions(season?.id)
   const { data: lineups, isLoading } = useMatchLineups(matchId)
+
+  const suspendedPlayerIds = useMemo(() =>
+    suspensions.filter(s => s.is_active).map(s => s.player_id),
+    [suspensions]
+  )
+
   const [isEditing, setIsEditing] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'pitch'>('pitch')
 
@@ -226,6 +236,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
               awayColor={awayTeam.color}
               homeFormation={homeFormationDetected}
               awayFormation={awayFormationDetected}
+              suspendedPlayerIds={suspendedPlayerIds}
             />
           </div>
         ) : (
@@ -245,6 +256,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                   players={teamLineup.filter(l => l.is_starter)}
                   teamColor={activeTeam.color}
                   formation={currentFormation}
+                  suspendedPlayerIds={suspendedPlayerIds}
                 />
               </div>
 
@@ -260,7 +272,12 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                   </div>
                   <div className="space-y-2">
                     {teamLineup.filter(l => l.is_starter).map(l => (
-                      <PlayerRow key={l.id} lineup={l} isStarter />
+                      <PlayerRow
+                        key={l.id}
+                        lineup={l}
+                        isStarter
+                        isSuspended={suspendedPlayerIds.includes(l.player_id)}
+                      />
                     ))}
                   </div>
                 </section>
@@ -275,7 +292,11 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                   </div>
                   <div className="grid grid-cols-1 gap-2">
                     {teamLineup.filter(l => !l.is_starter).map(l => (
-                      <PlayerRow key={l.id} lineup={l} />
+                      <PlayerRow
+                        key={l.id}
+                        lineup={l}
+                        isSuspended={suspendedPlayerIds.includes(l.player_id)}
+                      />
                     ))}
                   </div>
                 </section>
@@ -400,21 +421,36 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
   )
 }
 
-function PlayerRow({ lineup, isStarter }: { lineup: any, isStarter?: boolean }) {
+function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?: boolean, isSuspended?: boolean }) {
   return (
-    <div className="group flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-default">
-      <div className="w-10 h-10 rounded-xl bg-black/60 flex items-center justify-center text-sm font-black text-white border border-white/10 group-hover:border-primary-500/50 transition-colors">
+    <div className={clsx(
+      "group flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 transition-all cursor-default",
+      isSuspended ? "opacity-50 grayscale-[0.5] border-red-500/20" : "hover:bg-white/10"
+    )}>
+      <div className={clsx(
+        "w-10 h-10 rounded-xl bg-black/60 flex items-center justify-center text-sm font-black text-white border border-white/10 group-hover:border-primary-500/50 transition-colors",
+        isSuspended && "border-red-500/40"
+      )}>
         {lineup.player?.jersey_number ?? '—'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-white truncate group-hover:text-primary-400 transition-colors">{lineup.player?.first_name} {lineup.player?.last_name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-white truncate group-hover:text-primary-400 transition-colors">
+            {lineup.player?.first_name} {lineup.player?.last_name}
+          </p>
+          {isSuspended && (
+            <span className="px-1.5 py-0.5 rounded-md bg-red-500 text-white text-[8px] font-black uppercase tracking-tighter">
+              Suspendu
+            </span>
+          )}
+        </div>
         <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">{lineup.player?.position || '—'}</p>
       </div>
     </div>
   )
 }
 
-export function PitchView({ players, teamColor, formation }: any) {
+export function PitchView({ players, teamColor, formation, suspendedPlayerIds = [] }: any) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   return (
     <div className="relative aspect-[16/10] w-full max-w-2xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl">
@@ -429,7 +465,8 @@ export function PitchView({ players, teamColor, formation }: any) {
       <AnimatePresence>
         {players.map((l: any, idx: number) => {
           const coord = coords[idx] || { x: 50, y: 50 }
-          
+          const isSuspended = suspendedPlayerIds.includes(l.player_id)
+
           // Paysage : GK à gauche (X proche de 0), ST à droite (X proche de 100)
           const posX = 100 - coord.y // GK (85) -> 15%, ST (20) -> 80%
           const posY = coord.x
@@ -439,13 +476,33 @@ export function PitchView({ players, teamColor, formation }: any) {
               key={l.player_id}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, left: `${posX}%`, top: `${posY}%` }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-10"
+              className={clsx(
+                "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 z-10 transition-opacity duration-300",
+                isSuspended && "opacity-60"
+              )}
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white shadow-2xl flex items-center justify-center text-white font-black text-xs sm:text-sm" style={{ backgroundColor: teamColor }}>
-                {l.player?.jersey_number || (idx + 1)}
+              <div
+                className={clsx(
+                  "relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white shadow-2xl flex items-center justify-center text-white font-black text-xs sm:text-sm transition-all",
+                  isSuspended && "border-red-500 scale-90"
+                )}
+                style={{ backgroundColor: isSuspended ? '#ef4444' : teamColor }}
+              >
+                {isSuspended ? <UserX size={16} /> : (l.player?.jersey_number || (idx + 1))}
+                {isSuspended && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-white flex items-center justify-center shadow-lg animate-pulse">
+                    <ShieldAlert size={8} />
+                  </div>
+                )}
               </div>
-              <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-xl">
-                <p className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-tight whitespace-nowrap">
+              <div className={clsx(
+                "px-3 py-1 rounded-full border shadow-xl backdrop-blur-md",
+                isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-black/60 border-white/10"
+              )}>
+                <p className={clsx(
+                  "text-[8px] sm:text-[10px] font-black uppercase tracking-tight whitespace-nowrap",
+                  isSuspended ? "text-red-400" : "text-white"
+                )}>
                   {l.player?.last_name}
                 </p>
               </div>
@@ -457,7 +514,7 @@ export function PitchView({ players, teamColor, formation }: any) {
   )
 }
 
-export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor, homeFormation, awayFormation }: any) {
+export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor, homeFormation, awayFormation, suspendedPlayerIds = [] }: any) {
   return (
     <div className="relative aspect-[16/10] w-full max-w-4xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
       {/* Texture & Lignes Landscape */}
@@ -475,18 +532,18 @@ export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor,
       <div className="absolute inset-0 flex">
         {/* Home Team (Left) */}
         <div className="flex-1 relative">
-          <PitchPart players={homePlayers} teamColor={homeColor} formation={homeFormation} side="left" />
+          <PitchPart players={homePlayers} teamColor={homeColor} formation={homeFormation} side="left" suspendedPlayerIds={suspendedPlayerIds} />
         </div>
         {/* Away Team (Right) */}
         <div className="flex-1 relative">
-          <PitchPart players={awayPlayers} teamColor={awayColor} formation={awayFormation} side="right" />
+          <PitchPart players={awayPlayers} teamColor={awayColor} formation={awayFormation} side="right" suspendedPlayerIds={suspendedPlayerIds} />
         </div>
       </div>
     </div>
   )
 }
 
-function PitchPart({ players, teamColor, formation, side }: any) {
+function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [] }: any) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   const isLeft = side === 'left'
 
@@ -494,14 +551,7 @@ function PitchPart({ players, teamColor, formation, side }: any) {
     <>
       {players.map((l: any, idx: number) => {
         const coord = coords[idx] || { x: 50, y: 50 }
-
-        // En paysage : 
-        // X (profondeur) devient la coordonnée horizontale
-        // Y (largeur) devient la coordonnée verticale
-
-        // Portrait coord.y: 20 (ST) à 85 (GK)
-        // Gauche (Home) : GK à gauche (X proche de 0), ST vers le centre (X proche de 100)
-        // Droite (Away) : GK à droite (X proche de 100), ST vers le centre (X proche de 0)
+        const isSuspended = suspendedPlayerIds.includes(l.player_id)
 
         let posX, posY
         if (isLeft) {
@@ -517,13 +567,30 @@ function PitchPart({ players, teamColor, formation, side }: any) {
             key={l.player_id}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1, left: `${posX}%`, top: `${posY}%` }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
+            className={clsx(
+              "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10",
+              isSuspended && "opacity-60"
+            )}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white font-black text-[10px] sm:text-xs" style={{ backgroundColor: teamColor }}>
-              {l.player?.jersey_number || (idx + 1)}
+            <div
+              className={clsx(
+                "relative w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white font-black text-[10px] sm:text-xs",
+                isSuspended && "border-red-500 scale-90"
+              )}
+              style={{ backgroundColor: isSuspended ? '#ef4444' : teamColor }}
+            >
+              {isSuspended ? <UserX size={12} /> : (l.player?.jersey_number || (idx + 1))}
             </div>
-            <div className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 shadow-lg">
-              <p className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-tighter whitespace-nowrap">{l.player?.last_name}</p>
+            <div className={clsx(
+              "px-2 py-0.5 rounded-full border shadow-lg backdrop-blur-md",
+              isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-black/60 border-white/10"
+            )}>
+              <p className={clsx(
+                "text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap",
+                isSuspended ? "text-red-400" : "text-white"
+              )}>
+                {l.player?.last_name}
+              </p>
             </div>
           </motion.div>
         )

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords } from 'lucide-react'
+import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate, useSearchParams, Link } from 'react-router-dom'
 import { AdminSeasonsPage } from './admin/AdminSeasonsPage'
 import { AdminTeamsPage } from './admin/AdminTeamsPage'
 import { AdminSchedulePage } from './admin/AdminSchedulePage'
 import { AdminGoalsPage } from './admin/AdminGoalsPage'
+import { AdminSanctionsPage } from './admin/AdminSanctionsPage'
 import { AdminSpectatorsPage } from './admin/AdminSpectatorsPage'
 import { AdminSettingsPage } from './admin/AdminSettingsPage'
 import { useSpectators } from '@/hooks/useSpectators'
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'teams',      label: 'Équipes',     icon: Users },
   { id: 'schedule',   label: 'Calendrier',  icon: Calendar },
   { id: 'goals',      label: 'Buts',        icon: Target },
+  { id: 'sanctions',  label: 'Sanctions',   icon: ShieldAlert },
   { id: 'spectators', label: 'Spectateurs', icon: Eye },
   { id: 'settings',   label: 'Paramètres',  icon: SlidersHorizontal },
 ] as const
@@ -87,6 +89,7 @@ export function AdminPage() {
         {activeTab === 'teams'      && <AdminTeamsPage />}
         {activeTab === 'schedule'   && <AdminSchedulePage />}
         {activeTab === 'goals'      && <AdminGoalsPage />}
+        {activeTab === 'sanctions'  && <AdminSanctionsPage />}
         {activeTab === 'spectators' && <AdminSpectatorsPage />}
         {activeTab === 'settings'   && (
           <div className="space-y-4">

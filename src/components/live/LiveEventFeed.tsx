@@ -15,6 +15,8 @@ const EVENT_ICONS: Record<string, string> = {
   halftime: '⏸️',
   fulltime: '🏆',
   comment: '💬',
+  pause: '⏸️',
+  resume: '▶️',
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -27,6 +29,8 @@ const EVENT_LABELS: Record<string, string> = {
   halftime: 'Mi-temps',
   fulltime: 'Fin du match',
   comment: '',
+  pause: 'Match suspendu',
+  resume: 'Reprise du jeu',
 }
 
 interface LiveEventFeedProps {
@@ -81,65 +85,95 @@ export function LiveEventFeed({
       displayMinute += 20
     }
 
+    // Cas spécial : Événements système (Pause / Reprise)
+    if (event.type === 'pause' || event.type === 'resume') {
+      const isPause = event.type === 'pause'
+      return (
+        <div key={event.id} className="relative flex items-center justify-center py-6 animate-in zoom-in-95 fade-in duration-700">
+           <div className={clsx(
+             "px-6 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl backdrop-blur-xl transition-all",
+             isPause 
+               ? "bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-amber-500/10" 
+               : "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-emerald-500/10"
+           )}>
+             <span className="mr-2">{EVENT_ICONS[event.type]}</span>
+             {event.description || EVENT_LABELS[event.type]}
+             <span className="ml-3 opacity-50 tabular-nums">{displayMinute}'</span>
+           </div>
+        </div>
+      )
+    }
+
     return (
-      <div key={event.id} className="relative flex items-center justify-center min-h-[48px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div key={event.id} className="relative flex items-center justify-center min-h-[64px] group animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex-1 flex justify-end pr-8">
           {isHome && (
-            <div className="flex flex-col items-end text-right">
+            <div className="flex flex-col items-end text-right transition-transform group-hover:-translate-x-1 duration-300">
               <div className="flex items-center gap-3">
                 {(event.type === 'goal' || event.type === 'own_goal') && (
-                  <span className="px-2 py-0.5 rounded-full bg-blue-600 text-[10px] font-black text-white shadow-lg">
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">
                     {scoreAt}
                   </span>
                 )}
-                <span className="text-xs font-black text-white uppercase tracking-tight">{playerName}</span>
-                <span className="text-[10px] font-bold text-slate-500">{displayMinute}'</span>
+                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName}</span>
+                <span className="text-[11px] font-bold text-slate-500 tabular-nums">{displayMinute}'</span>
               </div>
               {event.type === 'substitution' && player2Name && (
-                <span className="text-[10px] text-slate-500 mt-0.5 font-medium flex items-center gap-1.5">
-                  <span className="text-emerald-400">↑</span> {player2Name}
-                </span>
+                <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-[10px] text-slate-300 font-medium">
+                    <span className="text-emerald-400 mr-1">↑</span> {player2Name}
+                  </span>
+                </div>
               )}
               {event.type === 'goal' && player2Name && (
-                <span className="text-[9px] text-slate-600 italic mt-0.5">Pass: {player2Name}</span>
+                <span className="text-[10px] text-slate-500 italic mt-1 font-medium bg-white/5 px-2 py-0.5 rounded">
+                  Passe: {player2Name}
+                </span>
               )}
             </div>
           )}
         </div>
 
-        <div className="z-10 w-8 h-8 rounded-full bg-[#1a1f2e] border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden ring-4 ring-[#0f1420]">
+        <div className={clsx(
+          "z-10 w-10 h-10 rounded-2xl border flex items-center justify-center shadow-2xl overflow-hidden ring-8 ring-[#0f1420] transition-all duration-500 group-hover:scale-110",
+          event.type === 'goal' ? "bg-blue-600 border-blue-400/50 rotate-12" : "bg-[#1a1f2e] border-white/10"
+        )}>
           {event.type === 'goal' ? (
-            <span className="text-xs">⚽</span>
+            <span className="text-lg drop-shadow-md">⚽</span>
           ) : event.type === 'yellow_card' ? (
-            <div className="w-2.5 h-3.5 bg-yellow-400 rounded-sm shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
+            <div className="w-3 h-4.5 bg-yellow-400 rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.6)] rotate-12" />
           ) : event.type === 'red_card' ? (
-            <div className="w-2.5 h-3.5 bg-red-500 rounded-sm shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+            <div className="w-3 h-4.5 bg-red-500 rounded-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] rotate-12" />
           ) : event.type === 'substitution' ? (
-            <span className="text-green-400 text-xs font-black">⇄</span>
+            <span className="text-emerald-400 text-sm font-black">⇄</span>
           ) : (
-            <span className="text-[10px]">💬</span>
+            <span className="text-xs">💬</span>
           )}
         </div>
 
         <div className="flex-1 flex justify-start pl-8">
           {!isHome && (
-            <div className="flex flex-col items-start text-left">
+            <div className="flex flex-col items-start text-left transition-transform group-hover:translate-x-1 duration-300">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold text-slate-500">{displayMinute}'</span>
-                <span className="text-xs font-black text-white uppercase tracking-tight">{playerName}</span>
+                <span className="text-[11px] font-bold text-slate-500 tabular-nums">{displayMinute}'</span>
+                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName}</span>
                 {(event.type === 'goal' || event.type === 'own_goal') && (
-                  <span className="px-2 py-0.5 rounded-full bg-blue-600 text-[10px] font-black text-white shadow-lg">
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">
                     {scoreAt}
                   </span>
                 )}
               </div>
               {event.type === 'substitution' && player2Name && (
-                <span className="text-[10px] text-slate-500 mt-0.5 font-medium flex items-center gap-1.5">
-                  <span className="text-emerald-400">↑</span> {player2Name}
-                </span>
+                <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-[10px] text-slate-300 font-medium">
+                    <span className="text-emerald-400 mr-1">↑</span> {player2Name}
+                  </span>
+                </div>
               )}
               {event.type === 'goal' && player2Name && (
-                <span className="text-[9px] text-slate-600 italic mt-0.5">Pass: {player2Name}</span>
+                <span className="text-[10px] text-slate-500 italic mt-1 font-medium bg-white/5 px-2 py-0.5 rounded">
+                  Passe: {player2Name}
+                </span>
               )}
             </div>
           )}

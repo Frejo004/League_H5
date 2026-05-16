@@ -118,8 +118,6 @@ export function AdminLiveControls({
           </div>
         )}
       </div>
-
-      {/* Boutons principaux */}
       <div className="flex flex-wrap gap-3 relative z-10">
         {isScheduled && (
           <button
@@ -219,6 +217,82 @@ export function AdminLiveControls({
           </>
         )}
       </div>
+      
+      {/* Stats Rapides */}
+      {isLive && (
+        <div className="pt-2 border-t border-white/5 space-y-3 relative z-10">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Actions Rapides (Stats)</p>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Home Team Stats */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: homeTeam.color }} />
+                <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{homeTeam.name}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => addEvent.mutate({ type: 'shot', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Tir
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Cadré
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'foul', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Faute
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'corner', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Corner
+                </button>
+              </div>
+            </div>
+
+            {/* Away Team Stats */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 mb-1 justify-end text-right">
+                <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{awayTeam.name}</span>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: awayTeam.color }} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => addEvent.mutate({ type: 'shot', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Tir
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Cadré
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'foul', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Faute
+                </button>
+                <button
+                  onClick={() => addEvent.mutate({ type: 'corner', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                  className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                >
+                  Corner
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Formulaire d'événement */}
       {showEventForm && isLive && (

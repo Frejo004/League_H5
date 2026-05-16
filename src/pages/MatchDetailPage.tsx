@@ -17,7 +17,7 @@ import { GoalAlert } from '@/components/live/GoalAlert'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
@@ -35,6 +35,64 @@ function formatTime(dateStr: string | null) {
   return new Intl.DateTimeFormat('fr-FR', {
     hour: '2-digit', minute: '2-digit',
   }).format(new Date(dateStr))
+}
+
+// ── Match Stats Dashboard ───────────────────────────────────────────────────
+function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, stats: any }) {
+  const rows = [
+    { label: 'Tirs Totaux', home: stats.home.shots, away: stats.away.shots },
+    { label: 'Tirs Cadrés', home: stats.home.shotsOnTarget, away: stats.away.shotsOnTarget },
+    { label: 'Corners', home: stats.home.corners, away: stats.away.corners },
+    { label: 'Fautes', home: stats.home.fouls, away: stats.away.fouls },
+  ]
+
+  return (
+    <div className="card border-white/5 bg-black/40 backdrop-blur-xl">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+          <BarChart2 size={16} className="text-[#C8F135]" />
+          Statistiques du Match
+        </h3>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Temps Réel</span>
+      </div>
+
+      <div className="space-y-6">
+        {rows.map((row, i) => {
+          const total = row.home + row.away
+          const homePct = total === 0 ? 50 : (row.home / total) * 100
+          const awayPct = total === 0 ? 50 : (row.away / total) * 100
+
+          return (
+            <div key={i} className="space-y-2">
+              <div className="flex justify-between items-end px-1">
+                <span className="text-lg font-black text-white tabular-nums">{row.home}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{row.label}</span>
+                <span className="text-lg font-black text-white tabular-nums">{row.away}</span>
+              </div>
+              <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-white/5 gap-0.5">
+                <div
+                  className="h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--color-rgb),0.5)]"
+                  style={{
+                    width: `${homePct}%`,
+                    backgroundColor: home.color,
+                    opacity: row.home === 0 && row.away === 0 ? 0.2 : 1
+                  }}
+                />
+                <div
+                  className="h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--color-rgb),0.5)]"
+                  style={{
+                    width: `${awayPct}%`,
+                    backgroundColor: away.color,
+                    opacity: row.home === 0 && row.away === 0 ? 0.2 : 1
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ── Timeline event — style Sofascore ─────────────────────────────────────────
@@ -122,11 +180,11 @@ function GoalEvent({
 export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: match, isLoading } = useMatch(id)
-  
+
   // Si le match est "à venir" (scheduled), on affiche les compositions par défaut
   const isScheduled = match?.status === 'scheduled'
   const [activeTab, setActiveTab] = useState<'stats' | 'lineups' | 'standings'>('lineups')
-  
+
   const { user, isAdmin } = useAuth()
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
@@ -234,6 +292,27 @@ export function MatchDetailPage() {
   const displayHomeScore = isLive ? liveScore.home : (match.home_score ?? 0)
   const displayAwayScore = isLive ? liveScore.away : (match.away_score ?? 0)
 
+  // Calcul des statistiques de match
+  const matchStats = useMemo(() => {
+    const stats = {
+      home: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 },
+      away: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 }
+    }
+
+    liveEvents.forEach(ev => {
+      const side = ev.team_id === home.id ? 'home' : 'away'
+      if (ev.type === 'shot') stats[side].shots++
+      if (ev.type === 'shot_on_target') {
+        stats[side].shotsOnTarget++
+        stats[side].shots++
+      }
+      if (ev.type === 'foul') stats[side].fouls++
+      if (ev.type === 'corner') stats[side].corners++
+    })
+
+    return stats
+  }, [liveEvents, home.id, away.id])
+
 
 
   if (isScheduled) {
@@ -242,23 +321,23 @@ export function MatchDetailPage() {
         {/* Admin Controls */}
         {isAdmin && (
           <div className="mx-1">
-             <AdminLiveControls 
-               matchId={match.id}
-               status={match.status}
-               liveStartedAt={match.live_started_at}
-               halftimeAt={(match as any).halftime_at}
-               livePeriod={match.live_period as any}
-               homeTeam={home}
-               awayTeam={away}
-               homeScore={displayHomeScore}
-               awayScore={displayAwayScore}
-               isPaused={match.is_paused ?? false}
-               pausedAt={match.paused_at ?? null}
-               totalPausedSeconds={match.total_paused_seconds ?? 0}
-               events={liveEvents}
-               homePlayers={homePlayers || []}
-               awayPlayers={awayPlayers || []}
-             />
+            <AdminLiveControls
+              matchId={match.id}
+              status={match.status}
+              liveStartedAt={match.live_started_at}
+              halftimeAt={(match as any).halftime_at}
+              livePeriod={match.live_period as any}
+              homeTeam={home}
+              awayTeam={away}
+              homeScore={displayHomeScore}
+              awayScore={displayAwayScore}
+              isPaused={match.is_paused ?? false}
+              pausedAt={match.paused_at ?? null}
+              totalPausedSeconds={match.total_paused_seconds ?? 0}
+              events={liveEvents}
+              homePlayers={homePlayers || []}
+              awayPlayers={awayPlayers || []}
+            />
           </div>
         )}
 
@@ -335,11 +414,11 @@ export function MatchDetailPage() {
           )}
           {activeTab === 'standings' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <LiveTableWidget 
-                seasonId={match.season_id} 
+              <LiveTableWidget
+                seasonId={match.season_id}
                 matchId={match.id}
-                homeId={home.id} 
-                awayId={away.id} 
+                homeId={home.id}
+                awayId={away.id}
                 homeScore={match.home_score || 0}
                 awayScore={match.away_score || 0}
                 status={match.status}
@@ -366,23 +445,23 @@ export function MatchDetailPage() {
       {/* Admin Controls en Direct */}
       {isAdmin && isLive && (
         <div className="mx-1 mb-6">
-           <AdminLiveControls 
-             matchId={match.id}
-             status={match.status}
-             liveStartedAt={match.live_started_at}
-             halftimeAt={(match as any).halftime_at}
-             livePeriod={match.live_period as any}
-             homeTeam={home}
-             awayTeam={away}
-             homeScore={displayHomeScore}
-             awayScore={displayAwayScore}
-             isPaused={match.is_paused ?? false}
-             pausedAt={match.paused_at ?? null}
-             totalPausedSeconds={match.total_paused_seconds ?? 0}
-             events={liveEvents}
-             homePlayers={homePlayers || []}
-             awayPlayers={awayPlayers || []}
-           />
+          <AdminLiveControls
+            matchId={match.id}
+            status={match.status}
+            liveStartedAt={match.live_started_at}
+            halftimeAt={(match as any).halftime_at}
+            livePeriod={match.live_period as any}
+            homeTeam={home}
+            awayTeam={away}
+            homeScore={displayHomeScore}
+            awayScore={displayAwayScore}
+            isPaused={match.is_paused ?? false}
+            pausedAt={match.paused_at ?? null}
+            totalPausedSeconds={match.total_paused_seconds ?? 0}
+            events={liveEvents}
+            homePlayers={homePlayers || []}
+            awayPlayers={awayPlayers || []}
+          />
         </div>
       )}
 
@@ -594,6 +673,13 @@ export function MatchDetailPage() {
       {activeTab === 'stats' ? (
         <div className="space-y-6 animate-fade-in">
 
+          <div className="mx-2">
+            <MatchStatsView
+              home={home}
+              away={away}
+              stats={matchStats}
+            />
+          </div>
 
           {/* Venue & Stats globales */}
           <div className="card mx-2">
