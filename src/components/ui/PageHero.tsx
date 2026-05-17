@@ -139,7 +139,7 @@ export function PageHero({
              {icon && (
                <div
                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0
-                            glass-morphism shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+                            bg-white/10 backdrop-blur-md shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
                  style={{ border: `1px solid ${accentColor}40` }}
                >
                  <div style={{ color: accentColor }}>{icon}</div>
@@ -167,7 +167,7 @@ export function PageHero({
          {/* Bottom row : stats ou enfants */}
          <div className="flex items-end justify-between gap-4 mt-4">
            {stats && stats.length > 0 && (
-             <div className="flex items-center gap-6 px-4 py-2.5 rounded-2xl glass-morphism border border-white/5">
+             <div className="flex items-center gap-6 px-4 py-2.5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10">
                {stats.map((s, i) => (
                  <div key={i} className="text-center">
                    <p className="text-2xl font-black text-white tabular-nums drop-shadow-lg">{s.value}</p>

@@ -370,11 +370,10 @@ export function StandingsPage() {
           )}
 
           {/* Table card */}
-          <div className="overflow-hidden rounded-2xl border border-white/6"
-            style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/6 bg-slate-50 dark:bg-[#161c2d]">
 
             {/* Filter tabs */}
-            <div className="flex items-center justify-between px-3 py-3 border-b border-white/6">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 dark:border-white/6">
               <div className="flex items-center gap-1">
                 {(['all', 'home', 'away'] as FilterType[]).map(f => (
                   <button

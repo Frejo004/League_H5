@@ -3,6 +3,23 @@ import { useState, useEffect } from 'react'
 export type Theme = 'dark' | 'light' | 'system'
 export type ResolvedTheme = 'dark' | 'light'
 
+// ── Initialisation immédiate (avant le premier render) ──────────────────────
+// Applique la classe 'dark' et data-theme dès que le module est chargé
+// pour éviter le FOUC (Flash Of Unstyled Content) au démarrage
+;(function initTheme() {
+  if (typeof window === 'undefined') return
+  const saved = localStorage.getItem('theme') as Theme | null
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const resolved = saved === 'light' ? 'light' : saved === 'dark' ? 'dark' : (systemDark ? 'dark' : 'light')
+  const root = document.documentElement
+  root.setAttribute('data-theme', resolved)
+  if (resolved === 'dark') {
+    root.classList.add('dark')
+  } else {
+    root.classList.remove('dark')
+  }
+})()
+
 interface UseThemeReturn {
   theme: Theme
   resolvedTheme: ResolvedTheme
@@ -56,6 +73,14 @@ export function useTheme(): UseThemeReturn {
     
     // Mettre à jour l'attribut data-theme pour les sélecteurs CSS
     root.setAttribute('data-theme', resolvedTheme)
+
+    // ── CRITIQUE : Synchroniser la classe 'dark' pour que Tailwind v4
+    // active ses préfixes dark: correctement ──────────────────────────
+    if (resolvedTheme === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
     
     // Sauvegarder dans localStorage
     localStorage.setItem('theme', theme)

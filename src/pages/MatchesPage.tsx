@@ -39,7 +39,7 @@ function TeamBlock({ name, color, logoUrl, won, isCompleted, align }: {
       </div>
       <span className={clsx(
         'text-sm font-bold leading-tight truncate',
-        won ? 'text-white' : isCompleted ? 'text-slate-500' : 'text-slate-200',
+        won ? 'text-slate-900 dark:text-white' : isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200',
         align === 'right' && 'text-right'
       )}>
         {name}
@@ -63,14 +63,11 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
         'relative overflow-hidden mx-3 my-2 rounded-2xl border transition-all duration-200',
         'hover:-translate-y-0.5 hover:shadow-xl',
         isLive
-          ? 'border-red-500/40 hover:border-red-500/60'
+          ? 'border-red-500/40 hover:border-red-500/60 bg-linear-to-br from-red-500/5 to-red-600/5 dark:from-[#1a0f0f] dark:to-[#0f1420]'
           : isCompleted
-          ? 'border-white/6 hover:border-white/10'
-          : 'border-primary-600/20 hover:border-primary-600/35'
-      )}
-        style={{ background: isLive
-          ? 'linear-gradient(135deg, #1a0f0f 0%, #0f1420 100%)'
-          : 'linear-gradient(135deg, #161c2d 0%, #0f1420 100%)' }}>
+          ? 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-linear-to-br dark:from-[#161c2d] dark:to-[#0f1420]'
+          : 'border-primary-600/15 dark:border-primary-600/20 bg-slate-50/50 dark:bg-linear-to-br dark:from-[#161c2d] dark:to-[#0f1420]'
+      )}>
 
         {/* Barre rouge animée en haut si live */}
         {isLive && (
@@ -110,18 +107,18 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
               </>
             ) : isCompleted ? (
               <>
-                <div className="flex items-center gap-2.5 bg-black/40 px-4 py-2 rounded-xl border border-white/6">
+                <div className="flex items-center gap-2.5 bg-slate-200/50 dark:bg-black/40 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/6">
                   <span className={clsx('text-2xl font-black tabular-nums leading-none',
-                    homeWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
+                    homeWon ? 'text-slate-900 dark:text-white' : isDraw ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-600')}>
                     {match.home_score}
                   </span>
-                  <span className="text-slate-700 text-sm font-light">–</span>
+                  <span className="text-slate-400 dark:text-slate-700 text-sm font-light">–</span>
                   <span className={clsx('text-2xl font-black tabular-nums leading-none',
-                    awayWon ? 'text-white' : isDraw ? 'text-slate-300' : 'text-slate-600')}>
+                    awayWon ? 'text-slate-900 dark:text-white' : isDraw ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-600')}>
                     {match.away_score}
                   </span>
                 </div>
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Terminé</span>
+                <span className="text-[9px] font-black text-slate-500 dark:text-slate-600 uppercase tracking-widest">Terminé</span>
               </>
             ) : isCancelled ? (
               <>
@@ -132,7 +129,7 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
             ) : match.scheduled_at ? (
               <>
                 <div className="bg-primary-600/15 border border-primary-600/25 px-3 py-2 rounded-xl text-center">
-                  <span className="text-lg font-black text-white tabular-nums leading-none block">
+                  <span className="text-lg font-black text-slate-800 dark:text-white tabular-nums leading-none block">
                     {formatTime(match.scheduled_at)}
                   </span>
                 </div>
@@ -206,8 +203,7 @@ export function MatchesPage() {
       />
 
       {isLoading ? (
-        <div className="rounded-2xl border border-white/6 overflow-hidden"
-          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
+        <div className="rounded-2xl border border-slate-200 dark:border-white/6 overflow-hidden bg-slate-50 dark:bg-[#161c2d]">
           {[1,2,3,4].map(i => <SkeletonMatchCard key={i} />)}
         </div>
       ) : !season ? (
@@ -225,11 +221,10 @@ export function MatchesPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/6 overflow-hidden"
-          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))' }}>
+        <div className="rounded-2xl border border-slate-200 dark:border-white/6 overflow-hidden bg-slate-50 dark:bg-[#161c2d]">
 
           {/* Matchday tabs — style pill */}
-          <div className="flex items-center gap-1 px-3 py-3 border-b border-white/6 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1 px-3 py-3 border-b border-slate-200 dark:border-white/6 overflow-x-auto scrollbar-none">
             {matchdays.map(day => {
               const isActive = currentMatchday === day
               const dayMatches = (matches ?? []).filter(m => m.matchday === day)
@@ -242,7 +237,7 @@ export function MatchesPage() {
                     'relative flex flex-col items-center px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all duration-200',
                     isActive
                       ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-white/4 border border-transparent'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/4 border border-transparent'
                   )}
                 >
                   <span>J{day}</span>
@@ -256,14 +251,14 @@ export function MatchesPage() {
 
           {/* Journée summary */}
           {(completedCount > 0 || scheduledCount > 0) && (
-            <div className="flex items-center gap-3 px-4 py-2 border-b border-white/4">
+            <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-200 dark:border-white/4">
               {completedCount > 0 && (
-                <span className="text-[10px] font-bold text-slate-600">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-600">
                   {completedCount} terminé{completedCount > 1 ? 's' : ''}
                 </span>
               )}
               {scheduledCount > 0 && (
-                <span className="text-[10px] font-bold text-primary-600/60">
+                <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400/80">
                   {scheduledCount} à venir
                 </span>
               )}

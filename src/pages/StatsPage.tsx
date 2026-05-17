@@ -84,7 +84,7 @@ export function StatsPage() {
                     <Icon size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-white tracking-tight leading-none">{value}</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{value}</p>
                 <p className="text-xs text-slate-500 mt-1 font-medium">{label}</p>
               </div>
             ))}
@@ -99,7 +99,7 @@ export function StatsPage() {
                     <Shield size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-white tracking-tight leading-none">{discipline.totalYellow}</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{discipline.totalYellow}</p>
                 <p className="text-xs text-slate-500 mt-1 font-medium">Cartons jaunes</p>
               </div>
               <div className="stat-card animate-fade-in-up bg-linear-to-br from-red-500/15 to-red-600/5 border border-red-500/20">
@@ -108,7 +108,7 @@ export function StatsPage() {
                     <Shield size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-white tracking-tight leading-none">{discipline.totalRed}</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{discipline.totalRed}</p>
                 <p className="text-xs text-slate-500 mt-1 font-medium">Cartons rouges</p>
               </div>
             </div>
@@ -139,7 +139,7 @@ export function StatsPage() {
                         {s.first_name[0]}{s.last_name[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
                           <span className="text-xs text-slate-500 truncate">{s.team_name}</span>
@@ -153,7 +153,7 @@ export function StatsPage() {
                             style={{ width: `${(s.goals / (topScorers[0]?.goals || 1)) * 100}%` }}
                           />
                         </div>
-                        <span className="text-white font-black text-sm w-4 text-right">{s.goals}</span>
+                        <span className="text-slate-800 dark:text-white font-black text-sm w-4 text-right">{s.goals}</span>
                       </div>
                     </div>
                   ))}
@@ -184,7 +184,7 @@ export function StatsPage() {
                         {s.first_name[0]}{s.last_name[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
                           <span className="text-xs text-slate-500 truncate">{s.team_name}</span>
@@ -197,7 +197,7 @@ export function StatsPage() {
                             style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }}
                           />
                         </div>
-                        <span className="text-white font-black text-sm w-4 text-right">{s.assists}</span>
+                        <span className="text-slate-800 dark:text-white font-black text-sm w-4 text-right">{s.assists}</span>
                       </div>
                     </div>
                   ))}
@@ -284,7 +284,7 @@ export function StatsPage() {
                         <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Meilleure attaque</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: bestAttack.team_color }} />
-                          <p className="text-white font-bold text-sm truncate">{bestAttack.team_name}</p>
+                          <p className="text-slate-800 dark:text-white font-bold text-sm truncate">{bestAttack.team_name}</p>
                         </div>
                       </div>
                       <span className="text-orange-400 font-black text-xl shrink-0">{bestAttack.goals_for}</span>
@@ -300,7 +300,7 @@ export function StatsPage() {
                         <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Meilleure défense</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: bestDefense.team_color }} />
-                          <p className="text-white font-bold text-sm truncate">{bestDefense.team_name}</p>
+                          <p className="text-slate-800 dark:text-white font-bold text-sm truncate">{bestDefense.team_name}</p>
                         </div>
                       </div>
                       <span className="text-blue-400 font-black text-xl shrink-0">{bestDefense.goals_against}</span>
@@ -325,7 +325,7 @@ export function StatsPage() {
                               }}
                             />
                           </div>
-                          <span className="text-xs text-white font-bold w-4 text-right shrink-0">{s.goals_for}</span>
+                          <span className="text-xs text-slate-800 dark:text-white font-bold w-4 text-right shrink-0">{s.goals_for}</span>
                         </div>
                       ))
                     }
@@ -359,7 +359,7 @@ export function StatsPage() {
                           {p.first_name[0]}{p.last_name[0]}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
+                          <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.team_color }} />
                             <span className="text-xs text-slate-500 truncate">{p.team_name}</span>
@@ -411,7 +411,7 @@ export function StatsPage() {
                             {t.team_name[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-semibold truncate">{t.team_name}</p>
+                            <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{t.team_name}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {t.yellow_cards > 0 && (
                                 <span className="text-[10px] text-yellow-400">🟨 {t.yellow_cards}</span>

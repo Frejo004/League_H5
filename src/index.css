@@ -174,6 +174,7 @@ html {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #0f1420;
 }
 
 /* ── CSS Custom Properties (theme-aware, outside @theme) ── */
@@ -292,6 +293,11 @@ body {
   --color-chat-action-bar: #f8fafc;
   --color-chat-input-bg:   #f8fafc;
 
+  /* Glassmorphism — light mode */
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-blur: blur(12px);
+
   /* Header — light mode */
   --header-bg: #ffffff;
   --header-sub: #f8fafc;
@@ -301,9 +307,10 @@ body {
   --header-text: #0f172a;
 }
 
-:root[data-theme='light'] body {
-  background-color: #f8fafc;
-  color: #0f172a;
+html[data-theme='light'],
+html[data-theme='light'] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37,99,235,0.04) 0%, transparent 60%);
 }
@@ -321,12 +328,6 @@ body {
 :root[data-theme='light'] h5,
 :root[data-theme='light'] h6 {
   color: var(--color-text-primary);
-}
-
-:root[data-theme='light'] p,
-:root[data-theme='light'] span,
-:root[data-theme='light'] div {
-  color: inherit;
 }
 
 /* Update component colors for light mode */
@@ -505,39 +506,7 @@ body {
   color: #0f172a !important;
 }
 
-/* Override Tailwind dark text classes in light mode */
-:root[data-theme='light'] .text-white {
-  color: #0f172a !important;
-}
-
-/* Exception: Keep text white on colored backgrounds (primary, red, blue, green, amber) */
-:root[data-theme='light'] [class*="bg-primary-"] .text-white,
-:root[data-theme='light'] [class*="bg-red-"] .text-white,
-:root[data-theme='light'] [class*="bg-blue-"] .text-white,
-:root[data-theme='light'] [class*="bg-green-"] .text-white,
-:root[data-theme='light'] [class*="bg-amber-"] .text-white,
-:root[data-theme='light'] .text-white[class*="bg-primary-"],
-:root[data-theme='light'] .text-white[class*="bg-red-"],
-:root[data-theme='light'] .text-white[class*="bg-blue-"],
-:root[data-theme='light'] .text-white[class*="bg-green-"],
-:root[data-theme='light'] .text-white[class*="bg-amber-"] {
-  color: #ffffff !important;
-}
-
-:root[data-theme='light'] .text-slate-100,
-:root[data-theme='light'] .text-slate-200 {
-  color: #1e293b !important;
-}
-:root[data-theme='light'] .text-slate-300,
-:root[data-theme='light'] .text-slate-400 {
-  color: #475569 !important;
-}
-:root[data-theme='light'] .text-slate-500,
-:root[data-theme='light'] .text-slate-600 {
-  color: #64748b !important;
-}
-
-/* Override Tailwind dark background classes */
+/* Override dark hex background classes that are NOT handled by dark: prefix */
 :root[data-theme='light'] .bg-\[\#161c2d\],
 :root[data-theme='light'] .bg-\[\#0f1420\],
 :root[data-theme='light'] .bg-\[\#111827\],
@@ -545,110 +514,16 @@ body {
   background-color: var(--color-surface-card) !important;
 }
 
-/* Override border colors */
-:root[data-theme='light'] .border-white\/5,
-:root[data-theme='light'] .border-white\/6,
-:root[data-theme='light'] .border-white\/8,
-:root[data-theme='light'] .border-white\/10,
-:root[data-theme='light'] .border-white\/12,
-:root[data-theme='light'] .border-white\/15 {
-  border-color: var(--color-surface-border) !important;
-}
-
-/* Override dark border utility classes */
+/* Override border colors using dark hex values */
 :root[data-theme='light'] .border-\[\#2d3a5a\],
 :root[data-theme='light'] .border-\[\#252f4a\] {
   border-color: var(--color-surface-border) !important;
-}
-
-/* Fix backgrounds with opacity */
-:root[data-theme='light'] .bg-white\/5,
-:root[data-theme='light'] .bg-white\/8,
-:root[data-theme='light'] .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-}
-
-/* Fix bg-black with opacity */
-:root[data-theme='light'] .bg-black\/20,
-:root[data-theme='light'] .bg-black\/30,
-:root[data-theme='light'] .bg-black\/40 {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-}
-
-:root[data-theme='light'] .bg-black\/50,
-:root[data-theme='light'] .bg-black\/60 {
-  background-color: rgba(0, 0, 0, 0.06) !important;
-}
-
-/* Backdrops usually use bg-black/70 or 80. In light mode, a white translucent is better */
-:root[data-theme='light'] .bg-black\/70,
-:root[data-theme='light'] .bg-black\/80 {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* Fix hover backgrounds */
-:root[data-theme='light'] .hover\:bg-white\/5:hover,
-:root[data-theme='light'] .hover\:bg-white\/8:hover,
-:root[data-theme='light'] .hover\:bg-white\/10:hover,
-:root[data-theme='light'] .hover\:border-white\/12:hover {
-  background-color: rgba(0, 0, 0, 0.06) !important;
 }
 
 /* Fix divide colors */
 :root[data-theme='light'] .divide-white\/5 > * + *,
 :root[data-theme='light'] .divide-white\/8 > * + * {
   border-color: var(--color-surface-border) !important;
-}
-
-/* Cards with inline gradient backgrounds — override via class targeting */
-:root[data-theme='light'] .rounded-2xl,
-:root[data-theme='light'] .rounded-xl {
-  --tw-bg-opacity: 1;
-}
-
-/* Podium cards and KPI cards — these use inline style backgrounds */
-/* We target them by their structural classes */
-:root[data-theme='light'] a.rounded-2xl,
-:root[data-theme='light'] div.rounded-2xl:not(.confetti-container):not([class*="absolute"]):not([class*="fixed"]) {
-  background: var(--color-surface-card) !important;
-  border-color: var(--color-surface-border) !important;
-}
-
-/* But keep hero overlays dark (they have absolute positioning) */
-:root[data-theme='light'] .absolute.rounded-2xl,
-:root[data-theme='light'] .absolute.inset-0 {
-  background: revert !important;
-}
-
-/* Fix text inside rounded cards */
-:root[data-theme='light'] .rounded-2xl .text-white,
-:root[data-theme='light'] .rounded-xl .text-white {
-  color: #0f172a !important;
-}
-:root[data-theme='light'] .rounded-2xl .text-slate-300,
-:root[data-theme='light'] .rounded-2xl .text-slate-400,
-:root[data-theme='light'] .rounded-2xl .text-slate-500,
-:root[data-theme='light'] .rounded-2xl .text-slate-600,
-:root[data-theme='light'] .rounded-xl .text-slate-300,
-:root[data-theme='light'] .rounded-xl .text-slate-400,
-:root[data-theme='light'] .rounded-xl .text-slate-500,
-:root[data-theme='light'] .rounded-xl .text-slate-600 {
-  color: #64748b !important;
-}
-
-/* Keep colored text (green, yellow, blue, red) as-is */
-:root[data-theme='light'] .text-green-400,
-:root[data-theme='light'] .text-yellow-400,
-:root[data-theme='light'] .text-blue-400,
-:root[data-theme='light'] .text-red-400,
-:root[data-theme='light'] .text-amber-600,
-:root[data-theme='light'] .text-orange-400 {
-  /* Keep these colors — they're intentional accent colors */
-}
-
-/* PageHero stays dark (it has photo background) — but fix the container */
-:root[data-theme='light'] .page-hero {
-  /* Hero stays as-is with photo */
 }
 
 /* sf-row in light mode */

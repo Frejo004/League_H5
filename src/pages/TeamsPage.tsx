@@ -84,7 +84,7 @@ export function TeamsPage() {
                   to={`/teams/${team.slug || team.id}`}
                   className={clsx(
                     'group relative flex flex-col gap-4 p-5 rounded-3xl transition-all duration-300 glass-morphism overflow-hidden',
-                    isMyTeam ? 'ring-2 ring-primary-500/50 bg-primary-500/5' : 'hover:bg-white/5 hover:-translate-y-1'
+                    isMyTeam ? 'ring-2 ring-primary-500/50 bg-primary-500/5' : 'hover:bg-slate-50 dark:hover:bg-white/5 hover:-translate-y-1'
                   )}
                 >
                   {/* Decorative background logo */}
@@ -92,7 +92,7 @@ export function TeamsPage() {
                      {team.logo_url ? (
                         <img src={team.logo_url} alt="" className="w-full h-full object-contain grayscale" />
                      ) : (
-                        <Users size={128} className="text-white" />
+                        <Users size={128} className="text-slate-300 dark:text-white" />
                      )}
                   </div>
 
@@ -110,7 +110,7 @@ export function TeamsPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-black text-white truncate group-hover:text-primary-400 transition-colors">
+                        <h3 className="text-base font-black text-slate-800 dark:text-white truncate group-hover:text-primary-400 transition-colors">
                           {team.name}
                         </h3>
                         {isMyTeam && (
@@ -121,21 +121,21 @@ export function TeamsPage() {
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-slate-500">
                         <div className="flex items-center gap-1.5">
-                          <Users size={12} className="text-slate-600" />
+                          <Users size={12} className="text-slate-400 dark:text-slate-600" />
                           <span className="text-xs font-bold">{playerCount}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Trophy size={12} className="text-slate-600" />
+                          <Trophy size={12} className="text-slate-400 dark:text-slate-600" />
                           <span className="text-xs font-bold italic">Squad H5</span>
                         </div>
                       </div>
                     </div>
 
-                    <ChevronRight size={18} className="text-slate-700 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-slate-400 dark:text-slate-600 group-hover:text-slate-800 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </div>
 
                   {/* Progress/Capacity bar placeholder or accent line */}
-                  <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div className="mt-2 h-1 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min((playerCount / 10) * 100, 100)}%` }}

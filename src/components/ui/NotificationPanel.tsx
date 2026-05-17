@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bell, Calendar, CheckCircle2, Star,
-  UserPlus, AlertTriangle, X, ChevronRight, CheckCheck, Users, UserCheck
+  UserPlus, AlertTriangle, X, ChevronRight, CheckCheck, Users, UserCheck, MessageSquare
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Notification, NotifType } from '@/hooks/useNotifications'
@@ -22,8 +22,9 @@ const TYPE_CONFIG: Record<NotifType, {
   mvp_vote_open:     { icon: Star,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
   invite_pending:    { icon: UserPlus,      color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
   invite_expiring:   { icon: AlertTriangle, color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
-  spectator_request: { icon: Users,         color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-  tactique_selected: { icon: UserCheck,     color: 'text-primary-400', bg: 'bg-primary-500/10', border: 'border-primary-500/20' },
+  spectator_request: { icon: Users,          color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20'  },
+  tactique_selected: { icon: UserCheck,      color: 'text-primary-400', bg: 'bg-primary-500/10', border: 'border-primary-500/20' },
+  mention:           { icon: MessageSquare,  color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20'    },
 }
 
 function timeAgo(date: Date): string {
@@ -84,22 +85,22 @@ export function NotificationPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] z-50 animate-scale-in origin-top-right"
+      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] z-50 animate-scale-in origin-top-right
+                 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
       style={{
-        backgroundColor: '#161B22',
-        border: '1px solid rgba(255,255,255,0.08)',
+        backgroundColor: 'var(--color-surface-card)',
+        border: '1px solid var(--color-surface-border)',
         borderRadius: 12,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ borderBottom: '1px solid var(--color-surface-border)' }}
       >
         <div className="flex items-center gap-2">
-          <Bell size={14} className="text-slate-400" />
-          <span className="text-sm font-bold text-white">Notifications</span>
+          <Bell size={14} className="text-slate-400 dark:text-slate-500" />
+          <span className="text-sm font-bold text-slate-800 dark:text-white">Notifications</span>
           {notifications.length > 0 && (
             <span
               className="px-1.5 py-0.5 rounded-full text-[10px] font-black"
@@ -116,7 +117,7 @@ export function NotificationPanel({
             <button
               onClick={() => { onMarkAllRead(); onClose() }}
               className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold
-                         text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                         text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
               title="Tout marquer comme lu"
             >
               <CheckCheck size={13} />
@@ -126,7 +127,7 @@ export function NotificationPanel({
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
             aria-label="Fermer"
           >
             <X size={14} />
@@ -139,13 +140,12 @@ export function NotificationPanel({
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/5"
             >
-              <CheckCheck size={16} className="text-slate-600" />
+              <CheckCheck size={16} className="text-slate-400 dark:text-slate-600" />
             </div>
-            <p className="text-sm font-semibold text-slate-400">Tout est à jour</p>
-            <p className="text-xs text-slate-600">Aucune notification non lue</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Tout est à jour</p>
+            <p className="text-xs text-slate-400 dark:text-slate-600">Aucune notification non lue</p>
           </div>
         ) : (
           <div className="py-1">
@@ -159,8 +159,8 @@ export function NotificationPanel({
                   onClick={() => { onMarkRead(notif.id); onClose() }}
                   className={clsx(
                     'flex items-start gap-3 px-4 py-3 transition-colors group',
-                    'hover:bg-white/[0.03]',
-                    i < notifications.length - 1 && 'border-b border-white/[0.04]'
+                    'hover:bg-slate-100/50 dark:hover:bg-white/[0.03]',
+                    i < notifications.length - 1 && 'border-b border-slate-100 dark:border-white/[0.04]'
                   )}
                 >
                   {/* Icône */}
@@ -174,21 +174,21 @@ export function NotificationPanel({
                   {/* Texte */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-white truncate">{notif.title}</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{notif.title}</p>
                       {notif.urgent && (
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 animate-pulse" />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
                       {notif.message}
                     </p>
-                    <p className="text-[10px] text-slate-600 mt-1">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1">
                       {timeAgo(notif.createdAt)}
                     </p>
                   </div>
 
                   {/* Flèche */}
-                  <ChevronRight size={12} className="text-slate-600 group-hover:text-slate-400 shrink-0 mt-1 transition-colors" />
+                  <ChevronRight size={12} className="text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-400 shrink-0 mt-1 transition-colors" />
                 </Link>
               )
             })}
@@ -200,7 +200,7 @@ export function NotificationPanel({
       {notifications.length > 0 && (
         <div
           className="px-4 py-2.5"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ borderTop: '1px solid var(--color-surface-border)' }}
         >
           <button
             onClick={() => { onMarkAllRead(); onClose() }}

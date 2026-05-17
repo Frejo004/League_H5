@@ -53,7 +53,7 @@ export function AdminPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Settings className="text-primary-400" size={24} />
-        <h1 className="text-2xl font-bold text-white">Administration</h1>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Administration</h1>
       </div>
 
       {/* Tab navigation */}
@@ -68,7 +68,7 @@ export function AdminPage() {
                 'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0',
                 activeTab === id
                   ? 'bg-primary-600/20 text-primary-400 border-b-2 border-primary-500'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-surface-border/30'
+                  : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-surface-border/30'
               )}
             >
               <Icon size={15} />

@@ -178,13 +178,7 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
   const animatedValue = useCountUp(value)
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 group transition-all duration-500 hover:-translate-y-1.5"
-      style={{ 
-        background: 'rgba(22, 28, 45, 0.4)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderColor: 'rgba(255, 255, 255, 0.08)'
-      }}>
+    <div className="relative overflow-hidden rounded-2xl p-4 group transition-all duration-500 hover:-translate-y-1.5 glass-morphism">
       {/* Decorative gradient blob */}
       <div className="absolute -top-10 -right-10 w-24 h-24 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
         style={{ backgroundColor: color }} />
@@ -203,15 +197,15 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
       </div>
 
       {/* Value */}
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-white drop-shadow-sm">
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-slate-900 dark:text-white drop-shadow-sm">
         {animatedValue}
       </p>
-      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-400 transition-colors">
+      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-400 transition-colors">
         {label}
       </p>
 
       {/* Interactive border glow */}
-      <div className="absolute inset-0 border border-transparent group-hover:border-white/10 rounded-2xl transition-all duration-500" />
+      <div className="absolute inset-0 border border-transparent group-hover:border-black/5 dark:group-hover:border-white/10 rounded-2xl transition-all duration-500" />
     </div>
   )
 }
@@ -236,7 +230,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
       <div className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
       
       {/* Conteneur principal biseauté */}
-      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card/80 border border-white/5">
+      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card/80 border border-slate-200/50 dark:border-white/5">
         
         {/* Ligne d'accentuation (si c'est mon équipe) */}
         {isMyMatch && (
@@ -259,7 +253,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
             </div>
             <span className={clsx(
               'text-sm uppercase tracking-wide truncate',
-              variant === 'result' ? (homeWon ? 'font-black text-white' : 'font-semibold text-slate-400') : 'font-bold text-slate-200'
+              variant === 'result' ? (homeWon ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-slate-400') : 'font-bold text-slate-700 dark:text-slate-200'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_team.name}
             </span>
@@ -269,7 +263,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
           {variant === 'result' && (
             <span className={clsx(
               'text-3xl font-black tabular-nums leading-none ml-3 z-10',
-              homeWon ? 'text-white text-glow-sm' : 'text-slate-500'
+              homeWon ? 'text-slate-900 dark:text-white text-glow-sm' : 'text-slate-500'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score}
             </span>
@@ -311,7 +305,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
             </div>
             <span className={clsx(
               'text-sm uppercase tracking-wide truncate text-right',
-              variant === 'result' ? (awayWon ? 'font-black text-white' : 'font-semibold text-slate-400') : 'font-bold text-slate-200'
+              variant === 'result' ? (awayWon ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-slate-400') : 'font-bold text-slate-700 dark:text-slate-200'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_team.name}
             </span>
@@ -321,7 +315,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
           {variant === 'result' && (
             <span className={clsx(
               'text-3xl font-black tabular-nums leading-none mr-3 z-10',
-              awayWon ? 'text-white text-glow-sm' : 'text-slate-500'
+              awayWon ? 'text-slate-900 dark:text-white text-glow-sm' : 'text-slate-500'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_score}
             </span>
@@ -356,11 +350,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 // ── Top scorer card premium ───────────────────────────────────────────────────
 function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4"
-      style={{ 
-        background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))',
-        borderColor: 'var(--color-surface-border)'
-      }}>
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-white dark:bg-[#161c2d] border-slate-200 dark:border-white/8">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
 
@@ -375,8 +365,7 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
             style={{ backgroundColor: scorer.team_color }}>
             {scorer.first_name[0]}{scorer.last_name[0]}
           </div>
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2"
-            style={{ borderColor: 'var(--color-surface-card, #111827)' }}>
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-white dark:border-[#111827]">
             <Target size={9} className="text-white" />
           </div>
         </div>
@@ -401,11 +390,8 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
 // ── Leader card premium ───────────────────────────────────────────────────────
 function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4"
-      style={{
-        background: `linear-gradient(135deg, ${team.team_color}12 0%, var(--color-surface-card, #111827) 60%)`,
-        borderColor: `${team.team_color}30`,
-      }}>
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-white dark:bg-[#161c2d]"
+      style={{ borderColor: `${team.team_color}30` }}>
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${team.team_color}10 0%, transparent 70%)` }} />
 
@@ -451,7 +437,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
   return (
     <Link
       to={`/matches/${match.slug || match.id}`}
-      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-red-500/20 transition-all group"
+      className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/50 dark:bg-white/[0.04] hover:bg-slate-200/50 dark:hover:bg-white/[0.08] border border-red-500/20 transition-all group"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
@@ -460,14 +446,14 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
             ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
             : match.home_team.name[0]}
         </div>
-        <span className="text-sm font-semibold text-white truncate">{match.home_team.name}</span>
+        <span className="text-sm font-semibold text-slate-800 dark:text-white truncate">{match.home_team.name}</span>
       </div>
 
       <div className="flex flex-col items-center gap-1 px-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-black text-white tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
           <span className="text-slate-600 font-bold">–</span>
-          <span className="text-2xl font-black text-white tabular-nums drop-shadow-md">{match.away_score ?? 0}</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums drop-shadow-md">{match.away_score ?? 0}</span>
         </div>
         <span className="text-[10px] font-black text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse border border-red-400/20">
           {clock.label}
@@ -475,7 +461,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
       </div>
 
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <span className="text-sm font-semibold text-white truncate text-right">{match.away_team.name}</span>
+        <span className="text-sm font-semibold text-slate-800 dark:text-white truncate text-right">{match.away_team.name}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.away_team.color }}>
           {match.away_team.logo_url
@@ -560,12 +546,13 @@ export function DashboardPage() {
 
       {/* ── Widget matchs en cours ── */}
       {liveMatches.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4"
-          style={{ background: 'var(--card-bg, linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%))' }}>
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
+          <div className="absolute inset-0 pointer-events-none dark:block hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
           <div className="flex items-center gap-2 mb-3">
             <Radio size={14} className="text-red-400 animate-pulse" />
-            <span className="text-sm font-black text-white uppercase tracking-wider">En direct</span>
+            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">En direct</span>
             <LiveBadge size="sm" />
           </div>
           <div className="space-y-2">
@@ -604,8 +591,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Prochains matchs */}
-        <div className="overflow-hidden rounded-2xl border lg:col-span-2"
-          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))', borderColor: 'var(--color-surface-border)' }}>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[var(--color-surface-border)] bg-white dark:bg-[#161c2d] lg:col-span-2">
           <SectionHeader title="Prochains matchs" href="/matches" />
           {upcomingMatches.length === 0 ? (
             <div className="empty-state py-8">
@@ -638,8 +624,7 @@ export function DashboardPage() {
 
       {/* Derniers résultats */}
       {recentMatches.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border"
-          style={{ background: 'var(--card-bg, linear-gradient(135deg, #161c2d 0%, #111827 100%))', borderColor: 'var(--color-surface-border)' }}>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[var(--color-surface-border)] bg-white dark:bg-[#161c2d]">
           <SectionHeader title="Derniers résultats" href="/matches" />
           <div className="stagger-fast">
             {recentMatches.map(match => (
