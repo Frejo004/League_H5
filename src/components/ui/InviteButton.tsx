@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePlayerInvite, useCreateInvite, useRevokeInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner } from './LoadingSpinner'
 
+import { slugify } from '@/lib/slugify'
+
 interface InviteButtonProps {
   playerId: string
   playerName: string
@@ -28,14 +30,14 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
     )
   }
 
+  const playerSlug = slugify(playerName)
+
   const inviteUrl = invite?.token
-    ? `${window.location.origin}/auth/join?token=${invite.token}`
+    ? `${window.location.origin}/auth/join?invite=${playerSlug}`
     : null
 
-  // Affichage masqué : garde les 6 premiers et 6 derniers caractères du token
-  const inviteUrlDisplay = invite?.token
-    ? `${window.location.origin}/auth/join?token=${invite.token.slice(0, 6)}…${invite.token.slice(-6)}`
-    : null
+  // Affichage masqué (pas besoin de masquer car c'est déjà propre)
+  const inviteUrlDisplay = inviteUrl
 
   const isExpired = invite?.expires_at
     ? new Date(invite.expires_at) < new Date()

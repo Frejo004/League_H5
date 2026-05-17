@@ -14,7 +14,13 @@ export function JoinPage() {
 
   // Handle token from URL: store in sessionStorage and clean URL
   useEffect(() => {
-    const token = searchParams.get('token')
+    let token = searchParams.get('token')
+    const inviteParam = searchParams.get('invite')
+
+    if (inviteParam) {
+      token = inviteParam
+    }
+
     if (token) {
       sessionStorage.setItem('invite_token', token)
       // Remove token from URL to avoid leakage in history/referrer

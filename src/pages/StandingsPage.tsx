@@ -299,8 +299,6 @@ export function StandingsPage() {
   const [filter, setFilter] = useState<FilterType>('all')
 
   useRealtimeMatches(season?.id)
-
-  useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
 
   const filteredStandings = computeFilteredStandings(standings, matches, filter)
