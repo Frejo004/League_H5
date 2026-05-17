@@ -128,7 +128,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
       if (votesErr) throw votesErr
       if (!votes?.length) return { total_mvp: 0, mvp_matches: [] }
 
-      // 3. Pour chaque match, trouver le MVP
+      // 3. Pour chaque match, trouver le MVP (ou co-MVP en cas d'égalité)
       const votesByMatch = new Map<string, Map<string, number>>()
       for (const v of votes) {
         if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
@@ -140,8 +140,14 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
       const mvpMatchIds = new Set<string>()
       for (const [matchId, matchVotes] of votesByMatch) {
         if (matchVotes.size === 0) continue
-        const winner = [...matchVotes.entries()].sort((a, b) => b[1] - a[1])[0][0]
-        if (winner === playerId) mvpMatchIds.add(matchId)
+        const maxVotes = Math.max(...matchVotes.values())
+        const winners = [...matchVotes.entries()]
+          .filter(([_, vCount]) => vCount === maxVotes)
+          .map(([pId]) => pId)
+
+        if (winners.includes(playerId!)) {
+          mvpMatchIds.add(matchId)
+        }
       }
 
       const mvpMatches = (matchData ?? [])
@@ -165,8 +171,8 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
     },
   })
 }
-// Classement MVP : total de votes reçus par joueur sur les matchs terminés de la saison
 
+// Classement MVP : Tri par nombre de titres MVP obtenus, avec bris d'égalité par le total de votes reçus
 export function useMvpRanking(seasonId?: string) {
   return useQuery({
     queryKey: ['mvp_ranking', seasonId],
@@ -188,6 +194,7 @@ export function useMvpRanking(seasonId?: string) {
       const { data: votes, error: votesErr } = await supabase
         .from('mvp_votes')
         .select(`
+          match_id,
           player_id,
           players(id, first_name, last_name, team_id, teams!players_team_id_fkey(id, name, color))
         `)
@@ -195,15 +202,37 @@ export function useMvpRanking(seasonId?: string) {
       if (votesErr) throw votesErr
       if (!votes?.length) return []
 
-      // 3. Agréger le total de votes par joueur
-      const voteCount = new Map<string, number>()
+      // 3. Calculer pour chaque match qui est MVP (ou co-MVP)
+      const votesByMatch = new Map<string, Map<string, number>>()
       for (const v of votes) {
-        voteCount.set(v.player_id, (voteCount.get(v.player_id) ?? 0) + 1)
+        if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
+        const mv = votesByMatch.get(v.match_id)!
+        mv.set(v.player_id, (mv.get(v.player_id) ?? 0) + 1)
       }
 
-      // 4. Construire le classement en dédupliquant les infos joueur
+      const mvpCountByPlayer = new Map<string, number>()
+      const totalVotesByPlayer = new Map<string, number>()
+
+      for (const [_, matchVotes] of votesByMatch) {
+        if (matchVotes.size === 0) continue
+        const maxVotes = Math.max(...matchVotes.values())
+        const winners = [...matchVotes.entries()]
+          .filter(([_, vCount]) => vCount === maxVotes)
+          .map(([pId]) => pId)
+
+        for (const pId of winners) {
+          mvpCountByPlayer.set(pId, (mvpCountByPlayer.get(pId) ?? 0) + 1)
+        }
+
+        // Cumuler aussi les votes bruts pour le bris d'égalité
+        for (const [pId, vCount] of matchVotes) {
+          totalVotesByPlayer.set(pId, (totalVotesByPlayer.get(pId) ?? 0) + vCount)
+        }
+      }
+
+      // 4. Construire le classement
       const seen = new Set<string>()
-      const ranking: MvpResult[] = []
+      const ranking: Array<MvpResult & { mvp_titles: number }> = []
 
       for (const v of votes) {
         if (seen.has(v.player_id)) continue
@@ -225,11 +254,18 @@ export function useMvpRanking(seasonId?: string) {
           team_id:    p.team_id,
           team_name:  p.teams?.name  ?? '—',
           team_color: p.teams?.color ?? '#16a34a',
-          votes:      voteCount.get(p.id) ?? 0,
+          votes:      totalVotesByPlayer.get(p.id) ?? 0,
+          mvp_titles: mvpCountByPlayer.get(p.id) ?? 0,
         })
       }
 
-      return ranking.sort((a, b) => b.votes - a.votes)
+      // Tri : Titres de Joueur du Match d'abord, puis Votes cumulés
+      return ranking.sort((a, b) => {
+        if (b.mvp_titles !== a.mvp_titles) {
+          return b.mvp_titles - a.mvp_titles
+        }
+        return b.votes - a.votes
+      })
     },
   })
 }

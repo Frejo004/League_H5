@@ -392,15 +392,13 @@ export function MatchDetailPage() {
   for (const v of votes ?? []) {
     voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
   }
-  const topMvpId = voteMap.size > 0
-    ? [...voteMap.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    : null
+  const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
+  const topMvpIds = voteMap.size > 0
+    ? [...voteMap.entries()].filter(([_, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
+    : []
 
-  // Joueur MVP (le plus voté)
-  const mvpPlayer = topMvpId
-    ? allMatchPlayers.find(p => p.id === topMvpId) ?? null
-    : null
-  const mvpVoteCount = topMvpId ? (voteMap.get(topMvpId) ?? 0) : 0
+  // Joueurs MVP (les plus votés, gère les ex-aequo)
+  const mvpPlayers = topMvpIds.map(id => allMatchPlayers.find(p => p.id === id)).filter(Boolean) as typeof allMatchPlayers
   const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
 
   // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
@@ -841,27 +839,33 @@ export function MatchDetailPage() {
             className="space-y-6"
           >
             {/* MVP banner */}
-            {isCompleted && mvpPlayer && (
+            {isCompleted && mvpPlayers.length > 0 && (
               <div
-                className="relative overflow-hidden rounded-xl border border-amber-500/25 p-4 flex items-center gap-4 mx-2"
+                className="relative overflow-hidden rounded-xl border border-amber-500/25 p-4 flex items-center justify-between gap-4 mx-2"
                 style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)' }}
               >
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
-                <div className="relative w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 ring-2 ring-amber-500/30">
-                  <Star size={20} className="text-amber-400 fill-amber-400/50" />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
-                    🏆 Homme du match
-                  </p>
-                  <p className="text-base sm:text-lg font-black text-white truncate leading-tight">
-                    {mvpPlayer.first_name} {mvpPlayer.last_name}
-                  </p>
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="relative w-11 h-11 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 ring-2 ring-amber-500/30">
+                    <Star size={18} className="text-amber-400 fill-amber-400/50" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-0.5">
+                      🏆 {mvpPlayers.length > 1 ? 'Hommes du match (Ex-aequo)' : 'Homme du match'}
+                    </p>
+                    <div className="flex flex-col gap-0.5">
+                      {mvpPlayers.map(player => (
+                        <p key={player.id} className="text-sm sm:text-base font-black text-white truncate leading-tight">
+                          {player.first_name} {player.last_name}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="relative text-right shrink-0">
-                  <p className="text-3xl font-black text-amber-400 tabular-nums leading-none">{mvpVoteCount}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">vote{mvpVoteCount > 1 ? 's' : ''}</p>
+                  <p className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums leading-none">{maxVotes}</p>
+                  <p className="text-[9px] text-slate-500 mt-0.5">vote{maxVotes > 1 ? 's' : ''}</p>
                 </div>
               </div>
             )}
@@ -974,7 +978,7 @@ export function MatchDetailPage() {
                   {eligibleMvpPlayers.map(p => {
                     const voteCount = voteMap.get(p.id) ?? 0
                     const isMyVote = myVote?.player_id === p.id
-                    const isTop = p.id === topMvpId && voteCount > 0
+                    const isTop = topMvpIds.includes(p.id) && voteCount > 0
                     const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
                     return (
                       <button

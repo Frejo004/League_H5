@@ -247,11 +247,14 @@ export function StatsPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
                           <div
-                            className="h-full bg-amber-400 rounded-full"
-                            style={{ width: `${(m.votes / (mvpRanking[0]?.votes || 1)) * 100}%` }}
+                            className="h-full bg-amber-400 rounded-full animate-pulse"
+                            style={{ width: `${(m.mvp_titles / (mvpRanking[0]?.mvp_titles || 1)) * 100}%` }}
                           />
                         </div>
-                        <span className="text-amber-400 font-black text-sm w-4 text-right">{m.votes}</span>
+                        <div className="text-right shrink-0">
+                          <span className="text-amber-400 font-black text-sm block leading-none">{m.mvp_titles} MVP</span>
+                          <span className="text-[9px] text-slate-500 font-bold block mt-0.5">{m.votes} vote{m.votes > 1 ? 's' : ''}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
