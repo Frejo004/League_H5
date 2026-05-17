@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile, UserRole } from '@/types/database'
@@ -39,6 +40,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [session, setSession]           = useState<Session | null>(null)
   const [profile, setProfile]           = useState<Profile | null>(null)
   const [isLoading, setIsLoading]       = useState(true)
@@ -124,6 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // SIGNED_IN : Vérifier si le profil est déjà chargé avant de recharger
           // Cela évite le rechargement inutile après INITIAL_SESSION
           if (event === 'SIGNED_IN') {
+            // Invalider les requêtes pour rafraîchir les données (saison, etc.) avec les droits du user
+            queryClient.invalidateQueries()
+            
             // Si le profil est déjà chargé pour ce user, ne rien faire
             if (profileRef.current?.id === currentUserId) {
               setIsLoading(false)
@@ -152,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsProfileLoading(false)
           // Réinitialiser isLoading lors de la déconnexion
           if (event === 'SIGNED_OUT') {
+            queryClient.clear()
             setIsLoading(false)
           }
         }

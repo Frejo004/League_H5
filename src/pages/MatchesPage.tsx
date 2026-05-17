@@ -58,7 +58,7 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
   const isDraw  = isCompleted && match.home_score === match.away_score
 
   return (
-    <Link to={`/matches/${match.id}`} className="group block">
+    <Link to={`/matches/${match.slug || match.id}`} className="group block">
       <div className={clsx(
         'relative overflow-hidden mx-3 my-2 rounded-2xl border transition-all duration-200',
         'hover:-translate-y-0.5 hover:shadow-xl',

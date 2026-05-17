@@ -81,7 +81,7 @@ export function TeamsPage() {
             return (
               <motion.div key={team.id} variants={itemVariants}>
                 <Link
-                  to={`/teams/${team.id}`}
+                  to={`/teams/${team.slug || team.id}`}
                   className={clsx(
                     'group relative flex flex-col gap-4 p-5 rounded-3xl transition-all duration-300 glass-morphism overflow-hidden',
                     isMyTeam ? 'ring-2 ring-primary-500/50 bg-primary-500/5' : 'hover:bg-white/5 hover:-translate-y-1'

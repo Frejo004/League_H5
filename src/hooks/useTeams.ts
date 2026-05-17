@@ -9,14 +9,14 @@ export function useTeams(seasonId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('*, players!players_team_id_fkey(count)')
+        .select('*, slug, players!players_team_id_fkey(count)')
         .eq('season_id', seasonId!)
         .order('name')
       if (error) {
         // Fallback sans le count si la relation échoue
         const { data: fallback, error: fallbackErr } = await supabase
           .from('teams')
-          .select('*')
+          .select('*, slug')
           .eq('season_id', seasonId!)
           .order('name')
         if (fallbackErr) throw fallbackErr

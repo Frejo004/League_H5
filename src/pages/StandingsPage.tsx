@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useStandings } from '@/hooks/useStandings'
 import { useMatches } from '@/hooks/useMatches'
+import { useTeams } from '@/hooks/useTeams'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
@@ -241,7 +242,7 @@ function FormChart({
 }
 
 // ── Podium top 3 ─────────────────────────────────────────────────────────────
-function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
+function PodiumCard({ row, rank, teamSlug }: { row: StandingRow; rank: 1 | 2 | 3; teamSlug?: string }) {
   const configs = {
     1: { label: '1ER', glow: '#FFDF73', border: 'border-[#FFDF73]/50', bg: 'from-[#FFDF73]/20 via-[#B8860B]/5 to-transparent', size: 'w-16 h-16', textSize: 'text-3xl' },
     2: { label: '2E', glow: 'var(--color-text-secondary, #E2E8F0)', border: 'border-slate-300/50', bg: 'from-slate-300/20 via-slate-500/5 to-transparent', size: 'w-12 h-12', textSize: 'text-xl' },
@@ -250,7 +251,7 @@ function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
   const c = configs[rank]
 
   return (
-    <Link to={`/teams/${row.team_id}`}
+    <Link to={`/teams/${teamSlug || row.team_id}`}
       className={clsx(
         "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-2 group overflow-hidden",
         c.border
@@ -293,8 +294,11 @@ export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
   const { data: matches } = useMatches(season?.id)
+  const { data: teams } = useTeams(season?.id)
   const { myTeamId } = useMyTeam(season?.id)
   const [filter, setFilter] = useState<FilterType>('all')
+
+  useRealtimeMatches(season?.id)
 
   useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
@@ -339,9 +343,9 @@ export function StandingsPage() {
           {/* Podium top 3 — visible si au moins 3 équipes */}
           {filter === 'all' && standings.length >= 3 && (
             <div className="grid grid-cols-3 gap-2 animate-fade-in-up">
-              <PodiumCard row={standings[1]} rank={2} />
-              <PodiumCard row={standings[0]} rank={1} />
-              <PodiumCard row={standings[2]} rank={3} />
+              <PodiumCard row={standings[1]} rank={2} teamSlug={teams?.find(t => t.id === standings[1].team_id)?.slug ?? undefined} />
+              <PodiumCard row={standings[0]} rank={1} teamSlug={teams?.find(t => t.id === standings[0].team_id)?.slug ?? undefined} />
+              <PodiumCard row={standings[2]} rank={3} teamSlug={teams?.find(t => t.id === standings[2].team_id)?.slug ?? undefined} />
             </div>
           )}
 
@@ -426,7 +430,7 @@ export function StandingsPage() {
                 return (
                   <Link
                     key={row.team_id}
-                    to={`/teams/${row.team_id}`}
+                    to={`/teams/${teams?.find(t => t.id === row.team_id)?.slug || row.team_id}`}
                     className={clsx(
                       'border-b border-white/4 last:border-b-0 transition-colors duration-150',
                       'hover:bg-white/3 group',

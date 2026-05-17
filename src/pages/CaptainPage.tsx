@@ -430,7 +430,7 @@ function PlayerStatsDrawer({
                     return (
                       <Link
                         key={m.match_id}
-                        to={`/matches/${m.match_id}`}
+                        to={`/matches/${m.match_slug || m.match_id}`}
                         onClick={onClose}
                         className={clsx(
                           'grid grid-cols-[3rem_1fr_2rem_2rem_2rem] gap-1 items-center px-3 py-2',
@@ -492,7 +492,7 @@ function PlayerStatsDrawer({
                   {mvpData!.mvp_matches.map((m, i) => (
                     <Link
                       key={m.match_id}
-                      to={`/matches/${m.match_id}`}
+                      to={`/matches/${(m as any).match_slug || m.match_id}`}
                       onClick={onClose}
                       className={clsx(
                         'flex items-center gap-2 px-3 py-2 hover:bg-amber-500/5 transition-colors',
@@ -635,7 +635,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
 
   return (
     <Link
-      to={`/matches/${match.id}`}
+      to={`/matches/${match.slug || match.id}`}
       className="flex items-center gap-4 px-4 py-4 hover:bg-white/5 transition-all border-b border-white/[0.03] last:border-b-0 group"
     >
       {/* Résultat badge */}
@@ -982,7 +982,7 @@ function LineupHistoryDrawer({
 
               {/* Lien vers le match */}
               <Link
-                to={`/matches/${match.id}`}
+                to={`/matches/${match.slug || match.id}`}
                 onClick={onClose}
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/3 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
               >
@@ -1294,7 +1294,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
           </div>
 
           <Link
-            to={`/matches/${nextMatch.id}`}
+            to={`/matches/${nextMatch.slug || nextMatch.id}`}
             className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
           >
             <ChevronRight size={14} />

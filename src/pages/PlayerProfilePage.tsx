@@ -450,7 +450,7 @@ export function PlayerProfilePage() {
             return (
               <Link
                 key={m.match_id}
-                to={`/matches/${m.match_id}`}
+                to={`/matches/${m.match_slug || m.match_id}`}
                 className={clsx(
                   'grid grid-cols-[auto_1fr_auto_auto_auto] gap-2 items-center px-4 py-2.5',
                   'hover:bg-surface-raised transition-colors',
@@ -525,7 +525,7 @@ export function PlayerProfilePage() {
           {mvpData!.mvp_matches.map((m, i) => (
             <Link
               key={m.match_id}
-              to={`/matches/${m.match_id}`}
+              to={`/matches/${(m as any).match_slug || m.match_id}`}
               className={clsx(
                 'flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors',
                 i < mvpData!.mvp_matches.length - 1 && 'border-b border-surface-border/30'

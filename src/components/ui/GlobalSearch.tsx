@@ -61,7 +61,7 @@ export function GlobalSearch() {
         sub: (p as any).teams?.name ?? '',
         color: (p as any).teams?.color ?? '#334155',
         avatar: p.avatar_url,
-        href: `/players/${p.id}`,
+        href: `/players/${p.slug || p.id}`,
         type: 'player' as const,
       })),
     ...(teams ?? [])
@@ -73,7 +73,7 @@ export function GlobalSearch() {
         sub: 'Équipe',
         color: t.color,
         avatar: t.logo_url,
-        href: `/teams/${t.id}`,
+        href: `/teams/${t.slug || t.id}`,
         type: 'team' as const,
       })),
     ...(matches ?? [])
@@ -96,7 +96,7 @@ export function GlobalSearch() {
           sub: score,
           color: (m.home_team as any)?.color ?? '#334155',
           avatar: null,
-          href: `/matches/${m.id}`,
+          href: `/matches/${m.slug || m.id}`,
           type: 'match' as const,
         }
       }),

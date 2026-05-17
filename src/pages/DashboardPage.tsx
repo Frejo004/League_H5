@@ -229,7 +229,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
 
   return (
     <Link
-      to={`/matches/${match.id}`}
+      to={`/matches/${match.slug || match.id}`}
       className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
       {/* Lueur arrière-plan */}
@@ -450,7 +450,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
 
   return (
     <Link
-      to={`/matches/${match.id}`}
+      to={`/matches/${match.slug || match.id}`}
       className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-red-500/20 transition-all group"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">

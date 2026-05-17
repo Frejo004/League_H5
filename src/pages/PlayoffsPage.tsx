@@ -22,6 +22,7 @@ import type { MatchStatus } from '@/types/database'
 
 interface PlayoffMatch {
   id: string
+  slug: string | null
   season_id: string
   home_team_id: string | null
   away_team_id: string | null
@@ -66,7 +67,7 @@ function usePlayoffMatches(seasonId?: string) {
       const { data, error } = await supabase
         .from('matches')
         .select(`
-          id, season_id, home_team_id, away_team_id,
+          id, slug, season_id, home_team_id, away_team_id,
           home_score, away_score, status, matchday, scheduled_at,
           home_team:teams!home_team_id(id, name, color, logo_url),
           away_team:teams!away_team_id(id, name, color, logo_url)
@@ -277,7 +278,7 @@ function PlayoffMatchCard({
           )}
           {(isCompleted || isLive) && (
             <Link
-              to={`/matches/${match.id}`}
+              to={`/matches/${match.slug || match.id}`}
               className="text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-wider transition-colors"
             >
               Détails →

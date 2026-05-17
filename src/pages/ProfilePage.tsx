@@ -205,7 +205,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
           {/* Bouton pour voir le profil complet */}
           <div className="mt-5 text-center relative z-10">
             <Link
-              to={`/players/${myPlayer.id}`}
+              to={`/players/${myPlayer.slug || myPlayer.id}`}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-bold text-slate-900 bg-[#FFDF73] hover:bg-white transition-colors uppercase tracking-widest"
             >
               Voir Profil Complet <ArrowRight size={10} />

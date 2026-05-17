@@ -89,6 +89,7 @@ export interface PlayerMvpData {
   total_mvp: number   // nombre de fois élu homme du match
   mvp_matches: Array<{
     match_id: string
+    match_slug: string
     matchday: number
     played_at: string | null
     home_team_name: string
@@ -108,7 +109,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
       const { data: matchData, error: matchErr } = await supabase
         .from('matches')
         .select(`
-          id, matchday, played_at, home_score, away_score,
+          id, slug, matchday, played_at, home_score, away_score,
           home_team:teams!home_team_id(name),
           away_team:teams!away_team_id(name)
         `)
@@ -147,6 +148,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .filter(m => mvpMatchIds.has(m.id))
         .map(m => ({
           match_id:       m.id,
+          match_slug:     m.slug,
           matchday:       m.matchday,
           played_at:      m.played_at,
           home_team_name: (m.home_team as unknown as { name: string })?.name ?? '—',

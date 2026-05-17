@@ -10,6 +10,7 @@ export interface PlayerProfileData {
   position: string | null
   avatar_url: string | null
   team_id: string
+  slug: string
   season_id: string
   team: TeamRef
   // Stats saison
@@ -20,6 +21,7 @@ export interface PlayerProfileData {
   // Derniers matchs joués
   recent_matches: Array<{
     match_id: string
+    match_slug: string
     matchday: number
     played_at: string | null
     home_team: TeamRef
@@ -42,7 +44,7 @@ export function usePlayerProfile(playerId?: string) {
       // ── Requête 1 : player + team + profil lié ──────────────────────────────
       const { data: playerRaw, error: playerErr } = await supabase
         .from('players')
-        .select('*, team:teams!team_id(id, name, color)')
+        .select('*, slug, team:teams!team_id(id, name, color)')
         .eq('id', playerId!)
         .single()
       if (playerErr) throw playerErr
@@ -66,7 +68,7 @@ export function usePlayerProfile(playerId?: string) {
         supabase
           .from('matches')
           .select(`
-            id, matchday, played_at, home_score, away_score,
+            id, slug, matchday, played_at, home_score, away_score,
             home_team_id, away_team_id,
             home_team:teams!home_team_id(id, name, color),
             away_team:teams!away_team_id(id, name, color)
@@ -129,6 +131,7 @@ export function usePlayerProfile(playerId?: string) {
 
         return {
           match_id:        m.id,
+          match_slug:      m.slug,
           matchday:        m.matchday,
           played_at:       m.played_at,
           home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
@@ -150,6 +153,7 @@ export function usePlayerProfile(playerId?: string) {
         position:      playerRaw.position,
         avatar_url:    resolvedAvatarUrl,
         team_id:       playerRaw.team_id,
+        slug:          playerRaw.slug,
         season_id:     playerRaw.season_id,
         team,
         goals:         totalGoals,
@@ -176,7 +180,7 @@ export function usePlayerProfileBySlug(slug?: string, seasonId?: string) {
       // D'abord, récupérer le joueur par slug
       let query = supabase
         .from('players')
-        .select('*, team:teams!team_id(id, name, color)')
+        .select('*, slug, team:teams!team_id(id, name, color)')
         .eq('slug', slug!)
       
       if (seasonId) {
@@ -205,7 +209,7 @@ export function usePlayerProfileBySlug(slug?: string, seasonId?: string) {
         supabase
           .from('matches')
           .select(`
-            id, matchday, played_at, home_score, away_score,
+            id, slug, matchday, played_at, home_score, away_score,
             home_team_id, away_team_id,
             home_team:teams!home_team_id(id, name, color),
             away_team:teams!away_team_id(id, name, color)
@@ -266,6 +270,7 @@ export function usePlayerProfileBySlug(slug?: string, seasonId?: string) {
 
         return {
           match_id:        m.id,
+          match_slug:      m.slug,
           matchday:        m.matchday,
           played_at:       m.played_at,
           home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
@@ -287,6 +292,7 @@ export function usePlayerProfileBySlug(slug?: string, seasonId?: string) {
         position:      playerRaw.position,
         avatar_url:    resolvedAvatarUrl,
         team_id:       playerRaw.team_id,
+        slug:          playerRaw.slug,
         season_id:     playerRaw.season_id,
         team,
         goals:         totalGoals,

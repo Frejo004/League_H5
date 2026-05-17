@@ -187,14 +187,14 @@ function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
               {/* Liens profils */}
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/8">
                 <Link
-                  to={`/players/${a.id}`}
+                  to={`/players/${a.slug || a.id}`}
                   onClick={onClose}
                   className="text-center text-[10px] font-black text-primary-400 hover:text-primary-300 uppercase tracking-wider transition-colors py-2 rounded-xl hover:bg-primary-500/10"
                 >
                   Voir profil →
                 </Link>
                 <Link
-                  to={`/players/${b.id}`}
+                  to={`/players/${b.slug || b.id}`}
                   onClick={onClose}
                   className="text-center text-[10px] font-black text-primary-400 hover:text-primary-300 uppercase tracking-wider transition-colors py-2 rounded-xl hover:bg-primary-500/10"
                 >
@@ -470,7 +470,7 @@ export function PlayersPage() {
               return (
                 <Link
                   key={p.id}
-                  to={`/players/${p.id}`}
+                  to={`/players/${p.slug || p.id}`}
                   className={clsx(
                     'grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 items-center px-4 py-2.5',
                     'hover:bg-surface-raised transition-colors',
