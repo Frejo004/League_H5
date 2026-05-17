@@ -2,13 +2,14 @@
  * AdminLiveControls — Panneau de contrôle admin pour piloter un match live
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Play, Pause, Square, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
 import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { useMatchLineups } from '@/hooks/useLineups'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
 
 // ── Modal de confirmation suppression ────────────────────────────────────────
@@ -136,6 +137,78 @@ export function AdminLiveControls({
 
   const currentPlayers = eventTeam === homeTeam.id ? homePlayers : awayPlayers
   const otherPlayers = eventTeam === homeTeam.id ? awayPlayers : homePlayers
+
+  // Récupérer les compositions de match saisies par le capitaine
+  const { data: lineups = [] } = useMatchLineups(matchId)
+
+  // Filtrer les compositions pour l'équipe en cours et l'équipe adverse
+  const teamLineup = useMemo(() => lineups.filter(l => l.team_id === eventTeam), [lineups, eventTeam])
+  const otherTeamLineup = useMemo(() => lineups.filter(l => l.team_id !== eventTeam), [lineups, eventTeam])
+
+  // Liste des joueurs retenus dans la compo par le capitaine (titulaires + remplaçants)
+  // S'il n'y a pas de compo, on utilise la liste de tous les joueurs de l'équipe
+  const teamLineupPlayers = useMemo(() => {
+    if (teamLineup.length === 0) return currentPlayers
+    return teamLineup.map(l => ({
+      id: l.player_id,
+      first_name: l.player?.first_name || '',
+      last_name: l.player?.last_name || '',
+    }))
+  }, [teamLineup, currentPlayers])
+
+  const otherTeamLineupPlayers = useMemo(() => {
+    if (otherTeamLineup.length === 0) return otherPlayers
+    return otherTeamLineup.map(l => ({
+      id: l.player_id,
+      first_name: l.player?.first_name || '',
+      last_name: l.player?.last_name || '',
+    }))
+  }, [otherTeamLineup, otherPlayers])
+
+  // Calcul dynamique des joueurs actuellement sur le terrain (starters) et sur le banc (subs)
+  const substitutionPlayers = useMemo(() => {
+    if (teamLineup.length === 0) {
+      return {
+        starters: currentPlayers,
+        subs: currentPlayers
+      }
+    }
+
+    const startersIds = teamLineup.filter(l => l.is_starter).map(l => l.player_id)
+
+    const pitchSet = new Set<string>(startersIds)
+
+    // Parcourir chronologiquement les événements de remplacement pour cette équipe
+    const subEvents = [...events]
+      .filter(e => e.type === 'substitution' && e.team_id === eventTeam)
+      .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+
+    subEvents.forEach(ev => {
+      const outId = ev.player_id
+      const inId = ev.player2_id
+
+      if (outId) {
+        pitchSet.delete(outId)
+      }
+      if (inId) {
+        pitchSet.add(inId)
+      }
+    })
+
+    const allLineupPlayers = teamLineup.map(l => ({
+      id: l.player_id,
+      first_name: l.player?.first_name || '',
+      last_name: l.player?.last_name || '',
+    }))
+
+    // Les joueurs sortants possibles sont les joueurs de la compo actuellement sur le terrain
+    const starters = allLineupPlayers.filter(p => pitchSet.has(p.id))
+
+    // Les joueurs entrants possibles sont tous les joueurs de l'effectif qui ne sont pas actuellement sur le terrain
+    const subs = currentPlayers.filter(p => !pitchSet.has(p.id))
+
+    return { starters, subs }
+  }, [teamLineup, currentPlayers, events, eventTeam])
 
   const handleAddEvent = async () => {
     if (!user) return
@@ -523,7 +596,11 @@ export function AdminLiveControls({
                   className="input text-sm font-medium py-2 bg-black/40 border-white/10"
                 >
                   <option value="">— Sélectionner —</option>
-                  {(eventType === 'own_goal' ? otherPlayers : currentPlayers)
+                  {(eventType === 'substitution'
+                    ? substitutionPlayers.starters
+                    : eventType === 'own_goal'
+                      ? otherTeamLineupPlayers
+                      : teamLineupPlayers)
                     .filter(p => p.id !== eventPlayer2)
                     .map(p => (
                       <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>
@@ -542,8 +619,8 @@ export function AdminLiveControls({
                   onChange={e => setEventPlayer2(e.target.value)}
                   className="input text-sm font-medium py-2 bg-black/40 border-white/10"
                 >
-                  <option value="">— Aucun —</option>
-                  {currentPlayers
+                  <option value="">— {eventType === 'substitution' ? 'Sélectionner' : 'Aucun'} —</option>
+                  {(eventType === 'substitution' ? substitutionPlayers.subs : teamLineupPlayers)
                     .filter(p => p.id !== eventPlayer)
                     .map(p => (
                       <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>

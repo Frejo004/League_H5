@@ -80,7 +80,9 @@ function TeamGoalsChart({
   const scoredPath   = buildPath('scored')
   const concededPath = buildPath('conceded')
 
-  const yTicks = maxVal <= 2 ? [0, 1, maxVal] : [0, Math.ceil(maxVal / 2), maxVal]
+  const yTicks = Array.from(
+    new Set(maxVal <= 2 ? [0, 1, maxVal] : [0, Math.ceil(maxVal / 2), maxVal])
+  )
 
   // Totaux
   const totalScored   = data.reduce((s, d) => s + d.scored, 0)

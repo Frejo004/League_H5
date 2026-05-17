@@ -28,21 +28,36 @@ function computeFilteredStandings(
   const statsMap = new Map<string, {
     played: number; won: number; drawn: number; lost: number
     goals_for: number; goals_against: number; points: number
+    form: Array<'W' | 'D' | 'L'>
   }>()
 
   for (const row of standings) {
-    statsMap.set(row.team_id, { played: 0, won: 0, drawn: 0, lost: 0, goals_for: 0, goals_against: 0, points: 0 })
+    statsMap.set(row.team_id, {
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goals_for: 0,
+      goals_against: 0,
+      points: 0,
+      form: []
+    })
   }
 
-  for (const m of matches) {
+  // Trier les matchs par journée pour calculer la forme dans l'ordre chronologique
+  const sortedMatches = [...matches].sort((a, b) => a.matchday - b.matchday)
+
+  for (const m of sortedMatches) {
     if (m.status !== 'completed' || m.home_score === null || m.away_score === null) continue
     const processTeam = (teamId: string, gf: number, ga: number) => {
       const s = statsMap.get(teamId)
       if (!s) return
       s.played++; s.goals_for += gf; s.goals_against += ga
-      if (gf > ga) { s.won++; s.points += 3 }
-      else if (gf === ga) { s.drawn++; s.points += 1 }
-      else s.lost++
+      let res: 'W' | 'D' | 'L'
+      if (gf > ga) { s.won++; s.points += 3; res = 'W' }
+      else if (gf === ga) { s.drawn++; s.points += 1; res = 'D' }
+      else { s.lost++; res = 'L' }
+      s.form.push(res)
     }
     if (filter === 'home') processTeam(m.home_team_id, m.home_score, m.away_score)
     if (filter === 'away') processTeam(m.away_team_id, m.away_score, m.home_score)
@@ -51,7 +66,14 @@ function computeFilteredStandings(
   return standings
     .map(row => {
       const s = statsMap.get(row.team_id)!
-      return { ...row, ...s, goal_diff: s.goals_for - s.goals_against }
+      // Inverser pour avoir le plus récent en premier
+      const reversedForm = [...s.form].reverse()
+      return { 
+        ...row, 
+        ...s, 
+        form: reversedForm,
+        goal_diff: s.goals_for - s.goals_against 
+      }
     })
     .sort((a, b) => b.points - a.points || b.goal_diff - a.goal_diff || b.goals_for - a.goals_for)
 }
@@ -397,7 +419,7 @@ export function StandingsPage() {
             </div>
 
             {/* Table header — desktop uniquement */}
-            <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 px-4 py-2 border-b border-white/4">
+            <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_6.5rem_3rem] gap-1 px-4 py-2 border-b border-white/4">
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
@@ -410,7 +432,7 @@ export function StandingsPage() {
               <span className="section-title text-right">Pts</span>
             </div>
             {/* Mobile header */}
-            <div className="grid grid-cols-[2rem_1fr_2rem_auto_3rem] gap-1 px-3 py-2 border-b border-white/4 lg:hidden">
+            <div className="grid grid-cols-[2rem_1fr_2rem_4rem_3rem] gap-1 px-3 py-2 border-b border-white/4 lg:hidden">
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
@@ -437,7 +459,7 @@ export function StandingsPage() {
                     )}
                   >
                     {/* Desktop row */}
-                    <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_auto_3rem] gap-1 items-center px-4 py-2.5">
+                    <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_6.5rem_3rem] gap-1 items-center px-4 py-2.5">
                       <div className="flex justify-center">
                         <span className={clsx(
                           'w-7 h-7 flex items-center justify-center text-[13px] font-black',
@@ -495,7 +517,7 @@ export function StandingsPage() {
                     </div>
 
                     {/* Mobile row — condensé */}
-                    <div className="lg:hidden grid grid-cols-[2rem_1fr_2rem_auto_2.5rem] gap-2 items-center px-3 py-3 relative overflow-hidden">
+                    <div className="lg:hidden grid grid-cols-[2rem_1fr_2rem_4rem_3rem] gap-1 items-center px-3 py-3 relative overflow-hidden">
                       {isFirst && <div className="absolute inset-0 bg-gradient-to-r from-[#FFDF73]/10 to-transparent pointer-events-none" />}
                       <div className="flex justify-center relative z-10">
                         <span className={clsx(

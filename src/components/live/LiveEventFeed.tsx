@@ -44,9 +44,12 @@ interface LiveEventFeedProps {
 export function LiveEventFeed({
   events, homeTeamId, homeColor, awayColor, className,
 }: LiveEventFeedProps) {
-  // 1. Séparer les événements par période
-  const period1 = events.filter(e => e.period === 1 || !e.period).sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-  const period2 = events.filter(e => e.period === 2).sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+  // 1. Filtrer pour exclure les statistiques rapides (tirs, fautes, corners) du flux d'événements textuel
+  const mainEvents = events.filter(e => !['shot', 'shot_on_target', 'foul', 'corner'].includes(e.type))
+
+  // 2. Séparer les événements principaux par période
+  const period1 = mainEvents.filter(e => e.period === 1 || !e.period).sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+  const period2 = mainEvents.filter(e => e.period === 2).sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
 
   // Événements système spéciaux
   const halftimeEvent = events.find(e => e.type === 'halftime')
@@ -54,9 +57,22 @@ export function LiveEventFeed({
 
   // Helper pour calculer le score à un instant T (cumulatif)
   const getScoreAt = (allEvents: MatchEvent[], currentEvent: MatchEvent) => {
+    const getAbsoluteMinute = (ev: MatchEvent) => {
+      let m = ev.minute ?? 0
+      if (ev.period === 2 && m < 20) {
+        m += 20
+      }
+      if (ev.type === 'fulltime') {
+        return 1000 // Toujours à la toute fin du match !
+      }
+      return m
+    }
+
     let h = 0, a = 0
     const sortedAll = [...allEvents].sort((x, y) => {
-      if ((x.minute ?? 0) !== (y.minute ?? 0)) return (x.minute ?? 0) - (y.minute ?? 0)
+      const mX = getAbsoluteMinute(x)
+      const mY = getAbsoluteMinute(y)
+      if (mX !== mY) return mX - mY
       return new Date(x.created_at).getTime() - new Date(y.created_at).getTime()
     })
 
@@ -104,16 +120,16 @@ export function LiveEventFeed({
       const isPause = event.type === 'pause'
       return (
         <div key={event.id} className="relative flex items-center justify-center py-6 animate-in zoom-in-95 fade-in duration-700">
-           <div className={clsx(
-             "px-6 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl backdrop-blur-xl transition-all",
-             isPause 
-               ? "bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-amber-500/10" 
-               : "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-emerald-500/10"
-           )}>
-             <span className="mr-2">{EVENT_ICONS[event.type]}</span>
-             {event.description || EVENT_LABELS[event.type]}
-             <span className="ml-3 opacity-50 tabular-nums">{displayMinute}'</span>
-           </div>
+          <div className={clsx(
+            "px-6 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl backdrop-blur-xl transition-all",
+            isPause
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-amber-500/10"
+              : "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-emerald-500/10"
+          )}>
+            <span className="mr-2">{EVENT_ICONS[event.type]}</span>
+            {event.description || EVENT_LABELS[event.type]}
+            <span className="ml-3 opacity-50 tabular-nums">{displayMinute}'</span>
+          </div>
         </div>
       )
     }

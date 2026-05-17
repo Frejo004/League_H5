@@ -21,6 +21,7 @@ import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { LiveTicker } from '@/components/live/LiveTicker'
+import { useMatchLineups } from '@/hooks/useLineups'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -213,10 +214,11 @@ export function MatchDetailPage() {
   const isScheduled = match?.status === 'scheduled'
   const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isCaptain } = useAuth()
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
   const voteMvp = useVoteMvp()
+  const { data: lineups } = useMatchLineups(id)
 
   // Joueurs des deux équipes — chargés dès que le match est disponible
   // (indépendamment des buts/passes pour que le vote soit toujours accessible)
@@ -254,6 +256,10 @@ export function MatchDetailPage() {
         stats[side].shotsOnTarget++
         stats[side].shots++
       }
+      if (ev.type === 'goal') {
+        stats[side].shotsOnTarget++
+        stats[side].shots++
+      }
       if (ev.type === 'foul') stats[side].fouls++
       if (ev.type === 'corner') stats[side].corners++
     })
@@ -278,6 +284,72 @@ export function MatchDetailPage() {
     }
     prevGoalsCount.current = goalsOnly.length
   }, [liveEvents, match])
+
+  // Déterminer s'il y a des actions clés dans le match (buts, passes, cartons)
+  const hasKeyActions = useMemo(() => {
+    const hasGoals = (match?.goals ?? []).length > 0
+    const hasAssists = (match?.assists ?? []).length > 0
+    const hasEvents = liveEvents.some(ev =>
+      ['yellow_card', 'red_card'].includes(ev.type)
+    )
+    return hasGoals || hasAssists || hasEvents
+  }, [match?.goals, match?.assists, liveEvents])
+
+  // Déterminer tous les joueurs du match pour le calcul global
+  const allMatchPlayers = useMemo(() => {
+    const goals = (match?.goals ?? []) as GoalWithPlayer[]
+    const assists = (match?.assists ?? []) as AssistWithPlayer[]
+    const goalPlayers = goals.flatMap(g => g.players ? [g.players] : [])
+    const assistPlayers = assists.flatMap(a => a.players ? [a.players] : [])
+    return Array.from(
+      new Map([
+        ...(homePlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
+        ...(awayPlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
+        ...goalPlayers.map(p => [p.id, p] as const),
+        ...assistPlayers.map(p => [p.id, p] as const),
+      ]).values()
+    )
+  }, [homePlayers, awayPlayers, match?.goals, match?.assists])
+
+  // Filtrer les joueurs éligibles pour l'Homme du match (MVP)
+  const eligibleMvpPlayers = useMemo(() => {
+    const actionPlayerIds = new Set<string>()
+
+    // 1. Ajouter les buteurs
+    const goals = (match?.goals ?? []) as GoalWithPlayer[]
+    goals.forEach(g => {
+      if (g.player_id) actionPlayerIds.add(g.player_id)
+    })
+
+    // 2. Ajouter les passeurs
+    const assists = (match?.assists ?? []) as AssistWithPlayer[]
+    assists.forEach(a => {
+      if (a.player_id) actionPlayerIds.add(a.player_id)
+    })
+
+    // 3. Ajouter les cartons depuis liveEvents
+    liveEvents.forEach(ev => {
+      if (['yellow_card', 'red_card'].includes(ev.type)) {
+        if (ev.player_id) actionPlayerIds.add(ev.player_id)
+        if (ev.player2_id) actionPlayerIds.add(ev.player2_id)
+      }
+    })
+
+    // Si des actions clés existent, seuls ces joueurs sont éligibles
+    if (actionPlayerIds.size > 0) {
+      return allMatchPlayers.filter(p => actionPlayerIds.has(p.id))
+    }
+
+    // Sinon, on affiche tous les joueurs de la feuille de match (lineups)
+    if (lineups && lineups.length > 0) {
+      return allMatchPlayers.filter(p => lineups.some(l => l.player_id === p.id))
+    }
+
+    return allMatchPlayers
+  }, [allMatchPlayers, lineups, liveEvents, match?.goals, match?.assists])
+
+  // Droit de vote : tout le monde si actions clés, sinon uniquement les capitaines/admins
+  const canVoteMvp = hasKeyActions || isCaptain
 
   if (isLoading) {
     return (
@@ -314,18 +386,6 @@ export function MatchDetailPage() {
 
   // Sort goals by minute
   const sortedGoals = [...goals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-
-  const goalPlayers = goals.flatMap(g => g.players ? [g.players] : [])
-  const assistPlayers = assists.flatMap(a => a.players ? [a.players] : [])
-  // Priorité aux joueurs qui ont marqué/passé, complété par tous les joueurs des équipes
-  const allMatchPlayers = Array.from(
-    new Map([
-      ...(homePlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
-      ...(awayPlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
-      ...goalPlayers.map(p => [p.id, p] as const),
-      ...assistPlayers.map(p => [p.id, p] as const),
-    ]).values()
-  )
 
   // MVP
   const voteMap = new Map<string, number>()
@@ -873,7 +933,7 @@ export function MatchDetailPage() {
             )}
 
             {/* MVP Vote */}
-            {isCompleted && allMatchPlayers.length > 0 && user && (
+            {isCompleted && eligibleMvpPlayers.length > 0 && user && (
               <div className="card space-y-4 mx-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -900,8 +960,18 @@ export function MatchDetailPage() {
                     Enregistrement du vote…
                   </div>
                 )}
+                {!canVoteMvp && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center mx-1">
+                    <p className="text-[11.5px] font-bold text-amber-400">
+                      ⚠️ Match sans action clé
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-normal">
+                      Seuls les capitaines d'équipe et administrateurs sont habilités à élire le MVP pour cette rencontre sans événement.
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2">
-                  {allMatchPlayers.map(p => {
+                  {eligibleMvpPlayers.map(p => {
                     const voteCount = voteMap.get(p.id) ?? 0
                     const isMyVote = myVote?.player_id === p.id
                     const isTop = p.id === topMvpId && voteCount > 0
@@ -909,15 +979,18 @@ export function MatchDetailPage() {
                     return (
                       <button
                         key={p.id}
-                        onClick={() => voteMvp.mutate({ matchId: id!, playerId: p.id, votedBy: user.id })}
-                        disabled={voteMvp.isPending}
+                        onClick={() => {
+                          if (!canVoteMvp) return
+                          voteMvp.mutate({ matchId: id!, playerId: p.id, votedBy: user.id })
+                        }}
+                        disabled={voteMvp.isPending || !canVoteMvp}
                         className={clsx(
                           'relative flex items-center gap-2.5 p-3 rounded-xl border text-left',
                           'transition-all duration-200 overflow-hidden',
                           isMyVote
                             ? 'border-amber-500/50 bg-amber-500/10'
                             : 'border-surface-border bg-surface-raised hover:border-amber-500/30 hover:bg-amber-500/5',
-                          voteMvp.isPending && 'opacity-60 cursor-not-allowed'
+                          (voteMvp.isPending || !canVoteMvp) && 'opacity-60 cursor-not-allowed'
                         )}
                       >
                         {pct > 0 && (
@@ -965,9 +1038,15 @@ export function MatchDetailPage() {
                     )
                   })}
                 </div>
-                <p className="text-[10px] text-slate-600 text-center">
-                  Clique sur un joueur pour voter · Tu peux changer ton vote
-                </p>
+                {canVoteMvp ? (
+                  <p className="text-[10px] text-slate-600 text-center">
+                    Clique sur un joueur pour voter · Tu peux changer ton vote
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-amber-500/60 text-center font-bold">
+                    🛡️ Vote restreint aux capitaines et administrateurs
+                  </p>
+                )}
               </div>
             )}
 

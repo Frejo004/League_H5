@@ -11,6 +11,7 @@ export function useTeams(seasonId?: string) {
         .from('teams')
         .select('*, slug, players!players_team_id_fkey(count)')
         .eq('season_id', seasonId!)
+        .eq('players.is_active', true)
         .order('name')
       if (error) {
         // Fallback sans le count si la relation échoue
