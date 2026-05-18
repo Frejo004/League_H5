@@ -3,7 +3,7 @@
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Play, Pause, Square, Plus, Trash2, AlertTriangle } from 'lucide-react'
+import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Eye } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
@@ -148,7 +148,7 @@ export function AdminLiveControls({
   // Récupérer les compositions de match saisies par le capitaine
   const { data: lineups = [] } = useMatchLineups(matchId)
 
-  const { stream, isBroadcasting, startBroadcast, stopBroadcast } = useWebRTCBroadcaster(matchId)
+  const { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount } = useWebRTCBroadcaster(matchId)
 
   // ── Référence vidéo pour la prévisualisation caméra de l'admin ─────────────────────
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -163,7 +163,27 @@ export function AdminLiveControls({
     video.play().catch(err => {
       if (err.name !== 'AbortError') console.warn('Local video play error:', err)
     })
+    return () => {
+      if (video) video.srcObject = null
+    }
   }, [stream])
+
+  // Calculer le score en direct basé uniquement sur les événements reçus (events) pour éviter tout décalage
+  const computedScore = useMemo(() => {
+    return events.reduce((acc, event) => {
+      if (event.type === 'goal' || event.type === 'own_goal') {
+        const isHomeGoal = event.type === 'own_goal'
+          ? event.team_id !== homeTeam.id
+          : event.team_id === homeTeam.id
+        if (isHomeGoal) acc.home++
+        else acc.away++
+      }
+      return acc
+    }, { home: 0, away: 0 })
+  }, [events, homeTeam.id])
+
+  const homeScoreVal = isLive ? computedScore.home : homeScore
+  const awayScoreVal = isLive ? computedScore.away : awayScore
 
   // Filtrer les compositions pour l'équipe en cours et l'équipe adverse
   const teamLineup = useMemo(() => lineups.filter(l => l.team_id === eventTeam), [lineups, eventTeam])
@@ -304,9 +324,9 @@ export function AdminLiveControls({
           </div>
           {isLive && (
             <div className="flex items-center gap-2 text-xl font-black text-white tabular-nums drop-shadow-md" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <span style={{ color: homeTeam.color }}>{homeScore}</span>
+              <span style={{ color: homeTeam.color }}>{homeScoreVal}</span>
               <span className="text-white/20 text-sm">-</span>
-              <span style={{ color: awayTeam.color }}>{awayScore}</span>
+              <span style={{ color: awayTeam.color }}>{awayScoreVal}</span>
             </div>
           )}
         </div>
@@ -438,12 +458,14 @@ export function AdminLiveControls({
                       className={clsx(
                         "flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors border",
                         isBroadcasting
-                          ? "bg-red-500 text-white border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                          ? (stream
+                              ? "bg-red-500 text-white border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                              : "bg-amber-500 text-white border-amber-500/50 animate-pulse")
                           : "bg-[#C8F135]/10 border-[#C8F135]/30 text-[#C8F135] hover:bg-[#C8F135]/20"
                       )}
                     >
-                      {isBroadcasting ? <Square size={14} /> : <Play size={14} />}
-                      {isBroadcasting ? 'Arrêter Caméra' : 'Filmer Match'}
+                      {isBroadcasting ? (stream ? <Square size={14} /> : <LoadingSpinner size="sm" />) : <Play size={14} />}
+                      {isBroadcasting ? (stream ? 'Arrêter Caméra' : 'Démarrage...') : 'Filmer Match'}
                     </button>
                   </div>
                 )}
@@ -468,6 +490,9 @@ export function AdminLiveControls({
                   <div className="absolute top-3 right-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">EN DIRECT (P2P)</span>
+                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest border-l border-white/20 pl-2 flex items-center gap-1">
+                      <Eye size={12} className="text-[#C8F135]" /> {viewerCount} {viewerCount > 1 ? 'spectateurs' : 'spectateur'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -507,12 +532,12 @@ export function AdminLiveControls({
                   <div className="flex items-center gap-3 bg-red-500/10 p-1.5 rounded-xl border border-red-500/20">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-2">Score final :</span>
                     <button
-                      onClick={() => { endMatch.mutate({ homeScore, awayScore }); setConfirmEnd(false) }}
+                      onClick={() => { endMatch.mutate({ homeScore: homeScoreVal, awayScore: awayScoreVal }); setConfirmEnd(false) }}
                       disabled={endMatch.isPending}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                     >
                       {endMatch.isPending ? <LoadingSpinner size="sm" /> : <Square size={12} />}
-                      Confirmer {homeScore}-{awayScore}
+                      Confirmer {homeScoreVal}-{awayScoreVal}
                     </button>
                     <button onClick={() => setConfirmEnd(false)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white px-2">
                       Annuler
@@ -527,7 +552,12 @@ export function AdminLiveControls({
         {/* Stats Rapides */}
         {isLive && (
           <div className="pt-2 border-t border-white/5 space-y-3 relative z-10">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Actions Rapides (Stats)</p>
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Actions Rapides (Stats)</p>
+              {isPaused && (
+                <span className="text-[9px] font-bold text-amber-500 uppercase animate-pulse">Jeu Suspendu</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               {/* Home Team Stats */}
               <div className="flex flex-col gap-2">
@@ -537,26 +567,34 @@ export function AdminLiveControls({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'shot', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir"}
                   >
                     Tir
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir cadré"}
                   >
                     Cadré
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'foul', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer une faute"}
                   >
                     Faute
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'corner', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un corner"}
                   >
                     Corner
                   </button>
@@ -571,26 +609,34 @@ export function AdminLiveControls({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'shot', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir"}
                   >
                     Tir
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir cadré"}
                   >
                     Cadré
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'foul', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer une faute"}
                   >
                     Faute
                   </button>
                   <button
+                    disabled={isPaused || addEvent.isPending}
                     onClick={() => addEvent.mutate({ type: 'corner', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
-                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 transition-all"
+                    className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+                    title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un corner"}
                   >
                     Corner
                   </button>
@@ -612,7 +658,7 @@ export function AdminLiveControls({
               if (homeShots > 5 && homeShots > awayShots + 3) suggestions.push(`Domination totale de ${homeTeam.name} (${homeShots} tirs) !`)
               if (awayShots > 5 && awayShots > homeShots + 3) suggestions.push(`Le siège continue devant le but de ${homeTeam.name} !`)
               if (fouls > 6) suggestions.push(`Match très engagé physiquement (${fouls} fautes) !`)
-              if (homeScore > 3 || awayScore > 3) suggestions.push(`Quel festival offensif aujourd'hui !`)
+              if (homeScoreVal > 3 || awayScoreVal > 3) suggestions.push(`Quel festival offensif aujourd'hui !`)
 
               return suggestions.map((text, idx) => (
                 <button
@@ -772,45 +818,6 @@ export function AdminLiveControls({
           </div>
         )}
 
-        {/* Événements récents */}
-        {events.length > 0 && isLive && (
-          <div className="space-y-2 pt-2 relative z-10">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Historique des actions</p>
-            <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
-              {[...events].reverse().slice(0, 5).map(ev => (
-                <div key={ev.id} className="flex items-center gap-3 py-2 px-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors group">
-                  <span className="text-sm font-black tabular-nums text-slate-500 w-6 shrink-0 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                    {ev.minute !== null ? `${ev.minute}'` : '—'}
-                  </span>
-                  <span className="flex-1 truncate text-xs font-bold tracking-wide uppercase">
-                    {ev.type === 'goal' && <span className="text-white"><span className="text-primary-400 mr-1">⚽ BUT</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
-                    {ev.type === 'own_goal' && <span className="text-white"><span className="text-red-400 mr-1">⚽ CSC</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
-                    {ev.type === 'yellow_card' && <span className="text-white"><span className="text-amber-400 mr-1">🟨 JAUNE</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
-                    {ev.type === 'red_card' && <span className="text-white"><span className="text-red-500 mr-1">🟥 ROUGE</span>{ev.player ? ` — ${ev.player.first_name} ${ev.player.last_name}` : ''}</span>}
-                    {ev.type === 'substitution' && <span className="text-slate-300"><span className="text-blue-400 mr-1">🔄 REMPL.</span>{ev.player?.first_name} → {ev.player2?.first_name}</span>}
-                    {ev.type === 'comment' && <span className="text-slate-400 italic">💬 {ev.description}</span>}
-                    {ev.type === 'kickoff' && <span className="text-green-400">🏁 DÉBUT</span>}
-                    {ev.type === 'halftime' && <span className="text-blue-400">⏸️ MI-TEMPS</span>}
-                    {ev.type === 'fulltime' && <span className="text-red-400">🏆 FIN DU MATCH</span>}
-                    {ev.type === 'shot' && <span className="text-slate-300"><span className="text-slate-400 mr-1">🎯 TIR</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
-                    {ev.type === 'shot_on_target' && <span className="text-slate-300"><span className="text-cyan-400 mr-1">🎯 TIR CADRÉ</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
-                    {ev.type === 'foul' && <span className="text-slate-300"><span className="text-orange-400 mr-1">⚠️ FAUTE</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
-                    {ev.type === 'corner' && <span className="text-slate-300"><span className="text-purple-400 mr-1">🚩 CORNER</span>{ev.team ? `— ${ev.team.name}` : ''}</span>}
-                    {ev.type === 'pause' && <span className="text-amber-400">⏸️ PAUSE{ev.description ? ` — ${ev.description}` : ''}</span>}
-                    {ev.type === 'resume' && <span className="text-emerald-400">▶️ REPRISE DU JEU</span>}
-                  </span>
-                  <button
-                    onClick={() => setDeleteTarget(ev)}
-                    title="Annuler cet événement"
-                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all p-1.5 rounded-lg"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {/* Gestion des derniers événements (Correction) */}
         {isLive && events && events.length > 0 && (
           <div className="pt-6 border-t border-white/5 space-y-4">
@@ -823,25 +830,38 @@ export function AdminLiveControls({
               {[...events].reverse().slice(0, 5).map((ev) => (
                 <div key={ev.id} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5 group hover:border-red-500/30 transition-all">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-500 tabular-nums w-6">{ev.minute}'</span>
+                    <span className="text-xs font-black text-slate-500 tabular-nums w-6 shrink-0">{ev.minute !== null ? `${ev.minute}'` : '—'}</span>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black text-white uppercase tracking-wider">
                           {ev.type === 'goal' ? '⚽ But' :
-                            ev.type === 'yellow_card' ? '🟨 Carton Jaune' :
-                              ev.type === 'red_card' ? '🟥 Carton Rouge' :
-                                ev.type === 'substitution' ? '🔄 Remplacement' :
-                                  ev.type === 'shot' ? '🎯 Tir' :
-                                    ev.type === 'shot_on_target' ? '🎯 Tir Cadré' :
-                                      ev.type === 'foul' ? '⚠️ Faute' :
-                                        ev.type === 'corner' ? '🚩 Corner' : ev.type}
+                            ev.type === 'own_goal' ? '⚽ CSC (Contre son camp)' :
+                              ev.type === 'yellow_card' ? '🟨 Carton Jaune' :
+                                ev.type === 'red_card' ? '🟥 Carton Rouge' :
+                                  ev.type === 'substitution' ? '🔄 Remplacement' :
+                                    ev.type === 'shot' ? '🎯 Tir' :
+                                      ev.type === 'shot_on_target' ? '🎯 Tir Cadré' :
+                                        ev.type === 'foul' ? '⚠️ Faute' :
+                                          ev.type === 'corner' ? '🚩 Corner' :
+                                            ev.type === 'kickoff' ? '🏁 Début du match' :
+                                              ev.type === 'halftime' ? '⏸️ Mi-temps' :
+                                                ev.type === 'fulltime' ? '🏆 Fin du match' :
+                                                  ev.type === 'pause' ? '⏸️ Pause' :
+                                                    ev.type === 'resume' ? '▶️ Reprise' :
+                                                      ev.type === 'comment' ? `💬 Commentaire` : ev.type}
                         </span>
                         {ev.team && (
                           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
                         )}
                       </div>
-                      <span className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[150px]">
-                        {ev.player ? `${ev.player.first_name} ${ev.player.last_name}` : ev.team?.name || 'Match'}
+                      <span className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[200px]">
+                        {ev.type === 'substitution'
+                          ? `${ev.player?.first_name} → ${ev.player2?.first_name}`
+                          : ev.type === 'comment'
+                            ? ev.description
+                            : ev.player
+                              ? `${ev.player.first_name} ${ev.player.last_name}`
+                              : ev.team?.name || 'Match'}
                       </span>
                     </div>
                   </div>

@@ -27,10 +27,10 @@ export const POSITION_COLORS: Record<PlayerPosition, string> = {
 export function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
   return (
     <span className={clsx(
-      'inline-flex items-center justify-center w-5 h-5 rounded-md text-white text-[9px] font-black shrink-0',
-      result === 'W' && 'bg-green-500/80',
-      result === 'D' && 'bg-slate-600',
-      result === 'L' && 'bg-red-500/80',
+      'inline-flex items-center justify-center w-5 h-5 rounded-md text-[9px] font-black shrink-0',
+      result === 'W' && 'bg-win text-win-text shadow-[0_1px_3px_rgba(0,0,0,0.1)]',
+      result === 'D' && 'bg-draw text-draw-text shadow-[0_1px_3px_rgba(0,0,0,0.1)]',
+      result === 'L' && 'bg-loss text-loss-text shadow-[0_1px_3px_rgba(0,0,0,0.1)]',
     )}>
       {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
     </span>
@@ -45,7 +45,7 @@ export function ResultBadge({ result, variant = 'solid' }: {
   variant?: 'solid' | 'ghost'
 }) {
   if (!result) return (
-    <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0 bg-surface-raised text-slate-600">
+    <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0 bg-surface-raised text-slate-500">
       ·
     </div>
   )
@@ -54,9 +54,9 @@ export function ResultBadge({ result, variant = 'solid' }: {
     return (
       <div className={clsx(
         'w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0',
-        result === 'W' && 'bg-green-500/20 text-green-400',
-        result === 'D' && 'bg-slate-500/20 text-slate-400',
-        result === 'L' && 'bg-red-500/20 text-red-400',
+        result === 'W' && 'bg-win/20 text-win',
+        result === 'D' && 'bg-draw/20 text-draw',
+        result === 'L' && 'bg-loss/20 text-loss',
       )}>
         {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
       </div>
@@ -66,9 +66,9 @@ export function ResultBadge({ result, variant = 'solid' }: {
   return (
     <span className={clsx(
       'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold shrink-0',
-      result === 'W' && 'bg-green-600 text-white',
-      result === 'D' && 'bg-slate-500 text-white',
-      result === 'L' && 'bg-red-600 text-white',
+      result === 'W' && 'bg-win text-win-text',
+      result === 'D' && 'bg-draw text-draw-text',
+      result === 'L' && 'bg-loss text-loss-text',
     )}>
       {result === 'W' ? 'V' : result === 'L' ? 'D' : 'N'}
     </span>

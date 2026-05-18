@@ -422,11 +422,11 @@ export function StandingsPage() {
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
-              <span className="section-title text-center text-green-500/70">V</span>
+              <span className="section-title text-center text-win/80 font-black">V</span>
               <span className="section-title text-center">N</span>
-              <span className="section-title text-center text-red-500/70">D</span>
+              <span className="section-title text-center text-loss/80 font-black">D</span>
               <span className="section-title text-center">+/-</span>
-              <span className="section-title text-center">BU</span>
+              <span className="section-title text-center">BP</span>
               <span className="section-title text-center">Forme</span>
               <span className="section-title text-right">Pts</span>
             </div>
@@ -491,10 +491,10 @@ export function StandingsPage() {
                         </div>
                       </div>
                       <span className="text-center text-xs text-slate-400 font-bold tabular-nums">{row.played}</span>
-                      <span className="text-center text-xs font-black text-emerald-400 tabular-nums bg-emerald-500/10 rounded py-0.5">{row.won}</span>
-                      <span className="text-center text-xs font-bold text-slate-500 tabular-nums">{row.drawn}</span>
-                      <span className="text-center text-xs font-black text-rose-400 tabular-nums bg-rose-500/10 rounded py-0.5">{row.lost}</span>
-                      <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-emerald-400' : row.goal_diff < 0 ? 'text-rose-400' : 'text-slate-500')}
+                      <span className="text-center text-xs font-black text-win tabular-nums bg-win/10 rounded py-0.5">{row.won}</span>
+                      <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">{row.drawn}</span>
+                      <span className="text-center text-xs font-black text-loss tabular-nums bg-loss/10 rounded py-0.5">{row.lost}</span>
+                      <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-win' : row.goal_diff < 0 ? 'text-loss' : 'text-slate-500')}
                             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                         {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                       </span>

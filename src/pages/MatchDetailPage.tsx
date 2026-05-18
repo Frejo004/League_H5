@@ -231,7 +231,7 @@ export function MatchDetailPage() {
   const isScheduled = match?.status === 'scheduled'
   const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
-  const { user, isAdmin, isCaptain } = useAuth()
+  const { user, isAdmin, isCaptain, isLoading: authLoading } = useAuth()
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
   const voteMvp = useVoteMvp()
@@ -261,8 +261,8 @@ export function MatchDetailPage() {
   // Détecter si un flux vidéo WebRTC en direct est actif
   // Les admins NE doivent PAS s'abonner en tant que viewer :
   // cela créerait une collision avec le canal du broadcaster (même nom Supabase).
-  const { stream: liveStream, isLive: isStreamingLive } = useWebRTCViewer(
-    isAdmin ? '' : (id ?? '')
+  const { stream: liveStream, isLive: isStreamingLive, viewerCount } = useWebRTCViewer(
+    (authLoading || isAdmin === true) ? '' : (id ?? '')
   )
 
   // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
@@ -325,15 +325,32 @@ export function MatchDetailPage() {
     const assists = (match?.assists ?? []) as AssistWithPlayer[]
     const goalPlayers = goals.flatMap(g => g.players ? [g.players] : [])
     const assistPlayers = assists.flatMap(a => a.players ? [a.players] : [])
+    
+    // Récupérer les joueurs à partir des votes déjà enregistrés (uniquement s'ils appartiennent à l'une des deux équipes)
+    const votedPlayers = (votes ?? [])
+      .filter(v => {
+        const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
+        const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
+        return belongsToHome || belongsToAway
+      })
+      .map(v => v.players)
+      .filter(Boolean) as unknown as Array<{ id: string; first_name: string; last_name: string; jersey_number?: number }>
+
     return Array.from(
       new Map([
         ...(homePlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
         ...(awayPlayers ?? []).map(p => [p.id, { id: p.id, first_name: p.first_name, last_name: p.last_name, jersey_number: p.jersey_number }] as const),
         ...goalPlayers.map(p => [p.id, p] as const),
         ...assistPlayers.map(p => [p.id, p] as const),
+        ...votedPlayers.map(p => [p.id, p] as const),
       ]).values()
-    )
-  }, [homePlayers, awayPlayers, match?.goals, match?.assists])
+    ).filter(p => {
+      // Sécurité absolue : le joueur doit appartenir à la liste brute des joueurs de l'une des deux équipes
+      const belongsToHome = homePlayers?.some(hp => hp.id === p.id)
+      const belongsToAway = awayPlayers?.some(ap => ap.id === p.id)
+      return belongsToHome || belongsToAway
+    })
+  }, [homePlayers, awayPlayers, match?.goals, match?.assists, votes])
 
   // Filtrer les joueurs éligibles pour l'Homme du match (MVP)
   const eligibleMvpPlayers = useMemo(() => {
@@ -359,7 +376,15 @@ export function MatchDetailPage() {
       }
     })
 
-    // Si des actions clés existent, seuls ces joueurs sont éligibles
+    // 4. IMPORTANT : Toujours ajouter les joueurs qui ont déjà reçu des votes
+    // pour éviter qu'ils ne disparaissent de la liste s'ils n'ont pas d'actions clés
+    if (votes) {
+      votes.forEach(v => {
+        if (v.player_id) actionPlayerIds.add(v.player_id)
+      })
+    }
+
+    // Si des actions clés existent (ou s'il y a déjà des votes), seuls ces joueurs sont éligibles
     if (actionPlayerIds.size > 0) {
       return allMatchPlayers.filter(p => actionPlayerIds.has(p.id))
     }
@@ -370,7 +395,7 @@ export function MatchDetailPage() {
     }
 
     return allMatchPlayers
-  }, [allMatchPlayers, lineups, liveEvents, match?.goals, match?.assists])
+  }, [allMatchPlayers, lineups, liveEvents, match?.goals, match?.assists, votes])
 
   // Droit de vote : tout le monde si actions clés, sinon uniquement les capitaines/admins
   const canVoteMvp = hasKeyActions || isCaptain
@@ -414,7 +439,21 @@ export function MatchDetailPage() {
   // MVP
   const voteMap = new Map<string, number>()
   for (const v of votes ?? []) {
-    voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
+    // Un vote n'est comptabilisé que si le joueur fait partie de la feuille de match (lineups)
+    // et qu'il appartient bien à l'une des deux équipes du match
+    const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
+    const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
+    const belongsToMatchTeams = belongsToHome || belongsToAway
+
+    if (belongsToMatchTeams) {
+      const isPlayerInMatch = lineups && lineups.length > 0
+        ? lineups.some(l => l.player_id === v.player_id)
+        : allMatchPlayers.some(p => p.id === v.player_id)
+
+      if (isPlayerInMatch) {
+        voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
+      }
+    }
   }
   const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
   const topMvpIds = voteMap.size > 0
@@ -576,7 +615,7 @@ export function MatchDetailPage() {
     { id: 'standings',label: 'Classement',   icon: Star       },
   ]
 
-  if (isLive && !match.video_url) {
+  if (isLive && isStreamingLive && !match.video_url) {
     tabs.unshift({ id: 'live-video', label: '🔴 DIRECT VIDÉO', icon: Play })
   }
 
@@ -941,6 +980,7 @@ export function MatchDetailPage() {
                   isPaused: clock.isPaused ?? false,
                   homeColor: home.color,
                   awayColor: away.color,
+                  viewerCount: viewerCount,
                 }}
               />
             </div>

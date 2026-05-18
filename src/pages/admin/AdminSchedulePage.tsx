@@ -48,12 +48,21 @@ function generateRoundRobin(teamIds: string[]): Array<Array<[string, string]>> {
   return [...rounds, ...returnRounds]
 }
 
+// Convertit une date UTC reçue de la BDD en chaîne locale Benin YYYY-MM-DDTHH:mm (sans décalage DST, toujours UTC+1)
+function toBeninInputString(dateStr: string | null | undefined): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  // Le Bénin est à UTC+1 de façon constante
+  const beninTime = new Date(date.getTime() + 1 * 60 * 60 * 1000)
+  return beninTime.toISOString().slice(0, 16)
+}
+
 // ── Date editor pour un match ─────────────────────────────────────────────────
 function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const updateMatch = useUpdateMatch()
   const [editing, setEditing] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(
-    match.scheduled_at ? match.scheduled_at.slice(0, 16) : ''
+    toBeninInputString(match.scheduled_at)
   )
   const [homeScore, setHomeScore] = useState(String(match.home_score ?? ''))
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
@@ -62,7 +71,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
   useEffect(() => {
     if (!editing) {
-      setScheduledAt(match.scheduled_at ? match.scheduled_at.slice(0, 16) : '')
+      setScheduledAt(toBeninInputString(match.scheduled_at))
       setHomeScore(String(match.home_score ?? ''))
       setAwayScore(String(match.away_score ?? ''))
       setStatus(match.status)
@@ -109,7 +118,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     } else {
       await updateMatch.mutateAsync({
         id: match.id,
-        scheduled_at: scheduledAt || null,
+        scheduled_at: scheduledAt ? new Date(scheduledAt + '+01:00').toISOString() : null,
         home_score: homeScore !== '' ? parseInt(homeScore) : null,
         away_score: awayScore !== '' ? parseInt(awayScore) : null,
         status,

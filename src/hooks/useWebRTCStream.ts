@@ -52,6 +52,7 @@ export function useWebRTCBroadcaster(matchId: string) {
   const { user } = useAuth()
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
+  const [viewerCount, setViewerCount] = useState(0)
 
   const channelRef    = useRef<any>(null)
   const mediaRef      = useRef<MediaStream | null>(null)
@@ -139,10 +140,24 @@ export function useWebRTCBroadcaster(matchId: string) {
       const channel = supabase.channel(name, { config: { presence: { key: user?.id || 'bc' } } })
       channelRef.current = channel
 
+      const updateViewerCount = () => {
+        if (!channelRef.current) return
+        const state = channelRef.current.presenceState()
+        const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
+          const isViewer = list.some((p: any) => p.is_viewer)
+          return acc + (isViewer ? 1 : 0)
+        }, 0)
+        setViewerCount(count)
+      }
+
       channel
+        .on('presence', { event: 'sync' }, () => {
+          updateViewerCount()
+        })
         .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
           console.log('📡 [BC] viewer-join from', payload.viewerId)
           createPeerForViewer(channel, payload.viewerId)
+          setTimeout(updateViewerCount, 500)
         })
         .on('broadcast', { event: 'answer' }, async ({ payload }) => {
           const pc = peersRef.current.get(payload.viewerId)
@@ -198,7 +213,12 @@ export function useWebRTCBroadcaster(matchId: string) {
     mediaRef.current = null
     setStream(null)
     setIsBroadcasting(false)
-    peersRef.current.forEach(pc => pc.close())
+    peersRef.current.forEach(pc => {
+      pc.onicecandidate = null
+      pc.onconnectionstatechange = null
+      pc.ontrack = null
+      pc.close()
+    })
     peersRef.current.clear()
     iceBufRef.current.clear()
     if (channelRef.current) {
@@ -209,7 +229,7 @@ export function useWebRTCBroadcaster(matchId: string) {
 
   useEffect(() => () => { stopBroadcast() }, []) // eslint-disable-line
 
-  return { stream, isBroadcasting, startBroadcast, stopBroadcast }
+  return { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount }
 }
 
 // ── useWebRTCViewer ───────────────────────────────────────────────────────────
@@ -217,12 +237,14 @@ export function useWebRTCViewer(matchId: string) {
   const { user } = useAuth()
   const [stream,  setStream]  = useState<MediaStream | null>(null)
   const [isLive,  setIsLive]  = useState(false)
+  const [viewerCount, setViewerCount] = useState(0)
 
   const channelRef   = useRef<any>(null)
   const pcRef        = useRef<RTCPeerConnection | null>(null)
   const streamRef    = useRef<MediaStream | null>(null)   // no stale closure
   const iceBufRef    = useRef<RTCIceCandidateInit[]>([])  // pre-answer buffer
   const retryRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryCountRef = useRef(0)
   const viewerId     = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
 
   const clearRetry   = () => { if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null } }
@@ -231,25 +253,42 @@ export function useWebRTCViewer(matchId: string) {
     clearRetry()
     retryRef.current = setTimeout(() => {
       if (!channelRef.current) return
-      console.log('📡 [V] viewer-join →', viewerId)
+
+      if (retryCountRef.current >= 8) {
+        console.log('📡 [V] max join retries reached (8) — stopping join attempts')
+        return
+      }
+
+      console.log(`📡 [V] viewer-join (attempt ${retryCountRef.current + 1}) →`, viewerId)
       channel.send({ type: 'broadcast', event: 'viewer-join', payload: { viewerId } })
-      // Retry si pas de stream dans 5s
+      retryCountRef.current++
+
+      // Calculer un exponential backoff : 5s, 7.5s, 11.25s, 16.8s... bridé à maximum 30s
+      const nextDelay = Math.min(5000 * Math.pow(1.5, retryCountRef.current), 30000)
+
       retryRef.current = setTimeout(() => {
         if (!streamRef.current && channelRef.current) {
-          console.log('📡 [V] no stream after 5s — retrying')
-          sendJoin(channel)
+          console.log(`📡 [V] no stream after 5s — retrying in ${Math.round(nextDelay)}ms`)
+          sendJoin(channel, nextDelay)
         }
       }, 5000)
     }, delay)
   }
 
   const closePc = () => {
-    if (pcRef.current) { pcRef.current.close(); pcRef.current = null }
+    if (pcRef.current) {
+      pcRef.current.onicecandidate = null
+      pcRef.current.onconnectionstatechange = null
+      pcRef.current.ontrack = null
+      pcRef.current.close()
+      pcRef.current = null
+    }
     iceBufRef.current = []
   }
 
   useEffect(() => {
     if (!matchId) return
+    retryCountRef.current = 0
 
     const channel = supabase.channel(`stream-${matchId}`, {
       config: { presence: { key: user?.id ?? 'viewer' } },
@@ -265,6 +304,13 @@ export function useWebRTCViewer(matchId: string) {
         console.log('📡 [V] presence sync — broadcaster:', hasBc)
         setIsLive(hasBc)
 
+        // Compter les spectateurs
+        const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
+          const isViewer = list.some((p: any) => p.is_viewer)
+          return acc + (isViewer ? 1 : 0)
+        }, 0)
+        setViewerCount(count)
+
         if (hasBc && !streamRef.current && !pcRef.current) {
           sendJoin(channel)
         } else if (!hasBc) {
@@ -272,6 +318,7 @@ export function useWebRTCViewer(matchId: string) {
           closePc()
           streamRef.current = null
           setStream(null)
+          retryCountRef.current = 0 // Réinitialiser les tentatives !
         }
       })
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
@@ -289,6 +336,7 @@ export function useWebRTCViewer(matchId: string) {
           streamRef.current = e.streams[0]
           setStream(e.streams[0])
           clearRetry()
+          retryCountRef.current = 0 // Réinitialiser à la réception du flux !
         }
 
         pc.onicecandidate = ({ candidate }) => {
@@ -364,5 +412,5 @@ export function useWebRTCViewer(matchId: string) {
     }
   }, [matchId, viewerId]) // eslint-disable-line
 
-  return { stream, isLive }
+  return { stream, isLive, viewerCount }
 }

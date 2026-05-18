@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
+import { Eye, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
 
 interface MatchOverlayInfo {
   homeName: string
@@ -11,6 +12,7 @@ interface MatchOverlayInfo {
   isPaused: boolean
   homeColor?: string
   awayColor?: string
+  viewerCount?: number
 }
 
 interface LiveVideoPlayerProps {
@@ -30,8 +32,14 @@ export function LiveVideoPlayer({
 
   const isLive = propIsLive !== undefined ? propIsLive : localViewer.isLive
   const stream  = propStream  !== undefined ? propStream  : localViewer.stream
+  const viewerCount = overlay?.viewerCount !== undefined ? overlay.viewerCount : localViewer.viewerCount
 
   const videoRef = useRef<HTMLVideoElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  const [isMuted, setIsMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isStalled, setIsStalled] = useState(false)
 
   useEffect(() => {
     const video = videoRef.current
@@ -44,10 +52,32 @@ export function LiveVideoPlayer({
     })
   }, [stream, isLive])
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (!wrapperRef.current) return
+    if (!document.fullscreenElement) {
+      wrapperRef.current.requestFullscreen().catch(err => {
+        console.error('Error entering fullscreen:', err)
+      })
+    } else {
+      document.exitFullscreen()
+    }
+  }
+
   if (!isLive) return null
 
   return (
-    <div className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video mt-6">
+    <div
+      ref={wrapperRef}
+      className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video mt-6 select-none"
+    >
 
       {/* Spinner connexion */}
       {!stream && (
@@ -57,11 +87,24 @@ export function LiveVideoPlayer({
         </div>
       )}
 
+      {/* Overlay Reconnexion si flux interrompu */}
+      {stream && isStalled && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-30 transition-all">
+          <div className="w-6 h-6 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mb-2" />
+          <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Reconnexion au direct...</p>
+        </div>
+      )}
+
       {/* Vidéo P2P */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
+        muted={isMuted}
+        onWaiting={() => setIsStalled(true)}
+        onPlaying={() => setIsStalled(false)}
+        onStalled={() => setIsStalled(true)}
+        onSuspend={() => setIsStalled(false)}
         className="absolute inset-0 w-full h-full border-0 object-cover"
       />
 
@@ -117,10 +160,35 @@ export function LiveVideoPlayer({
               </span>
             </div>
 
-            {/* Badge EN DIRECT */}
-            <div className="flex items-center gap-1.5 bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.4)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              <span className="text-[9px] font-black text-white uppercase tracking-widest">EN DIRECT</span>
+            {/* Badge EN DIRECT + Spectateurs + Contrôles Custom */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg">
+                <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-md border border-red-400/30">
+                  <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                  <span className="text-[8px] font-black text-white uppercase tracking-widest">DIRECT</span>
+                </div>
+                <span className="text-[9px] font-black text-slate-300 tracking-wider flex items-center gap-1.5 border-r border-white/10 pr-2.5">
+                  <Eye size={12} className="text-[#C8F135] shrink-0" /> {viewerCount}
+                </span>
+                
+                {/* Custom volume control */}
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="p-0.5 text-slate-300 hover:text-white transition-colors"
+                  title={isMuted ? "Activer le son" : "Couper le son"}
+                >
+                  {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-[#C8F135]" />}
+                </button>
+
+                {/* Custom fullscreen toggle */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
+                  title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+                >
+                  {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+                </button>
+              </div>
             </div>
           </div>
         </>
@@ -128,9 +196,26 @@ export function LiveVideoPlayer({
 
       {/* Badge EN DIRECT simple si pas d'overlay */}
       {stream && !overlay && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 z-20">
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 z-20">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">EN DIRECT</span>
+          <span className="text-[10px] font-black text-slate-300 border-l border-white/20 pl-2 pr-1.5 flex items-center gap-1.5">
+            <Eye size={12} className="text-[#C8F135]" /> {viewerCount}
+          </span>
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
+            title={isMuted ? "Activer le son" : "Couper le son"}
+          >
+            {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-[#C8F135]" />}
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
+            title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+          >
+            {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+          </button>
         </div>
       )}
     </div>
