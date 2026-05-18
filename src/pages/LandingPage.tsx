@@ -9,6 +9,9 @@ import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 import { useLandingStats } from '@/hooks/useLandingStats'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { LiveClock } from '@/components/live/LiveClock'
 
 const ACCENT = '#C8F135'
 
@@ -79,9 +82,30 @@ export function LandingPage() {
   const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
 
+  const { data: liveMatches } = useQuery({
+    queryKey: ['live-matches-landing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          home_team:teams!home_team_id(id, name, color, logo_url),
+          away_team:teams!away_team_id(id, name, color, logo_url),
+          seasons(id, name)
+        `)
+        .eq('status', 'live')
+        .order('scheduled_at', { ascending: false })
+      if (error) throw error
+      return data as any[]
+    },
+    refetchInterval: 5000,
+  })
+
   if (profile) {
     return <Navigate to="/dashboard" replace />
   }
+
+  const liveMatch = liveMatches?.[0]
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200 selection:bg-[#C8F135] selection:text-[#0D1117]">
@@ -118,6 +142,108 @@ export function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#0D1117] via-transparent to-[#0D1117]" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0D1117] via-transparent to-[#0D1117]" />
         </div>
+
+        {/* 🔴 LIVE BANNER */}
+        {liveMatch && (
+          <div className="relative z-10 w-full max-w-4xl mx-auto px-4 mb-10">
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border border-red-500/30 shadow-[0_0_50px_rgba(239,68,68,0.2)] backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 hover:border-red-500/50">
+              {/* Background spotlight overlay */}
+              <div className="absolute -inset-px bg-gradient-to-r from-red-500/10 via-transparent to-red-500/10 opacity-50 pointer-events-none" />
+              
+              {/* Live Indicator left */}
+              <div className="flex flex-col items-center md:items-start gap-1 shrink-0">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-red-500 animate-pulse">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Live en cours
+                </span>
+                {liveMatch.seasons?.name && (
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                    {liveMatch.seasons.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Scoreboard center */}
+              <div className="flex-1 flex items-center justify-center gap-4 md:gap-10">
+                {/* Home Team */}
+                <div className="flex flex-col items-center text-center w-24 md:w-32">
+                  <div 
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
+                    style={{ borderLeft: `3px solid ${liveMatch.home_team?.color || '#C8F135'}` }}
+                  >
+                    {liveMatch.home_team?.logo_url ? (
+                      <img src={liveMatch.home_team.logo_url} alt="" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
+                        {liveMatch.home_team?.name?.slice(0,2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
+                    {liveMatch.home_team?.name}
+                  </span>
+                </div>
+
+                {/* Score & Time */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                      {liveMatch.home_score ?? 0}
+                    </span>
+                    <span className="text-slate-600 font-black text-lg">:</span>
+                    <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                      {liveMatch.away_score ?? 0}
+                    </span>
+                  </div>
+                  
+                  {/* Live Clock Component */}
+                  <LiveClock
+                    liveStartedAt={liveMatch.live_started_at}
+                    livePeriod={liveMatch.live_period}
+                    halftimeAt={liveMatch.halftime_at}
+                    isPaused={liveMatch.is_paused}
+                    pausedAt={liveMatch.paused_at}
+                    totalPausedSeconds={liveMatch.total_paused_seconds}
+                    status={liveMatch.status}
+                    homeColor={liveMatch.home_team?.color || '#C8F135'}
+                    awayColor={liveMatch.away_team?.color || '#3b82f6'}
+                    className="scale-90"
+                  />
+                </div>
+
+                {/* Away Team */}
+                <div className="flex flex-col items-center text-center w-24 md:w-32">
+                  <div 
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
+                    style={{ borderLeft: `3px solid ${liveMatch.away_team?.color || '#3b82f6'}` }}
+                  >
+                    {liveMatch.away_team?.logo_url ? (
+                      <img src={liveMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
+                        {liveMatch.away_team?.name?.slice(0,2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
+                    {liveMatch.away_team?.name}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action right */}
+              <div className="shrink-0 w-full md:w-auto flex justify-center">
+                <Link
+                  to={`/public/matches/${liveMatch.slug || liveMatch.id}`}
+                  className="group relative flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.3)] w-full md:w-auto text-xs"
+                >
+                  Regarder le Live
+                  <ChevronRight className="transition-transform group-hover:translate-x-0.5" size={14} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="relative z-10 text-center px-4 max-w-5xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 mb-8 backdrop-blur-md">
