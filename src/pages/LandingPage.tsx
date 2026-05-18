@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { LiveClock } from '@/components/live/LiveClock'
+import { useState, useEffect } from 'react'
+import clsx from 'clsx'
 
 const ACCENT = '#C8F135'
 
@@ -74,6 +76,45 @@ function StatPill({ value, label, isLoading }: { value: string | number; label: 
   )
 }
 
+function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
+  const [timeLeft, setTimeLeft] = useState('')
+
+  useEffect(() => {
+    const target = new Date(scheduledAt).getTime()
+
+    function update() {
+      const now = new Date().getTime()
+      const diff = target - now
+
+      if (diff <= 0) {
+        setTimeLeft("Coup d'envoi imminent !")
+        return
+      }
+
+      const h = Math.floor(diff / (1000 * 60 * 60))
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const s = Math.floor((diff % (1000 * 60)) / 1000)
+
+      const parts = []
+      if (h > 0) parts.push(`${h}h`)
+      parts.push(`${m}m`)
+      parts.push(`${s}s`)
+
+      setTimeLeft(parts.join(' '))
+    }
+
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [scheduledAt])
+
+  return (
+    <span className="font-mono font-bold text-[#C8F135] text-[13px] md:text-sm tracking-wider animate-pulse">
+      {timeLeft}
+    </span>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Principale
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,8 +134,8 @@ export function LandingPage() {
           away_team:teams!away_team_id(id, name, color, logo_url),
           seasons(id, name)
         `)
-        .eq('status', 'live')
-        .order('scheduled_at', { ascending: false })
+        .in('status', ['live', 'scheduled'])
+        .order('scheduled_at', { ascending: true })
       if (error) throw error
       return data as any[]
     },
@@ -105,7 +146,24 @@ export function LandingPage() {
     return <Navigate to="/dashboard" replace />
   }
 
-  const liveMatch = liveMatches?.[0]
+  const matches = liveMatches ?? []
+  
+  // A. Trouver un match live actif
+  let featuredMatch = matches.find(m => m.status === 'live')
+  let isFeaturedLive = true
+
+  // B. Si aucun match live, trouver le premier match scheduled qui débute dans moins d'une heure
+  if (!featuredMatch) {
+    const upcoming = matches.filter(m => m.status === 'scheduled' && m.scheduled_at)
+    const now = new Date()
+    
+    featuredMatch = upcoming.find(m => {
+      const scheduledTime = new Date(m.scheduled_at)
+      const diffMins = (scheduledTime.getTime() - now.getTime()) / (1000 * 60)
+      return diffMins > 0 && diffMins <= 60
+    })
+    isFeaturedLive = false
+  }
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200 selection:bg-[#C8F135] selection:text-[#0D1117]">
@@ -143,22 +201,37 @@ export function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0D1117] via-transparent to-[#0D1117]" />
         </div>
 
-        {/* 🔴 LIVE BANNER */}
-        {liveMatch && (
+        {/* 🔴 LIVE / UPCOMING FEATURED BANNER */}
+        {featuredMatch && (
           <div className="relative z-10 w-full max-w-4xl mx-auto px-4 mb-10">
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border border-red-500/30 shadow-[0_0_50px_rgba(239,68,68,0.2)] backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 hover:border-red-500/50">
+            <div className={clsx(
+              "relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500",
+              isFeaturedLive 
+                ? "border-red-500/30 shadow-[0_0_50px_rgba(239,68,68,0.2)] hover:border-red-500/50" 
+                : "border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)] hover:border-amber-500/50"
+            )}>
               {/* Background spotlight overlay */}
-              <div className="absolute -inset-px bg-gradient-to-r from-red-500/10 via-transparent to-red-500/10 opacity-50 pointer-events-none" />
+              <div className={clsx(
+                "absolute -inset-px opacity-50 pointer-events-none bg-gradient-to-r via-transparent",
+                isFeaturedLive ? "from-red-500/10 to-red-500/10" : "from-amber-500/10 to-amber-500/10"
+              )} />
               
-              {/* Live Indicator left */}
+              {/* Live/Upcoming Indicator left */}
               <div className="flex flex-col items-center md:items-start gap-1 shrink-0">
-                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-red-500 animate-pulse">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  Live en cours
-                </span>
-                {liveMatch.seasons?.name && (
+                {isFeaturedLive ? (
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-red-500 animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                    Live en cours
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Bientôt en Direct
+                  </span>
+                )}
+                {featuredMatch.seasons?.name && (
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
-                    {liveMatch.seasons.name}
+                    {featuredMatch.seasons.name}
                   </span>
                 )}
               </div>
@@ -169,64 +242,84 @@ export function LandingPage() {
                 <div className="flex flex-col items-center text-center w-24 md:w-32">
                   <div 
                     className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
-                    style={{ borderLeft: `3px solid ${liveMatch.home_team?.color || '#C8F135'}` }}
+                    style={{ borderLeft: `3px solid ${featuredMatch.home_team?.color || '#C8F135'}` }}
                   >
-                    {liveMatch.home_team?.logo_url ? (
-                      <img src={liveMatch.home_team.logo_url} alt="" className="w-full h-full object-contain" />
+                    {featuredMatch.home_team?.logo_url ? (
+                      <img src={featuredMatch.home_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
-                        {liveMatch.home_team?.name?.slice(0,2).toUpperCase()}
+                        {featuredMatch.home_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
-                    {liveMatch.home_team?.name}
+                    {featuredMatch.home_team?.name}
                   </span>
                 </div>
 
-                {/* Score & Time */}
+                {/* Score & Time OR VS & Countdown */}
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
-                      {liveMatch.home_score ?? 0}
-                    </span>
-                    <span className="text-slate-600 font-black text-lg">:</span>
-                    <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
-                      {liveMatch.away_score ?? 0}
-                    </span>
-                  </div>
-                  
-                  {/* Live Clock Component */}
-                  <LiveClock
-                    liveStartedAt={liveMatch.live_started_at}
-                    livePeriod={liveMatch.live_period}
-                    halftimeAt={liveMatch.halftime_at}
-                    isPaused={liveMatch.is_paused}
-                    pausedAt={liveMatch.paused_at}
-                    totalPausedSeconds={liveMatch.total_paused_seconds}
-                    status={liveMatch.status}
-                    homeColor={liveMatch.home_team?.color || '#C8F135'}
-                    awayColor={liveMatch.away_team?.color || '#3b82f6'}
-                    className="scale-90"
-                  />
+                  {isFeaturedLive ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                          {featuredMatch.home_score ?? 0}
+                        </span>
+                        <span className="text-slate-600 font-black text-lg">:</span>
+                        <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                          {featuredMatch.away_score ?? 0}
+                        </span>
+                      </div>
+                      
+                      <LiveClock
+                        liveStartedAt={featuredMatch.live_started_at}
+                        livePeriod={featuredMatch.live_period}
+                        halftimeAt={featuredMatch.halftime_at}
+                        isPaused={featuredMatch.is_paused}
+                        pausedAt={featuredMatch.paused_at}
+                        totalPausedSeconds={featuredMatch.total_paused_seconds}
+                        status={featuredMatch.status}
+                        homeColor={featuredMatch.home_team?.color || '#C8F135'}
+                        awayColor={featuredMatch.away_team?.color || '#3b82f6'}
+                        className="scale-90"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 font-['Barlow_Condensed']">
+                          {new Date(featuredMatch.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className="text-2xl font-black italic text-slate-300 tracking-tighter font-['Barlow_Condensed'] uppercase">
+                          VS
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-black">
+                          Coup d'envoi dans
+                        </span>
+                        <KickoffCountdown scheduledAt={featuredMatch.scheduled_at} />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Away Team */}
                 <div className="flex flex-col items-center text-center w-24 md:w-32">
                   <div 
                     className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
-                    style={{ borderLeft: `3px solid ${liveMatch.away_team?.color || '#3b82f6'}` }}
+                    style={{ borderLeft: `3px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
                   >
-                    {liveMatch.away_team?.logo_url ? (
-                      <img src={liveMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />
+                    {featuredMatch.away_team?.logo_url ? (
+                      <img src={featuredMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
-                        {liveMatch.away_team?.name?.slice(0,2).toUpperCase()}
+                        {featuredMatch.away_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
-                    {liveMatch.away_team?.name}
+                    {featuredMatch.away_team?.name}
                   </span>
                 </div>
               </div>
@@ -234,10 +327,15 @@ export function LandingPage() {
               {/* Action right */}
               <div className="shrink-0 w-full md:w-auto flex justify-center">
                 <Link
-                  to={`/public/matches/${liveMatch.slug || liveMatch.id}`}
-                  className="group relative flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.3)] w-full md:w-auto text-xs"
+                  to={`/public/matches/${featuredMatch.slug || featuredMatch.id}`}
+                  className={clsx(
+                    "group relative flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all w-full md:w-auto text-xs",
+                    isFeaturedLive 
+                      ? "bg-red-600 hover:bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]" 
+                      : "bg-amber-600 hover:bg-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)]"
+                  )}
                 >
-                  Regarder le Live
+                  {isFeaturedLive ? "Regarder le Live" : "Fiche du Match"}
                   <ChevronRight className="transition-transform group-hover:translate-x-0.5" size={14} />
                 </Link>
               </div>
