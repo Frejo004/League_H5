@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { useAuth } from '@/hooks/useAuth'
 import type { ReactNode } from 'react'
 import bgImage from '@/assets/leagueH5-bg_login.jpg'
 // ✅ Suppression de l'import mobile inexistant
@@ -9,6 +11,9 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutProps) {
+  const { profile } = useAuth()
+  const logoLink = profile ? '/dashboard' : '/'
+
   return (
     <div className="min-h-screen flex bg-linear-to-br from-slate-950 to-slate-900">
 
@@ -44,12 +49,12 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
         </div>
 
         <div className="relative z-10 flex flex-col h-full p-8 lg:p-10">
-          <div className="flex items-center gap-3">
-            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0" />
-            <span className="text-white font-bold text-lg tracking-wide drop-shadow-md">
+          <Link to={logoLink} className="flex items-center gap-3 group shrink-0 w-fit">
+            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0 transition-transform group-hover:scale-105 duration-200" />
+            <span className="text-white font-bold text-lg tracking-wide drop-shadow-md group-hover:text-primary-300 transition-colors duration-200">
               League H5
             </span>
-          </div>
+          </Link>
 
           <div className="flex-1 flex flex-col justify-center max-w-md">
             <div className="mb-6">

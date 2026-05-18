@@ -33,7 +33,7 @@ export function LoginPage() {
       
       // Redirection immédiate - le ProtectedRoute attendra que le profil soit chargé
       // grâce à la correction dans AuthContext qui évite le double chargement
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {

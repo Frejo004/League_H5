@@ -4,8 +4,11 @@ import { Mail, ArrowLeft, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { AuthLayout } from '@/components/auth/AuthLayout'
+import { useAuth } from '@/hooks/useAuth'
 
 export function ResetPasswordPage() {
+  const { profile } = useAuth()
+  const logoLink = profile ? '/dashboard' : '/'
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -52,10 +55,10 @@ export function ResetPasswordPage() {
     <AuthLayout>
       <div className="w-full max-w-sm animate-fade-in-up">
         <div className="mb-8">
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0" />
-            <span className="text-white font-bold text-lg">League H5</span>
-          </div>
+          <Link to={logoLink} className="lg:hidden flex items-center gap-3 mb-8 group shrink-0 w-fit">
+            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0 transition-transform group-hover:scale-105 duration-200" />
+            <span className="text-white font-bold text-lg group-hover:text-primary-300 transition-colors duration-200">League H5</span>
+          </Link>
           <h2 className="text-3xl font-black text-white tracking-tight">Mot de passe oublié</h2>
           <p className="text-slate-400 mt-2">Entrez votre email pour recevoir un lien de réinitialisation</p>
         </div>

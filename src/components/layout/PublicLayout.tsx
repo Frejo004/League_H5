@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { BookOpen, Trophy, Home, LogIn } from 'lucide-react'
 import { useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 const ACCENT = '#C8F135'
 
@@ -10,6 +11,8 @@ interface PublicLayoutProps {
 
 export function PublicLayout({ children }: PublicLayoutProps) {
   const location = useLocation()
+  const { profile } = useAuth()
+  const logoLink = profile ? '/dashboard' : '/'
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -28,7 +31,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <div className="max-w-5xl mx-auto px-4 flex items-center h-16 justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          <Link to={logoLink} className="flex items-center gap-2.5 shrink-0 group">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 duration-300"
               style={{ backgroundColor: ACCENT }}

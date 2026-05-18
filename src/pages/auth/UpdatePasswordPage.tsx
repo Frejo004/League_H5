@@ -22,7 +22,7 @@ export function UpdatePasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
-      navigate('/')
+      navigate('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour')
     } finally {

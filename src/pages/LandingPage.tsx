@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Trophy, Calendar, Target, Users, BarChart2,
   MessageCircle, Radio, Star, ArrowRight, Zap,
@@ -8,6 +8,7 @@ import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
 import { useLandingStats } from '@/hooks/useLandingStats'
 import { useCountUp } from '@/hooks/useCountUp'
+import { useAuth } from '@/hooks/useAuth'
 
 const ACCENT = '#C8F135'
 
@@ -75,7 +76,12 @@ function StatPill({ value, label, isLoading }: { value: string | number; label: 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LandingPage() {
+  const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
+
+  if (profile) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200 selection:bg-[#C8F135] selection:text-[#0D1117]">
