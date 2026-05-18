@@ -2,7 +2,7 @@
  * AdminLiveControls — Panneau de contrôle admin pour piloter un match live
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Play, Pause, Square, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
@@ -149,6 +149,21 @@ export function AdminLiveControls({
   const { data: lineups = [] } = useMatchLineups(matchId)
 
   const { stream, isBroadcasting, startBroadcast, stopBroadcast } = useWebRTCBroadcaster(matchId)
+
+  // ── Référence vidéo pour la prévisualisation caméra de l'admin ─────────────────────
+  const localVideoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = localVideoRef.current
+    if (!video || !stream) return
+    if (video.srcObject !== stream) {
+      video.srcObject = stream
+    }
+    // play() peut rejeter si l'élément n'est pas encore dans le DOM
+    video.play().catch(err => {
+      if (err.name !== 'AbortError') console.warn('Local video play error:', err)
+    })
+  }, [stream])
 
   // Filtrer les compositions pour l'équipe en cours et l'équipe adverse
   const teamLineup = useMemo(() => lineups.filter(l => l.team_id === eventTeam), [lineups, eventTeam])
@@ -435,15 +450,21 @@ export function AdminLiveControls({
               </div>
 
               {/* Local Video Preview */}
-              {isBroadcasting && stream && (
-                <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/10 aspect-video relative">
+              {isBroadcasting && (
+                <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/10 aspect-video relative bg-black">
                   <video
+                    ref={localVideoRef}
                     autoPlay
                     playsInline
                     muted
                     className="w-full h-full object-cover"
-                    ref={(v) => { if (v) v.srcObject = stream }}
                   />
+                  {!stream && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-[#C8F135] border-t-transparent rounded-full animate-spin mb-2" />
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Accès caméra...</p>
+                    </div>
+                  )}
                   <div className="absolute top-3 right-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">EN DIRECT (P2P)</span>

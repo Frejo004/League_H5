@@ -2,261 +2,343 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
-const STUN_SERVERS = {
+// ── ICE servers : STUN public + STUN fallback ────────────────────────────────
+const ICE_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-  ]
+    { urls: 'stun:stun2.l.google.com:19302' },
+  ],
+  iceCandidatePoolSize: 10,
 }
 
-// ── Broadcaster ───────────────────────────────────────────────────────────────
+// ── Contraintes vidéo — facingMode en 'ideal' pour fonctionner sur laptop ET mobile ─
+const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
+  facingMode: { ideal: 'environment' }, // préfère la caméra dos, mais ne force pas
+  width:  { ideal: 1280, max: 1920 },
+  height: { ideal: 720,  max: 1080 },
+  frameRate: { ideal: 24, max: 30 },
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function createPc(): RTCPeerConnection {
+  return new RTCPeerConnection(ICE_CONFIG)
+}
+
+// ── useWebRTCBroadcaster ──────────────────────────────────────────────────────
 export function useWebRTCBroadcaster(matchId: string) {
   const { user } = useAuth()
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
-  const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map())
-  const channelRef = useRef<any>(null)
-  const mediaStreamRef = useRef<MediaStream | null>(null)
 
-  const startBroadcast = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true
-      })
-      mediaStreamRef.current = mediaStream
-      setStream(mediaStream)
-      setIsBroadcasting(true)
+  const channelRef    = useRef<any>(null)
+  const mediaRef      = useRef<MediaStream | null>(null)
+  const peersRef      = useRef<Map<string, RTCPeerConnection>>(new Map())
+  // Buffer ICE candidates per viewer that arrive before answer
+  const iceBufRef     = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
 
-      // Remove any stale channel with this name before creating a fresh one
-      const channelName = `stream-${matchId}`
-      const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`)
-      if (existing) {
-        console.log('📡 Broadcaster: removing stale channel before starting')
-        await supabase.removeChannel(existing)
+  // ── Créer / recréer la connexion peer pour un viewer ──────────────────────
+  const createPeerForViewer = async (channel: any, viewerId: string) => {
+    // Fermer la connexion existante si retry
+    if (peersRef.current.has(viewerId)) {
+      peersRef.current.get(viewerId)!.close()
+      peersRef.current.delete(viewerId)
+    }
+    iceBufRef.current.set(viewerId, [])
+
+    const pc = createPc()
+    peersRef.current.set(viewerId, pc)
+
+    mediaRef.current!.getTracks().forEach(t => pc.addTrack(t, mediaRef.current!))
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) {
+        channel.send({
+          type: 'broadcast', event: 'ice-candidate',
+          payload: { target: viewerId, candidate: candidate.toJSON(), from: 'broadcaster' },
+        })
       }
+    }
 
-      const channel = supabase.channel(channelName)
-      channelRef.current = channel
-
-      channel
-        .on('broadcast', { event: 'viewer-join' }, async ({ payload }) => {
-          const viewerId = payload.viewerId
-          console.log('📡 Broadcaster: viewer-join from', viewerId)
-
-          // Close any existing PC for this viewer (handle retries)
-          if (peerConnections.current.has(viewerId)) {
-            peerConnections.current.get(viewerId)?.close()
-            peerConnections.current.delete(viewerId)
+    pc.onconnectionstatechange = () => {
+      const s = pc.connectionState
+      console.log(`📡 [BC] peer ${viewerId} state → ${s}`)
+      if (s === 'disconnected') {
+        // Tenter un ICE restart léger avant de tout refaire
+        setTimeout(() => {
+          if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            console.log(`📡 [BC] ICE restart for ${viewerId}`)
+            createPeerForViewer(channel, viewerId)
           }
+        }, 3000)
+      }
+      if (s === 'failed') {
+        peersRef.current.delete(viewerId)
+      }
+    }
 
-          const pc = new RTCPeerConnection(STUN_SERVERS)
-          peerConnections.current.set(viewerId, pc)
-
-          mediaStreamRef.current!.getTracks().forEach(track =>
-            pc.addTrack(track, mediaStreamRef.current!)
-          )
-
-          pc.onicecandidate = (e) => {
-            if (e.candidate) {
-              channel.send({
-                type: 'broadcast',
-                event: 'ice-candidate',
-                payload: { target: viewerId, candidate: e.candidate, from: 'broadcaster' }
-              })
-            }
-          }
-
-          pc.onconnectionstatechange = () => {
-            console.log('📡 Broadcaster: PC state for', viewerId, ':', pc.connectionState)
-            if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-              peerConnections.current.delete(viewerId)
-            }
-          }
-
-          try {
-            const offer = await pc.createOffer()
-            await pc.setLocalDescription(offer)
-            channel.send({
-              type: 'broadcast',
-              event: 'offer',
-              payload: { target: viewerId, offer }
-            })
-            console.log('📡 Broadcaster: offer sent to', viewerId)
-          } catch (err) {
-            console.error('📡 Broadcaster: failed to create offer', err)
-          }
-        })
-        .on('broadcast', { event: 'answer' }, async ({ payload }) => {
-          console.log('📡 Broadcaster: answer from', payload.viewerId)
-          const pc = peerConnections.current.get(payload.viewerId)
-          if (pc && pc.signalingState === 'have-local-offer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
-          }
-        })
-        .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-          if (payload.target === 'broadcaster') {
-            const pc = peerConnections.current.get(payload.from)
-            if (pc && pc.remoteDescription) {
-              try {
-                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate))
-              } catch (err) {
-                console.warn('📡 Broadcaster: ICE candidate error (ignored):', err)
-              }
-            }
-          }
-        })
-        .subscribe(async (status) => {
-          console.log('📡 Broadcaster: subscription status:', status)
-          if (status === 'SUBSCRIBED') {
-            await channel.track({ is_broadcaster: true, user_id: user?.id })
-            console.log('📡 Broadcaster: presence tracked')
-          }
-        })
-
+    try {
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+      channel.send({
+        type: 'broadcast', event: 'offer',
+        payload: { target: viewerId, offer },
+      })
+      console.log(`📡 [BC] offer → ${viewerId}`)
     } catch (err) {
-      console.error('Failed to start broadcast', err)
-      alert("Impossible d'accéder à la caméra.")
+      console.error('📡 [BC] createOffer error', err)
     }
   }
 
+  // ── Démarrer le broadcast ──────────────────────────────────────────────────
+  const startBroadcast = async () => {
+    try {
+      let mediaStream: MediaStream
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: VIDEO_CONSTRAINTS, audio: true,
+        })
+      } catch {
+        // Fallback: lower constraints
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 20 } },
+          audio: true,
+        })
+      }
+      mediaRef.current = mediaStream
+      setStream(mediaStream)
+      setIsBroadcasting(true)
+
+      const name = `stream-${matchId}`
+      // Supprimer tout canal fantôme
+      const stale = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
+      if (stale) await supabase.removeChannel(stale)
+
+      const channel = supabase.channel(name, { config: { presence: { key: user?.id || 'bc' } } })
+      channelRef.current = channel
+
+      channel
+        .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
+          console.log('📡 [BC] viewer-join from', payload.viewerId)
+          createPeerForViewer(channel, payload.viewerId)
+        })
+        .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+          const pc = peersRef.current.get(payload.viewerId)
+          if (!pc || pc.signalingState !== 'have-local-offer') return
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
+            console.log('📡 [BC] answer set for', payload.viewerId)
+            // Vider le buffer ICE
+            const buf = iceBufRef.current.get(payload.viewerId) ?? []
+            for (const c of buf) {
+              await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
+            }
+            iceBufRef.current.set(payload.viewerId, [])
+          } catch (err) {
+            console.error('📡 [BC] setRemoteDescription error', err)
+          }
+        })
+        .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+          if (payload.target !== 'broadcaster') return
+          const pc = peersRef.current.get(payload.from)
+          if (!pc) return
+          if (pc.remoteDescription) {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
+          } else {
+            // Mettre en buffer
+            const buf = iceBufRef.current.get(payload.from) ?? []
+            buf.push(payload.candidate)
+            iceBufRef.current.set(payload.from, buf)
+          }
+        })
+        .subscribe(async (status) => {
+          console.log('📡 [BC] channel status:', status)
+          if (status === 'SUBSCRIBED') {
+            await channel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
+            console.log('📡 [BC] presence tracked')
+          }
+          // Re-tracker si reconnexion
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('📡 [BC] channel error — will retry on next SUBSCRIBED')
+          }
+        })
+    } catch (err) {
+      console.error('📡 [BC] startBroadcast error', err)
+      alert("Impossible d'accéder à la caméra. Vérifiez les permissions.")
+    }
+  }
+
+  // ── Arrêter le broadcast ──────────────────────────────────────────────────
   const stopBroadcast = () => {
-    if (retryTimer.current) clearTimeout(retryTimer.current)
-    mediaStreamRef.current?.getTracks().forEach(t => t.stop())
-    mediaStreamRef.current = null
+    mediaRef.current?.getTracks().forEach(t => t.stop())
+    mediaRef.current = null
     setStream(null)
     setIsBroadcasting(false)
-    peerConnections.current.forEach(pc => pc.close())
-    peerConnections.current.clear()
+    peersRef.current.forEach(pc => pc.close())
+    peersRef.current.clear()
+    iceBufRef.current.clear()
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current)
       channelRef.current = null
     }
   }
 
-  // Dummy ref to satisfy TypeScript (stopBroadcast uses retryTimer which is viewer-only; keep broadcaster clean)
-  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => { stopBroadcast() }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { stopBroadcast() }, []) // eslint-disable-line
 
   return { stream, isBroadcasting, startBroadcast, stopBroadcast }
 }
 
-// ── Viewer ────────────────────────────────────────────────────────────────────
+// ── useWebRTCViewer ───────────────────────────────────────────────────────────
 export function useWebRTCViewer(matchId: string) {
   const { user } = useAuth()
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [isLive, setIsLive] = useState(false)
-  const pcRef = useRef<RTCPeerConnection | null>(null)
-  const channelRef = useRef<any>(null)
-  const streamRef = useRef<MediaStream | null>(null)   // Mirrors stream state — no stale closure
-  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const viewerId = useRef(user?.id || Math.random().toString(36).substring(7)).current
+  const [stream,  setStream]  = useState<MediaStream | null>(null)
+  const [isLive,  setIsLive]  = useState(false)
 
-  const sendViewerJoin = (channel: any) => {
-    console.log('📡 Viewer: sending viewer-join, id:', viewerId)
-    channel.send({ type: 'broadcast', event: 'viewer-join', payload: { viewerId } })
-    // Retry if no stream arrives within 4 s
-    if (retryTimer.current) clearTimeout(retryTimer.current)
-    retryTimer.current = setTimeout(() => {
-      if (!streamRef.current && channelRef.current) {
-        console.log('📡 Viewer: retrying viewer-join (no stream after 4s)')
-        sendViewerJoin(channelRef.current)
-      }
-    }, 4000)
+  const channelRef   = useRef<any>(null)
+  const pcRef        = useRef<RTCPeerConnection | null>(null)
+  const streamRef    = useRef<MediaStream | null>(null)   // no stale closure
+  const iceBufRef    = useRef<RTCIceCandidateInit[]>([])  // pre-answer buffer
+  const retryRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const viewerId     = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
+
+  const clearRetry   = () => { if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null } }
+
+  const sendJoin = (channel: any, delay = 0) => {
+    clearRetry()
+    retryRef.current = setTimeout(() => {
+      if (!channelRef.current) return
+      console.log('📡 [V] viewer-join →', viewerId)
+      channel.send({ type: 'broadcast', event: 'viewer-join', payload: { viewerId } })
+      // Retry si pas de stream dans 5s
+      retryRef.current = setTimeout(() => {
+        if (!streamRef.current && channelRef.current) {
+          console.log('📡 [V] no stream after 5s — retrying')
+          sendJoin(channel)
+        }
+      }, 5000)
+    }, delay)
+  }
+
+  const closePc = () => {
+    if (pcRef.current) { pcRef.current.close(); pcRef.current = null }
+    iceBufRef.current = []
   }
 
   useEffect(() => {
     if (!matchId) return
 
-    const channel = supabase.channel(`stream-${matchId}`)
+    const channel = supabase.channel(`stream-${matchId}`, {
+      config: { presence: { key: user?.id ?? 'viewer' } },
+    })
     channelRef.current = channel
 
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
-        const broadcasterExists = Object.values(state).some((presences: any) =>
-          presences.some((p: any) => p.is_broadcaster)
+        const hasBc = Object.values(state).some((list: any) =>
+          list.some((p: any) => p.is_broadcaster)
         )
-        console.log('📡 Viewer: presence sync — broadcasterExists:', broadcasterExists)
-        setIsLive(broadcasterExists)
+        console.log('📡 [V] presence sync — broadcaster:', hasBc)
+        setIsLive(hasBc)
 
-        if (broadcasterExists && !streamRef.current && !pcRef.current) {
-          sendViewerJoin(channel)
-        } else if (!broadcasterExists) {
-          if (retryTimer.current) clearTimeout(retryTimer.current)
+        if (hasBc && !streamRef.current && !pcRef.current) {
+          sendJoin(channel)
+        } else if (!hasBc) {
+          clearRetry()
+          closePc()
           streamRef.current = null
           setStream(null)
-          if (pcRef.current) { pcRef.current.close(); pcRef.current = null }
         }
       })
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
         if (payload.target !== viewerId) return
-        console.log('📡 Viewer: received offer')
-        if (retryTimer.current) clearTimeout(retryTimer.current)
+        clearRetry()
+        console.log('📡 [V] offer received')
+        closePc()
+        iceBufRef.current = []
 
-        if (pcRef.current) { pcRef.current.close() }
-        const pc = new RTCPeerConnection(STUN_SERVERS)
+        const pc = createPc()
         pcRef.current = pc
 
         pc.ontrack = (e) => {
-          console.log('📡 Viewer: GOT REMOTE TRACK 🎉', e.streams[0])
+          console.log('📡 [V] 🎉 stream received!')
           streamRef.current = e.streams[0]
           setStream(e.streams[0])
+          clearRetry()
         }
-        pc.onicecandidate = (e) => {
-          if (e.candidate) {
+
+        pc.onicecandidate = ({ candidate }) => {
+          if (candidate) {
             channel.send({
-              type: 'broadcast',
-              event: 'ice-candidate',
-              payload: { target: 'broadcaster', candidate: e.candidate, from: viewerId }
+              type: 'broadcast', event: 'ice-candidate',
+              payload: { target: 'broadcaster', candidate: candidate.toJSON(), from: viewerId },
             })
           }
         }
+
         pc.onconnectionstatechange = () => {
-          console.log('📡 Viewer: PC state:', pc.connectionState)
-          if (pc.connectionState === 'failed') {
-            pcRef.current = null
-            // Retry the whole handshake
-            if (channelRef.current) sendViewerJoin(channelRef.current)
+          const s = pc.connectionState
+          console.log('📡 [V] PC state →', s)
+          if (s === 'disconnected') {
+            // ICE restart léger après 3s
+            setTimeout(() => {
+              if (pc.connectionState !== 'connected' && channelRef.current) {
+                console.log('📡 [V] disconnected — retrying join')
+                closePc()
+                streamRef.current = null
+                setStream(null)
+                sendJoin(channelRef.current)
+              }
+            }, 3000)
+          }
+          if (s === 'failed') {
+            closePc()
+            streamRef.current = null
+            setStream(null)
+            if (channelRef.current) sendJoin(channelRef.current, 1000)
           }
         }
 
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(payload.offer))
+          // Vider le buffer ICE pré-answer
+          for (const c of iceBufRef.current) {
+            await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
+          }
+          iceBufRef.current = []
+
           const answer = await pc.createAnswer()
           await pc.setLocalDescription(answer)
           channel.send({ type: 'broadcast', event: 'answer', payload: { viewerId, answer } })
-          console.log('📡 Viewer: answer sent')
+          console.log('📡 [V] answer sent')
         } catch (err) {
-          console.error('📡 Viewer: handshake error', err)
+          console.error('📡 [V] handshake error', err)
         }
       })
       .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-        if (payload.target === viewerId && pcRef.current && pcRef.current.remoteDescription) {
-          try {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate))
-          } catch (err) {
-            console.warn('📡 Viewer: ICE candidate error (ignored):', err)
-          }
+        if (payload.target !== viewerId) return
+        const pc = pcRef.current
+        if (pc?.remoteDescription) {
+          await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
+        } else {
+          iceBufRef.current.push(payload.candidate)
         }
       })
       .subscribe(async (status) => {
-        console.log('📡 Viewer: subscription status:', status)
+        console.log('📡 [V] channel status:', status)
         if (status === 'SUBSCRIBED') {
-          await channel.track({ is_viewer: true, user_id: user?.id })
-          console.log('📡 Viewer: presence tracked')
+          await channel.track({ is_viewer: true, user_id: user?.id ?? 'anon' })
+          console.log('📡 [V] presence tracked')
         }
       })
 
     return () => {
-      if (retryTimer.current) clearTimeout(retryTimer.current)
+      clearRetry()
+      closePc()
       supabase.removeChannel(channel)
-      if (pcRef.current) { pcRef.current.close() }
+      channelRef.current = null
     }
-  }, [matchId, viewerId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [matchId, viewerId]) // eslint-disable-line
 
   return { stream, isLive }
 }
