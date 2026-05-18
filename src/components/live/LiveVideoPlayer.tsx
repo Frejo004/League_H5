@@ -1,41 +1,55 @@
 import { useEffect, useRef } from 'react'
 import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
 
+interface MatchOverlayInfo {
+  homeName: string
+  awayName: string
+  homeScore: number
+  awayScore: number
+  clockLabel: string   // ex: "12'34\""
+  period: string       // ex: "1ère MT" | "2ème MT" | "Mi-temps"
+  isPaused: boolean
+  homeColor?: string
+  awayColor?: string
+}
+
 interface LiveVideoPlayerProps {
   matchId: string
   stream?: MediaStream | null
   isLive?: boolean
+  overlay?: MatchOverlayInfo
 }
 
-export function LiveVideoPlayer({ matchId, stream: propStream, isLive: propIsLive }: LiveVideoPlayerProps) {
-  // On utilise les props du parent si présentes, sinon on fallback sur le hook local
+export function LiveVideoPlayer({
+  matchId,
+  stream: propStream,
+  isLive: propIsLive,
+  overlay,
+}: LiveVideoPlayerProps) {
   const localViewer = useWebRTCViewer(propIsLive !== undefined ? '' : matchId)
 
   const isLive = propIsLive !== undefined ? propIsLive : localViewer.isLive
   const stream  = propStream  !== undefined ? propStream  : localViewer.stream
 
-  // ── useRef + useEffect pour éviter le srcObject stale-closure ────────────
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-    if (!stream) {
-      video.srcObject = null
-      return
-    }
-    if (video.srcObject === stream) return  // déjà à jour
+    if (!stream) { video.srcObject = null; return }
+    if (video.srcObject === stream) return
     video.srcObject = stream
     video.play().catch(err => {
       if (err.name !== 'AbortError') console.warn('LiveVideoPlayer play error:', err)
     })
-  }, [stream, isLive]) // isLive dans les deps : relance quand le <video> monte
+  }, [stream, isLive])
 
   if (!isLive) return null
 
   return (
-    <div className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video animate-fade-in-up mt-6">
-      {/* Spinner "Connexion au direct..." tant que le stream n'arrive pas */}
+    <div className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video mt-6">
+
+      {/* Spinner connexion */}
       {!stream && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
           <div className="w-8 h-8 rounded-full border-2 border-[#C8F135] border-t-transparent animate-spin mb-3" />
@@ -43,18 +57,77 @@ export function LiveVideoPlayer({ matchId, stream: propStream, isLive: propIsLiv
         </div>
       )}
 
-      {/* L'élément video est TOUJOURS dans le DOM dès que isLive=true,    */}
-      {/* pour que useEffect puisse assigner srcObject dès que stream arrive */}
+      {/* Vidéo P2P */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        controls
         className="absolute inset-0 w-full h-full border-0 object-cover"
       />
 
-      {/* Badge EN DIRECT */}
-      {stream && (
+      {/* ── Overlay scoreboard (affiché dès que stream est présent) ── */}
+      {stream && overlay && (
+        <>
+          {/* Barre du haut : équipes + score */}
+          <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2">
+            {/* Équipe domicile */}
+            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%]">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: overlay.homeColor ?? '#3b82f6' }}
+              />
+              <span className="text-[10px] font-black text-white uppercase truncate tracking-wide">
+                {overlay.homeName}
+              </span>
+            </div>
+
+            {/* Score central */}
+            <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/20 shadow-lg">
+              <span className="text-base font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {overlay.homeScore}
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold mx-0.5">-</span>
+              <span className="text-base font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {overlay.awayScore}
+              </span>
+            </div>
+
+            {/* Équipe extérieure */}
+            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] flex-row-reverse">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: overlay.awayColor ?? '#f59e0b' }}
+              />
+              <span className="text-[10px] font-black text-white uppercase truncate tracking-wide">
+                {overlay.awayName}
+              </span>
+            </div>
+          </div>
+
+          {/* Barre du bas : chrono + période + badge EN DIRECT */}
+          <div className="absolute bottom-0 inset-x-0 z-20 px-3 pb-3 flex items-center justify-between">
+            {/* Chrono + période */}
+            <div className="flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${overlay.isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
+              <span className="text-[11px] font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {overlay.clockLabel}
+              </span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest border-l border-white/20 pl-2">
+                {overlay.isPaused ? 'SUSPENDU' : overlay.period}
+              </span>
+            </div>
+
+            {/* Badge EN DIRECT */}
+            <div className="flex items-center gap-1.5 bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.4)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest">EN DIRECT</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Badge EN DIRECT simple si pas d'overlay */}
+      {stream && !overlay && (
         <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 z-20">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">EN DIRECT</span>

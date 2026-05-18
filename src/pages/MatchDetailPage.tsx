@@ -927,7 +927,22 @@ export function MatchDetailPage() {
             </div>
             
             <div id="live-video-section" className="scroll-mt-24">
-              <LiveVideoPlayer matchId={match.id} stream={liveStream} isLive={true} />
+              <LiveVideoPlayer
+                matchId={match.id}
+                stream={liveStream}
+                isLive={true}
+                overlay={{
+                  homeName: home.name,
+                  awayName: away.name,
+                  homeScore: displayHomeScore,
+                  awayScore: displayAwayScore,
+                  clockLabel: clock.label,
+                  period: clock.phase === 2 ? 'Mi-temps' : clock.phase === 3 ? '2ème MT' : '1ère MT',
+                  isPaused: clock.isPaused ?? false,
+                  homeColor: home.color,
+                  awayColor: away.color,
+                }}
+              />
             </div>
           </motion.div>
         )}

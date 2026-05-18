@@ -12,12 +12,34 @@ const ICE_CONFIG: RTCConfiguration = {
   iceCandidatePoolSize: 10,
 }
 
-// ── Contraintes vidéo — facingMode en 'ideal' pour fonctionner sur laptop ET mobile ─
+// ── Contraintes vidéo basse latence (480p @ 15fps) ──────────────────────────
 const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
-  facingMode: { ideal: 'environment' }, // préfère la caméra dos, mais ne force pas
-  width:  { ideal: 1280, max: 1920 },
-  height: { ideal: 720,  max: 1080 },
-  frameRate: { ideal: 24, max: 30 },
+  facingMode: { ideal: 'environment' },
+  width:  { ideal: 854, max: 1280 },
+  height: { ideal: 480, max: 720  },
+  frameRate: { ideal: 15, max: 24  }, // 15fps → latence ~66ms au lieu de ~33ms
+}
+
+// ── Limiter le débit vidéo (réduit la latence de buffering) ──────────────────
+async function setBitrate(pc: RTCPeerConnection, maxKbps = 800) {
+  const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+  if (!sender) return
+  try {
+    const params = sender.getParameters()
+    if (!params.encodings || params.encodings.length === 0) {
+      params.encodings = [{}]
+    }
+    params.encodings[0].maxBitrate   = maxKbps * 1000
+    params.encodings[0].maxFramerate = 15
+    // Préférer le codec H264 (accélération matérielle, faible latence)
+    if (!params.encodings[0].priority) {
+      params.encodings[0].priority = 'medium'
+    }
+    await sender.setParameters(params)
+    console.log(`📡 [BC] bitrate cap set to ${maxKbps} kbps`)
+  } catch (err) {
+    console.warn('📡 [BC] setBitrate error (ignored):', err)
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -128,6 +150,8 @@ export function useWebRTCBroadcaster(matchId: string) {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
             console.log('📡 [BC] answer set for', payload.viewerId)
+            // Limiter le débit après la poignée de main
+            setBitrate(pc, 800)
             // Vider le buffer ICE
             const buf = iceBufRef.current.get(payload.viewerId) ?? []
             for (const c of buf) {
