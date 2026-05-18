@@ -37,8 +37,8 @@ export function LiveVideoPlayer({
 }: LiveVideoPlayerProps) {
   const localViewer = useWebRTCViewer(propIsLive !== undefined ? '' : matchId)
 
-  const isLive = propIsLive !== undefined ? propIsLive : localViewer.isLive
-  const stream = propStream !== undefined ? propStream : localViewer.stream
+  const isLive      = propIsLive    !== undefined ? propIsLive    : localViewer.isLive
+  const stream      = propStream    !== undefined ? propStream    : localViewer.stream
   const viewerCount = overlay?.viewerCount !== undefined ? overlay.viewerCount : localViewer.viewerCount
 
   const videoRef = useRef<HTMLVideoElement>(null)

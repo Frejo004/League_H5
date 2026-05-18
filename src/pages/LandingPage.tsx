@@ -1,302 +1,216 @@
-/**
- * LandingPage — Page d'accueil publique
- * Présentée aux visiteurs non connectés avant le login
- */
-
 import { Link } from 'react-router-dom'
 import {
   Trophy, Calendar, Target, Users, BarChart2,
   MessageCircle, Radio, Star, ArrowRight, Zap,
-  Shield, BookOpen,
+  Shield, BookOpen, ChevronRight
 } from 'lucide-react'
 import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
 import { useLandingStats } from '@/hooks/useLandingStats'
 import { useCountUp } from '@/hooks/useCountUp'
 
+const ACCENT = '#C8F135'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Composants internes
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FeatureCard({ icon: Icon, title, desc, color }: {
-  icon: typeof Trophy
+  icon: any
   title: string
   desc: string
   color: string
 }) {
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl border border-white/[0.08] p-5 group
-                 hover:-translate-y-1.5 transition-all duration-500"
-      style={{ 
-        background: 'rgba(22, 28, 45, 0.3)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)'
-      }}
-    >
+    <div className="group relative p-6 rounded-[2rem] bg-white/[0.02] border border-white/[0.05] overflow-hidden transition-all duration-500 hover:bg-white/[0.04] hover:-translate-y-2">
+      {/* Effet de Halo au survol */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{ background: `radial-gradient(circle at 0% 0%, ${color}15 0%, transparent 70%)` }}
+        className="absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+        style={{ background: `radial-gradient(circle at center, ${color}20 0%, transparent 70%)` }}
       />
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110"
-        style={{ backgroundColor: color + '15', border: `1px solid ${color}30` }}
-      >
-        <Icon size={19} style={{ color }} />
+
+      <div className="relative z-10">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}
+        >
+          <Icon size={22} style={{ color }} />
+        </div>
+        <h3 className="text-base font-black text-white mb-2 uppercase tracking-tight font-['Barlow_Condensed']">
+          {title}
+        </h3>
+        <p className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-300 transition-colors">
+          {desc}
+        </p>
       </div>
-      <h3 className="text-[13px] font-black text-white mb-1.5 uppercase tracking-wide">{title}</h3>
-      <p className="text-[11px] text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors">{desc}</p>
     </div>
   )
 }
 
 function StatPill({ value, label, isLoading }: { value: string | number; label: string; isLoading?: boolean }) {
   const numericValue = typeof value === 'number' ? value : parseInt(String(value)) || 0
-  const isNumeric = !isNaN(numericValue) && typeof value !== 'string' || (typeof value === 'string' && value.includes('+'))
   const animatedValue = useCountUp(numericValue)
-  const displayValue = isNumeric ? (typeof value === 'string' && value.includes('+') ? `${animatedValue}+` : animatedValue) : value
+  const displayValue = typeof value === 'string' && value.includes('+') ? `${animatedValue}+` : (isNaN(numericValue) ? value : animatedValue)
 
   return (
-    <div className="text-center px-4 py-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm group hover:bg-white/[0.05] transition-all duration-500">
-      {isLoading ? (
-        <div className="h-9 w-12 bg-white/5 rounded mx-auto animate-pulse" />
-      ) : (
-        <p className="text-3xl font-black text-white tabular-nums tracking-tighter group-hover:scale-110 transition-transform duration-500">
-          {displayValue}
-        </p>
-      )}
-      <p className="text-[10px] text-slate-500 mt-1.5 font-bold uppercase tracking-widest">{label}</p>
+    <div className="relative overflow-hidden p-6 rounded-[2rem] bg-[#161B22]/50 border border-white/[0.05] group hover:border-[#C8F135]/30 transition-all duration-500">
+      <div className="relative z-10 flex flex-col items-center">
+        {isLoading ? (
+          <div className="h-10 w-16 bg-white/5 rounded-lg animate-pulse" />
+        ) : (
+          <span className="text-4xl font-black text-white font-['Barlow_Condensed'] tracking-tighter group-hover:scale-110 transition-transform duration-500 italic">
+            {displayValue}
+          </span>
+        )}
+        <span className="text-[10px] font-bold text-[#C8F135] uppercase tracking-[0.2em] mt-2">
+          {label}
+        </span>
+      </div>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page
+// Page Principale
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LandingPage() {
   const { data: stats, isLoading } = useLandingStats()
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: '#0D1117' }}
-    >
-      {/* ── Header minimal ── */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: '#C8F135' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#0D1117" strokeWidth="1.5" fill="#C8F135"/>
-              <path d="M12 2C12 2 9 6 9 12C9 18 12 22 12 22" stroke="#0D1117" strokeWidth="1.2"/>
-              <path d="M2 12H22" stroke="#0D1117" strokeWidth="1.2"/>
-              <path d="M4.5 6.5L12 9L19.5 6.5" stroke="#0D1117" strokeWidth="1"/>
-              <path d="M4.5 17.5L12 15L19.5 17.5" stroke="#0D1117" strokeWidth="1"/>
-            </svg>
+    <div className="min-h-screen bg-[#0D1117] text-slate-200 selection:bg-[#C8F135] selection:text-[#0D1117]">
+
+      {/* ── Navigation ── */}
+      {/* <header className="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-[#0D1117]/60 border-b border-white/[0.05]">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="w-9 h-9 rounded-xl bg-[#C8F135] flex items-center justify-center transition-transform group-hover:rotate-12">
+            <Trophy size={20} className="text-[#0D1117]" strokeWidth={2.5} />
           </div>
-          <span
-            className="text-lg font-black text-white tracking-tight"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-          >
-            LEAGUE <span style={{ color: '#C8F135' }}>H5</span>
+          <span className="text-xl font-black text-white tracking-tighter font-['Barlow_Condensed']">
+            LEAGUE <span style={{ color: ACCENT }}>H5</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            to="/rules-public"
-            className="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            <BookOpen size={14} />
+        <div className="flex items-center gap-6">
+          <Link to="/rules-public" className="hidden md:block text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-[#C8F135] transition-colors">
             Règlement
           </Link>
           <Link
             to="/auth/login"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white
-                       bg-primary-600 hover:bg-primary-500 transition-colors"
+            className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-[#C8F135] hover:text-[#0D1117] transition-all duration-300"
           >
-            Se connecter
-            <ArrowRight size={14} />
+            Connexion
           </Link>
         </div>
-      </header>
+      </header> */}
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden flex-1 flex flex-col">
-        {/* Background image */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: `url(${bgImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 30%',
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0D1117]/80 via-[#0D1117]/60 to-[#0D1117]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0D1117]/60 via-transparent to-[#0D1117]/60" />
+      {/* ── Hero Section ── */}
+      <section className="relative min-h-screen flex flex-col justify-center items-center pt-20 overflow-hidden">
+        {/* Background avec overlay dynamique */}
+        <div className="absolute inset-0 z-0">
+          <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0D1117] via-transparent to-[#0D1117]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0D1117] via-transparent to-[#0D1117]" />
         </div>
 
-        {/* Glow accent */}
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none z-0"
-          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(200,241,53,0.08) 0%, transparent 70%)' }}
-        />
-
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-20 lg:py-32 flex-1">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#C8F135]/10 border border-[#C8F135]/30 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C8F135] animate-pulse" />
-            <span className="text-[11px] font-bold text-[#C8F135] uppercase tracking-widest">
-              {isLoading ? 'Chargement...' : `${stats?.seasonName ?? 'Saison'} en cours`}
+        <div className="relative z-10 text-center px-4 max-w-5xl">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 mb-8 backdrop-blur-md">
+            <span className="flex h-2 w-2 rounded-full bg-[#C8F135] animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80">
+              {isLoading ? 'SYNC...' : `${stats?.seasonName ?? 'Saison'} LIVE`}
             </span>
           </div>
 
-          {/* Titre */}
-          <h1
-            className="text-5xl lg:text-7xl font-black text-white tracking-tight leading-none mb-4"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-          >
-            HIGH FIVE
-            <br />
-            <span style={{ color: '#C8F135' }}>LIGUE</span>
+          <h1 className="text-7xl md:text-[120px] font-black text-white leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8">
+            HIGH FIVE <br />
+            <span className="text-transparent" style={{ WebkitTextStroke: '2px #C8F135' }}>LIGUE</span>
           </h1>
 
-          <p className="text-slate-300 text-base lg:text-lg max-w-lg leading-relaxed mb-8">
-            La ligue de football H5 interne. Matchs, classements, statistiques
-            et messagerie — tout en temps réel.
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+            L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-white font-bold">stats en direct</span>,
+            messagerie intégrée et gestion de club simplifiée.
           </p>
 
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/public/matches"
+              className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-[#C8F135] text-[#0D1117] font-black uppercase italic tracking-tighter hover:scale-105 transition-all shadow-[0_0_30px_rgba(200,241,53,0.3)]"
+            >
+              Voir les matchs
+              <ChevronRight className="transition-transform group-hover:translate-x-1" />
+            </Link>
             <Link
               to="/auth/login"
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-base font-bold
-                         text-[#0D1117] bg-[#C8F135] hover:bg-[#d4f53f] transition-all
-                         hover:-translate-y-0.5 shadow-lg shadow-[#C8F135]/20"
+              className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white/5 border border-white/10 font-black uppercase italic tracking-tighter hover:bg-white/10 transition-all backdrop-blur-md"
             >
-              Accéder à la ligue
-              <ArrowRight size={16} />
-            </Link>
-            <Link
-              to="/rules-public"
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-base font-semibold
-                         text-white border border-white/20 hover:border-white/40 hover:bg-white/5
-                         transition-all"
-            >
-              <BookOpen size={16} />
-              Voir le règlement
+              Rejoindre l'élite
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="px-6 py-12 border-t border-white/[0.06]">
-        <div className="max-w-3xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatPill value={stats?.teams ?? 0} label="Équipes" isLoading={isLoading} />
-          <StatPill value={stats?.players ? `${stats.players}+` : 0} label="Joueurs" isLoading={isLoading} />
-          <StatPill value="2×20'" label="Format match" />
-          <StatPill value="🔴" label="Live disponible" />
+      {/* ── Stats Section ── */}
+      <section className="relative z-20 px-6 -mt-20 mb-24">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatPill value={stats?.teams ?? 0} label="Clubs engagés" isLoading={isLoading} />
+          <StatPill value={stats?.players ? `${stats.players}+` : '0+'} label="Athlètes" isLoading={isLoading} />
+          <StatPill value="2×20'" label="Format Élite" />
+          <StatPill value="LIVE" label="Streaming" />
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section className="px-6 py-12 border-t border-white/[0.06]">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-black text-white mb-2">Tout ce qu'il vous faut</h2>
-            <p className="text-slate-500 text-sm">Une plateforme complète pour gérer votre ligue</p>
+      {/* ── Features Grid ── */}
+      <section className="px-6 py-24 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
+                L'écosystème <span style={{ color: ACCENT }}>H5</span>
+              </h2>
+              <p className="text-slate-500 mt-2 font-medium">Une infrastructure digitale complète pour vos tournois.</p>
+            </div>
+            <div className="h-[2px] flex-1 bg-gradient-to-r from-[#C8F135]/50 to-transparent mx-8 hidden md:block mb-4" />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <FeatureCard
-              icon={Radio}
-              title="Live en direct"
-              desc="Suivez les matchs en temps réel avec chrono, buts et réactions"
-              color="#ef4444"
-            />
-            <FeatureCard
-              icon={Trophy}
-              title="Classement"
-              desc="Classement général, domicile, extérieur avec forme des équipes"
-              color="#f59e0b"
-            />
-            <FeatureCard
-              icon={Target}
-              title="Statistiques"
-              desc="Buteurs, passeurs, MVP, fair-play et performances individuelles"
-              color="#f97316"
-            />
-            <FeatureCard
-              icon={MessageCircle}
-              title="Messagerie"
-              desc="Chat par équipe, canaux globaux et messages directs"
-              color="#3b82f6"
-            />
-            <FeatureCard
-              icon={Calendar}
-              title="Calendrier"
-              desc="Tous les matchs programmés avec notifications avant le coup d'envoi"
-              color="#8b5cf6"
-            />
-            <FeatureCard
-              icon={Users}
-              title="Équipes"
-              desc="Profils d'équipes, compositions et historique des résultats"
-              color="#06b6d4"
-            />
-            <FeatureCard
-              icon={Star}
-              title="Vote MVP"
-              desc="Élisez l'homme du match après chaque rencontre"
-              color="#fbbf24"
-            />
-            <FeatureCard
-              icon={Shield}
-              title="Fair-play"
-              desc="Suivi des cartons et classement disciplinaire de la saison"
-              color="#22c55e"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <FeatureCard icon={Radio} title="Match Center" desc="Interface de live-scoring ultra-réactive pour chaque seconde du match." color="#ef4444" />
+            <FeatureCard icon={Trophy} title="Hall of Fame" desc="Classements dynamiques et historique des champions par saison." color="#f59e0b" />
+            <FeatureCard icon={BarChart2} title="Data Lab" desc="Analyses détaillées : heatmaps, efficacité devant le but et passes clés." color="#3b82f6" />
+            <FeatureCard icon={MessageCircle} title="Locker Room" desc="Canaux de communication sécurisés pour votre équipe et le staff." color="#8b5cf6" />
+            <FeatureCard icon={Calendar} title="Smart Schedule" desc="Gestion automatisée des reports et synchronisation calendrier." color="#22c55e" />
+            <FeatureCard icon={Shield} title="Fair-Play Index" desc="Suivi disciplinaire rigoureux pour maintenir l'esprit sportif." color="#06b6d4" />
+            <FeatureCard icon={Star} title="MVP Voting" desc="Le public et les capitaines élisent les meilleurs après chaque match." color="#fbbf24" />
+            <FeatureCard icon={Zap} title="Instant Replay" desc="Accès rapide aux moments forts et aux vidéos de la communauté." color="#C8F135" />
           </div>
         </div>
       </section>
 
-      {/* ── Valeurs ── */}
-      <section
-        className="px-6 py-8 border-t border-amber-500/20"
-        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0D1117 100%))' }}
-      >
-        <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-wrap justify-center">
-            {['RESPECT', 'FAIR-PLAY', 'DISCIPLINE', 'PASSION'].map((v, i) => (
-              <span key={v} className="flex items-center gap-3">
-                <span
-                  className="text-sm font-black text-amber-400 tracking-widest"
-                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-                >
+      {/* ── Values Ticker ── */}
+      <section className="py-20 bg-gradient-to-b from-[#0D1117] to-[#161B22] border-y border-white/[0.05]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex flex-wrap justify-center gap-x-12 gap-y-8">
+            {['Respect', 'Fair-play', 'Discipline', 'Passion'].map((v) => (
+              <div key={v} className="flex items-center gap-4">
+                <div className="w-2 h-2 rounded-full bg-[#C8F135]" />
+                <span className="text-3xl md:text-5xl font-black text-white/20 uppercase italic font-['Barlow_Condensed'] hover:text-white/60 transition-colors cursor-default">
                   {v}
                 </span>
-                {i < 3 && <span className="text-amber-700 font-black">•</span>}
-              </span>
+              </div>
             ))}
           </div>
-          <Link
-            to="/auth/login"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
-                       text-[#0D1117] bg-[#C8F135] hover:bg-[#d4f53f] transition-colors shrink-0"
-          >
-            Rejoindre la ligue
-            <ArrowRight size={14} />
-          </Link>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="px-6 py-4 border-t border-white/[0.04] text-center">
-        <p className="text-xs text-slate-700">© 2026 League H5 · Unis pour le football, ensemble pour la victoire !</p>
+      <footer className="py-12 border-t border-white/[0.05] text-center bg-[#0D1117]">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="w-12 h-12 rounded-xl bg-white/[0.03] flex items-center justify-center mx-auto mb-6">
+            <Trophy size={24} className="text-slate-600" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.4em] text-slate-500">
+            © 2026 League H5 · Unis pour le football
+          </p>
+        </div>
       </footer>
     </div>
   )

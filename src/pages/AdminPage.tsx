@@ -47,7 +47,7 @@ export function AdminPage() {
     setSearchParams(id !== 'seasons' ? { tab: id } : {}, { replace: true })
   }
 
-  if (!isAdmin) return <Navigate to="/" replace />
+  if (!isAdmin) return <Navigate to="/dashboard" replace />
 
   return (
     <div className="space-y-6">

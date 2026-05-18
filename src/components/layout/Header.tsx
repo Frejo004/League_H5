@@ -38,7 +38,7 @@ interface NavItem { to: string; label: string; icon: typeof LayoutDashboard }
 
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
     { to: '/matches', label: 'Matchs', icon: Calendar },
     { to: '/scorers', label: 'Buteurs', icon: Target },
@@ -99,7 +99,7 @@ const ADMIN_SUBNAV = [
 
 // Mobile bottom nav (5 items max)
 const MOBILE_NAV_BASE: NavItem[] = [
-  { to: '/', label: 'Accueil', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Accueil', icon: LayoutDashboard },
   { to: '/matches', label: 'Matchs', icon: Calendar },
   { to: '/standings', label: 'Classement', icon: Trophy },
   { to: '/players', label: 'Joueurs', icon: User },
@@ -135,7 +135,7 @@ function BallIcon() {
 function Brand({ border, textColor }: { border: string; textColor: string }) {
   return (
     <Link
-      to="/"
+      to="/dashboard"
       className="flex items-center gap-2.5 px-5 shrink-0"
       style={{ minWidth: 160, borderRight: `1px solid ${border}`, height: '100%' }}
     >
@@ -250,27 +250,27 @@ export default function Header() {
 
   // Page title pour la mobile title bar
   const PAGE_TITLES: Record<string, string> = {
-    '/': 'Tableau de bord',
-    '/standings': 'Classement',
-    '/matches': 'Matchs',
-    '/scorers': 'Buteurs',
-    '/teams': 'Équipes',
-    '/players': 'Joueurs',
-    '/stats': 'Statistiques',
-    '/admin': 'Administration',
-    '/captain': 'Mon Équipe',
-    '/my-stats': 'Mes Stats',
-    '/my-team': 'Mon Équipe',
-    '/profile': 'Mon Profil',
-    '/palmares': 'Palmarès',
-    '/rules': 'Règlement',
-    '/chat': 'Messages',
-    '/playoffs': 'Phase Finale',
+    '/dashboard':  'Tableau de bord',
+    '/standings':  'Classement',
+    '/matches':    'Matchs',
+    '/scorers':    'Buteurs',
+    '/teams':      'Équipes',
+    '/players':    'Joueurs',
+    '/stats':      'Statistiques',
+    '/admin':      'Administration',
+    '/captain':    'Mon Équipe',
+    '/my-stats':   'Mes Stats',
+    '/my-team':    'Mon Équipe',
+    '/profile':    'Mon Profil',
+    '/palmares':   'Palmarès',
+    '/rules':      'Règlement',
+    '/chat':       'Messages',
+    '/playoffs':   'Phase Finale',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
-    .filter(([k]) => k !== '/')
+    .filter(([k]) => k !== '/dashboard')
     .find(([k]) => location.pathname.startsWith(k))?.[1]
-    ?? (location.pathname === '/' ? 'Tableau de bord' : 'League H5')
+    ?? (location.pathname === '/dashboard' ? 'Tableau de bord' : 'League H5')
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -298,7 +298,7 @@ export default function Header() {
               <NavLink
                 key={`${to}-${label}`}
                 to={to}
-                end={to === '/'}
+                end={to === '/dashboard'}
                 aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
                 className="relative flex items-center px-3 text-[13px] font-semibold whitespace-nowrap
                            transition-colors duration-150 shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded"
@@ -465,7 +465,7 @@ export default function Header() {
         >
           <div className="flex items-center justify-between px-4 h-14">
             {/* Brand */}
-            <Link to="/" className="flex items-center gap-1.5">
+            <Link to="/dashboard" className="flex items-center gap-1.5">
               <div
                 className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                 style={{ backgroundColor: 'var(--accent)' }}
@@ -635,13 +635,13 @@ export default function Header() {
             </div>
 
             {/* Nav items */}
-            <nav className="flex-1 py-3 px-3 space-y-0.5" aria-label="Navigation mobile">
-              {navItems.map(({ to, label, icon: Icon }) => (
-                <NavLink
-                  key={`${to}-${label}`}
-                  to={to}
-                  end={to === '/'}
-                  aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
+              <nav className="flex-1 py-3 px-3 space-y-0.5" aria-label="Navigation mobile">
+                {navItems.map(({ to, label, icon: Icon }) => (
+                  <NavLink
+                    key={`${to}-${label}`}
+                    to={to}
+                    end={to === '/dashboard'}
+                    aria-current={location.pathname === to || (to !== '/dashboard' && location.pathname.startsWith(to)) ? 'page' : undefined}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors"
                   style={({ isActive }) => ({
                     fontFamily: "'Barlow', sans-serif",
@@ -726,8 +726,8 @@ export default function Header() {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
-              aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
+              end={to === '/dashboard'}
+              aria-current={location.pathname === to || (to !== '/dashboard' && location.pathname.startsWith(to)) ? 'page' : undefined}
               className="relative flex flex-col items-center justify-center gap-1 flex-1 transition-all duration-300 group"
               style={({ isActive }) => ({
                 color: isActive ? ACCENT : NAV_OFF,

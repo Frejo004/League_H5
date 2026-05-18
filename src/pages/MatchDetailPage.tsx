@@ -508,7 +508,7 @@ export function MatchDetailPage() {
           </div>
         )}
 
-        <Breadcrumbs items={[{ label: 'Matchs', to: '/matches' }, { label: `${home.name} vs ${away.name}` }]} />
+        <Breadcrumbs items={[{ label: 'Matchs', to: '/matches' }, { label: `${home.name} vs ${away.name}` }]} homeTo="/dashboard" />
 
         <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900 shadow-2xl">
           <div className="absolute inset-0 bg-linear-to-br from-blue-600/10 via-transparent to-purple-600/10" />
@@ -694,6 +694,7 @@ export function MatchDetailPage() {
                     { label: 'Matchs', to: '/matches' },
                     { label: `${home.name} vs ${away.name}` }
                   ]}
+                  homeTo="/dashboard"
                 />
               </div>
 

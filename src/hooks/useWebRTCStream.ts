@@ -2,46 +2,77 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
-// ── ICE servers : STUN public + STUN fallback ────────────────────────────────
+// ── ICE servers : STUN public + TURN fallback ────────────────────────────────
+// Les serveurs STUN seuls échouent derrière certains NAT/firewalls.
+// On ajoute les TURN publics de Metered pour garantir la connexion.
 const ICE_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
+    // TURN publics gratuits (fallback NAT symétrique)
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
-  iceCandidatePoolSize: 10,
+  iceCandidatePoolSize: 5,       // réduit de 10 → 5 : moins de candidats inutiles à négocier
   bundlePolicy: 'max-bundle',
   rtcpMuxPolicy: 'require',
 }
 
-// ── Contraintes vidéo basse latence (480p @ 15fps) ──────────────────────────
+// ── Contraintes vidéo optimisées : 360p @ 15fps ──────────────────────────────
+// 360p au lieu de 480p : -40% de pixels à encoder → upload admin divisé par ~1.5
+// 15fps maintenu : bon compromis fluidité/latence pour du sport filmé sur mobile
 const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   facingMode: { ideal: 'environment' },
-  width: { ideal: 854, max: 1080 },
-  height: { ideal: 480, max: 720 },
-  frameRate: { ideal: 15, max: 24 }, // 15fps → latence ~66ms au lieu de ~33ms
+  width:  { ideal: 640, max: 854 },
+  height: { ideal: 360, max: 480 },
+  frameRate: { ideal: 15, max: 20 },
 }
 
-// ── Limiter le débit vidéo (réduit la latence de buffering) ──────────────────
-async function setBitrate(pc: RTCPeerConnection, maxKbps = 800) {
-  const sender = pc.getSenders().find(s => s.track?.kind === 'video')
-  if (!sender) return
-  try {
-    const params = sender.getParameters()
-    if (!params.encodings || params.encodings.length === 0) {
-      params.encodings = [{}]
+
+
+// ── Appliquer les paramètres d'encodage après la poignée de main ─────────────
+async function applyEncodingParams(pc: RTCPeerConnection) {
+  for (const sender of pc.getSenders()) {
+    try {
+      const params = sender.getParameters()
+      if (!params.encodings || params.encodings.length === 0) {
+        params.encodings = [{}]
+      }
+      const enc = params.encodings[0]
+
+      if (sender.track?.kind === 'video') {
+        enc.maxBitrate    = 400_000   // 400 kbps (était 800) → upload admin ÷2
+        enc.maxFramerate  = 15
+        enc.priority      = 'medium'
+        // scaleResolutionDownBy : si la bande passante est insuffisante,
+        // le navigateur réduit automatiquement la résolution plutôt que de couper
+        enc.scaleResolutionDownBy = 1.0
+      }
+
+      if (sender.track?.kind === 'audio') {
+        enc.priority         = 'high'   // le son passe avant la vidéo en cas de congestion
+        enc.networkPriority  = 'high' as any
+      }
+
+      await sender.setParameters(params)
+    } catch {
+      // Certains navigateurs ne supportent pas tous les champs — on ignore silencieusement
     }
-    params.encodings[0].maxBitrate = maxKbps * 1000
-    params.encodings[0].maxFramerate = 15
-    // Préférer le codec H264 (accélération matérielle, faible latence)
-    if (!params.encodings[0].priority) {
-      params.encodings[0].priority = 'medium'
-    }
-    await sender.setParameters(params)
-    console.log(`📡 [BC] bitrate cap set to ${maxKbps} kbps`)
-  } catch (err) {
-    console.warn('📡 [BC] setBitrate error (ignored):', err)
   }
+  console.log('📡 [BC] encoding params applied (400kbps video, high-prio audio)')
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -56,14 +87,14 @@ export function useWebRTCBroadcaster(matchId: string) {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [viewerCount, setViewerCount] = useState(0)
 
-  const channelRef = useRef<any>(null)
-  const mediaRef = useRef<MediaStream | null>(null)
-  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map())
-  // Buffer ICE candidates per viewer that arrive before answer
-  const iceBufRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
+  const channelRef  = useRef<any>(null)
+  const mediaRef    = useRef<MediaStream | null>(null)
+  const peersRef    = useRef<Map<string, RTCPeerConnection>>(new Map())
+  const iceBufRef   = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
 
   // ── Créer / recréer la connexion peer pour un viewer ──────────────────────
   const createPeerForViewer = async (channel: any, viewerId: string) => {
+
     // Fermer la connexion existante si retry
     if (peersRef.current.has(viewerId)) {
       peersRef.current.get(viewerId)!.close()
@@ -79,7 +110,6 @@ export function useWebRTCBroadcaster(matchId: string) {
       if (t.kind === 'video') {
         try {
           const params = sender.getParameters()
-          // Favoriser la fluidité et le mouvement constant à basse latence
           params.degradationPreference = 'maintain-framerate'
           sender.setParameters(params).catch(() => {})
         } catch {}
@@ -97,15 +127,16 @@ export function useWebRTCBroadcaster(matchId: string) {
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState
-      console.log(`📡 [BC] peer ${viewerId} state → ${s}`)
+      console.log(`📡 [BC] peer ${viewerId} → ${s}`)
+
       if (s === 'disconnected') {
-        // Tenter un ICE restart léger avant de tout refaire
+        // ICE restart après 2s (était 3s)
         setTimeout(() => {
           if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             console.log(`📡 [BC] ICE restart for ${viewerId}`)
             createPeerForViewer(channel, viewerId)
           }
-        }, 3000)
+        }, 2_000)
       }
       if (s === 'failed') {
         peersRef.current.delete(viewerId)
@@ -131,12 +162,17 @@ export function useWebRTCBroadcaster(matchId: string) {
       let mediaStream: MediaStream
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: VIDEO_CONSTRAINTS, audio: true,
+          video: VIDEO_CONSTRAINTS,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         })
       } catch {
-        // Fallback: lower constraints
+        // Fallback contraintes minimales
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 20 } },
+          video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15 } },
           audio: true,
         })
       }
@@ -144,15 +180,15 @@ export function useWebRTCBroadcaster(matchId: string) {
       setStream(mediaStream)
       setIsBroadcasting(true)
 
-      // Optimiser le décodage et l'encodage du flux en favorisant la fluidité
+      // Hint navigateur : flux de mouvement (sport) → optimise l'encodeur
       mediaStream.getVideoTracks().forEach(track => {
-        if ('contentHint' in track) {
-          (track as any).contentHint = 'motion'
-        }
+        if ('contentHint' in track) (track as any).contentHint = 'motion'
+      })
+      mediaStream.getAudioTracks().forEach(track => {
+        if ('contentHint' in track) (track as any).contentHint = 'speech'
       })
 
       const name = `stream-${matchId}`
-      // Supprimer tout canal fantôme
       const stale = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
       if (stale) await supabase.removeChannel(stale)
 
@@ -163,16 +199,13 @@ export function useWebRTCBroadcaster(matchId: string) {
         if (!channelRef.current) return
         const state = channelRef.current.presenceState()
         const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
-          const isViewer = list.some((p: any) => p.is_viewer)
-          return acc + (isViewer ? 1 : 0)
+          return acc + (list.some((p: any) => p.is_viewer) ? 1 : 0)
         }, 0)
         setViewerCount(count)
       }
 
       channel
-        .on('presence', { event: 'sync' }, () => {
-          updateViewerCount()
-        })
+        .on('presence', { event: 'sync' }, updateViewerCount)
         .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
           console.log('📡 [BC] viewer-join from', payload.viewerId)
           createPeerForViewer(channel, payload.viewerId)
@@ -184,12 +217,12 @@ export function useWebRTCBroadcaster(matchId: string) {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
             console.log('📡 [BC] answer set for', payload.viewerId)
-            // Limiter le débit après la poignée de main
-            setBitrate(pc, 800)
+            // Appliquer les paramètres d'encodage optimisés après la poignée de main
+            await applyEncodingParams(pc)
             // Vider le buffer ICE
             const buf = iceBufRef.current.get(payload.viewerId) ?? []
             for (const c of buf) {
-              await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => { })
+              await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
             }
             iceBufRef.current.set(payload.viewerId, [])
           } catch (err) {
@@ -201,9 +234,8 @@ export function useWebRTCBroadcaster(matchId: string) {
           const pc = peersRef.current.get(payload.from)
           if (!pc) return
           if (pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => { })
+            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
           } else {
-            // Mettre en buffer
             const buf = iceBufRef.current.get(payload.from) ?? []
             buf.push(payload.candidate)
             iceBufRef.current.set(payload.from, buf)
@@ -215,7 +247,6 @@ export function useWebRTCBroadcaster(matchId: string) {
             await channel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
             console.log('📡 [BC] presence tracked')
           }
-          // Re-tracker si reconnexion
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             console.warn('📡 [BC] channel error — will retry on next SUBSCRIBED')
           }
@@ -254,43 +285,44 @@ export function useWebRTCBroadcaster(matchId: string) {
 // ── useWebRTCViewer ───────────────────────────────────────────────────────────
 export function useWebRTCViewer(matchId: string) {
   const { user } = useAuth()
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [isLive, setIsLive] = useState(false)
+  const [stream, setStream]           = useState<MediaStream | null>(null)
+  const [isLive, setIsLive]           = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
 
-  const channelRef = useRef<any>(null)
-  const pcRef = useRef<RTCPeerConnection | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)   // no stale closure
-  const iceBufRef = useRef<RTCIceCandidateInit[]>([])  // pre-answer buffer
-  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const retryCountRef = useRef(0)
-  const viewerId = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
+  const channelRef      = useRef<any>(null)
+  const pcRef           = useRef<RTCPeerConnection | null>(null)
+  const streamRef       = useRef<MediaStream | null>(null)
+  const iceBufRef       = useRef<RTCIceCandidateInit[]>([])
+  const retryRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryCountRef   = useRef(0)
+  const viewerId        = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
 
-  const clearRetry = () => { if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null } }
+  const clearRetry = () => {
+    if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null }
+  }
 
   const sendJoin = (channel: any, delay = 0) => {
     clearRetry()
     retryRef.current = setTimeout(() => {
       if (!channelRef.current) return
-
-      if (retryCountRef.current >= 8) {
-        console.log('📡 [V] max join retries reached (8) — stopping join attempts')
+      if (retryCountRef.current >= 10) {
+        console.log('📡 [V] max join retries reached — stopping')
         return
       }
-
       console.log(`📡 [V] viewer-join (attempt ${retryCountRef.current + 1}) →`, viewerId)
       channel.send({ type: 'broadcast', event: 'viewer-join', payload: { viewerId } })
       retryCountRef.current++
 
-      // Calculer un exponential backoff : 5s, 7.5s, 11.25s, 16.8s... bridé à maximum 30s
-      const nextDelay = Math.min(5000 * Math.pow(1.5, retryCountRef.current), 30000)
+      // Backoff exponentiel : 2s, 3s, 4.5s, 6.75s... max 20s
+      // (était 5s fixe → reconnexion 2.5x plus rapide au premier essai)
+      const nextDelay = Math.min(2_000 * Math.pow(1.5, retryCountRef.current), 20_000)
 
       retryRef.current = setTimeout(() => {
         if (!streamRef.current && channelRef.current) {
-          console.log(`📡 [V] no stream after 5s — retrying in ${Math.round(nextDelay)}ms`)
+          console.log(`📡 [V] no stream after 2s — retrying in ${Math.round(nextDelay)}ms`)
           sendJoin(channel, nextDelay)
         }
-      }, 5000)
+      }, 2_000)  // était 5000 → 2000 : détecte plus vite si l'offer n'arrive pas
     }, delay)
   }
 
@@ -320,13 +352,10 @@ export function useWebRTCViewer(matchId: string) {
         const hasBc = Object.values(state).some((list: any) =>
           list.some((p: any) => p.is_broadcaster)
         )
-        console.log('📡 [V] presence sync — broadcaster:', hasBc)
         setIsLive(hasBc)
 
-        // Compter les spectateurs
         const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
-          const isViewer = list.some((p: any) => p.is_viewer)
-          return acc + (isViewer ? 1 : 0)
+          return acc + (list.some((p: any) => p.is_viewer) ? 1 : 0)
         }, 0)
         setViewerCount(count)
 
@@ -337,7 +366,7 @@ export function useWebRTCViewer(matchId: string) {
           closePc()
           streamRef.current = null
           setStream(null)
-          retryCountRef.current = 0 // Réinitialiser les tentatives !
+          retryCountRef.current = 0
         }
       })
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
@@ -350,12 +379,17 @@ export function useWebRTCViewer(matchId: string) {
         const pc = createPc()
         pcRef.current = pc
 
+        // Hint décodeur : favoriser la fluidité côté spectateur
         pc.ontrack = (e) => {
+          const incomingStream = e.streams[0]
+          incomingStream.getVideoTracks().forEach(t => {
+            if ('contentHint' in t) (t as any).contentHint = 'motion'
+          })
           console.log('📡 [V] 🎉 stream received!')
-          streamRef.current = e.streams[0]
-          setStream(e.streams[0])
+          streamRef.current = incomingStream
+          setStream(incomingStream)
           clearRetry()
-          retryCountRef.current = 0 // Réinitialiser à la réception du flux !
+          retryCountRef.current = 0
         }
 
         pc.onicecandidate = ({ candidate }) => {
@@ -371,7 +405,7 @@ export function useWebRTCViewer(matchId: string) {
           const s = pc.connectionState
           console.log('📡 [V] PC state →', s)
           if (s === 'disconnected') {
-            // ICE restart léger après 3s
+            // Reconnexion après 2s (était 3s)
             setTimeout(() => {
               if (pc.connectionState !== 'connected' && channelRef.current) {
                 console.log('📡 [V] disconnected — retrying join')
@@ -380,21 +414,20 @@ export function useWebRTCViewer(matchId: string) {
                 setStream(null)
                 sendJoin(channelRef.current)
               }
-            }, 3000)
+            }, 2_000)
           }
           if (s === 'failed') {
             closePc()
             streamRef.current = null
             setStream(null)
-            if (channelRef.current) sendJoin(channelRef.current, 1000)
+            if (channelRef.current) sendJoin(channelRef.current, 1_000)
           }
         }
 
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(payload.offer))
-          // Vider le buffer ICE pré-answer
           for (const c of iceBufRef.current) {
-            await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => { })
+            await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
           }
           iceBufRef.current = []
 
@@ -410,7 +443,7 @@ export function useWebRTCViewer(matchId: string) {
         if (payload.target !== viewerId) return
         const pc = pcRef.current
         if (pc?.remoteDescription) {
-          await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => { })
+          await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
         } else {
           iceBufRef.current.push(payload.candidate)
         }

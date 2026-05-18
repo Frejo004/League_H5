@@ -1112,7 +1112,7 @@ export function CaptainPage() {
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
 
-  if (!isCaptain) return <Navigate to="/" replace />
+  if (!isCaptain) return <Navigate to="/dashboard" replace />
 
   const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
 

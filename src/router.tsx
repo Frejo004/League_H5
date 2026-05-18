@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { PlayerOrCaptainGuard } from '@/components/auth/PlayerOrCaptainGuard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 // Helper pour les imports nommés
@@ -20,6 +21,8 @@ const DashboardPage       = lazyPage(() => import('@/pages/DashboardPage'), 'Das
 const StandingsPage       = lazyPage(() => import('@/pages/StandingsPage'), 'StandingsPage')
 const MatchesPage         = lazyPage(() => import('@/pages/MatchesPage'), 'MatchesPage')
 const MatchDetailPage     = lazyPage(() => import('@/pages/MatchDetailPage'), 'MatchDetailPage')
+const PublicMatchesPage       = lazyPage(() => import('@/pages/PublicMatchesPage'), 'PublicMatchesPage')
+const PublicMatchDetailPage   = lazyPage(() => import('@/pages/PublicMatchDetailPage'), 'PublicMatchDetailPage')
 const ScorersPage         = lazyPage(() => import('@/pages/ScorersPage'), 'ScorersPage')
 const TeamsPage           = lazyPage(() => import('@/pages/TeamsPage'), 'TeamsPage')
 const TeamDetailPage       = lazyPage(() => import('@/pages/TeamDetailPage'), 'TeamDetailPage')
@@ -56,22 +59,23 @@ export const router = createBrowserRouter(
       element: <SuspenseWrapper />,
       children: [
         // Routes publiques (sans auth)
+        { path: '/',              element: <LandingPage /> },
+        { path: '/public/matches',       element: <PublicMatchesPage /> },
+        { path: '/public/matches/:idOrSlug', element: <PublicMatchDetailPage /> },
         { path: '/auth/login',           element: <LoginPage /> },
         { path: '/auth/signup',          element: <SignupPage /> },
         { path: '/auth/reset-password',  element: <ResetPasswordPage /> },
         { path: '/auth/update-password', element: <UpdatePasswordPage /> },
         { path: '/auth/join',            element: <JoinPage /> },
-        { path: '/landing',              element: <LandingPage /> },
-        { path: '/rules-public',         element: <RulesPage /> },
 
-        // App routes (protected)
+        // "/rules" — accessible by all logged-in players/captains via spectator-approval flow
         {
           element: <ProtectedRoute />,
           children: [
             {
               element: <AppLayout />,
               children: [
-                { path: '/',              element: <DashboardPage /> },
+                { path: '/dashboard',     element: <DashboardPage /> },
                 { path: '/standings',     element: <StandingsPage /> },
                 { path: '/matches',       element: <MatchesPage /> },
                 { path: '/matches/:idOrSlug',   element: <MatchDetailPage /> },
@@ -90,6 +94,19 @@ export const router = createBrowserRouter(
                 { path: '/profile',       element: <ProfilePage /> },
                 { path: '/chat',          element: <ChatPage /> },
                 { path: '/playoffs',      element: <PlayoffsPage /> },
+              ],
+            },
+          ],
+        },
+
+        // "/rules-public" — accessible UNIQUEMENT aux joueurs, capitaines et admins
+        {
+          element: <PlayerOrCaptainGuard />,
+          children: [
+            {
+              element: <AppLayout />,
+              children: [
+                { path: '/rules-public',  element: <RulesPage /> },
               ],
             },
           ],

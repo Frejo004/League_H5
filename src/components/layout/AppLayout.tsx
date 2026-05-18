@@ -22,7 +22,7 @@ interface PageBg {
 }
 
 const PAGE_BACKGROUNDS: Record<string, PageBg> = {
-  '/':           { accent: '#2563eb', glow: '#22c55e', pattern: 'pitch'   },
+  '/dashboard':  { accent: '#2563eb', glow: '#22c55e', pattern: 'pitch'   },
   '/standings':  { accent: '#f59e0b', glow: '#f59e0b', pattern: 'lines'   },
   '/matches':    { accent: '#3b82f6', glow: '#6366f1', pattern: 'net'     },
   '/scorers':    { accent: '#f97316', glow: '#ef4444', pattern: 'hexagon' },
@@ -95,9 +95,9 @@ const PATTERNS_LIGHT: Record<string, string> = {
 function getPageBg(pathname: string): PageBg {
   if (PAGE_BACKGROUNDS[pathname]) return PAGE_BACKGROUNDS[pathname]
   const prefix = Object.keys(PAGE_BACKGROUNDS)
-    .filter(k => k !== '/' && pathname.startsWith(k))
+    .filter(k => k !== '/dashboard' && pathname.startsWith(k))
     .sort((a, b) => b.length - a.length)[0]
-  return PAGE_BACKGROUNDS[prefix ?? '/'] ?? PAGE_BACKGROUNDS['/']
+  return prefix ? PAGE_BACKGROUNDS[prefix] : PAGE_BACKGROUNDS['/dashboard']
 }
 
 function patternDataUrl(pattern: string, isLight: boolean): string {
