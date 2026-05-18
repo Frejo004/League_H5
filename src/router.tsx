@@ -5,9 +5,27 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { PlayerOrCaptainGuard } from '@/components/auth/PlayerOrCaptainGuard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
-// Helper pour les imports nommés
+// Helper pour les imports nommés avec gestion intelligente des erreurs de déploiement (chunk load errors)
 const lazyPage = (importFn: () => Promise<any>, name: string) => 
-  lazy(() => importFn().then(module => ({ default: module[name] })))
+  lazy(() => 
+    importFn()
+      .then(module => ({ default: module[name] }))
+      .catch(error => {
+        console.error(`Erreur lors du chargement de ${name} :`, error)
+        
+        // Protection contre les rechargements infinis en boucle si le serveur est indisponible ou hors ligne
+        const reloadKey = 'chunk-reload-timestamp'
+        const now = Date.now()
+        const lastReload = sessionStorage.getItem(reloadKey)
+        
+        if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+          sessionStorage.setItem(reloadKey, now.toString())
+          window.location.reload()
+        }
+        
+        throw error
+      })
+  )
 
 // Auth
 const LoginPage           = lazyPage(() => import('@/pages/auth/LoginPage'), 'LoginPage')
