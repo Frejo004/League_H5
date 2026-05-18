@@ -60,7 +60,7 @@ export function useRealtimeMatch(matchId?: string) {
         filter: `id=eq.${matchId}` 
       }, async (payload) => {
         console.log('🔄 Realtime: Match update', payload)
-        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        qc.invalidateQueries({ queryKey: ['matches'] })
         
         const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
         const oldMatch = payload.old as { status?: string }

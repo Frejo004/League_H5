@@ -18,7 +18,7 @@ ALTER TABLE public.matches
 
 -- ── 3. Table des événements live ─────────────────────────────────────────────
 
-CREATE TABLE public.match_events (
+CREATE TABLE IF NOT EXISTS public.match_events (
   id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id     uuid        NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   type         text        NOT NULL CHECK (type IN (
@@ -42,12 +42,12 @@ CREATE TABLE public.match_events (
   created_by   uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
-CREATE INDEX match_events_match_idx  ON public.match_events(match_id, created_at DESC);
-CREATE INDEX match_events_type_idx   ON public.match_events(match_id, type);
+CREATE INDEX IF NOT EXISTS match_events_match_idx  ON public.match_events(match_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS match_events_type_idx   ON public.match_events(match_id, type);
 
 -- ── 4. Table des réactions live (spectateurs) ────────────────────────────────
 
-CREATE TABLE public.live_reactions (
+CREATE TABLE IF NOT EXISTS public.live_reactions (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id   uuid        NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   user_id    uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ CREATE TABLE public.live_reactions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX live_reactions_match_idx ON public.live_reactions(match_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS live_reactions_match_idx ON public.live_reactions(match_id, created_at DESC);
 
 -- ── 5. Realtime ───────────────────────────────────────────────────────────────
 
@@ -115,11 +115,16 @@ BEGIN
   END IF;
 
   UPDATE matches SET
-    status          = 'live',
-    live_started_at = now(),
-    live_period     = 1,
-    live_minute     = 0,
-    played_at       = now()
+    status               = 'live',
+    live_started_at      = now(),
+    live_period          = 1,
+    live_minute          = 0,
+    played_at            = now(),
+    is_paused            = false,
+    paused_at            = NULL,
+    total_paused_seconds = 0,
+    halftime_at          = NULL,
+    last_pause_reason    = NULL
   WHERE id = p_match_id AND status = 'scheduled';
 
   -- Insérer l'événement coup d'envoi

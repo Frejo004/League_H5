@@ -175,6 +175,7 @@ export function MatchesPage() {
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
 
   useRealtimeTeams(season?.id)
+  useRealtimeMatches(season?.id)
 
   const isLoading    = seasonLoading || matchesLoading
   const matchdays    = [...new Set((matches ?? []).map(m => m.matchday))].sort((a, b) => a - b)

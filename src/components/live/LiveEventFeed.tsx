@@ -17,6 +17,10 @@ const EVENT_ICONS: Record<string, string> = {
   comment: '💬',
   pause: '⏸️',
   resume: '▶️',
+  shot: '🎯',
+  shot_on_target: '🥅',
+  foul: '⚠️',
+  corner: '🚩',
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -31,6 +35,10 @@ const EVENT_LABELS: Record<string, string> = {
   comment: '',
   pause: 'Match suspendu',
   resume: 'Reprise du jeu',
+  shot: 'Tir',
+  shot_on_target: 'Tir cadré',
+  foul: 'Faute',
+  corner: 'Corner',
 }
 
 interface LiveEventFeedProps {
@@ -44,8 +52,8 @@ interface LiveEventFeedProps {
 export function LiveEventFeed({
   events, homeTeamId, homeColor, awayColor, className,
 }: LiveEventFeedProps) {
-  // 1. Filtrer pour exclure les statistiques rapides (tirs, fautes, corners) du flux d'événements textuel
-  const mainEvents = events.filter(e => !['shot', 'shot_on_target', 'foul', 'corner'].includes(e.type))
+  // 1. Garder tous les événements dans le flux d'événements (y compris les actions rapides)
+  const mainEvents = events
 
   // 2. Séparer les événements principaux par période
   const period1 = mainEvents.filter(e => e.period === 1 || !e.period).sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
@@ -145,7 +153,7 @@ export function LiveEventFeed({
                     {scoreAt}
                   </span>
                 )}
-                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName}</span>
+                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName || EVENT_LABELS[event.type]}</span>
                 <span className="text-[11px] font-bold text-slate-500 tabular-nums">{displayMinute}'</span>
               </div>
               {event.type === 'substitution' && player2Name && (
@@ -176,6 +184,8 @@ export function LiveEventFeed({
             <div className="w-3 h-4.5 bg-red-500 rounded-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] rotate-12" />
           ) : event.type === 'substitution' ? (
             <span className="text-emerald-400 text-sm font-black">⇄</span>
+          ) : ['shot', 'shot_on_target', 'foul', 'corner'].includes(event.type) ? (
+            <span className="text-base">{EVENT_ICONS[event.type]}</span>
           ) : (
             <span className="text-xs">💬</span>
           )}
@@ -186,7 +196,7 @@ export function LiveEventFeed({
             <div className="flex flex-col items-start text-left transition-transform group-hover:translate-x-1 duration-300">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-bold text-slate-500 tabular-nums">{displayMinute}'</span>
-                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName}</span>
+                <span className="text-sm font-black text-white uppercase tracking-tight leading-none">{playerName || EVENT_LABELS[event.type]}</span>
                 {(event.type === 'goal' || event.type === 'own_goal') && (
                   <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">
                     {scoreAt}

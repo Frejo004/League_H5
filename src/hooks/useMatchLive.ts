@@ -158,6 +158,45 @@ export interface LiveClockState {
   isPaused: boolean
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Synchronisation de l'horloge avec le serveur Supabase (NTP-like)
+// Évite les sauts de chronomètre lors des pauses/reprises dus à un décalage d'horloge locale
+// ─────────────────────────────────────────────────────────────────────────────
+
+let serverClockOffset: number | null = null
+let isFetchingOffset = false
+
+async function syncServerClock() {
+  if (serverClockOffset !== null || isFetchingOffset) return
+  isFetchingOffset = true
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !supabaseAnonKey) return
+    
+    const start = Date.now()
+    // Requête sur une table publique (matches) avec limit=1 pour obtenir un statut 200 OK propre et autorisé
+    const res = await fetch(`${supabaseUrl}/rest/v1/matches?limit=1`, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`
+      }
+    })
+    const serverDate = res.headers.get('date')
+    if (serverDate) {
+      const serverTime = new Date(serverDate).getTime()
+      const lat = (Date.now() - start) / 2
+      serverClockOffset = (start + lat) - serverTime
+      console.log('⏰ [ClockSync] Horloge synchronisée avec le serveur. Décalage:', serverClockOffset, 'ms (latence réseau:', lat, 'ms)')
+    }
+  } catch (err) {
+    console.warn('⚠️ [ClockSync] Échec de la synchronisation de l\'horloge:', err)
+  } finally {
+    isFetchingOffset = false
+  }
+}
+
 export function useLiveClock(
   liveStartedAt: string | null,
   livePeriod: 1 | 2 | null,
@@ -172,6 +211,9 @@ export function useLiveClock(
   })
 
   useEffect(() => {
+    // Lancer la synchronisation dès le montage de l'horloge
+    syncServerClock()
+
     if (status !== 'live' || !liveStartedAt) {
       if (status === 'completed') {
         setState({ minute: 20, seconds: 0, phase: 4, label: 'Terminé', shortLabel: 'FT', progress: 100, breakSecondsLeft: null, totalElapsedSeconds: null, isPaused: false })
@@ -180,7 +222,7 @@ export function useLiveClock(
     }
 
     const tick = () => {
-      const now = Date.now()
+      const now = Date.now() - (serverClockOffset || 0)
 
       // ── Phase 2 : Pause mi-temps (on a halftimeAt mais pas encore livePeriod 2) ──
       if (halftimeAt && livePeriod === 1) {
@@ -289,6 +331,15 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startLive = useMutation({
     mutationFn: async () => {
+      // Réinitialiser les états live pour éviter des valeurs résiduelles de tests précédents
+      await supabase.from('matches').update({
+        is_paused: false,
+        paused_at: null,
+        total_paused_seconds: 0,
+        halftime_at: null,
+        last_pause_reason: null
+      } as any).eq('id', matchId!)
+
       const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! })
       if (error) throw error
     },

@@ -431,7 +431,10 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
     match.live_started_at,
     match.live_period as 1 | 2,
     match.status,
-    match.halftime_at
+    match.halftime_at,
+    match.is_paused ?? false,
+    match.paused_at ?? null,
+    match.total_paused_seconds ?? 0
   )
 
   return (
@@ -484,6 +487,7 @@ export function DashboardPage() {
   const { isCaptain } = useAuth()
 
   useRealtimeTeams(season?.id)
+  useRealtimeMatches(season?.id)
 
   const [timedOut, setTimedOut] = useState(false)
   useEffect(() => {

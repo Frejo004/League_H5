@@ -19,6 +19,7 @@ import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
+import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { LiveTicker } from '@/components/live/LiveTicker'
 import { useMatchLineups } from '@/hooks/useLineups'
@@ -40,6 +41,21 @@ function formatTime(dateStr: string | null) {
   return new Intl.DateTimeFormat('fr-FR', {
     hour: '2-digit', minute: '2-digit',
   }).format(new Date(dateStr))
+}
+
+function getEmbedUrl(url: string | null) {
+  if (!url) return null;
+  // YouTube
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1`;
+  }
+  // Twitch
+  const twitchMatch = url.match(/twitch\.tv\/([^/?]+)/);
+  if (twitchMatch && twitchMatch[1]) {
+    return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${window.location.hostname}`;
+  }
+  return url;
 }
 
 // ── Match Stats Dashboard ───────────────────────────────────────────────────
@@ -804,6 +820,23 @@ export function MatchDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Video Player ── */}
+      {match.video_url && (isLive || isCompleted) && (
+        <div className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video animate-fade-in-up mt-6">
+          <iframe 
+            src={getEmbedUrl(match.video_url) || match.video_url} 
+            className="absolute inset-0 w-full h-full border-0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      {/* ── Native WebRTC Video Player ── */}
+      {isLive && !match.video_url && (
+        <LiveVideoPlayer matchId={match.id} />
+      )}
 
       {/* ── Tab Navigation — style Sofascore/Google ── */}
       <div className="sticky top-[60px] z-30 bg-[#0f1420]/95 backdrop-blur-xl border-b border-white/10 shadow-lg">

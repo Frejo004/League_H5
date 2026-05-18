@@ -158,6 +158,7 @@ export interface Database {
           paused_at: string | null
           total_paused_seconds: number
           last_pause_reason: string | null
+          video_url: string | null
           created_at: string
           updated_at: string
         }
@@ -181,6 +182,7 @@ export interface Database {
           is_paused?: boolean
           paused_at?: string | null
           total_paused_seconds?: number
+          video_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -204,6 +206,7 @@ export interface Database {
           is_paused?: boolean
           paused_at?: string | null
           total_paused_seconds?: number
+          video_url?: string | null
           updated_at?: string
         }
         Relationships: []
