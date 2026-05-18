@@ -1,7 +1,17 @@
 import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
 
-export function LiveVideoPlayer({ matchId }: { matchId: string }) {
-  const { stream, isLive } = useWebRTCViewer(matchId)
+interface LiveVideoPlayerProps {
+  matchId: string
+  stream?: MediaStream | null
+  isLive?: boolean
+}
+
+export function LiveVideoPlayer({ matchId, stream: propStream, isLive: propIsLive }: LiveVideoPlayerProps) {
+  // On utilise les props du parent si présentes, sinon on fallback sur le hook local
+  const localViewer = useWebRTCViewer(propIsLive !== undefined ? '' : matchId)
+  
+  const isLive = propIsLive !== undefined ? propIsLive : localViewer.isLive
+  const stream = propStream !== undefined ? propStream : localViewer.stream
 
   if (!isLive) return null
 

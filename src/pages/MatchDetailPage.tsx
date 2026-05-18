@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play } from 'lucide-react'
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -20,6 +20,7 @@ import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
+import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { LiveTicker } from '@/components/live/LiveTicker'
 import { useMatchLineups } from '@/hooks/useLineups'
@@ -198,7 +199,7 @@ function GoalEvent({
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings'
+type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings' | 'live-video'
 
 export function MatchDetailPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
@@ -255,6 +256,13 @@ export function MatchDetailPage() {
     match?.is_paused ?? false,
     match?.paused_at ?? null,
     match?.total_paused_seconds ?? 0
+  )
+
+  // Détecter si un flux vidéo WebRTC en direct est actif
+  // Les admins NE doivent PAS s'abonner en tant que viewer :
+  // cela créerait une collision avec le canal du broadcaster (même nom Supabase).
+  const { stream: liveStream, isLive: isStreamingLive } = useWebRTCViewer(
+    isAdmin ? '' : (id ?? '')
   )
 
   // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
@@ -568,6 +576,10 @@ export function MatchDetailPage() {
     { id: 'standings',label: 'Classement',   icon: Star       },
   ]
 
+  if (isLive && !match.video_url) {
+    tabs.unshift({ id: 'live-video', label: '🔴 DIRECT VIDÉO', icon: Play })
+  }
+
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
       {/* Admin Controls en Direct */}
@@ -730,6 +742,24 @@ export function MatchDetailPage() {
                       <span className="text-[9px] font-bold text-blue-400/60 tabular-nums">
                         Pause {Math.floor((clock.breakSecondsLeft ?? 0) / 60)}:{String(Math.floor((clock.breakSecondsLeft ?? 0) % 60)).padStart(2, '0')}
                       </span>
+                      {/* Bouton Regarder Live Vidéo pendant la mi-temps */}
+                      {isStreamingLive && (
+                        <button
+                          onClick={() => {
+                            setActiveTab('live-video')
+                            setTimeout(() => {
+                              const el = document.getElementById('live-video-section')
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              }
+                            }, 100)
+                          }}
+                          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-[10px] font-black uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          🎥 Regarder le Direct Vidéo
+                        </button>
+                      )}
                     </div>
                   ) : isLive ? (
                     /* ── Match en cours ── */
@@ -759,6 +789,24 @@ export function MatchDetailPage() {
                         awayColor={away.color}
                         className="w-full"
                       />
+                      {/* Bouton Regarder Live Vidéo (Pulsing Red) */}
+                      {isStreamingLive && (
+                        <button
+                          onClick={() => {
+                            setActiveTab('live-video')
+                            setTimeout(() => {
+                              const el = document.getElementById('live-video-section')
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              }
+                            }, 100)
+                          }}
+                          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-[10px] font-black uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          🎥 Regarder le Direct Vidéo
+                        </button>
+                      )}
                     </div>
                   ) : isCompleted ? (
                     <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
@@ -833,10 +881,6 @@ export function MatchDetailPage() {
         </div>
       )}
 
-      {/* ── Native WebRTC Video Player ── */}
-      {isLive && !match.video_url && (
-        <LiveVideoPlayer matchId={match.id} />
-      )}
 
       {/* ── Tab Navigation — style Sofascore/Google ── */}
       <div className="sticky top-[60px] z-30 bg-[#0f1420]/95 backdrop-blur-xl border-b border-white/10 shadow-lg">
@@ -861,6 +905,32 @@ export function MatchDetailPage() {
 
       {/* ── Tab Content ── */}
       <AnimatePresence mode="wait">
+
+        {/* ── Direct Vidéo ── */}
+        {activeTab === 'live-video' && (
+          <motion.div
+            key="live-video"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4 px-2"
+          >
+            <div className="card border border-red-500/20 bg-red-950/5 p-4 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">DIFFUSION EN DIRECT</span>
+              </div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase">PROPULSÉ PAR WebRTC (P2P)</p>
+            </div>
+            
+            <div id="live-video-section" className="scroll-mt-24">
+              <LiveVideoPlayer matchId={match.id} stream={liveStream} isLive={true} />
+            </div>
+          </motion.div>
+        )}
 
         {/* ── Résumé ── */}
         {activeTab === 'resume' && (
