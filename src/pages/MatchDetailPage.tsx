@@ -645,12 +645,14 @@ export function MatchDetailPage() {
         </div>
       )}
 
-      {/* Alerte de but broadcast */}
-      <GoalAlert
-        matchId={id!}
-        homeTeam={match.home_team}
-        awayTeam={match.away_team}
-      />
+      {/* Alerte de but broadcast — masquée pendant le direct vidéo et pour l'admin */}
+      {activeTab !== 'live-video' && !(isAdmin && isLive) && (
+        <GoalAlert
+          matchId={id!}
+          homeTeam={match.home_team}
+          awayTeam={match.away_team}
+        />
+      )}
 
       {/* ── Broadcast Hero Banner ── */}
       <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] mx-1 sm:mx-0">
@@ -970,6 +972,9 @@ export function MatchDetailPage() {
                 matchId={match.id}
                 stream={liveStream}
                 isLive={true}
+                events={liveEvents}
+                homeTeam={home}
+                awayTeam={away}
                 overlay={{
                   homeName: home.name,
                   awayName: away.name,
@@ -1364,12 +1369,15 @@ export function MatchDetailPage() {
 
       </AnimatePresence>
 
-      <GoalCelebration
-        key={celebration.key}
-        teamName={celebration.teamName}
-        teamColor={celebration.teamColor}
-        playerName={celebration.playerName}
-      />
+      {/* Animation de but — masquée pendant le direct vidéo et pour l'admin */}
+      {activeTab !== 'live-video' && !(isAdmin && isLive) && (
+        <GoalCelebration
+          key={celebration.key}
+          teamName={celebration.teamName}
+          teamColor={celebration.teamColor}
+          playerName={celebration.playerName}
+        />
+      )}
       <LiveTicker />
     </div>
   )

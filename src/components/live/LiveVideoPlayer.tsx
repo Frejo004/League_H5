@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
 import { Eye, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
+import type { MatchEvent, TeamRef } from '@/types/database'
 
 interface MatchOverlayInfo {
   homeName: string
@@ -20,6 +21,9 @@ interface LiveVideoPlayerProps {
   stream?: MediaStream | null
   isLive?: boolean
   overlay?: MatchOverlayInfo
+  events?: MatchEvent[]
+  homeTeam?: TeamRef
+  awayTeam?: TeamRef
 }
 
 export function LiveVideoPlayer({
@@ -27,11 +31,14 @@ export function LiveVideoPlayer({
   stream: propStream,
   isLive: propIsLive,
   overlay,
+  events,
+  homeTeam,
+  awayTeam,
 }: LiveVideoPlayerProps) {
   const localViewer = useWebRTCViewer(propIsLive !== undefined ? '' : matchId)
 
   const isLive = propIsLive !== undefined ? propIsLive : localViewer.isLive
-  const stream  = propStream  !== undefined ? propStream  : localViewer.stream
+  const stream = propStream !== undefined ? propStream : localViewer.stream
   const viewerCount = overlay?.viewerCount !== undefined ? overlay.viewerCount : localViewer.viewerCount
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -40,6 +47,66 @@ export function LiveVideoPlayer({
   const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isStalled, setIsStalled] = useState(false)
+
+  const [activeGoalBanner, setActiveGoalBanner] = useState<{
+    playerName: string
+    teamName: string
+    teamColor: string
+    isOwnGoal: boolean
+    score: string
+    minute: number
+  } | null>(null)
+
+  const goalEventsRef = useRef<Set<string>>(new Set())
+
+  // Initialiser l'ensemble des buts existants au montage pour ne pas déclencher le bandeau pour les anciens buts
+  useEffect(() => {
+    if (events) {
+      const goals = events.filter(e => e.type === 'goal' || e.type === 'own_goal')
+      goals.forEach(g => goalEventsRef.current.add(g.id))
+    }
+  }, [])
+
+  // Détecter l'ajout d'un nouveau but en direct
+  useEffect(() => {
+    if (!events) return
+
+    const goals = events.filter(e => e.type === 'goal' || e.type === 'own_goal')
+    const newGoal = goals.find(g => !goalEventsRef.current.has(g.id))
+
+    if (newGoal) {
+      goalEventsRef.current.add(newGoal.id)
+
+      // Récupérer le nom de l'équipe et sa couleur
+      const isHome = newGoal.team_id === homeTeam?.id
+      const teamName = isHome ? (homeTeam?.name || 'DOMICILE') : (awayTeam?.name || 'EXTÉRIEUR')
+      const teamColor = isHome ? (homeTeam?.color || '#3b82f6') : (awayTeam?.color || '#f59e0b')
+
+      // Récupérer le nom du joueur
+      const playerName = newGoal.player
+        ? `${newGoal.player.first_name} ${newGoal.player.last_name}`
+        : 'Équipe'
+
+      // Score au moment du but
+      const displayScore = `${overlay?.homeScore ?? 0} - ${overlay?.awayScore ?? 0}`
+
+      setActiveGoalBanner({
+        playerName,
+        teamName,
+        teamColor,
+        isOwnGoal: newGoal.type === 'own_goal',
+        score: displayScore,
+        minute: newGoal.minute ?? 0,
+      })
+
+      // Masquer le bandeau au bout de 7 secondes
+      const timer = setTimeout(() => {
+        setActiveGoalBanner(null)
+      }, 7000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [events, homeTeam, awayTeam, overlay])
 
   useEffect(() => {
     const video = videoRef.current
@@ -170,7 +237,7 @@ export function LiveVideoPlayer({
                 <span className="text-[9px] font-black text-slate-300 tracking-wider flex items-center gap-1.5 border-r border-white/10 pr-2.5">
                   <Eye size={12} className="text-[#C8F135] shrink-0" /> {viewerCount}
                 </span>
-                
+
                 {/* Custom volume control */}
                 <button
                   onClick={() => setIsMuted(!isMuted)}
@@ -218,6 +285,7 @@ export function LiveVideoPlayer({
           </button>
         </div>
       )}
+
     </div>
   )
 }
