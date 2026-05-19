@@ -51,22 +51,54 @@ function AnimCounter({ target, live }: { target: number; live?: boolean }) {
 }
 
 // ─── stat pill ───────────────────────────────────────────────────────────────
-function StatPill({ value, label, live }: { value: number; label: string; live?: boolean }) {
+function StatPill({ value, label, live, dark }: { value: number; label: string; live?: boolean; dark: boolean }) {
+  const isLiveActive = live && value > 0;
+  
+  const bg = isLiveActive
+    ? (dark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)')
+    : (dark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff');
+    
+  const border = isLiveActive
+    ? '1px solid rgba(239, 68, 68, 0.35)'
+    : '1px solid var(--bd)';
+    
+  const shadow = isLiveActive
+    ? '0 0 15px rgba(239, 68, 68, 0.15)'
+    : '0 4px 12px rgba(0, 0, 0, 0.02)';
+
   return (
     <div
       style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '8px 10px', borderRadius: 16, border: '1px solid var(--bd)',
-        background: 'var(--bg-pill)', cursor: 'default', transition: 'background .2s'
+        padding: '10px 14px', borderRadius: 16, border,
+        background: bg, boxShadow: shadow, cursor: 'default', 
+        transition: 'transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-pill-h)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-pill)')}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = 'translateY(-2px)';
+        if (!isLiveActive) {
+          el.style.borderColor = 'var(--accent)';
+          el.style.background = dark ? 'rgba(255, 255, 255, 0.05)' : 'var(--bg-surface-h)';
+        }
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = 'translateY(0)';
+        if (!isLiveActive) {
+          el.style.borderColor = 'var(--bd)';
+          el.style.background = bg;
+        }
+      }}
     >
       <AnimCounter target={value} live={live} />
       <span style={{
-        fontSize: 'clamp(0.6rem, 2vw, 0.75rem)', fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '.12em', color: 'var(--tm)', marginTop: 4,
-        fontFamily: "'DM Sans',sans-serif"
+        fontSize: 'clamp(0.6rem, 2vw, 0.72rem)', fontWeight: 800, textTransform: 'uppercase',
+        letterSpacing: '.12em', 
+        color: isLiveActive ? '#ef4444' : 'var(--tm)', 
+        marginTop: 4,
+        fontFamily: "'DM Sans',sans-serif",
+        transition: 'color .3s'
       }}>{label}</span>
     </div>
   )
@@ -91,7 +123,7 @@ function TeamBlock({ name, color, logoUrl, won, align }:
           : name[0]}
       </div>
       <span style={{
-        fontSize: 'clamp(0.75rem, 2.5vw, 0.9rem)', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden',
+        fontSize: 'clamp(0.85rem, 2.2vw, 1rem)', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         textAlign: align === 'right' ? 'right' : 'left',
         color: won ? 'var(--t1)' : 'var(--t2)', transition: 'color .3s',
@@ -381,45 +413,54 @@ export function PublicMatchesPage() {
 
           {/* ── HEADER ────────────────────────────────────────────────── */}
           <div style={{
-            flexShrink: 0, position: 'relative', borderRadius: 20, overflow: 'hidden',
+            flexShrink: 0, position: 'relative', borderRadius: 24, overflow: 'hidden',
             border: '1px solid var(--bd)',
+            borderLeft: '5px solid var(--accent)',
             background: dark
-              ? 'linear-gradient(135deg,rgba(28,38,58,.55) 0%,rgba(8,11,18,0) 70%)'
-              : 'linear-gradient(135deg,rgba(200,241,53,.07) 0%,rgba(248,250,252,0) 65%)',
-            transition: 'background .35s,border-color .35s'
+              ? 'linear-gradient(135deg, rgba(20, 26, 40, 0.85) 0%, rgba(8, 11, 18, 0.4) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 243, 248, 0.55) 100%)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.04)',
+            transition: 'background .35s, border-color .35s, box-shadow .35s'
           }}>
             <div style={{
               position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
               width: 260, height: 110, pointerEvents: 'none',
-              background: 'radial-gradient(ellipse at 50% 0%,rgba(200,241,53,.1) 0%,transparent 65%)'
+              background: 'radial-gradient(ellipse at 50% 0%, rgba(200,241,53,.12) 0%, transparent 65%)'
             }} />
 
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 sm:gap-6">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4 sm:gap-6">
 
               {/* left */}
               <div style={{ minWidth: 0 }}>
                 <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '2px 9px', borderRadius: 999,
-                  background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', marginBottom: 5
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '3px 10px', borderRadius: 8,
+                  background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', marginBottom: 6
                 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                  <span className="relative flex h-1.5 w-1.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-var(--accent) opacity-75" style={{ background: 'var(--accent)' }}></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-var(--accent)" style={{ background: 'var(--accent)' }}></span>
+                  </span>
                   <span style={{
-                    fontSize: '.57rem', fontWeight: 900, color: 'var(--accent)',
-                    textTransform: 'uppercase', letterSpacing: '.25em', fontFamily: "'DM Sans',sans-serif"
+                    fontSize: '.62rem', fontWeight: 900, color: 'var(--accent)',
+                    textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: "'DM Sans',sans-serif"
                   }}>
                     {season?.name ?? 'Saison en cours'}
                   </span>
                 </div>
                 <h1 style={{
                   fontFamily: "'Barlow Condensed',sans-serif",
-                  fontSize: 'clamp(2rem,6vw,3.5rem)', fontWeight: 900,
-                  color: 'var(--t1)', letterSpacing: '-.01em', lineHeight: 1, margin: 0, transition: 'color .3s'
+                  fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: 950,
+                  fontStyle: 'italic',
+                  color: 'var(--t1)', letterSpacing: '-.02em', lineHeight: 1, margin: 0, transition: 'color .3s'
                 }}>
                   MATCHS
                 </h1>
                 <p style={{
-                  fontSize: '.85rem', color: 'var(--tm)', marginTop: 4,
+                  fontSize: '.75rem', color: 'var(--t2)', marginTop: 6,
+                  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em',
                   fontFamily: "'DM Sans',sans-serif", transition: 'color .3s'
                 }}>
                   Programme · résultats · direct
@@ -429,10 +470,10 @@ export function PublicMatchesPage() {
               {/* right */}
               <div className="flex flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
                 {!isLoading && allMatches.length > 0 && (
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <StatPill value={liveCount} label="Live" live />
-                    <StatPill value={upcoming.length} label="À venir" />
-                    <StatPill value={completed.length} label="Terminés" />
+                  <div className="flex gap-2.5 w-full sm:w-auto">
+                    <StatPill value={liveCount} label="Live" live dark={dark} />
+                    <StatPill value={upcoming.length} label="À venir" dark={dark} />
+                    <StatPill value={completed.length} label="Terminés" dark={dark} />
                   </div>
                 )}
               </div>
@@ -461,7 +502,7 @@ export function PublicMatchesPage() {
             ) : (
               <>
                 <div className="ns grid gap-3 align-start flex-1 min-h-0 overflow-y-auto" style={{
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))'
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))'
                 }}>
                   {paginated.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
                 </div>
