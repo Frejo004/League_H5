@@ -473,11 +473,11 @@ export function useWebRTCViewer(matchId: string) {
   const viewerId        = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
 
   // DVR refs
-  const recorderRef     = useRef<MediaRecorder | null>(null)
-  const dvrChunksRef    = useRef<{ blob: Blob; ts: number }[]>([])
-  const dvrVideoRef     = useRef<HTMLVideoElement | null>(null)
-  const dvrBlobUrlRef   = useRef<string | null>(null)
-  const dvrActiveRef    = useRef(false)
+  const recorderRef       = useRef<MediaRecorder | null>(null)
+  const dvrChunksRef      = useRef<{ blob: Blob; ts: number; isInit: boolean }[]>([])
+  const dvrBlobUrlRef     = useRef<string | null>(null)
+  const dvrActiveRef      = useRef(false)
+  const initChunkRef      = useRef<Blob | null>(null) // premier chunk = header WebM (obligatoire)
 
   // ── Démarrer l'enregistrement DVR du stream reçu ──────────────────────────
   const startDvrRecording = useCallback((liveStream: MediaStream) => {
@@ -494,22 +494,34 @@ export function useWebRTCViewer(matchId: string) {
 
     const recorder = new MediaRecorder(liveStream, {
       mimeType,
-      videoBitsPerSecond: 500_000, // 500kbps pour le buffer local
+      videoBitsPerSecond: 500_000,
     })
     recorderRef.current = recorder
+    let isFirstChunk = true
 
     recorder.ondataavailable = (e) => {
       if (e.data.size === 0) return
       const now = Date.now()
-      dvrChunksRef.current.push({ blob: e.data, ts: now })
 
-      // Purger les chunks plus vieux que DVR_BUFFER_SECONDS
+      if (isFirstChunk) {
+        // Le premier chunk contient le header WebM (EBML + Segment + Tracks)
+        // Il DOIT être inclus en tête de tout blob pour que le navigateur puisse décoder
+        initChunkRef.current = e.data
+        isFirstChunk = false
+        dvrChunksRef.current.push({ blob: e.data, ts: now, isInit: true })
+        return
+      }
+
+      dvrChunksRef.current.push({ blob: e.data, ts: now, isInit: false })
+
+      // Purger les chunks plus vieux que DVR_BUFFER_SECONDS (mais jamais le chunk init)
       const cutoff = now - DVR_BUFFER_SECONDS * 1000
-      dvrChunksRef.current = dvrChunksRef.current.filter(c => c.ts >= cutoff)
+      dvrChunksRef.current = dvrChunksRef.current.filter(c => c.isInit || c.ts >= cutoff)
 
       // Mettre à jour la durée disponible
-      if (dvrChunksRef.current.length > 0) {
-        const oldest = dvrChunksRef.current[0].ts
+      const dataChunks = dvrChunksRef.current.filter(c => !c.isInit)
+      if (dataChunks.length > 0) {
+        const oldest = dataChunks[0].ts
         setDvrDuration(Math.round((now - oldest) / 1000))
       }
     }
@@ -525,6 +537,7 @@ export function useWebRTCViewer(matchId: string) {
     }
     recorderRef.current = null
     dvrChunksRef.current = []
+    initChunkRef.current = null
     if (dvrBlobUrlRef.current) {
       URL.revokeObjectURL(dvrBlobUrlRef.current)
       dvrBlobUrlRef.current = null
@@ -550,18 +563,25 @@ export function useWebRTCViewer(matchId: string) {
       return
     }
 
-    const chunks = dvrChunksRef.current
-    if (chunks.length === 0) return
+    const initChunk = initChunkRef.current
+    if (!initChunk) return // pas encore de header — impossible de décoder
+
+    const dataChunks = dvrChunksRef.current.filter(c => !c.isInit)
+    if (dataChunks.length === 0) return
 
     const now = Date.now()
     const targetTs = now - offsetSeconds * 1000
-    // Trouver le chunk le plus proche du timestamp cible
-    const startIdx = chunks.findIndex(c => c.ts >= targetTs)
-    if (startIdx === -1) return
 
-    const selectedChunks = chunks.slice(startIdx).map(c => c.blob)
+    // Trouver le chunk de données le plus proche du timestamp cible
+    let startIdx = dataChunks.findIndex(c => c.ts >= targetTs)
+    if (startIdx === -1) startIdx = 0 // fallback : début du buffer
+
+    const selectedDataChunks = dataChunks.slice(startIdx).map(c => c.blob)
+
+    // IMPORTANT : toujours préfixer avec le chunk d'initialisation (header WebM)
+    // Sans lui, le navigateur ne peut pas décoder → écran noir
     const mimeType = recorderRef.current?.mimeType ?? 'video/webm'
-    const blob = new Blob(selectedChunks, { type: mimeType })
+    const blob = new Blob([initChunk, ...selectedDataChunks], { type: mimeType })
 
     if (dvrBlobUrlRef.current) URL.revokeObjectURL(dvrBlobUrlRef.current)
     dvrBlobUrlRef.current = URL.createObjectURL(blob)
@@ -569,9 +589,6 @@ export function useWebRTCViewer(matchId: string) {
     dvrActiveRef.current = true
     setDvrEnabled(true)
     setDvrOffset(offsetSeconds)
-
-    // Déclencher la lecture dans le composant via l'URL du blob
-    // Le composant LiveVideoPlayer écoute dvrBlobUrl pour basculer la source vidéo
   }, [])
 
   // Exposer l'URL du blob DVR pour que le player puisse l'utiliser

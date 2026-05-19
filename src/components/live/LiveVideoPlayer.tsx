@@ -132,13 +132,35 @@ export function LiveVideoPlayer({
   useEffect(() => {
     const video = dvrVideoRef.current
     if (!video) return
-    if (!dvrEnabled) { video.src = ''; setIsPausedDvr(false); return }
+    if (!dvrEnabled) {
+      video.src = ''
+      setIsPausedDvr(false)
+      return
+    }
     const url = getDvrBlobUrl()
     if (!url) return
+
+    // Révoquer l'ancienne URL objet si différente
+    if (video.src && video.src !== url) {
+      video.src = ''
+    }
+
     video.src = url
-    video.currentTime = 0
-    video.play().catch(() => {})
+
+    // Attendre que les métadonnées soient chargées avant de lancer la lecture
+    // (évite l'écran noir sur les navigateurs qui ne décodent pas immédiatement)
+    const onCanPlay = () => {
+      video.play().catch(err => {
+        if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+      })
+    }
+    video.addEventListener('canplay', onCanPlay, { once: true })
+    video.load()
     setIsPausedDvr(false)
+
+    return () => {
+      video.removeEventListener('canplay', onCanPlay)
+    }
   }, [dvrEnabled, getDvrBlobUrl])
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
