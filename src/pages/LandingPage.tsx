@@ -351,7 +351,10 @@ export function LandingPage() {
             </span>
           </div>
 
-          <h1 className="text-7xl md:text-[120px] font-black text-white leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8">
+          <h1 
+            className="text-7xl md:text-[120px] font-black leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8"
+            style={{ color: '#ffffff' }}
+          >
             HIGH FIVE <br />
             <span className="text-transparent" style={{ WebkitTextStroke: '2px #C8F135' }}>LIGUE</span>
           </h1>
