@@ -20,7 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { LiveBadge } from '@/components/live/LiveBadge'
 import { LiveEventFeed } from '@/components/live/LiveEventFeed'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
-import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
+import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { clsx } from 'clsx'
 import type { TeamRef } from '@/types/database'
@@ -578,8 +578,8 @@ export function PublicMatchDetailPage() {
     match?.total_paused_seconds ?? 0,
   )
 
-  // ── Vidéo WebRTC ────────────────────────────────────────────────────────
-  const { stream: liveStream, isLive: isStreamingLive, viewerCount } = useWebRTCViewer(id ?? '')
+  // ── Présence WebRTC (sans connexion peer — juste pour savoir si le live est actif) ──
+  const { isLive: isStreamingLive, viewerCount } = useWebRTCPresence(id ?? '')
 
   // ── Derived ─────────────────────────────────────────────────────────────
   const home = match?.home_team as TeamRef | undefined
@@ -714,8 +714,7 @@ export function PublicMatchDetailPage() {
 
                     <LiveVideoPlayer
                       matchId={match.id}
-                      stream={liveStream}
-                      isLive
+                      viewerMode
                       events={liveEvents}
                       homeTeam={home}
                       awayTeam={away}

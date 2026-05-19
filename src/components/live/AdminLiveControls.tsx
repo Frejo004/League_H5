@@ -148,7 +148,7 @@ export function AdminLiveControls({
   // Récupérer les compositions de match saisies par le capitaine
   const { data: lineups = [] } = useMatchLineups(matchId)
 
-  const { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount } = useWebRTCBroadcaster(matchId)
+  const { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount, networkQuality } = useWebRTCBroadcaster(matchId)
 
   // ── Référence vidéo pour la prévisualisation caméra de l'admin ─────────────────────
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -493,6 +493,19 @@ export function AdminLiveControls({
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest border-l border-white/20 pl-2 flex items-center gap-1">
                       <Eye size={12} className="text-[#C8F135]" /> {viewerCount} {viewerCount > 1 ? 'spectateurs' : 'spectateur'}
                     </span>
+                  </div>
+                  {/* Indicateur qualité réseau */}
+                  <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${
+                    networkQuality === 'good'
+                      ? 'bg-green-500/20 border-green-500/30 text-green-400'
+                      : networkQuality === 'degraded'
+                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                        : 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      networkQuality === 'good' ? 'bg-green-400' : networkQuality === 'degraded' ? 'bg-amber-400' : 'bg-red-400'
+                    }`} />
+                    {networkQuality === 'good' ? 'Réseau OK' : networkQuality === 'degraded' ? 'Réseau moyen' : 'Réseau faible'}
                   </div>
                 </div>
               )}
