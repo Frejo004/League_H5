@@ -20,7 +20,7 @@ import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
-import { useWebRTCViewer } from '@/hooks/useWebRTCStream'
+import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { LiveTicker } from '@/components/live/LiveTicker'
 import { useMatchLineups } from '@/hooks/useLineups'
@@ -258,12 +258,8 @@ export function MatchDetailPage() {
     match?.total_paused_seconds ?? 0
   )
 
-  // Détecter si un flux vidéo WebRTC en direct est actif
-  // Les admins NE doivent PAS s'abonner en tant que viewer :
-  // cela créerait une collision avec le canal du broadcaster (même nom Supabase).
-  const { stream: liveStream, isLive: isStreamingLive, viewerCount } = useWebRTCViewer(
-    (authLoading || isAdmin === true) ? '' : (id ?? '')
-  )
+  // Présence WebRTC (légère, sans connexion P2P) : l'onglet vidéo gère sa propre connexion
+  const { viewerCount } = useWebRTCPresence((authLoading || isAdmin === true) ? '' : (id ?? ''))
 
   // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
   const matchStats = useMemo(() => {
@@ -615,7 +611,7 @@ export function MatchDetailPage() {
     { id: 'standings',label: 'Classement',   icon: Star       },
   ]
 
-  if (isLive && isStreamingLive && !match.video_url) {
+  if (isLive && !match.video_url) {
     tabs.unshift({ id: 'live-video', label: '🔴 DIRECT VIDÉO', icon: Play })
   }
 
@@ -785,7 +781,7 @@ export function MatchDetailPage() {
                         Pause {Math.floor((clock.breakSecondsLeft ?? 0) / 60)}:{String(Math.floor((clock.breakSecondsLeft ?? 0) % 60)).padStart(2, '0')}
                       </span>
                       {/* Bouton Regarder Live Vidéo pendant la mi-temps */}
-                      {isStreamingLive && (
+                      {isLive && (
                         <button
                           onClick={() => {
                             setActiveTab('live-video')
@@ -832,7 +828,7 @@ export function MatchDetailPage() {
                         className="w-full"
                       />
                       {/* Bouton Regarder Live Vidéo (Pulsing Red) */}
-                      {isStreamingLive && (
+                      {isLive && (
                         <button
                           onClick={() => {
                             setActiveTab('live-video')
@@ -971,8 +967,6 @@ export function MatchDetailPage() {
             <div id="live-video-section" className="scroll-mt-24">
               <LiveVideoPlayer
                 matchId={match.id}
-                stream={liveStream}
-                isLive={true}
                 events={liveEvents}
                 homeTeam={home}
                 awayTeam={away}

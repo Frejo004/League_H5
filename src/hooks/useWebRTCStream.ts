@@ -331,14 +331,14 @@ export function useWebRTCBroadcaster(matchId: string) {
       const stale = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
       if (stale) await supabase.removeChannel(stale)
 
-      const channel = supabase.channel(name, { config: { presence: { key: user?.id || 'bc' } } })
+      const channel = supabase.channel(name)
       channelRef.current = channel
 
       const updateViewerCount = () => {
         if (!channelRef.current) return
         const state = channelRef.current.presenceState()
-        const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
-          return acc + (list.some((p: any) => p.is_viewer) ? 1 : 0)
+        const count = (Object.values(state) as any[]).flat().reduce((acc: number, p: any) => {
+          return acc + (p.is_viewer ? 1 : 0)
         }, 0)
         setViewerCount(count)
       }
@@ -460,9 +460,11 @@ export function useWebRTCViewer(matchId: string) {
   // ── DVR : buffer des chunks enregistrés pour le retour en arrière ──────────
   // On enregistre le stream reçu via MediaRecorder et on stocke les chunks
   // dans un tableau circulaire limité à DVR_BUFFER_SECONDS secondes.
-  const [dvrEnabled, setDvrEnabled]   = useState(false)
-  const [dvrOffset, setDvrOffset]     = useState(0)   // secondes de retard par rapport au live
-  const [dvrDuration, setDvrDuration] = useState(0)   // durée totale disponible dans le buffer
+  const [dvrEnabled,   setDvrEnabled]   = useState(false)
+  const [dvrOffset,    setDvrOffset]    = useState(0)     // secondes de retard par rapport au live
+  const [dvrDuration,  setDvrDuration]  = useState(0)     // durée totale disponible dans le buffer
+  const [dvrBlobUrl,   setDvrBlobUrl]   = useState<string | null>(null) // blob URL réactive du DVR
+  const [dvrPlaybackStartTs, setDvrPlaybackStartTs] = useState<number | null>(null)
 
   const channelRef      = useRef<any>(null)
   const pcRef           = useRef<RTCPeerConnection | null>(null)
@@ -475,9 +477,53 @@ export function useWebRTCViewer(matchId: string) {
   // DVR refs
   const recorderRef       = useRef<MediaRecorder | null>(null)
   const dvrChunksRef      = useRef<{ blob: Blob; ts: number; isInit: boolean }[]>([])
-  const dvrBlobUrlRef     = useRef<string | null>(null)
   const dvrActiveRef      = useRef(false)
   const initChunkRef      = useRef<Blob | null>(null) // premier chunk = header WebM (obligatoire)
+
+  // MediaSource refs
+  const mediaSourceRef    = useRef<MediaSource | null>(null)
+  const sourceBufferRef   = useRef<SourceBuffer | null>(null)
+  const appendQueueRef    = useRef<Blob[]>([])
+  const isAppendingRef    = useRef(false)
+
+  // ── Gérer la file d'attente d'ajouts MediaSource ──────────────────────────
+  const processAppendQueue = useCallback(() => {
+    const sb = sourceBufferRef.current
+    if (!sb || sb.updating || isAppendingRef.current) return
+    if (appendQueueRef.current.length === 0) return
+
+    const blob = appendQueueRef.current.shift()!
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        try {
+          isAppendingRef.current = true
+          sb.appendBuffer(reader.result)
+        } catch (err) {
+          console.error('📡 [DVR] appendBuffer error', err)
+          isAppendingRef.current = false
+        }
+      }
+    }
+    reader.readAsArrayBuffer(blob)
+  }, [])
+
+  // ── Fermer le MediaSource propre ───────────────────────────────────────────
+  const closeMediaSource = useCallback(() => {
+    if (sourceBufferRef.current) {
+      try {
+        const ms = mediaSourceRef.current
+        if (ms && ms.readyState === 'open') {
+          ms.removeSourceBuffer(sourceBufferRef.current)
+        }
+      } catch (e) {}
+      sourceBufferRef.current = null
+    }
+    mediaSourceRef.current = null
+    appendQueueRef.current = []
+    isAppendingRef.current = false
+    setDvrBlobUrl(null)
+  }, [])
 
   // ── Démarrer l'enregistrement DVR du stream reçu ──────────────────────────
   const startDvrRecording = useCallback((liveStream: MediaStream) => {
@@ -505,7 +551,6 @@ export function useWebRTCViewer(matchId: string) {
 
       if (isFirstChunk) {
         // Le premier chunk contient le header WebM (EBML + Segment + Tracks)
-        // Il DOIT être inclus en tête de tout blob pour que le navigateur puisse décoder
         initChunkRef.current = e.data
         isFirstChunk = false
         dvrChunksRef.current.push({ blob: e.data, ts: now, isInit: true })
@@ -513,6 +558,12 @@ export function useWebRTCViewer(matchId: string) {
       }
 
       dvrChunksRef.current.push({ blob: e.data, ts: now, isInit: false })
+
+      // Pousser le chunk dans le MediaSource si DVR actif et fonctionnel
+      if (dvrActiveRef.current && sourceBufferRef.current) {
+        appendQueueRef.current.push(e.data)
+        processAppendQueue()
+      }
 
       // Purger les chunks plus vieux que DVR_BUFFER_SECONDS (mais jamais le chunk init)
       const cutoff = now - DVR_BUFFER_SECONDS * 1000
@@ -528,24 +579,32 @@ export function useWebRTCViewer(matchId: string) {
 
     recorder.start(1_000) // chunk toutes les secondes
     console.log('📡 [DVR] enregistrement démarré')
-  }, [])
+  }, [processAppendQueue])
 
   // ── Arrêter l'enregistrement DVR ──────────────────────────────────────────
   const stopDvrRecording = useCallback(() => {
-    if (recorderRef.current?.state !== 'inactive') {
-      recorderRef.current?.stop()
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      try {
+        recorderRef.current.stop()
+      } catch {}
     }
     recorderRef.current = null
     dvrChunksRef.current = []
     initChunkRef.current = null
-    if (dvrBlobUrlRef.current) {
-      URL.revokeObjectURL(dvrBlobUrlRef.current)
-      dvrBlobUrlRef.current = null
-    }
     dvrActiveRef.current = false
     setDvrEnabled(false)
     setDvrOffset(0)
     setDvrDuration(0)
+    closeMediaSource()
+    setDvrPlaybackStartTs(null)
+  }, [closeMediaSource])
+
+  // Helper pour replier sur URL Blob statique (fallback MSE non supporté)
+  // Crée un blob unique et expose son URL directement dans dvrBlobUrl
+  const fallbackToStaticBlob = useCallback((initChunk: Blob, dataBlobs: Blob[], mimeType: string) => {
+    const blob = new Blob([initChunk, ...dataBlobs], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    setDvrBlobUrl(url)
   }, [])
 
   // ── Activer le mode DVR : lire depuis le buffer à un offset donné ─────────
@@ -556,10 +615,8 @@ export function useWebRTCViewer(matchId: string) {
       dvrActiveRef.current = false
       setDvrEnabled(false)
       setDvrOffset(0)
-      if (dvrBlobUrlRef.current) {
-        URL.revokeObjectURL(dvrBlobUrlRef.current)
-        dvrBlobUrlRef.current = null
-      }
+      closeMediaSource()
+      setDvrPlaybackStartTs(null)
       return
     }
 
@@ -576,23 +633,52 @@ export function useWebRTCViewer(matchId: string) {
     let startIdx = dataChunks.findIndex(c => c.ts >= targetTs)
     if (startIdx === -1) startIdx = 0 // fallback : début du buffer
 
-    const selectedDataChunks = dataChunks.slice(startIdx).map(c => c.blob)
+    const selectedDataChunks = dataChunks.slice(startIdx)
+    setDvrPlaybackStartTs(selectedDataChunks[0].ts)
 
-    // IMPORTANT : toujours préfixer avec le chunk d'initialisation (header WebM)
-    // Sans lui, le navigateur ne peut pas décoder → écran noir
+    // Détecter le MIME type depuis le recorder (le plus fiable)
     const mimeType = recorderRef.current?.mimeType ?? 'video/webm'
-    const blob = new Blob([initChunk, ...selectedDataChunks], { type: mimeType })
 
-    if (dvrBlobUrlRef.current) URL.revokeObjectURL(dvrBlobUrlRef.current)
-    dvrBlobUrlRef.current = URL.createObjectURL(blob)
+    if (typeof window !== 'undefined' && 'MediaSource' in window && MediaSource.isTypeSupported(mimeType)) {
+      closeMediaSource() // Fermer le précédent
 
-    dvrActiveRef.current = true
-    setDvrEnabled(true)
-    setDvrOffset(offsetSeconds)
-  }, [])
+      const ms = new MediaSource()
+      mediaSourceRef.current = ms
+      const url = URL.createObjectURL(ms)
 
-  // Exposer l'URL du blob DVR pour que le player puisse l'utiliser
-  const getDvrBlobUrl = useCallback(() => dvrBlobUrlRef.current, [])
+      ms.addEventListener('sourceopen', () => {
+        try {
+          const sb = ms.addSourceBuffer(mimeType)
+          sourceBufferRef.current = sb
+          sb.mode = 'segments'
+
+          sb.addEventListener('updateend', () => {
+            isAppendingRef.current = false
+            processAppendQueue()
+          })
+
+          // Enfiler le chunk d'initialisation et les chunks historiques
+          appendQueueRef.current = [initChunk, ...selectedDataChunks.map(c => c.blob)]
+          processAppendQueue()
+
+        } catch (err) {
+          console.error('📡 [DVR] Error initializing SourceBuffer', err)
+          fallbackToStaticBlob(initChunk, selectedDataChunks.map(c => c.blob), mimeType)
+        }
+      })
+
+      dvrActiveRef.current = true
+      setDvrEnabled(true)
+      setDvrOffset(offsetSeconds)
+      setDvrBlobUrl(url) // réactive : LiveVideoPlayer reçoit la nouvelle URL et l'applique au lecteur
+    } else {
+      // Fallback blob statique si MSE non supporté
+      fallbackToStaticBlob(initChunk, selectedDataChunks.map(c => c.blob), mimeType)
+      dvrActiveRef.current = true
+      setDvrEnabled(true)
+      setDvrOffset(offsetSeconds)
+    }
+  }, [processAppendQueue, closeMediaSource, fallbackToStaticBlob])
 
   const clearRetry = () => {
     if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null }
@@ -643,9 +729,7 @@ export function useWebRTCViewer(matchId: string) {
     if (!matchId) return
     retryCountRef.current = 0
 
-    const channel = supabase.channel(`stream-${matchId}`, {
-      config: { presence: { key: user?.id ?? 'viewer' } },
-    })
+    const channel = supabase.channel(`stream-${matchId}`)
     channelRef.current = channel
 
     channel
@@ -656,8 +740,8 @@ export function useWebRTCViewer(matchId: string) {
         )
         setIsLive(hasBc)
 
-        const count = (Object.values(state) as any[]).reduce((acc: number, list: any) => {
-          return acc + (list.some((p: any) => p.is_viewer) ? 1 : 0)
+        const count = (Object.values(state) as any[]).flat().reduce((acc: number, p: any) => {
+          return acc + (p.is_viewer ? 1 : 0)
         }, 0)
         setViewerCount(count)
 
@@ -791,8 +875,9 @@ export function useWebRTCViewer(matchId: string) {
     dvrEnabled,
     dvrOffset,
     dvrDuration,
+    dvrBlobUrl,          // reactive blob URL (null when DVR off)
     seekDvr,
-    getDvrBlobUrl,
+    dvrPlaybackStartTs,
   }
 }
 
@@ -801,6 +886,7 @@ export function useWebRTCViewer(matchId: string) {
 // "stream-{matchId}" utilisé par le viewer/broadcaster) pour savoir si un live
 // est actif et combien de spectateurs sont connectés.
 // Le broadcaster publie aussi sa présence sur ce channel séparé.
+// Le config presence key est vide par défaut pour compter correctement chaque spectateur.
 export function useWebRTCPresence(matchId: string) {
   const [isLive, setIsLive]           = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
@@ -819,8 +905,8 @@ export function useWebRTCPresence(matchId: string) {
           list.some((p: any) => p.is_broadcaster)
         )
         setIsLive(hasBc)
-        const count = (Object.values(state) as any[]).reduce((acc: number, list: any) =>
-          acc + (list.some((p: any) => p.is_viewer) ? 1 : 0), 0)
+        const count = (Object.values(state) as any[]).flat().reduce((acc: number, p: any) =>
+          acc + (p.is_viewer ? 1 : 0), 0)
         setViewerCount(count)
       })
       .subscribe()

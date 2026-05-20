@@ -52,6 +52,12 @@ export function LiveVideoPlayer({
   // Si viewerMode=true OU si rien n'est fourni → mode spectateur (DVR actif)
   const isAdminMode = propIsLive !== undefined && propStream !== undefined && viewerMode !== true
 
+  // ── Refs déclarés AVANT useWebRTCViewer pour pouvoir les passer au hook ──
+  const videoRef    = useRef<HTMLVideoElement>(null)
+  const dvrVideoRef = useRef<HTMLVideoElement>(null)
+  const wrapperRef  = useRef<HTMLDivElement>(null)
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const localViewer = useWebRTCViewer(isAdminMode ? '' : matchId)
 
   const isLive      = propIsLive  !== undefined ? propIsLive  : localViewer.isLive
@@ -66,18 +72,32 @@ export function LiveVideoPlayer({
     ? localViewer.viewerCount
     : (overlay?.viewerCount !== undefined ? overlay.viewerCount : localViewer.viewerCount)
 
-  const { dvrEnabled, dvrOffset, dvrDuration, seekDvr, getDvrBlobUrl } =
-    isViewerMode
-      ? localViewer
-      : { dvrEnabled: false, dvrOffset: 0, dvrDuration: 0, seekDvr: (_: number) => {}, getDvrBlobUrl: () => null }
+  const { dvrEnabled, seekDvr, dvrBlobUrl } = isViewerMode
+    ? localViewer
+    : { dvrEnabled: false, seekDvr: (_: number) => {}, dvrBlobUrl: null }
 
-  // ── Refs ──────────────────────────────────────────────────────────────────
-  const videoRef    = useRef<HTMLVideoElement>(null)
-  const dvrVideoRef = useRef<HTMLVideoElement>(null)
-  const wrapperRef  = useRef<HTMLDivElement>(null)
-  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ── DVR : auto-progression du curseur via onTimeUpdate ─────────────────────
+  // Déclaré AVANT les effets pour éviter le TDZ (Temporal Dead Zone) lors de
+  // son utilisation dans le listener loadedmetadata de l'effet de source.
+  const handleDvrTimeUpdate = useCallback(() => {
+    const video = dvrVideoRef.current
+    if (!video || !dvrEnabled) return
+    if (video.buffered.length === 0) return
 
-  // ── State ─────────────────────────────────────────────────────────────────
+    const bufferedEnd  = video.buffered.end(video.buffered.length - 1)
+    const delay        = Math.max(0, Math.round(bufferedEnd - video.currentTime))
+    setDvrSlider(delay)
+
+    // Catch-up automatique : si on rattrape le direct (≤ 1s de retard)
+    if (delay <= 1 && !isPausedDvr) {
+      setDvrSlider(0)
+      seekDvr(0)
+    }
+  }, [dvrEnabled, isPausedDvr, seekDvr])
+
+  // ── Refs ────────────────────────────────────────────────────────────────────
+
+  // ── State ───────────────────────────────────────────────────────────────────
   const [isMuted, setIsMuted]             = useState(true)
   const [isFullscreen, setIsFullscreen]   = useState(false)
   const [isStalled, setIsStalled]         = useState(false)
@@ -128,40 +148,48 @@ export function LiveVideoPlayer({
     video.play().catch(err => { if (err.name !== 'AbortError') console.warn('play error:', err) })
   }, [stream, isLive])
 
-  // ── Charger le blob DVR dans la vidéo DVR ────────────────────────────────
+  // ── Effet 1 : Chargement de la SOURCE DVR uniquement (pas de lecture auto) ──
+  // dvrBlobUrl est réactif : il change quand seekDvr() construit un nouveau MediaSource/Blob.
   useEffect(() => {
     const video = dvrVideoRef.current
     if (!video) return
-    if (!dvrEnabled) {
-      video.src = ''
-      setIsPausedDvr(false)
-      return
-    }
-    const url = getDvrBlobUrl()
-    if (!url) return
-
-    // Révoquer l'ancienne URL objet si différente
-    if (video.src && video.src !== url) {
-      video.src = ''
-    }
+    if (!dvrEnabled) { video.src = ''; return }
+    const url = dvrBlobUrl
+    if (!url || video.src === url) return
 
     video.src = url
-
-    // Attendre que les métadonnées soient chargées avant de lancer la lecture
-    // (évite l'écran noir sur les navigateurs qui ne décodent pas immédiatement)
-    const onCanPlay = () => {
-      video.play().catch(err => {
-        if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
-      })
-    }
-    video.addEventListener('canplay', onCanPlay, { once: true })
     video.load()
-    setIsPausedDvr(false)
+    // Initialiser le calcul du retard dès que la source est prête
+    video.addEventListener('loadedmetadata', handleDvrTimeUpdate, { once: true })
+    return () => { video.removeEventListener('loadedmetadata', handleDvrTimeUpdate) }
+  }, [dvrEnabled, dvrBlobUrl, handleDvrTimeUpdate])
 
-    return () => {
-      video.removeEventListener('canplay', onCanPlay)
+  // ── Effet 2 : Contrôle LECTURE/PAUSE DVR séparé de la source ─────────────
+  useEffect(() => {
+    const video = dvrVideoRef.current
+    if (!video || !dvrEnabled) return
+
+    if (isPausedDvr) {
+      video.pause()
+    } else {
+      const onCanPlay = () => {
+        video.play().catch(err => {
+          if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+        })
+      }
+      if (video.readyState >= 3) {
+        video.play().catch(() => {})
+      } else {
+        video.addEventListener('canplay', onCanPlay, { once: true })
+        return () => video.removeEventListener('canplay', onCanPlay)
+      }
     }
-  }, [dvrEnabled, getDvrBlobUrl])
+  }, [dvrEnabled, isPausedDvr])
+
+  // ── Réinitialiser isPausedDvr quand on quitte le mode DVR ────────────────
+  useEffect(() => {
+    if (!dvrEnabled) setIsPausedDvr(false)
+  }, [dvrEnabled])
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -233,27 +261,49 @@ export function LiveVideoPlayer({
     setIsPausedDvr(false)
   }, [seekDvr])
 
-  // ── Pause live (met en pause la vidéo live, crée un retard) ──────────────
+  // ── Pause live → bascule automatiquement en mode DVR ────────────────────
+  // Cela évite de perdre des images : on commence le DVR avec 1s de retard
   const togglePauseLive = useCallback(() => {
-    const video = videoRef.current
-    if (!video || !stream) return
-    if (video.paused) {
-      video.play().catch(() => {})
+    if (!stream) return
+    if (dvrEnabled) {
+      // Déjà en DVR — revenir au live
+      setDvrSlider(0)
+      seekDvr(0)
       setIsPausedDvr(false)
     } else {
-      video.pause()
+      // Basculer en DVR avec 1s de retard et mettre en pause
+      const offset = Math.max(dvrDuration > 0 ? 1 : 0, 1)
+      setDvrSlider(offset)
+      seekDvr(offset)
       setIsPausedDvr(true)
     }
-  }, [stream])
+  }, [stream, dvrEnabled, dvrDuration, seekDvr])
+
+  // ── Auto-progression du curseur DVR via timeupdate ────────────────────────
+  const handleDvrTimeUpdate = useCallback(() => {
+    const video = dvrVideoRef.current
+    if (!video || !dvrEnabled) return
+    if (video.buffered.length === 0) return
+
+    const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+    const delay = Math.max(0, Math.round(bufferedEnd - video.currentTime))
+    setDvrSlider(delay)
+
+    // Catch-up automatique : si on rattrape le direct (≤ 1s de retard)
+    if (delay <= 1 && !isPausedDvr) {
+      setDvrSlider(0)
+      seekDvr(0)
+    }
+  }, [dvrEnabled, isPausedDvr, seekDvr])
 
   // ── Calculer si la vidéo live est en pause ────────────────────────────────
   const isLivePaused = !dvrEnabled && isPausedDvr
 
   if (!isLive) return null
 
-  // ── Pourcentage de progression sur la timeline ────────────────────────────
-  // 0% = live, 100% = début du buffer (le plus vieux)
-  const timelinePercent = dvrDuration > 0 ? (dvrSlider / dvrDuration) * 100 : 0
+  // ── Timeline inversée : gauche = passé, droite = direct (0s de retard) ───
+  // progressPercent = 100% quand on est au direct, 0% au début du buffer
+  const progressPercent = dvrDuration > 0 ? ((dvrDuration - dvrSlider) / dvrDuration) * 100 : 100
 
   return (
     <div
@@ -293,6 +343,7 @@ export function LiveVideoPlayer({
       <video
         ref={dvrVideoRef}
         playsInline muted={isMuted}
+        onTimeUpdate={handleDvrTimeUpdate}
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${dvrEnabled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
 
@@ -353,13 +404,12 @@ export function LiveVideoPlayer({
           <div className="relative px-3 pb-3 pt-8 flex flex-col gap-2">
 
             {/* ── TIMELINE DVR ─────────────────────────────────────────────
-                Toujours affichée dès qu'on est en mode viewer.
-                Gauche = live (0s), droite = début du buffer (max retard).
-                Le curseur rouge indique la position actuelle.
+                Gauche = passé (max retard), droite = direct (0s de retard).
+                progressPercent=100% = au direct, 0% = début du buffer.
             ──────────────────────────────────────────────────────────────── */}
             {isViewerMode && (
               <div className="flex items-center gap-2 w-full">
-                {/* Label "EN DIRECT" ou retard */}
+                {/* Label "EN DIRECT" ou bouton retour au live */}
                 {dvrSlider === 0 ? (
                   <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-md shrink-0">
                     <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
@@ -376,34 +426,36 @@ export function LiveVideoPlayer({
                   </button>
                 )}
 
-                {/* Barre de progression cliquable */}
+                {/* Barre de progression — gauche=passé, droite=live */}
                 <div className="relative flex-1 h-5 flex items-center group cursor-pointer">
                   {/* Track fond */}
                   <div className="absolute inset-x-0 h-1 rounded-full bg-white/20" />
                   {/* Track buffer disponible */}
-                  <div
-                    className="absolute left-0 h-1 rounded-full bg-white/40"
-                    style={{ width: '100%' }}
-                  />
-                  {/* Track position actuelle (rouge = live, amber = retard) */}
+                  <div className="absolute left-0 h-1 rounded-full bg-white/40" style={{ width: '100%' }} />
+                  {/* Track progressé : de la gauche jusqu'à la position actuelle */}
                   <div
                     className={`absolute left-0 h-1 rounded-full transition-all ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
-                    style={{ width: `${100 - timelinePercent}%` }}
+                    style={{ width: `${progressPercent}%` }}
                   />
-                  {/* Input range invisible par-dessus */}
+                  {/* Input range : valeur inversée → max=gauche(passé), 0=droite(live) */}
                   <input
                     type="range"
                     min={0}
                     max={Math.max(dvrDuration, 1)}
-                    value={dvrSlider}
-                    onChange={handleDvrSliderChange}
+                    value={dvrDuration - dvrSlider}
+                    onChange={(e) => {
+                      const invertedVal = dvrDuration - parseInt(e.target.value)
+                      const clamped = Math.max(0, Math.min(dvrDuration, invertedVal))
+                      setDvrSlider(clamped)
+                      seekDvr(clamped)
+                    }}
                     className="absolute inset-0 w-full opacity-0 cursor-pointer h-5"
                     title={dvrSlider === 0 ? 'En direct' : `Retard : -${formatSeconds(dvrSlider)}`}
                   />
-                  {/* Curseur visible */}
+                  {/* Curseur visible aligné sur progressPercent */}
                   <div
                     className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg transition-all pointer-events-none ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
-                    style={{ left: `calc(${100 - timelinePercent}% - 6px)` }}
+                    style={{ left: `calc(${progressPercent}% - 6px)` }}
                   />
                 </div>
 
