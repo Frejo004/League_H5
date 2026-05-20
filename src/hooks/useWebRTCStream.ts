@@ -2,31 +2,71 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
-// ── ICE servers : STUN public + TURN fallback ────────────────────────────────
-const ICE_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
-  iceCandidatePoolSize: 5,
-  bundlePolicy: 'max-bundle',
-  rtcpMuxPolicy: 'require',
+// ── ICE servers : STUN public + TURN via Supabase Edge Function ─────────────
+// Les credentials TURN Metered sont récupérés dynamiquement depuis une Edge
+// Function Supabase qui détient la secret key. Jamais exposés dans le bundle.
+
+function buildFallbackIceConfig(): RTCConfiguration {
+  return {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      // Fallback TURN publics si l'Edge Function est indisponible
+      { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
+  }
 }
+
+// Cache des credentials TURN — valides 50 min (Metered émet des tokens 1h)
+let _cachedIceConfig: RTCConfiguration | null = null
+let _cacheExpiry = 0
+
+async function fetchIceConfig(): Promise<RTCConfiguration> {
+  const now = Date.now()
+  if (_cachedIceConfig && now < _cacheExpiry) return _cachedIceConfig
+
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+    const res = await fetch(`${supabaseUrl}/functions/v1/get-turn-credentials`, {
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+    })
+
+    if (!res.ok) throw new Error(`Edge Function error: ${res.status}`)
+
+    const { iceServers } = await res.json()
+    if (!Array.isArray(iceServers) || iceServers.length === 0) throw new Error('Empty iceServers')
+
+    const config: RTCConfiguration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        ...iceServers,
+      ],
+      iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
+    }
+
+    _cachedIceConfig = config
+    _cacheExpiry = now + 50 * 60 * 1000 // 50 minutes
+    console.log('📡 [ICE] credentials loaded from Metered ✓')
+    return config
+  } catch (err) {
+    console.warn('📡 [ICE] Edge Function unavailable, using fallback TURN', err)
+    return buildFallbackIceConfig()
+  }
+}
+
+// Config synchrone utilisée au premier appel (avant que fetchIceConfig réponde)
+const ICE_CONFIG_FALLBACK = buildFallbackIceConfig()
 
 // ── Contraintes vidéo adaptatives selon la qualité réseau ───────────────────
 // On tente d'abord la qualité haute, puis on descend si la caméra/réseau refuse
@@ -164,8 +204,17 @@ async function adaptBitrateFromStats(pc: RTCPeerConnection) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function createPc(): RTCPeerConnection {
-  return new RTCPeerConnection(ICE_CONFIG)
+// createPc() est maintenant async — charge les credentials TURN depuis Metered
+// avant de créer la PeerConnection. Fallback immédiat si l'Edge Function est lente.
+async function createPc(): Promise<RTCPeerConnection> {
+  const config = await Promise.race([
+    fetchIceConfig(),
+    // Timeout 3s : si l'Edge Function ne répond pas, on utilise le fallback
+    new Promise<RTCConfiguration>(resolve =>
+      setTimeout(() => resolve(ICE_CONFIG_FALLBACK), 3_000)
+    ),
+  ])
+  return new RTCPeerConnection(config)
 }
 
 // ── useWebRTCBroadcaster ──────────────────────────────────────────────────────
@@ -249,7 +298,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
     }
     iceBufRef.current.set(viewerId, [])
 
-    const pc = createPc()
+    const pc = await createPc()
     peersRef.current.set(viewerId, pc)
 
     mediaRef.current!.getTracks().forEach(t => {
@@ -609,6 +658,7 @@ export function useWebRTCViewer(matchId: string) {
   const [stream, setStream]           = useState<MediaStream | null>(null)
   const [isLive, setIsLive]           = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
+  const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'idle'>('idle')
   // AJOUT : état pour informer l'UI que le stream est complet (trop de viewers)
   const [isStreamFull, setIsStreamFull] = useState(false)
 
@@ -963,7 +1013,7 @@ export function useWebRTCViewer(matchId: string) {
         closePc()
         iceBufRef.current = []
 
-        const pc = createPc()
+        const pc = await createPc()
         pcRef.current = pc
 
         pc.ontrack = (e) => {
@@ -992,6 +1042,8 @@ export function useWebRTCViewer(matchId: string) {
         pc.onconnectionstatechange = () => {
           const s = pc.connectionState
           console.log('📡 [V] PC state →', s)
+          setConnectionState(s)
+
           if (s === 'disconnected') {
             setTimeout(() => {
               if (pc.connectionState !== 'connected' && channelRef.current) {
@@ -1004,10 +1056,12 @@ export function useWebRTCViewer(matchId: string) {
             }, 2_000)
           }
           if (s === 'failed') {
+            console.warn('📡 [V] PC failed — ICE candidates did not connect (TURN issue?)')
             closePc()
             streamRef.current = null
             setStream(null)
-            if (channelRef.current) sendJoin(channelRef.current, 1_000)
+            // Backoff plus long sur failed pour ne pas spammer le broadcaster
+            if (channelRef.current) sendJoin(channelRef.current, 3_000)
           }
         }
 
@@ -1094,6 +1148,7 @@ export function useWebRTCViewer(matchId: string) {
     isLive,
     viewerCount,
     isStreamFull,  // AJOUT : true si le stream est plein (trop de viewers)
+    connectionState, // 'idle' | RTCPeerConnectionState — pour l'UI
     // DVR
     dvrEnabled,
     dvrOffset,

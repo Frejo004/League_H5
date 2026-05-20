@@ -78,6 +78,7 @@ export function LiveVideoPlayer({
 
   // AJOUT : récupérer l'état "stream plein" pour l'afficher à l'utilisateur
   const isStreamFull = isViewerMode ? localViewer.isStreamFull : false
+  const connectionState = isViewerMode ? localViewer.connectionState : 'idle'
 
   // ── Refs ────────────────────────────────────────────────────────────────────
 
@@ -295,9 +296,25 @@ export function LiveVideoPlayer({
     >
       {/* ── Spinner connexion ─────────────────────────────────────────────── */}
       {!stream && !isStreamFull && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
-          <div className="w-8 h-8 rounded-full border-2 border-[#C8F135] border-t-transparent animate-spin mb-3" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connexion au direct...</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 gap-3">
+          {connectionState === 'failed' ? (
+            <>
+              <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center">
+                <span className="text-red-400 text-lg font-black">!</span>
+              </div>
+              <p className="text-[11px] font-black text-red-400 uppercase tracking-widest">Connexion impossible</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider text-center px-6">
+                Problème réseau (NAT/TURN).<br />Nouvelle tentative en cours...
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-full border-2 border-[#C8F135] border-t-transparent animate-spin" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {connectionState === 'connecting' ? 'Connexion en cours...' : 'Connexion au direct...'}
+              </p>
+            </>
+          )}
         </div>
       )}
 
