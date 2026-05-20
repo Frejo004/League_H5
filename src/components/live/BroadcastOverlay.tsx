@@ -138,7 +138,7 @@ export function BroadcastOverlay({
   if (mode === 'fullscreen') {
     return (
       <div
-        className="fixed inset-0 z-[500] bg-black flex flex-col"
+        className="fixed inset-0 z-[9999] bg-black flex flex-col no-select"
         onPointerMove={resetControlsTimer}
         onTouchStart={resetControlsTimer}
       >
@@ -155,23 +155,37 @@ export function BroadcastOverlay({
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
         {/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
-        <div className={`absolute top-0 inset-x-0 z-10 px-4 pt-safe-top pt-4 flex items-center justify-between gap-3 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        <div 
+          className={`absolute top-0 inset-x-0 z-10 px-4 flex items-center justify-between gap-2 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+        >
 
-          {/* Score */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
-            <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {homeScore} — {awayScore}
-            </span>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
-          </div>
+          {/* Score & Chrono & REC */}
+          <div className="flex items-center gap-2">
+            {/* Score */}
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
+              <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {homeScore} — {awayScore}
+              </span>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
+            </div>
 
-          {/* Chrono */}
-          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-            <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
-            <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {clockLabel}
-            </span>
+            {/* Chrono */}
+            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+              <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
+              <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {clockLabel}
+              </span>
+            </div>
+
+            {/* Badge de transmission premium (REC) */}
+            <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-red-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[9px] font-black text-red-400 uppercase tracking-widest font-['Barlow_Condensed']">
+                REC
+              </span>
+            </div>
           </div>
 
           {/* Actions droite */}
@@ -203,12 +217,22 @@ export function BroadcastOverlay({
         </div>
 
         {/* ── BARRE BASSE ─────────────────────────────────────────────────── */}
-        <div className={`absolute bottom-0 inset-x-0 z-10 px-4 pb-safe-bottom pb-6 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        <div 
+          className={`absolute bottom-0 inset-x-0 z-10 px-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
+        >
 
-          {/* Qualité réseau */}
-          <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest mb-3 ${nq.bg} ${nq.border}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${nq.dot}`} />
-            <span className={nq.text}>{nq.label}</span>
+          {/* Qualité réseau & Indicateur de stabilité */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[9px] font-black uppercase tracking-widest ${nq.bg} ${nq.border}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${nq.dot}`} />
+              <span className={nq.text}>{nq.label}</span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md text-[9px] font-black text-slate-300 uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C8F135] animate-pulse" />
+              <span>FLUX AUDIO/VIDÉO DIRECT</span>
+            </div>
           </div>
 
           {/* Contrôles caméra */}
@@ -248,7 +272,7 @@ export function BroadcastOverlay({
   return (
     <div
       ref={pipRef}
-      className="fixed z-[500] rounded-2xl overflow-hidden border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black cursor-grab active:cursor-grabbing select-none"
+      className="fixed z-[9999] rounded-2xl overflow-hidden border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black cursor-grab active:cursor-grabbing select-none"
       style={{
         width: 180,
         aspectRatio: '9/16',

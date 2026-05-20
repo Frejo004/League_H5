@@ -98,8 +98,24 @@ const MAX_VIEWERS = 40
 
 
 
-// ── Durée max du buffer DVR côté viewer (en secondes) ───────────────────────
-const DVR_BUFFER_SECONDS = 300 // 5 minutes de retour en arrière possible
+// ── Buffer DVR adaptatif selon la RAM et le type d'appareil ─────────────────
+// navigator.deviceMemory : 0.25 | 0.5 | 1 | 2 | 4 | 8 | (Go) — ou undefined
+// On choisit une durée et une taille maximale en octets selon les capacités.
+// Ces valeurs sont calculées UNE seule fois au chargement du module.
+function computeDvrLimits(): { seconds: number; maxBytes: number } {
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent)
+  const ram: number = (navigator as any).deviceMemory ?? 4 // Go, défaut prudent 4 Go
+
+  // Appareils très limités : mobile ou RAM ≤ 1 Go
+  if (isMobile || ram <= 1) return { seconds: 120, maxBytes: 12 * 1024 * 1024 }  // 120s, 12 Mo
+  // RAM moyenne : 2-4 Go (majorité des tablettes et PC d'entrée de gamme)
+  if (ram <= 4)             return { seconds: 180, maxBytes: 20 * 1024 * 1024 }  // 180s, 20 Mo
+  // Appareils puissants : 8 Go+
+  return                           { seconds: 300, maxBytes: 40 * 1024 * 1024 }  // 300s, 40 Mo
+}
+
+const { seconds: DVR_BUFFER_SECONDS, maxBytes: DVR_MAX_BYTES } = computeDvrLimits()
+console.log(`📡 [DVR] Limites adaptatives → ${DVR_BUFFER_SECONDS}s / ${Math.round(DVR_MAX_BYTES / 1024 / 1024)} Mo`)
 // Retourne 'high' | 'medium' | 'low' selon navigator.connection si disponible
 function getNetworkQuality(): 'high' | 'medium' | 'low' {
   const conn = (navigator as any).connection
@@ -859,9 +875,26 @@ export function useWebRTCViewer(matchId: string) {
         processAppendQueue()
       }
 
-      // Purger les chunks plus vieux que DVR_BUFFER_SECONDS (mais jamais le chunk init)
+      // ── Purge 1 : par ancienneté — retirer les chunks plus vieux que DVR_BUFFER_SECONDS
+      // Le chunk init (header WebM) est toujours préservé.
       const cutoff = now - DVR_BUFFER_SECONDS * 1000
       dvrChunksRef.current = dvrChunksRef.current.filter(c => c.isInit || c.ts >= cutoff)
+
+      // ── Purge 2 : par taille mémoire — évite les OOM sur appareils bas de gamme
+      // Calcule la taille totale des blobs data (hors chunk init) et retire les
+      // plus anciens tant que la consommation dépasse DVR_MAX_BYTES.
+      let totalBytes = dvrChunksRef.current.reduce((sum, c) => sum + c.blob.size, 0)
+      if (totalBytes > DVR_MAX_BYTES) {
+        const dataOnly = dvrChunksRef.current.filter(c => !c.isInit)
+        while (dataOnly.length > 1 && totalBytes > DVR_MAX_BYTES) {
+          const removed = dataOnly.shift()!
+          totalBytes -= removed.blob.size
+        }
+        // Reconstruire le tableau en réinjectant le chunk init en tête
+        const initChunk = dvrChunksRef.current.find(c => c.isInit)
+        dvrChunksRef.current = initChunk ? [initChunk, ...dataOnly] : dataOnly
+        console.debug(`📡 [DVR] Purge mémoire → ${Math.round(totalBytes / 1024 / 1024)} Mo / ${Math.round(DVR_MAX_BYTES / 1024 / 1024)} Mo max`)
+      }
 
       // Mettre à jour la durée disponible
       const dataChunks = dvrChunksRef.current.filter(c => !c.isInit)
