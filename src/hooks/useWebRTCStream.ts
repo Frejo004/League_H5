@@ -437,7 +437,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
 
       channel
         .on('presence', { event: 'sync' }, updateViewerCount)
-        .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
+      .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
           console.log('📡 [BC] viewer-join from', payload.viewerId)
 
           // CORRECTIF : refuser si le nombre max de viewers est atteint
@@ -450,12 +450,22 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
             return
           }
 
-          // Ignorer si une connexion est déjà établie ou en cours pour ce viewer
           const existingPc = peersRef.current.get(payload.viewerId)
-          if (existingPc && (existingPc.connectionState === 'connected' || existingPc.connectionState === 'connecting')) {
-            console.log(`📡 [BC] viewer ${payload.viewerId} already connecting/connected — ignoring duplicate join`)
+
+          // Si la PC est déjà connectée → renvoyer l'offer pour que le viewer
+          // puisse se reconnecter après une coupure réseau côté viewer
+          if (existingPc && existingPc.connectionState === 'connected') {
+            console.log(`📡 [BC] viewer ${payload.viewerId} already connected — re-sending offer`)
+            createPeerForViewer(channel, payload.viewerId)
             return
           }
+
+          // Si la PC est en cours de connexion → ignorer pour éviter les doublons
+          if (existingPc && existingPc.connectionState === 'connecting') {
+            console.log(`📡 [BC] viewer ${payload.viewerId} already connecting — ignoring`)
+            return
+          }
+
           createPeerForViewer(channel, payload.viewerId)
           setTimeout(updateViewerCount, 500)
         })
@@ -1026,7 +1036,14 @@ export function useWebRTCViewer(matchId: string) {
         }, 0)
         setViewerCount(count)
 
-        if (hasBc && !streamRef.current && !pcRef.current) {
+        if (hasBc && !streamRef.current) {
+          // Ne pas envoyer viewer-join si une PC est déjà en cours de connexion
+          // (évite les doublons quand le channel se reconnecte brièvement)
+          const pcState = pcRef.current?.connectionState
+          if (pcState === 'connecting' || pcState === 'connected') {
+            console.log('📡 [V] presence sync — PC already', pcState, '— skipping join')
+            return
+          }
           sendJoin(channel)
         } else if (!hasBc) {
           clearRetry()
@@ -1130,6 +1147,9 @@ export function useWebRTCViewer(matchId: string) {
       .subscribe(async (status) => {
         console.log('📡 [V] channel status:', status)
         if (status === 'SUBSCRIBED') {
+          // CORRECTIF : remettre le compteur à 0 à chaque reconnexion du channel
+          // pour que le viewer puisse retenter après une coupure réseau
+          retryCountRef.current = 0
           await channel.track({ is_viewer: true, user_id: user?.id ?? 'anon' })
           console.log('📡 [V] presence tracked')
           // Tracker aussi sur le channel de présence séparé
