@@ -953,6 +953,56 @@ export function AdminLiveControls({
         isPaused={isPaused}
         onSwitchCamera={switchCamera}
         onStopBroadcast={stopBroadcast}
+        actionsSlot={isLive ? (
+          <div className="space-y-3">
+            {/* Stats rapides — accessible depuis la vue fullscreen */}
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Actions rapides</p>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Domicile */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
+                  <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{homeTeam.name}</span>
+                </div>
+                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
+                  <button
+                    key={type}
+                    disabled={isPaused || addEvent.isPending}
+                    onClick={() => addEvent.mutate({ type, team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/10 text-[9px] font-black text-slate-300 uppercase hover:bg-white/20 disabled:opacity-40 transition-all"
+                  >
+                    {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
+                  </button>
+                ))}
+              </div>
+              {/* Extérieur */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-1 justify-end">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{awayTeam.name}</span>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
+                </div>
+                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
+                  <button
+                    key={type}
+                    disabled={isPaused || addEvent.isPending}
+                    onClick={() => addEvent.mutate({ type, team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/10 text-[9px] font-black text-slate-300 uppercase hover:bg-white/20 disabled:opacity-40 transition-all"
+                  >
+                    {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Bouton événement complet */}
+            <button
+              onClick={() => setShowEventForm(v => !v)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#C8F135]/10 border border-[#C8F135]/30 text-[#C8F135] text-[10px] font-black uppercase tracking-widest hover:bg-[#C8F135]/20 transition-all"
+            >
+              <Plus size={12} />
+              But / Carton / Remplacement
+            </button>
+          </div>
+        ) : undefined}
       />
     </>
   )

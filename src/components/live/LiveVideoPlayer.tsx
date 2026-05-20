@@ -325,7 +325,48 @@ export function LiveVideoPlayer({
   // ── Calculer si la vidéo live est en pause ────────────────────────────────
   const isLivePaused = !dvrEnabled && isPausedDvr
 
-  if (!isLive) return null
+  if (!isLive) {
+    const homeColor = homeTeam?.color || overlay?.homeColor || '#3b82f6'
+    const awayColor = awayTeam?.color || overlay?.awayColor || '#ef4444'
+    return (
+      <div className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 aspect-video mt-6 flex flex-col items-center justify-center gap-4 select-none">
+        {/* Dynamic mesh decoration */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+          <div
+            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px]"
+            style={{ backgroundColor: homeColor }}
+          />
+          <div
+            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px]"
+            style={{ backgroundColor: awayColor }}
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-3 text-center px-6">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+          </div>
+          
+          <h3 className="text-sm font-black text-white uppercase tracking-widest mt-1">
+            En attente du signal vidéo
+          </h3>
+          <p className="text-[10px] font-bold text-slate-400 max-w-sm uppercase tracking-wider leading-relaxed">
+            La diffusion n'a pas encore commencé.<br />
+            Dès que le caméraman sera en ligne, le direct s'affichera automatiquement ici.
+          </p>
+
+          <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md mt-2">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              Mode Spectateur WebRTC
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Timeline inversée : gauche = passé, droite = direct (0s de retard) ───
   // progressPercent = 100% quand on est au direct, 0% au début du buffer

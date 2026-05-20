@@ -156,50 +156,56 @@ const _prevRtpStats = new WeakMap<RTCPeerConnection, { lost: number; sent: numbe
 
 // ── Adapter dynamiquement le bitrate selon les stats RTC ────────────────────
 // Appelé toutes les 5s pour ajuster si la connexion se dégrade en cours de live.
-// CORRECTIF : utilise des deltas (valeurs courantes − valeurs précédentes) au lieu
-// des valeurs cumulatives brutes, qui faussaient le calcul du taux de perte.
-async function adaptBitrateFromStats(pc: RTCPeerConnection) {
-  try {
-    const stats = await pc.getStats()
-    let packetLossRate = 0
-    let rtt = 0
+// CORRECTIF : accepte des stats pré-calculées (precomputed) pour éviter un
+// double appel getStats() quand invoqué depuis startNetworkMonitor.
+async function adaptBitrateFromStats(
+  pc: RTCPeerConnection,
+  precomputed?: { packetLossRate: number; rtt: number },
+) {
+  let packetLossRate = 0
+  let rtt = 0
 
-    stats.forEach(report => {
-      if (report.type === 'outbound-rtp' && report.kind === 'video') {
-        const curLost = report.packetsLost ?? 0
-        const curSent = report.packetsSent ?? 0
-        const prev    = _prevRtpStats.get(pc) ?? { lost: 0, sent: 0 }
-
-        const deltaLost = Math.max(0, curLost - prev.lost)
-        const deltaSent = Math.max(0, curSent - prev.sent)
-
-        // Mettre à jour les valeurs de référence pour le prochain intervalle
-        _prevRtpStats.set(pc, { lost: curLost, sent: curSent })
-
-        const total = deltaSent + deltaLost
-        packetLossRate = total > 0 ? deltaLost / total : 0
-      }
-      if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-        rtt = report.currentRoundTripTime ?? 0
-      }
-    })
-
-    // Si perte de paquets > 10% ou RTT > 500ms → réduire le bitrate
-    if (packetLossRate > 0.1 || rtt > 0.5) {
-      for (const sender of pc.getSenders()) {
-        if (sender.track?.kind !== 'video') continue
-        const params = sender.getParameters()
-        if (!params.encodings?.[0]) continue
-        const current = params.encodings[0].maxBitrate ?? 400_000
-        const reduced = Math.max(current * 0.7, 100_000) // -30%, min 100kbps
-        params.encodings[0].maxBitrate = reduced
-        params.encodings[0].scaleResolutionDownBy = reduced < 200_000 ? 2.0 : 1.0
-        await sender.setParameters(params).catch(() => {})
-        console.log(`📡 [BC] bitrate reduced to ${Math.round(reduced / 1000)}kbps (loss=${(packetLossRate * 100).toFixed(1)}%, rtt=${Math.round(rtt * 1000)}ms)`)
-      }
+  if (precomputed) {
+    // Stats déjà calculées par startNetworkMonitor — pas besoin d'un second getStats()
+    packetLossRate = precomputed.packetLossRate
+    rtt = precomputed.rtt
+  } else {
+    // Appel autonome (hors monitoring) — on interroge les stats soi-même
+    try {
+      const stats = await pc.getStats()
+      stats.forEach(report => {
+        if (report.type === 'outbound-rtp' && report.kind === 'video') {
+          const curLost = report.packetsLost ?? 0
+          const curSent = report.packetsSent ?? 0
+          const prev    = _prevRtpStats.get(pc) ?? { lost: 0, sent: 0 }
+          const deltaLost = Math.max(0, curLost - prev.lost)
+          const deltaSent = Math.max(0, curSent - prev.sent)
+          _prevRtpStats.set(pc, { lost: curLost, sent: curSent })
+          const total = deltaSent + deltaLost
+          packetLossRate = total > 0 ? deltaLost / total : 0
+        }
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          rtt = report.currentRoundTripTime ?? 0
+        }
+      })
+    } catch {
+      return // stats non disponibles sur certains navigateurs
     }
-  } catch {
-    // Ignore — stats non disponibles sur certains navigateurs
+  }
+
+  // Si perte de paquets > 10% ou RTT > 500ms → réduire le bitrate
+  if (packetLossRate > 0.1 || rtt > 0.5) {
+    for (const sender of pc.getSenders()) {
+      if (sender.track?.kind !== 'video') continue
+      const params = sender.getParameters()
+      if (!params.encodings?.[0]) continue
+      const current = params.encodings[0].maxBitrate ?? 400_000
+      const reduced = Math.max(current * 0.7, 100_000) // -30%, min 100kbps
+      params.encodings[0].maxBitrate = reduced
+      params.encodings[0].scaleResolutionDownBy = reduced < 200_000 ? 2.0 : 1.0
+      await sender.setParameters(params).catch(() => {})
+      console.log(`📡 [BC] bitrate reduced to ${Math.round(reduced / 1000)}kbps (loss=${(packetLossRate * 100).toFixed(1)}%, rtt=${Math.round(rtt * 1000)}ms)`)
+    }
   }
 }
 
@@ -253,25 +259,33 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
         if (pc.connectionState !== 'connected') continue
         peerCount++
         try {
+          // Un seul appel getStats() par peer — les valeurs sont transmises à
+          // adaptBitrateFromStats() pour éviter un double appel coûteux.
+          // (sans ce fix : 80 appels getStats()/5s avec 40 viewers connectés)
           const stats = await pc.getStats()
+          let peerLoss = 0
+          let peerRtt  = 0
+
           stats.forEach(report => {
             if (report.type === 'outbound-rtp' && report.kind === 'video') {
-              // CORRECTIF : utiliser les deltas stockés par adaptBitrateFromStats
-              // plutôt que les valeurs cumulatives brutes
               const curLost = report.packetsLost ?? 0
               const curSent = report.packetsSent ?? 0
               const prev    = _prevRtpStats.get(pc) ?? { lost: 0, sent: 0 }
               const deltaLost = Math.max(0, curLost - prev.lost)
               const deltaSent = Math.max(0, curSent - prev.sent)
+              // Mise à jour de la référence ici (adaptBitrateFromStats ne le fera plus)
+              _prevRtpStats.set(pc, { lost: curLost, sent: curSent })
               const total = deltaSent + deltaLost
-              totalLoss += total > 0 ? deltaLost / total : 0
+              peerLoss = total > 0 ? deltaLost / total : 0
+              totalLoss += peerLoss
             }
             if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-              totalRtt += report.currentRoundTripTime ?? 0
+              peerRtt = report.currentRoundTripTime ?? 0
+              totalRtt += peerRtt
             }
           })
-          // Adapter le bitrate si la connexion se dégrade
-          await adaptBitrateFromStats(pc)
+          // Passer les stats pré-calculées — pas de second appel getStats()
+          await adaptBitrateFromStats(pc, { packetLossRate: peerLoss, rtt: peerRtt })
         } catch { /* ignore */ }
       }
 
@@ -423,9 +437,6 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
       const stale = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
       if (stale) await supabase.removeChannel(stale)
 
-      const channel = supabase.channel(name)
-      channelRef.current = channel
-
       const updateViewerCount = () => {
         if (!channelRef.current) return
         const state = channelRef.current.presenceState()
@@ -435,115 +446,109 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
         setViewerCount(count)
       }
 
-      channel
-        .on('presence', { event: 'sync' }, updateViewerCount)
-      .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
-          console.log('📡 [BC] viewer-join from', payload.viewerId)
+      // ── Configurer un channel avec tous ses listeners WebRTC ───────────────
+      // CORRECTIF #11 : extrait en fonction pour être réutilisé lors de la
+      // reconnexion automatique (CHANNEL_ERROR / TIMED_OUT), garantissant que
+      // viewer-join, answer et ice-candidate restent toujours écoutés.
+      const setupBroadcastChannel = (ch: any) => {
+        ch
+          .on('presence', { event: 'sync' }, updateViewerCount)
+          .on('broadcast', { event: 'viewer-join' }, ({ payload }: any) => {
+            console.log('📡 [BC] viewer-join from', payload.viewerId)
 
-          // CORRECTIF : refuser si le nombre max de viewers est atteint
-          if (peersRef.current.size >= MAX_VIEWERS) {
-            console.warn(`📡 [BC] max viewers (${MAX_VIEWERS}) reached — rejecting ${payload.viewerId}`)
-            channel.send({
-              type: 'broadcast', event: 'stream-full',
-              payload: { target: payload.viewerId, maxViewers: MAX_VIEWERS },
-            })
-            return
-          }
-
-          const existingPc = peersRef.current.get(payload.viewerId)
-
-          // Si la PC est déjà connectée → renvoyer l'offer pour que le viewer
-          // puisse se reconnecter après une coupure réseau côté viewer
-          if (existingPc && existingPc.connectionState === 'connected') {
-            console.log(`📡 [BC] viewer ${payload.viewerId} already connected — re-sending offer`)
-            createPeerForViewer(channel, payload.viewerId)
-            return
-          }
-
-          // Si la PC est en cours de connexion → ignorer pour éviter les doublons
-          if (existingPc && existingPc.connectionState === 'connecting') {
-            console.log(`📡 [BC] viewer ${payload.viewerId} already connecting — ignoring`)
-            return
-          }
-
-          createPeerForViewer(channel, payload.viewerId)
-          setTimeout(updateViewerCount, 500)
-        })
-        .on('broadcast', { event: 'answer' }, async ({ payload }) => {
-          const pc = peersRef.current.get(payload.viewerId)
-          if (!pc || pc.signalingState !== 'have-local-offer') return
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
-            console.log('📡 [BC] answer set for', payload.viewerId)
-            // Appliquer les paramètres d'encodage adaptés à la qualité réseau actuelle
-            await applyEncodingParams(pc)
-            // Vider le buffer ICE
-            const buf = iceBufRef.current.get(payload.viewerId) ?? []
-            for (const c of buf) {
-              await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
-            }
-            iceBufRef.current.set(payload.viewerId, [])
-          } catch (err) {
-            console.error('📡 [BC] setRemoteDescription error', err)
-          }
-        })
-        .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-          if (payload.target !== 'broadcaster') return
-          const pc = peersRef.current.get(payload.from)
-          if (!pc) return
-          if (pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
-          } else {
-            const buf = iceBufRef.current.get(payload.from) ?? []
-            buf.push(payload.candidate)
-            iceBufRef.current.set(payload.from, buf)
-          }
-        })
-        .subscribe(async (status) => {
-          console.log('📡 [BC] channel status:', status)
-          if (status === 'SUBSCRIBED') {
-            await channel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
-            console.log('📡 [BC] presence tracked')
-            // Tracker aussi sur le channel de présence séparé (pour useWebRTCPresence)
-            // Réutiliser s'il existe déjà pour éviter les doublons
-            const existingPc = supabase.getChannels().find(c => c.topic === `realtime:presence-${matchId}`)
-            const presenceChannel = existingPc ?? supabase.channel(`presence-${matchId}`)
-            if (!existingPc) {
-              presenceChannel.subscribe(async (s) => {
-                if (s === 'SUBSCRIBED') {
-                  await presenceChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
-                }
+            if (peersRef.current.size >= MAX_VIEWERS) {
+              console.warn(`📡 [BC] max viewers (${MAX_VIEWERS}) reached — rejecting ${payload.viewerId}`)
+              ch.send({
+                type: 'broadcast', event: 'stream-full',
+                payload: { target: payload.viewerId, maxViewers: MAX_VIEWERS },
               })
+              return
+            }
+
+            const existingPc = peersRef.current.get(payload.viewerId)
+
+            if (existingPc && existingPc.connectionState === 'connected') {
+              console.log(`📡 [BC] viewer ${payload.viewerId} already connected — re-sending offer`)
+              createPeerForViewer(ch, payload.viewerId)
+              return
+            }
+
+            if (existingPc && existingPc.connectionState === 'connecting') {
+              console.log(`📡 [BC] viewer ${payload.viewerId} already connecting — ignoring`)
+              return
+            }
+
+            createPeerForViewer(ch, payload.viewerId)
+            setTimeout(updateViewerCount, 500)
+          })
+          .on('broadcast', { event: 'answer' }, async ({ payload }: any) => {
+            const pc = peersRef.current.get(payload.viewerId)
+            if (!pc || pc.signalingState !== 'have-local-offer') return
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(payload.answer))
+              console.log('📡 [BC] answer set for', payload.viewerId)
+              await applyEncodingParams(pc)
+              const buf = iceBufRef.current.get(payload.viewerId) ?? []
+              for (const c of buf) {
+                await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {})
+              }
+              iceBufRef.current.set(payload.viewerId, [])
+            } catch (err) {
+              console.error('📡 [BC] setRemoteDescription error', err)
+            }
+          })
+          .on('broadcast', { event: 'ice-candidate' }, async ({ payload }: any) => {
+            if (payload.target !== 'broadcaster') return
+            const pc = peersRef.current.get(payload.from)
+            if (!pc) return
+            if (pc.remoteDescription) {
+              await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {})
             } else {
-              presenceChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' }).catch(() => {})
+              const buf = iceBufRef.current.get(payload.from) ?? []
+              buf.push(payload.candidate)
+              iceBufRef.current.set(payload.from, buf)
             }
-            // Démarrer le monitoring réseau
-            startNetworkMonitor()
-          }
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn('📡 [BC] channel error — reconnecting in 3s...')
-            // CORRECTIF : tenter une reconnexion automatique au lieu d'ignorer
-            setTimeout(async () => {
-              if (!channelRef.current || !mediaRef.current) return
-              try {
-                await supabase.removeChannel(channelRef.current)
-              } catch { /* ignore */ }
-              channelRef.current = null
-              // Relancer le broadcast sur un nouveau channel
-              // On ne relance pas getUserMedia (stream déjà actif), on recrée juste le channel
-              const newChannel = supabase.channel(`stream-${matchId}`)
-              channelRef.current = newChannel
-              // Re-subscribe et re-track la présence
-              newChannel.subscribe(async (s) => {
-                if (s === 'SUBSCRIBED') {
-                  await newChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
-                  console.log('📡 [BC] reconnected after channel error')
-                  startNetworkMonitor()
-                }
-              })
-            }, 3_000)
-          }
-        })
+          })
+          .subscribe(async (status: string) => {
+            console.log('📡 [BC] channel status:', status)
+            if (status === 'SUBSCRIBED') {
+              await ch.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
+              console.log('📡 [BC] presence tracked')
+              // Tracker aussi sur le channel de présence séparé (pour useWebRTCPresence)
+              const existingPresenceCh = supabase.getChannels().find(c => c.topic === `realtime:presence-${matchId}`)
+              const presenceChannel = existingPresenceCh ?? supabase.channel(`presence-${matchId}`)
+              if (!existingPresenceCh) {
+                presenceChannel.subscribe(async (s: string) => {
+                  if (s === 'SUBSCRIBED') {
+                    await presenceChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
+                  }
+                })
+              } else {
+                presenceChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' }).catch(() => {})
+              }
+              startNetworkMonitor()
+            }
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.warn('📡 [BC] channel error — reconnecting in 3s...')
+              setTimeout(async () => {
+                if (!mediaRef.current) return
+                try {
+                  await supabase.removeChannel(ch)
+                } catch { /* ignore */ }
+                channelRef.current = null
+                // Recréer le channel avec TOUS ses listeners (viewer-join, answer, ice-candidate)
+                const newChannel = supabase.channel(`stream-${matchId}`)
+                channelRef.current = newChannel
+                setupBroadcastChannel(newChannel)
+                console.log('📡 [BC] channel reconnected with full listeners')
+              }, 3_000)
+            }
+          })
+      }
+
+      const channel = supabase.channel(name)
+      channelRef.current = channel
+      setupBroadcastChannel(channel)
     } catch (err) {
       console.error('📡 [BC] startBroadcast error', err)
 
@@ -608,8 +613,13 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
       }
 
       // Arrêter l'ancienne track vidéo et mettre à jour le stream local
-      mediaRef.current.getVideoTracks().forEach(t => t.stop())
-      mediaRef.current.removeTrack(mediaRef.current.getVideoTracks()[0])
+      // CORRECTIF #4 : capturer la liste AVANT de stopper pour éviter la race
+      // condition où getVideoTracks()[0] === undefined après t.stop().
+      const oldVideoTracks = mediaRef.current.getVideoTracks()
+      oldVideoTracks.forEach(t => {
+        t.stop()
+        mediaRef.current!.removeTrack(t)
+      })
       mediaRef.current.addTrack(newVideoTrack)
 
       // Mettre à jour le stream exposé (déclenche le re-render de la preview)
