@@ -154,21 +154,44 @@ export function LiveVideoPlayer({
     video.play().catch(err => { if (err.name !== 'AbortError') console.warn('play error:', err) })
   }, [stream, isLive])
 
-  // ── Effet 1 : Chargement de la SOURCE DVR uniquement (pas de lecture auto) ──
+  // ── Effet 1 : Chargement de la SOURCE DVR + démarrage lecture ───────────────
   // dvrBlobUrl est réactif : il change quand seekDvr() construit un nouveau MediaSource/Blob.
   useEffect(() => {
     const video = dvrVideoRef.current
     if (!video) return
-    if (!dvrEnabled) { video.src = ''; return }
+    if (!dvrEnabled) {
+      video.src = ''
+      return
+    }
     const url = dvrBlobUrl
     if (!url || video.src === url) return
 
     video.src = url
     video.load()
-    // Initialiser le calcul du retard dès que la source est prête
-    video.addEventListener('loadedmetadata', handleDvrTimeUpdate, { once: true })
-    return () => { video.removeEventListener('loadedmetadata', handleDvrTimeUpdate) }
-  }, [dvrEnabled, dvrBlobUrl, handleDvrTimeUpdate])
+
+    // Démarrer la lecture dès que suffisamment de données sont disponibles.
+    // On écoute plusieurs événements pour couvrir tous les navigateurs :
+    // - 'canplay' : données suffisantes pour démarrer (Chrome, Firefox)
+    // - 'loadeddata' : premier frame décodé (Safari, iOS)
+    const tryPlay = () => {
+      video.play().catch(err => {
+        if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+      })
+    }
+
+    if (video.readyState >= 2) {
+      // Données déjà disponibles (seek rapide)
+      tryPlay()
+    } else {
+      video.addEventListener('canplay',    tryPlay, { once: true })
+      video.addEventListener('loadeddata', tryPlay, { once: true })
+    }
+
+    return () => {
+      video.removeEventListener('canplay',    tryPlay)
+      video.removeEventListener('loadeddata', tryPlay)
+    }
+  }, [dvrEnabled, dvrBlobUrl])
 
   // ── Effet 2 : Contrôle LECTURE/PAUSE DVR séparé de la source ─────────────
   useEffect(() => {
@@ -178,16 +201,20 @@ export function LiveVideoPlayer({
     if (isPausedDvr) {
       video.pause()
     } else {
-      const onCanPlay = () => {
-        video.play().catch(err => {
-          if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
-        })
-      }
-      if (video.readyState >= 3) {
-        video.play().catch(() => {})
-      } else {
-        video.addEventListener('canplay', onCanPlay, { once: true })
-        return () => video.removeEventListener('canplay', onCanPlay)
+      // Ne relancer la lecture que si la vidéo est vraiment en pause
+      // (évite de re-appeler play() pendant qu'elle joue déjà)
+      if (video.paused) {
+        const tryPlay = () => {
+          video.play().catch(err => {
+            if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+          })
+        }
+        if (video.readyState >= 2) {
+          tryPlay()
+        } else {
+          video.addEventListener('canplay', tryPlay, { once: true })
+          return () => video.removeEventListener('canplay', tryPlay)
+        }
       }
     }
   }, [dvrEnabled, isPausedDvr])
@@ -195,6 +222,23 @@ export function LiveVideoPlayer({
   // ── Réinitialiser isPausedDvr quand on quitte le mode DVR ────────────────
   useEffect(() => {
     if (!dvrEnabled) setIsPausedDvr(false)
+  }, [dvrEnabled])
+
+  // ── Visibilité DVR : éviter l'écran noir pendant le chargement ───────────
+  // On n'affiche la vidéo DVR que quand elle joue réellement (readyState ≥ 2)
+  const [dvrReady, setDvrReady] = useState(false)
+  useEffect(() => {
+    const video = dvrVideoRef.current
+    if (!video) return
+    if (!dvrEnabled) { setDvrReady(false); return }
+    const onPlaying = () => setDvrReady(true)
+    const onWaiting = () => setDvrReady(false)
+    video.addEventListener('playing', onPlaying)
+    video.addEventListener('waiting', onWaiting)
+    return () => {
+      video.removeEventListener('playing', onPlaying)
+      video.removeEventListener('waiting', onWaiting)
+    }
   }, [dvrEnabled])
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
@@ -347,16 +391,34 @@ export function LiveVideoPlayer({
         onPlaying={() => setIsStalled(false)}
         onStalled={() => setIsStalled(true)}
         onSuspend={() => setIsStalled(false)}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${dvrEnabled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(dvrEnabled && dvrReady) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       />
 
       {/* ── Vidéo DVR ─────────────────────────────────────────────────────── */}
       <video
         ref={dvrVideoRef}
         playsInline muted={isMuted}
+        data-dvr="true"
         onTimeUpdate={handleDvrTimeUpdate}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${dvrEnabled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onLoadedMetadata={() => {
+          // Forcer la tête de lecture au début du buffer disponible
+          // (MediaSource en mode segments ne le fait pas automatiquement)
+          const video = dvrVideoRef.current
+          if (!video) return
+          if (video.buffered.length > 0) {
+            video.currentTime = video.buffered.start(0)
+          }
+        }}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(dvrEnabled && dvrReady) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
+
+      {/* ── Spinner chargement DVR ────────────────────────────────────────── */}
+      {dvrEnabled && !dvrReady && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10">
+          <div className="w-6 h-6 rounded-full border-2 border-amber-400 border-t-transparent animate-spin mb-2" />
+          <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Chargement du replay...</p>
+        </div>
+      )}
 
       {/* ── Bandeau but ───────────────────────────────────────────────────── */}
       {activeGoalBanner && (
