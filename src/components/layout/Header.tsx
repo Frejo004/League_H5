@@ -218,8 +218,12 @@ export default function Header() {
   const [searchParams] = useSearchParams()
   const currentTab = searchParams.get('tab') || 'seasons'
 
-  // Ferme le drawer à chaque navigation
-  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+  // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
+  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname)
+    setMobileOpen(false)
+  }
   // Bloque le scroll body quand le drawer est ouvert
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''

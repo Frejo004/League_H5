@@ -4,7 +4,7 @@
  * Le parent doit changer la `key` prop pour déclencher une nouvelle célébration.
  */
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 
 const DISPLAY_DURATION = 10_000  // durée totale visible (ms)
 const FADE_OUT_START   = 7_000   // début du fondu sortant (ms)
@@ -18,6 +18,16 @@ interface GoalCelebrationProps {
 export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [fadingOut, setFadingOut] = useState(false)
+
+  // Memoize random properties for confetti particles to keep rendering pure
+  const particles = useMemo(() => {
+    return Array.from({ length: 20 }, (_, i) => {
+      const angle = (i / 20) * 2 * Math.PI
+      const dist = 300 + Math.random() * 200
+      const rotate = Math.random() * 360
+      return { angle, dist, rotate }
+    })
+  }, [])
 
   // Se déclenche au montage du composant (quand key change, React remont le composant)
   useEffect(() => {
@@ -57,19 +67,17 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
           />
 
           {/* Particules — une seule passe, pas de repeat */}
-          {[...Array(20)].map((_, i) => {
-            const angle = (i / 20) * 2 * Math.PI
-            const dist = 300 + Math.random() * 200
+          {particles.map((p, i) => {
             return (
               <motion.div
                 key={i}
                 initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
                 animate={{
                   scale: [0, 1.2, 0],
-                  x: Math.cos(angle) * dist,
-                  y: Math.sin(angle) * dist,
+                  x: Math.cos(p.angle) * p.dist,
+                  y: Math.sin(p.angle) * p.dist,
                   opacity: [1, 1, 0],
-                  rotate: Math.random() * 360,
+                  rotate: p.rotate,
                 }}
                 transition={{
                   duration: 2.5,

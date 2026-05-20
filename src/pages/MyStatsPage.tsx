@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { ArrowRight, Target, Zap, Calendar, Star, TrendingUp, BarChart2, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { clsx } from 'clsx'
@@ -43,16 +44,23 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
     ? scorerRank + 1
     : null
 
+  const positionLabel = profile.position
+    ? POSITION_LABELS[profile.position as keyof typeof POSITION_LABELS] ?? profile.position
+    : undefined
+
   // Évolution cumulative buts+passes (ordre chronologique)
-  const chronoMatches = [...profile.recent_matches].reverse()
-  let cumGoals = 0
-  let cumAssists = 0
-  const evolution = chronoMatches.map(m => {
-    cumGoals += m.goals_in_match
-    cumAssists += m.assists_in_match
-    return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
-  })
-  const maxVal = Math.max(...evolution.map(e => e.goals), 1)
+  const evolution = useMemo(() => {
+    const chronoMatches = [...profile.recent_matches].reverse()
+    let cumGoals = 0
+    let cumAssists = 0
+    return chronoMatches.map(m => {
+      cumGoals += m.goals_in_match
+      cumAssists += m.assists_in_match
+      return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
+    })
+  }, [profile.recent_matches])
+
+  const maxVal = useMemo(() => Math.max(...evolution.map(e => e.goals), 1), [evolution])
 
   return (
     <div className="space-y-4">
@@ -102,7 +110,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
               </div>
               {profile.position && (
                 <span className="text-xs font-bold text-[#FFDF73] uppercase tracking-widest bg-black/30 px-2 py-0.5 rounded border border-[#B8860B]/20">
-                  {POSITION_LABELS[profile.position] ?? profile.position}
+                  {positionLabel}
                 </span>
               )}
             </div>

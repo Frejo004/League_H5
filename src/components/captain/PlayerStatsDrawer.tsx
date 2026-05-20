@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { Calendar, Target, Zap, Star, TrendingUp, X as XIcon, BarChart2 } from 'lucide-react'
@@ -45,15 +45,19 @@ export function PlayerStatsDrawer({
   }, [])
 
   // Calcul évolution cumulative buts+passes match par match (ordre chronologique)
-  const chronoMatches = profile ? [...profile.recent_matches].reverse() : []
-  let cumGoals = 0
-  let cumAssists = 0
-  const evolution = chronoMatches.map(m => {
-    cumGoals += m.goals_in_match
-    cumAssists += m.assists_in_match
-    return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
-  })
-  const maxVal = Math.max(...evolution.map(e => e.goals), 1)
+  const evolution = useMemo(() => {
+    if (!profile) return []
+    const chronoMatches = [...profile.recent_matches].reverse()
+    let cumGoals = 0
+    let cumAssists = 0
+    return chronoMatches.map(m => {
+      cumGoals += m.goals_in_match
+      cumAssists += m.assists_in_match
+      return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
+    })
+  }, [profile])
+
+  const maxVal = useMemo(() => Math.max(...evolution.map(e => e.goals), 1), [evolution])
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">

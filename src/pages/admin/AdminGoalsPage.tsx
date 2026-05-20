@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, useMatch } from '@/hooks/useMatches'
@@ -32,9 +32,6 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   const [assistGoalId, setAssistGoalId] = useState('')
   const [assistPlayer, setAssistPlayer] = useState('')
   const [assistError, setAssistError] = useState<string | null>(null)
-
-  // Reset player selection when team or own-goal changes
-  useEffect(() => { setGoalPlayer('') }, [goalTeam, isOwnGoal])
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const goals = (detail?.goals ?? []) as GoalWithPlayer[]
@@ -193,7 +190,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                       {/* Équipe qui marque */}
                       <div>
                         <label className="label">Équipe qui marque</label>
-                        <select value={goalTeam} onChange={e => setGoalTeam(e.target.value)}
+                        <select value={goalTeam} onChange={e => { setGoalTeam(e.target.value); setGoalPlayer('') }}
                           className="input text-sm py-1.5">
                           <option value={home.id}>
                             {home.name} ({homeGoalsCount}/{homeScoreMax})
@@ -225,7 +222,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                       <input type="number" value={goalMinute} onChange={e => setGoalMinute(e.target.value)}
                         className="input text-sm py-1.5" placeholder="Minute (optionnel)" min={1} max={120} />
                       <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer px-2">
-                        <input type="checkbox" checked={isOwnGoal} onChange={e => setIsOwnGoal(e.target.checked)}
+                        <input type="checkbox" checked={isOwnGoal} onChange={e => { setIsOwnGoal(e.target.checked); setGoalPlayer('') }}
                           className="w-4 h-4 accent-primary-500" />
                         Contre son camp (CSC)
                       </label>

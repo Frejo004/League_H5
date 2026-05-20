@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Zap, Pencil, Check, X, Calendar } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -69,18 +69,16 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const [status, setStatus] = useState<MatchStatus>(match.status)
   const [showCancelModal, setShowCancelModal] = useState(false)
 
-  useEffect(() => {
-    if (!editing) {
-      setScheduledAt(toBeninInputString(match.scheduled_at))
-      setHomeScore(String(match.home_score ?? ''))
-      setAwayScore(String(match.away_score ?? ''))
-      setStatus(match.status)
-      setShowCancelModal(false)
-    }
-  }, [match.scheduled_at, match.home_score, match.away_score, match.status, editing])
-
   const home = match.home_team as { name: string; color: string }
   const away = match.away_team as { name: string; color: string }
+
+  function resetFormToMatch() {
+    setScheduledAt(toBeninInputString(match.scheduled_at))
+    setHomeScore(String(match.home_score ?? ''))
+    setAwayScore(String(match.away_score ?? ''))
+    setStatus(match.status)
+    setShowCancelModal(false)
+  }
 
   async function handleSave() {
     // Si on passe en annulé et que ce n'était pas déjà le cas, on demande confirmation
@@ -127,6 +125,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     }
     setEditing(false)
     setShowCancelModal(false)
+    resetFormToMatch()
   }
 
   const dateLabel = match.scheduled_at
@@ -271,7 +270,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
               {updateMatch.isPending ? <LoadingSpinner size="sm" /> : <Check size={14} />}
               Enregistrer
             </button>
-            <button onClick={() => setEditing(false)} className="btn-secondary py-2 px-3 bg-surface-raised border border-white/10 hover:bg-white/10">
+            <button onClick={() => { setEditing(false); resetFormToMatch() }} className="btn-secondary py-2 px-3 bg-surface-raised border border-white/10 hover:bg-white/10">
               <X size={14} />
             </button>
           </div>

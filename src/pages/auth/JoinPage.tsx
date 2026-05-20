@@ -32,7 +32,8 @@ export function JoinPage() {
   const token = sessionStorage.getItem('invite_token') ?? ''
 
   const [playerInfo, setPlayerInfo]   = useState<InvitePlayerInfo | null>(null)
-  const [tokenState, setTokenState]   = useState<'loading' | 'valid' | 'invalid'>('loading')
+  // Lazy initializer: si pas de token, on passe directement à 'invalid' sans useEffect
+  const [tokenState, setTokenState]   = useState<'loading' | 'valid' | 'invalid'>(() => token ? 'loading' : 'invalid')
   const [email, setEmail]             = useState('')
   const [password, setPassword]       = useState('')
   const [confirmPassword, setConfirm] = useState('')
@@ -40,12 +41,9 @@ export function JoinPage() {
   const [isLoading, setIsLoading]     = useState(false)
   const [success, setSuccess]         = useState(false)
 
-  // Resolve token when it changes
+  // Résoudre le token — s'exécute uniquement si le token existe (tokenState = 'loading')
   useEffect(() => {
-    if (!token) { 
-      setTokenState('invalid'); 
-      return 
-    }
+    if (!token) return
     resolveInviteToken(token).then(info => {
       // Clear token after use to prevent reuse
       sessionStorage.removeItem('invite_token')

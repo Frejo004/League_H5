@@ -118,9 +118,9 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
   }, [lineups, awayTeam.id])
 
   const currentFormation = activeTab === 'away' ? awayFormationDetected : homeFormationDetected
-
+  const [now] = useState(() => Date.now())
   const matchTime = scheduledAt ? new Date(scheduledAt).getTime() : 0
-  const isLocked = matchTime > 0 && (matchTime - Date.now() < 3600000)
+  const isLocked = matchTime > 0 && (matchTime - now < 3600000)
   const canEdit = (isCaptain && activeTeam.captain_id === profile?.id) && !isLocked
 
   if (isLoading) return <div className="p-8 text-center text-slate-500">Chargement des compositions...</div>
