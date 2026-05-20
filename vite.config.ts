@@ -15,6 +15,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['favicon.svg', 'icons.svg', 'logo-h5.png'],
+      // Fix warning "inlineDynamicImports is deprecated" — vite-plugin-pwa 1.3+
+      // Le SW n'utilise pas de dynamic imports, on désactive le code splitting.
+      injectManifest: {
+        rollupFormat: 'iife',
+      },
       manifest: {
         name: 'League H5',
         short_name: 'League H5',
