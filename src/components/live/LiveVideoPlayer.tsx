@@ -74,11 +74,21 @@ export function LiveVideoPlayer({
 
   const { dvrEnabled, seekDvr, dvrBlobUrl } = isViewerMode
     ? localViewer
-    : { dvrEnabled: false, seekDvr: (_: number) => {}, dvrBlobUrl: null }
+    : { dvrEnabled: false, seekDvr: () => {}, dvrBlobUrl: null }
+
+  // ── Refs ────────────────────────────────────────────────────────────────────
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  const [isMuted, setIsMuted]             = useState(true)
+  const [isFullscreen, setIsFullscreen]   = useState(false)
+  const [isStalled, setIsStalled]         = useState(false)
+  const [isPausedDvr, setIsPausedDvr]     = useState(false)
+  const [dvrSlider, setDvrSlider]         = useState(0)   // 0 = live, >0 = retard en secondes
+  const [showControls, setShowControls]   = useState(true)
 
   // ── DVR : auto-progression du curseur via onTimeUpdate ─────────────────────
-  // Déclaré AVANT les effets pour éviter le TDZ (Temporal Dead Zone) lors de
-  // son utilisation dans le listener loadedmetadata de l'effet de source.
+  // Déclaré APRÈS les useState pour ne pas violer les règles de lint TDZ
+  // et exhaustivedeps sur setDvrSlider / setIsPausedDvr.
   const handleDvrTimeUpdate = useCallback(() => {
     const video = dvrVideoRef.current
     if (!video || !dvrEnabled) return
@@ -94,16 +104,6 @@ export function LiveVideoPlayer({
       seekDvr(0)
     }
   }, [dvrEnabled, isPausedDvr, seekDvr])
-
-  // ── Refs ────────────────────────────────────────────────────────────────────
-
-  // ── State ───────────────────────────────────────────────────────────────────
-  const [isMuted, setIsMuted]             = useState(true)
-  const [isFullscreen, setIsFullscreen]   = useState(false)
-  const [isStalled, setIsStalled]         = useState(false)
-  const [isPausedDvr, setIsPausedDvr]     = useState(false)
-  const [dvrSlider, setDvrSlider]         = useState(0)   // 0 = live, >0 = retard en secondes
-  const [showControls, setShowControls]   = useState(true)
 
   // ── Bandeau but ───────────────────────────────────────────────────────────
   const [activeGoalBanner, setActiveGoalBanner] = useState<{
@@ -278,23 +278,6 @@ export function LiveVideoPlayer({
       setIsPausedDvr(true)
     }
   }, [stream, dvrEnabled, dvrDuration, seekDvr])
-
-  // ── Auto-progression du curseur DVR via timeupdate ────────────────────────
-  const handleDvrTimeUpdate = useCallback(() => {
-    const video = dvrVideoRef.current
-    if (!video || !dvrEnabled) return
-    if (video.buffered.length === 0) return
-
-    const bufferedEnd = video.buffered.end(video.buffered.length - 1)
-    const delay = Math.max(0, Math.round(bufferedEnd - video.currentTime))
-    setDvrSlider(delay)
-
-    // Catch-up automatique : si on rattrape le direct (≤ 1s de retard)
-    if (delay <= 1 && !isPausedDvr) {
-      setDvrSlider(0)
-      seekDvr(0)
-    }
-  }, [dvrEnabled, isPausedDvr, seekDvr])
 
   // ── Calculer si la vidéo live est en pause ────────────────────────────────
   const isLivePaused = !dvrEnabled && isPausedDvr
