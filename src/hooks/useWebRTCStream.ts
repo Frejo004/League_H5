@@ -712,17 +712,44 @@ export function useWebRTCViewer(matchId: string) {
     if (!sb || sb.updating || isAppendingRef.current) return
     if (appendQueueRef.current.length === 0) return
 
+    // CORRECTIF : vérifier que le SourceBuffer est encore attaché à un
+    // MediaSource ouvert avant d'appeler appendBuffer.
+    // Le FileReader.onload peut arriver après un closeMediaSource().
+    const ms = mediaSourceRef.current
+    if (!ms || ms.readyState !== 'open') {
+      // MediaSource fermé — vider la file et abandonner
+      appendQueueRef.current = []
+      isAppendingRef.current = false
+      return
+    }
+
     const blob = appendQueueRef.current.shift()!
     const reader = new FileReader()
     reader.onload = () => {
-      if (reader.result instanceof ArrayBuffer) {
-        try {
-          isAppendingRef.current = true
-          sb.appendBuffer(reader.result)
-        } catch (err) {
+      if (!(reader.result instanceof ArrayBuffer)) return
+
+      // Double-vérification au moment de l'écriture (le MediaSource peut avoir
+      // été fermé pendant la lecture asynchrone du FileReader)
+      const currentSb = sourceBufferRef.current
+      const currentMs = mediaSourceRef.current
+      if (!currentSb || !currentMs || currentMs.readyState !== 'open') {
+        isAppendingRef.current = false
+        appendQueueRef.current = []
+        return
+      }
+
+      try {
+        isAppendingRef.current = true
+        currentSb.appendBuffer(reader.result)
+      } catch (err) {
+        // InvalidStateError attendu si le SourceBuffer a été retiré entre-temps
+        if (err instanceof DOMException && err.name === 'InvalidStateError') {
+          console.debug('📡 [DVR] appendBuffer skipped — SourceBuffer detached')
+        } else {
           console.error('📡 [DVR] appendBuffer error', err)
-          isAppendingRef.current = false
         }
+        isAppendingRef.current = false
+        appendQueueRef.current = []
       }
     }
     reader.readAsArrayBuffer(blob)
@@ -730,6 +757,12 @@ export function useWebRTCViewer(matchId: string) {
 
   // ── Fermer le MediaSource propre ───────────────────────────────────────────
   const closeMediaSource = useCallback(() => {
+    // CORRECTIF : vider la file et bloquer les appends EN PREMIER,
+    // avant de détacher le SourceBuffer — évite le InvalidStateError
+    // dans les FileReader.onload déjà en cours.
+    appendQueueRef.current = []
+    isAppendingRef.current = false
+
     if (sourceBufferRef.current) {
       try {
         const ms = mediaSourceRef.current
@@ -747,8 +780,6 @@ export function useWebRTCViewer(matchId: string) {
       } catch { /* ignore */ }
       mediaSourceRef.current = null
     }
-    appendQueueRef.current = []
-    isAppendingRef.current = false
     // CORRECTIF : révoquer l'ancienne URL pour éviter la fuite mémoire
     setDvrBlobUrl(prev => {
       if (prev) URL.revokeObjectURL(prev)
