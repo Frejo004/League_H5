@@ -51,12 +51,15 @@ const VIDEO_CONSTRAINTS_LOW: MediaTrackConstraints = {
   frameRate: { ideal: 10, max: 15 },
 }
 
+// ── Nombre maximum de viewers simultanés (architecture P2P mesh) ────────────
+// Au-delà, chaque viewer supplémentaire multiplie l'upload de l'émetteur.
+// On refuse les connexions excédentaires et on notifie le viewer concerné.
+const MAX_VIEWERS = 40
+
+
+
 // ── Durée max du buffer DVR côté viewer (en secondes) ───────────────────────
 const DVR_BUFFER_SECONDS = 300 // 5 minutes de retour en arrière possible
-
-
-
-// ── Détecter la qualité réseau estimée ──────────────────────────────────────
 // Retourne 'high' | 'medium' | 'low' selon navigator.connection si disponible
 function getNetworkQuality(): 'high' | 'medium' | 'low' {
   const conn = (navigator as any).connection
@@ -65,14 +68,6 @@ function getNetworkQuality(): 'high' | 'medium' | 'low' {
   if (effectiveType === '4g' && downlink >= 2) return 'high'
   if (effectiveType === '4g' || (effectiveType === '3g' && downlink >= 1)) return 'medium'
   return 'low'
-}
-
-// ── Choisir les contraintes vidéo selon la qualité réseau ───────────────────
-function getVideoConstraints(): MediaTrackConstraints {
-  const q = getNetworkQuality()
-  if (q === 'high') return VIDEO_CONSTRAINTS_HIGH
-  if (q === 'medium') return VIDEO_CONSTRAINTS_MED
-  return VIDEO_CONSTRAINTS_LOW
 }
 
 // ── Choisir le bitrate max selon la qualité réseau ──────────────────────────
@@ -115,8 +110,14 @@ async function applyEncodingParams(pc: RTCPeerConnection) {
   console.log(`📡 [BC] encoding params applied (${maxBitrate / 1000}kbps video, quality: ${getNetworkQuality()})`)
 }
 
+// ── Stocker les stats précédentes pour calculer des deltas ──────────────────
+// Map<peerId, { lost: number; sent: number }> — clé = ssrc de la track vidéo
+const _prevRtpStats = new WeakMap<RTCPeerConnection, { lost: number; sent: number }>()
+
 // ── Adapter dynamiquement le bitrate selon les stats RTC ────────────────────
-// Appelé toutes les 5s pour ajuster si la connexion se dégrade en cours de live
+// Appelé toutes les 5s pour ajuster si la connexion se dégrade en cours de live.
+// CORRECTIF : utilise des deltas (valeurs courantes − valeurs précédentes) au lieu
+// des valeurs cumulatives brutes, qui faussaient le calcul du taux de perte.
 async function adaptBitrateFromStats(pc: RTCPeerConnection) {
   try {
     const stats = await pc.getStats()
@@ -125,9 +126,18 @@ async function adaptBitrateFromStats(pc: RTCPeerConnection) {
 
     stats.forEach(report => {
       if (report.type === 'outbound-rtp' && report.kind === 'video') {
-        const lost = report.packetsLost ?? 0
-        const sent = report.packetsSent ?? 1
-        packetLossRate = lost / (sent + lost)
+        const curLost = report.packetsLost ?? 0
+        const curSent = report.packetsSent ?? 0
+        const prev    = _prevRtpStats.get(pc) ?? { lost: 0, sent: 0 }
+
+        const deltaLost = Math.max(0, curLost - prev.lost)
+        const deltaSent = Math.max(0, curSent - prev.sent)
+
+        // Mettre à jour les valeurs de référence pour le prochain intervalle
+        _prevRtpStats.set(pc, { lost: curLost, sent: curSent })
+
+        const total = deltaSent + deltaLost
+        packetLossRate = total > 0 ? deltaLost / total : 0
       }
       if (report.type === 'candidate-pair' && report.state === 'succeeded') {
         rtt = report.currentRoundTripTime ?? 0
@@ -159,13 +169,22 @@ function createPc(): RTCPeerConnection {
 }
 
 // ── useWebRTCBroadcaster ──────────────────────────────────────────────────────
-export function useWebRTCBroadcaster(matchId: string) {
+export function useWebRTCBroadcaster(matchId: string, options?: {
+  /** Callback appelé à la place de alert() pour les erreurs caméra */
+  onError?: (message: string, detail?: string) => void
+  /** ID du device vidéo à utiliser (issu de enumerateDevices) */
+  videoDeviceId?: string
+  /** ID du device audio à utiliser (issu de enumerateDevices) */
+  audioDeviceId?: string
+}) {
   const { user } = useAuth()
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [viewerCount, setViewerCount] = useState(0)
   // Qualité réseau estimée : 'good' | 'degraded' | 'poor'
   const [networkQuality, setNetworkQuality] = useState<'good' | 'degraded' | 'poor'>('good')
+  // Caméra active : 'environment' (arrière) | 'user' (avant)
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
 
   const channelRef      = useRef<any>(null)
   const mediaRef        = useRef<MediaStream | null>(null)
@@ -188,9 +207,15 @@ export function useWebRTCBroadcaster(matchId: string) {
           const stats = await pc.getStats()
           stats.forEach(report => {
             if (report.type === 'outbound-rtp' && report.kind === 'video') {
-              const lost = report.packetsLost ?? 0
-              const sent = report.packetsSent ?? 1
-              totalLoss += lost / (sent + lost)
+              // CORRECTIF : utiliser les deltas stockés par adaptBitrateFromStats
+              // plutôt que les valeurs cumulatives brutes
+              const curLost = report.packetsLost ?? 0
+              const curSent = report.packetsSent ?? 0
+              const prev    = _prevRtpStats.get(pc) ?? { lost: 0, sent: 0 }
+              const deltaLost = Math.max(0, curLost - prev.lost)
+              const deltaSent = Math.max(0, curSent - prev.sent)
+              const total = deltaSent + deltaLost
+              totalLoss += total > 0 ? deltaLost / total : 0
             }
             if (report.type === 'candidate-pair' && report.state === 'succeeded') {
               totalRtt += report.currentRoundTripTime ?? 0
@@ -286,23 +311,41 @@ export function useWebRTCBroadcaster(matchId: string) {
     try {
       let mediaStream: MediaStream | null = null
 
-      // Tentatives en cascade : haute → moyenne → basse qualité → audio seul
-      const attempts = [
-        { video: VIDEO_CONSTRAINTS_HIGH, label: 'haute' },
-        { video: VIDEO_CONSTRAINTS_MED,  label: 'moyenne' },
-        { video: VIDEO_CONSTRAINTS_LOW,  label: 'basse' },
-        { video: true,                   label: 'minimale' },
+      // Construire les contraintes vidéo selon le device sélectionné ou le facing mode
+      // Sur iPhone, `exact` est nécessaire pour garantir la caméra arrière
+      const buildVideoConstraints = (quality: MediaTrackConstraints): MediaTrackConstraints => {
+        if (options?.videoDeviceId) {
+          // Device explicitement choisi → on ignore facingMode
+          return { ...quality, deviceId: { exact: options.videoDeviceId } }
+        }
+        // Forcer exact sur iOS pour éviter que Safari ignore le facing mode
+        return { ...quality, facingMode: { exact: facingMode } }
+      }
+
+      // Tentatives en cascade : haute → moyenne → basse qualité → contraintes minimales
+      // Sur iPhone, si 'exact' échoue (ex: caméra avant demandée mais indisponible),
+      // on retombe sur 'ideal' pour ne pas bloquer complètement.
+      const attempts: { video: MediaTrackConstraints | boolean; label: string }[] = [
+        { video: buildVideoConstraints(VIDEO_CONSTRAINTS_HIGH), label: 'haute' },
+        { video: buildVideoConstraints(VIDEO_CONSTRAINTS_MED),  label: 'moyenne' },
+        { video: buildVideoConstraints(VIDEO_CONSTRAINTS_LOW),  label: 'basse' },
+        // Fallback sans exact — laisse le navigateur choisir
+        { video: { ...VIDEO_CONSTRAINTS_LOW, facingMode: { ideal: facingMode } }, label: 'basse (fallback)' },
+        { video: true, label: 'minimale' },
       ]
+
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        ...(options?.audioDeviceId ? { deviceId: { exact: options.audioDeviceId } } : {}),
+      }
 
       for (const attempt of attempts) {
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia({
             video: attempt.video,
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
+            audio: audioConstraints,
           })
           console.log(`📡 [BC] caméra démarrée en qualité ${attempt.label}`)
           break
@@ -347,6 +390,17 @@ export function useWebRTCBroadcaster(matchId: string) {
         .on('presence', { event: 'sync' }, updateViewerCount)
         .on('broadcast', { event: 'viewer-join' }, ({ payload }) => {
           console.log('📡 [BC] viewer-join from', payload.viewerId)
+
+          // CORRECTIF : refuser si le nombre max de viewers est atteint
+          if (peersRef.current.size >= MAX_VIEWERS) {
+            console.warn(`📡 [BC] max viewers (${MAX_VIEWERS}) reached — rejecting ${payload.viewerId}`)
+            channel.send({
+              type: 'broadcast', event: 'stream-full',
+              payload: { target: payload.viewerId, maxViewers: MAX_VIEWERS },
+            })
+            return
+          }
+
           // Ignorer si une connexion est déjà établie ou en cours pour ce viewer
           const existingPc = peersRef.current.get(payload.viewerId)
           if (existingPc && (existingPc.connectionState === 'connected' || existingPc.connectionState === 'connecting')) {
@@ -408,18 +462,117 @@ export function useWebRTCBroadcaster(matchId: string) {
             startNetworkMonitor()
           }
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn('📡 [BC] channel error — will retry on next SUBSCRIBED')
+            console.warn('📡 [BC] channel error — reconnecting in 3s...')
+            // CORRECTIF : tenter une reconnexion automatique au lieu d'ignorer
+            setTimeout(async () => {
+              if (!channelRef.current || !mediaRef.current) return
+              try {
+                await supabase.removeChannel(channelRef.current)
+              } catch { /* ignore */ }
+              channelRef.current = null
+              // Relancer le broadcast sur un nouveau channel
+              // On ne relance pas getUserMedia (stream déjà actif), on recrée juste le channel
+              const newChannel = supabase.channel(`stream-${matchId}`)
+              channelRef.current = newChannel
+              // Re-subscribe et re-track la présence
+              newChannel.subscribe(async (s) => {
+                if (s === 'SUBSCRIBED') {
+                  await newChannel.track({ is_broadcaster: true, user_id: user?.id ?? 'anon' })
+                  console.log('📡 [BC] reconnected after channel error')
+                  startNetworkMonitor()
+                }
+              })
+            }, 3_000)
           }
         })
     } catch (err) {
       console.error('📡 [BC] startBroadcast error', err)
-      alert("Impossible d'accéder à la caméra. Vérifiez les permissions de votre navigateur.")
+
+      // CORRECTIF : remplacer alert() par le callback onError avec un message
+      // contextuel selon le type d'erreur (permission, caméra occupée, etc.)
+      const notify = options?.onError ?? ((msg: string) => alert(msg))
+
+      if (err instanceof DOMException) {
+        if (err.name === 'NotAllowedError') {
+          notify(
+            'Permission caméra refusée',
+            'Autorisez l\'accès à la caméra dans les paramètres de votre navigateur, puis réessayez.'
+          )
+        } else if (err.name === 'NotFoundError') {
+          notify(
+            'Aucune caméra détectée',
+            'Vérifiez qu\'une caméra est bien connectée et non utilisée par une autre application.'
+          )
+        } else if (err.name === 'NotReadableError') {
+          notify(
+            'Caméra déjà utilisée',
+            'Une autre application utilise la caméra. Fermez-la et réessayez.'
+          )
+        } else {
+          notify('Erreur caméra', err.message)
+        }
+      } else {
+        notify(
+          'Impossible de démarrer le live',
+          err instanceof Error ? err.message : 'Erreur inconnue'
+        )
+      }
     }
   }
 
+  // ── Basculer entre caméra avant et arrière pendant le broadcast ──────────
+  // Remplace la track vidéo dans tous les peers sans couper le stream audio.
+  // Sur iPhone, on doit arrêter l'ancienne track avant d'en demander une nouvelle.
+  const switchCamera = useCallback(async () => {
+    if (!mediaRef.current || !isBroadcasting) return
+
+    const newFacing: 'environment' | 'user' = facingMode === 'environment' ? 'user' : 'environment'
+
+    try {
+      // Demander le nouveau stream vidéo uniquement
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: newFacing }, width: { ideal: 854 }, height: { ideal: 480 } },
+        audio: false,
+      })
+
+      const newVideoTrack = newStream.getVideoTracks()[0]
+      if (!newVideoTrack) return
+
+      // Remplacer la track dans tous les peers WebRTC actifs
+      for (const pc of peersRef.current.values()) {
+        const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+        if (sender) {
+          await sender.replaceTrack(newVideoTrack).catch(err =>
+            console.warn('📡 [BC] replaceTrack error', err)
+          )
+        }
+      }
+
+      // Arrêter l'ancienne track vidéo et mettre à jour le stream local
+      mediaRef.current.getVideoTracks().forEach(t => t.stop())
+      mediaRef.current.removeTrack(mediaRef.current.getVideoTracks()[0])
+      mediaRef.current.addTrack(newVideoTrack)
+
+      // Mettre à jour le stream exposé (déclenche le re-render de la preview)
+      const updatedStream = new MediaStream([
+        newVideoTrack,
+        ...mediaRef.current.getAudioTracks(),
+      ])
+      mediaRef.current = updatedStream
+      setStream(updatedStream)
+      setFacingMode(newFacing)
+
+      if ('contentHint' in newVideoTrack) (newVideoTrack as any).contentHint = 'motion'
+      console.log(`📡 [BC] camera switched to ${newFacing}`)
+    } catch (err) {
+      console.error('📡 [BC] switchCamera error', err)
+      const notify = options?.onError ?? ((msg: string) => alert(msg))
+      notify('Impossible de changer de caméra', err instanceof Error ? err.message : undefined)
+    }
+  }, [facingMode, isBroadcasting, options])
+
   // ── Arrêter le broadcast ──────────────────────────────────────────────────
-  const stopBroadcast = () => {
-    if (statsIntervalRef.current) {
+  const stopBroadcast = () => {    if (statsIntervalRef.current) {
       clearInterval(statsIntervalRef.current)
       statsIntervalRef.current = null
     }
@@ -447,7 +600,7 @@ export function useWebRTCBroadcaster(matchId: string) {
 
   useEffect(() => () => { stopBroadcast() }, []) // eslint-disable-line
 
-  return { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount, networkQuality }
+  return { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount, networkQuality, switchCamera, facingMode }
 }
 
 // ── useWebRTCViewer ───────────────────────────────────────────────────────────
@@ -456,6 +609,8 @@ export function useWebRTCViewer(matchId: string) {
   const [stream, setStream]           = useState<MediaStream | null>(null)
   const [isLive, setIsLive]           = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
+  // AJOUT : état pour informer l'UI que le stream est complet (trop de viewers)
+  const [isStreamFull, setIsStreamFull] = useState(false)
 
   // ── DVR : buffer des chunks enregistrés pour le retour en arrière ──────────
   // On enregistre le stream reçu via MediaRecorder et on stocke les chunks
@@ -472,7 +627,22 @@ export function useWebRTCViewer(matchId: string) {
   const iceBufRef       = useRef<RTCIceCandidateInit[]>([])
   const retryRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryCountRef   = useRef(0)
-  const viewerId        = useRef(user?.id ?? Math.random().toString(36).slice(2)).current
+
+  // CORRECTIF : persister le viewerId en sessionStorage pour survivre aux
+  // démontages/remontages du composant (navigation SPA).
+  // Si l'utilisateur est connecté, on utilise son user.id (stable).
+  // Sinon on génère un ID aléatoire et on le conserve pour toute la session.
+  const viewerId = useRef<string>(
+    (() => {
+      if (user?.id) return user.id
+      const key = `viewer-id-${matchId}`
+      const stored = sessionStorage.getItem(key)
+      if (stored) return stored
+      const generated = Math.random().toString(36).slice(2) + Date.now().toString(36)
+      sessionStorage.setItem(key, generated)
+      return generated
+    })()
+  ).current
 
   // DVR refs
   const recorderRef       = useRef<MediaRecorder | null>(null)
@@ -519,15 +689,37 @@ export function useWebRTCViewer(matchId: string) {
       } catch (e) {}
       sourceBufferRef.current = null
     }
-    mediaSourceRef.current = null
+    if (mediaSourceRef.current) {
+      try {
+        if (mediaSourceRef.current.readyState === 'open') {
+          mediaSourceRef.current.endOfStream()
+        }
+      } catch { /* ignore */ }
+      mediaSourceRef.current = null
+    }
     appendQueueRef.current = []
     isAppendingRef.current = false
-    setDvrBlobUrl(null)
+    // CORRECTIF : révoquer l'ancienne URL pour éviter la fuite mémoire
+    setDvrBlobUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
   }, [])
 
   // ── Démarrer l'enregistrement DVR du stream reçu ──────────────────────────
   const startDvrRecording = useCallback((liveStream: MediaStream) => {
-    if (recorderRef.current) return // déjà en cours
+    // CORRECTIF : si un recorder existe déjà (reconnexion WebRTC), l'arrêter proprement
+    // avant d'en créer un nouveau pour garantir un header WebM frais et cohérent.
+    if (recorderRef.current) {
+      if (recorderRef.current.state !== 'inactive') {
+        try { recorderRef.current.stop() } catch { /* ignore */ }
+      }
+      recorderRef.current = null
+      // Invalider l'ancien header — il ne correspond plus au nouveau stream
+      initChunkRef.current = null
+      // Vider les chunks data liés à l'ancien header (garder uniquement les données valides)
+      dvrChunksRef.current = []
+    }
 
     // Choisir le codec supporté
     const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
@@ -551,9 +743,10 @@ export function useWebRTCViewer(matchId: string) {
 
       if (isFirstChunk) {
         // Le premier chunk contient le header WebM (EBML + Segment + Tracks)
+        // CORRECTIF : stocker ET inclure dans dvrChunksRef pour cohérence
         initChunkRef.current = e.data
         isFirstChunk = false
-        dvrChunksRef.current.push({ blob: e.data, ts: now, isInit: true })
+        dvrChunksRef.current = [{ blob: e.data, ts: now, isInit: true }]
         return
       }
 
@@ -600,11 +793,14 @@ export function useWebRTCViewer(matchId: string) {
   }, [closeMediaSource])
 
   // Helper pour replier sur URL Blob statique (fallback MSE non supporté)
-  // Crée un blob unique et expose son URL directement dans dvrBlobUrl
+  // CORRECTIF : révoquer l'ancienne URL avant d'en créer une nouvelle
   const fallbackToStaticBlob = useCallback((initChunk: Blob, dataBlobs: Blob[], mimeType: string) => {
     const blob = new Blob([initChunk, ...dataBlobs], { type: mimeType })
     const url = URL.createObjectURL(blob)
-    setDvrBlobUrl(url)
+    setDvrBlobUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev)
+      return url
+    })
   }, [])
 
   // ── Activer le mode DVR : lire depuis le buffer à un offset donné ─────────
@@ -670,7 +866,11 @@ export function useWebRTCViewer(matchId: string) {
       dvrActiveRef.current = true
       setDvrEnabled(true)
       setDvrOffset(offsetSeconds)
-      setDvrBlobUrl(url) // réactive : LiveVideoPlayer reçoit la nouvelle URL et l'applique au lecteur
+      // CORRECTIF : révoquer l'ancienne URL MediaSource avant d'exposer la nouvelle
+      setDvrBlobUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev)
+        return url
+      })
     } else {
       // Fallback blob statique si MSE non supporté
       fallbackToStaticBlob(initChunk, selectedDataChunks.map(c => c.blob), mimeType)
@@ -835,6 +1035,13 @@ export function useWebRTCViewer(matchId: string) {
           iceBufRef.current.push(payload.candidate)
         }
       })
+      // CORRECTIF : gérer le refus de connexion quand le stream est plein
+      .on('broadcast', { event: 'stream-full' }, ({ payload }) => {
+        if (payload.target !== viewerId) return
+        console.warn(`📡 [V] stream full (max ${payload.maxViewers} viewers) — stopping retries`)
+        clearRetry()
+        setIsStreamFull(true)
+      })
       .subscribe(async (status) => {
         console.log('📡 [V] channel status:', status)
         if (status === 'SUBSCRIBED') {
@@ -855,6 +1062,19 @@ export function useWebRTCViewer(matchId: string) {
         }
       })
 
+    // CORRECTIF : reprendre la connexion si l'onglet redevient visible
+    // (les navigateurs mobiles suspendent getUserMedia en arrière-plan)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && channelRef.current) {
+        if (!streamRef.current && !pcRef.current) {
+          console.log('📡 [V] tab visible again — retrying join')
+          retryCountRef.current = 0
+          sendJoin(channelRef.current)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       clearRetry()
       closePc()
@@ -864,6 +1084,8 @@ export function useWebRTCViewer(matchId: string) {
       // Nettoyer le channel de présence séparé
       const presenceCh = supabase.getChannels().find(c => c.topic === `realtime:presence-${matchId}`)
       if (presenceCh) supabase.removeChannel(presenceCh)
+      // CORRECTIF : retirer le listener visibilitychange
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [matchId, viewerId]) // eslint-disable-line
 
@@ -871,6 +1093,7 @@ export function useWebRTCViewer(matchId: string) {
     stream,
     isLive,
     viewerCount,
+    isStreamFull,  // AJOUT : true si le stream est plein (trop de viewers)
     // DVR
     dvrEnabled,
     dvrOffset,

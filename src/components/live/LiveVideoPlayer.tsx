@@ -72,9 +72,12 @@ export function LiveVideoPlayer({
     ? localViewer.viewerCount
     : (overlay?.viewerCount !== undefined ? overlay.viewerCount : localViewer.viewerCount)
 
-  const { dvrEnabled, seekDvr, dvrBlobUrl } = isViewerMode
+  const { dvrEnabled, seekDvr, dvrBlobUrl, dvrDuration } = isViewerMode
     ? localViewer
-    : { dvrEnabled: false, seekDvr: () => {}, dvrBlobUrl: null }
+    : { dvrEnabled: false, seekDvr: () => {}, dvrBlobUrl: null, dvrDuration: 0 }
+
+  // AJOUT : récupérer l'état "stream plein" pour l'afficher à l'utilisateur
+  const isStreamFull = isViewerMode ? localViewer.isStreamFull : false
 
   // ── Refs ────────────────────────────────────────────────────────────────────
 
@@ -110,14 +113,16 @@ export function LiveVideoPlayer({
     playerName: string; teamName: string; teamColor: string
     isOwnGoal: boolean; score: string; minute: number
   } | null>(null)
-  const goalEventsRef = useRef<Set<string>>(new Set())
 
-  useEffect(() => {
-    if (events) {
-      events.filter(e => e.type === 'goal' || e.type === 'own_goal')
-            .forEach(g => goalEventsRef.current.add(g.id))
-    }
-  }, [])
+  // CORRECTIF : initialisation synchrone avec les buts déjà présents au montage
+  // pour éviter que les buts historiques déclenchent le bandeau au rechargement.
+  const goalEventsRef = useRef<Set<string>>(
+    new Set(
+      events
+        ?.filter(e => e.type === 'goal' || e.type === 'own_goal')
+        .map(e => e.id) ?? []
+    )
+  )
 
   useEffect(() => {
     if (!events) return
@@ -219,13 +224,6 @@ export function LiveVideoPlayer({
     return () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current) }
   }, [])
 
-  // ── DVR : slider ──────────────────────────────────────────────────────────
-  const handleDvrSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value)
-    setDvrSlider(val)
-    seekDvr(val)
-  }, [seekDvr])
-
   // ── DVR : reculer de 10s ──────────────────────────────────────────────────
   const rewind10 = useCallback(() => {
     const next = Math.min(dvrSlider + 10, dvrDuration)
@@ -296,10 +294,23 @@ export function LiveVideoPlayer({
       className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video mt-6 select-none"
     >
       {/* ── Spinner connexion ─────────────────────────────────────────────── */}
-      {!stream && (
+      {!stream && !isStreamFull && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
           <div className="w-8 h-8 rounded-full border-2 border-[#C8F135] border-t-transparent animate-spin mb-3" />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connexion au direct...</p>
+        </div>
+      )}
+
+      {/* ── Overlay stream complet ────────────────────────────────────────── */}
+      {isStreamFull && !stream && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 gap-3">
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+            <Eye size={18} className="text-amber-400" />
+          </div>
+          <p className="text-[11px] font-black text-amber-400 uppercase tracking-widest">Direct complet</p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider text-center px-6">
+            Le nombre maximum de spectateurs est atteint.<br />Réessayez dans quelques instants.
+          </p>
         </div>
       )}
 

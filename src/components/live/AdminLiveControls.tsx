@@ -2,8 +2,8 @@
  * AdminLiveControls — Panneau de contrôle admin pour piloter un match live
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
-import { useState, useMemo, useRef, useEffect } from 'react'
-import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Eye } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Camera, Mic } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,6 +11,10 @@ import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useWebRTCBroadcaster } from '@/hooks/useWebRTCStream'
+import { useAppToast } from '@/hooks/useAppToast'
+import { AppToastContainer } from '@/components/ui/AppToastContainer'
+import { useCameraDevices } from '@/hooks/useCameraDevices'
+import { BroadcastOverlay } from '@/components/live/BroadcastOverlay'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
 import { useMutation } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -122,6 +126,7 @@ export function AdminLiveControls({
   const { user } = useAuth()
   const { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent } = useAdminMatchLive(matchId)
   const clock = useLiveClock(liveStartedAt, livePeriod, status, halftimeAt, isPaused, pausedAt, totalPausedSeconds)
+  const { toast, toasts, dismiss } = useAppToast()
 
   const [showEventForm, setShowEventForm] = useState(false)
   const [eventType, setEventType] = useState<MatchEventType>('goal')
@@ -137,6 +142,12 @@ export function AdminLiveControls({
   const [editingVideoUrl, setEditingVideoUrl] = useState(false)
   const [videoUrlInput, setVideoUrlInput] = useState(videoUrl || '')
 
+  // ── Sélection caméra / micro ──────────────────────────────────────────────
+  const [showDevicePanel, setShowDevicePanel] = useState(false)
+  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string | undefined>()
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string | undefined>()
+  const { videoDevices, audioDevices, refresh: refreshDevices } = useCameraDevices()
+
   const { data: stats } = useDisciplinaryStats(seasonId)
 
   const isLive = status === 'live'
@@ -148,25 +159,14 @@ export function AdminLiveControls({
   // Récupérer les compositions de match saisies par le capitaine
   const { data: lineups = [] } = useMatchLineups(matchId)
 
-  const { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount, networkQuality } = useWebRTCBroadcaster(matchId)
+  const { stream, isBroadcasting, startBroadcast, stopBroadcast, viewerCount, networkQuality, switchCamera, facingMode } = useWebRTCBroadcaster(matchId, {
+    onError: (msg, detail) => toast.error(msg, detail),
+    videoDeviceId: selectedVideoDeviceId,
+    audioDeviceId: selectedAudioDeviceId,
+  })
 
   // ── Référence vidéo pour la prévisualisation caméra de l'admin ─────────────────────
-  const localVideoRef = useRef<HTMLVideoElement>(null)
-
-  useEffect(() => {
-    const video = localVideoRef.current
-    if (!video || !stream) return
-    if (video.srcObject !== stream) {
-      video.srcObject = stream
-    }
-    // play() peut rejeter si l'élément n'est pas encore dans le DOM
-    video.play().catch(err => {
-      if (err.name !== 'AbortError') console.warn('Local video play error:', err)
-    })
-    return () => {
-      if (video) video.srcObject = null
-    }
-  }, [stream])
+  // Note : la preview est maintenant gérée par BroadcastOverlay (plein écran / PiP)
 
   // Calculer le score en direct basé uniquement sur les événements reçus (events) pour éviter tout décalage
   const computedScore = useMemo(() => {
@@ -467,46 +467,74 @@ export function AdminLiveControls({
                       {isBroadcasting ? (stream ? <Square size={14} /> : <LoadingSpinner size="sm" />) : <Play size={14} />}
                       {isBroadcasting ? (stream ? 'Arrêter Caméra' : 'Démarrage...') : 'Filmer Match'}
                     </button>
+
+                    {/* Bouton sélection caméra/micro (avant démarrage uniquement) */}
+                    {!isBroadcasting && (
+                      <button
+                        onClick={() => { refreshDevices(); setShowDevicePanel(v => !v) }}
+                        className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                        title="Choisir caméra / micro"
+                      >
+                        <Camera size={14} />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Local Video Preview */}
-              {isBroadcasting && (
-                <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/10 aspect-video relative bg-black">
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  />
-                  {!stream && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-[#C8F135] border-t-transparent rounded-full animate-spin mb-2" />
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Accès caméra...</p>
-                    </div>
-                  )}
-                  <div className="absolute top-3 right-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">EN DIRECT (P2P)</span>
-                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest border-l border-white/20 pl-2 flex items-center gap-1">
-                      <Eye size={12} className="text-[#C8F135]" /> {viewerCount} {viewerCount > 1 ? 'spectateurs' : 'spectateur'}
-                    </span>
+              {/* Panneau sélection caméra / micro */}
+              {showDevicePanel && !isBroadcasting && (
+                <div className="w-full mt-3 rounded-xl border border-white/10 bg-black/40 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Camera size={11} /> Caméra &amp; Micro
+                  </p>
+
+                  {/* Sélecteur caméra */}
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block flex items-center gap-1">
+                      <Camera size={9} /> Caméra
+                    </label>
+                    <select
+                      value={selectedVideoDeviceId ?? ''}
+                      onChange={e => setSelectedVideoDeviceId(e.target.value || undefined)}
+                      className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-[#C8F135]/50 focus:outline-none"
+                    >
+                      <option value="">Caméra arrière (défaut)</option>
+                      {videoDevices.map(d => (
+                        <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                      ))}
+                    </select>
                   </div>
-                  {/* Indicateur qualité réseau */}
-                  <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${
-                    networkQuality === 'good'
-                      ? 'bg-green-500/20 border-green-500/30 text-green-400'
-                      : networkQuality === 'degraded'
-                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
-                        : 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      networkQuality === 'good' ? 'bg-green-400' : networkQuality === 'degraded' ? 'bg-amber-400' : 'bg-red-400'
-                    }`} />
-                    {networkQuality === 'good' ? 'Réseau OK' : networkQuality === 'degraded' ? 'Réseau moyen' : 'Réseau faible'}
+
+                  {/* Sélecteur micro */}
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block flex items-center gap-1">
+                      <Mic size={9} /> Micro
+                    </label>
+                    <select
+                      value={selectedAudioDeviceId ?? ''}
+                      onChange={e => setSelectedAudioDeviceId(e.target.value || undefined)}
+                      className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-[#C8F135]/50 focus:outline-none"
+                    >
+                      <option value="">Micro par défaut</option>
+                      {audioDevices.map(d => (
+                        <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  <p className="text-[9px] text-slate-600 leading-relaxed">
+                    Sur iPhone, les labels apparaissent après avoir accordé la permission caméra.
+                  </p>
+                </div>
+              )}
+
+              {/* BroadcastOverlay — plein écran au démarrage, PiP si réduit */}
+              {/* La preview inline est supprimée : l'overlay gère tout */}
+              {isBroadcasting && !stream && (
+                <div className="w-full mt-4 rounded-xl border border-white/10 bg-black/40 aspect-video flex flex-col items-center justify-center gap-2">
+                  <div className="w-6 h-6 border-2 border-[#C8F135] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Accès caméra...</p>
                 </div>
               )}
 
@@ -906,6 +934,26 @@ export function AdminLiveControls({
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+
+      {/* Notifications système (erreurs caméra, etc.) */}
+      <AppToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* Overlay broadcast — plein écran au démarrage, PiP si réduit */}
+      <BroadcastOverlay
+        stream={stream}
+        isBroadcasting={isBroadcasting}
+        viewerCount={viewerCount}
+        networkQuality={networkQuality}
+        facingMode={facingMode}
+        clockLabel={clock.label}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        homeScore={homeScoreVal}
+        awayScore={awayScoreVal}
+        isPaused={isPaused}
+        onSwitchCamera={switchCamera}
+        onStopBroadcast={stopBroadcast}
+      />
     </>
   )
 }
