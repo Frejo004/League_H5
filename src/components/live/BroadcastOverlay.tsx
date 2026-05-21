@@ -7,8 +7,10 @@
  *  - 'hidden'     : overlay fermé (preview inline dans AdminLiveControls)
  *
  * Le stream vidéo ne s'arrête jamais lors des transitions entre modes.
+ * IMPORTANT: Rendu via React Portal pour garantir le positionnement au-dessus de tout.
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Minimize2, Maximize2, X, FlipHorizontal,
   Eye, Volume2, VolumeX, Square,
@@ -61,14 +63,14 @@ export function BroadcastOverlay({
   const dragRef     = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
   const [pipPos, setPipPos] = useState({ x: 16, y: 16 }) // distance depuis bas-droite
 
-  // ── Passer en plein écran dès que le broadcast démarre ───────────────────
-  useEffect(() => {
-    if (isBroadcasting && stream) {
-      setMode('fullscreen')
-    } else if (!isBroadcasting) {
-      setMode('hidden')
-    }
-  }, [isBroadcasting, stream])
+// ── Passer en PiP dès que le broadcast démarre (les contrôles admin restent visibles) ───
+   useEffect(() => {
+     if (isBroadcasting && stream) {
+       setMode('pip') // Mode PiP par défaut pour garder contrôles admin visibles
+     } else if (!isBroadcasting) {
+       setMode('hidden')
+     }
+   }, [isBroadcasting, stream])
 
   // ── Attacher le stream au bon élément vidéo selon le mode ────────────────
   const attachStream = useCallback((videoEl: HTMLVideoElement | null) => {
@@ -138,7 +140,7 @@ export function BroadcastOverlay({
   if (mode === 'fullscreen') {
     return (
       <div
-        className="fixed inset-0 z-[9999] bg-black flex flex-col no-select"
+        className="fixed inset-0 z-[99999] bg-black flex flex-col no-select"
         onPointerMove={resetControlsTimer}
         onTouchStart={resetControlsTimer}
       >
@@ -154,67 +156,73 @@ export function BroadcastOverlay({
         {/* Dégradé bas */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
-        {/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
-        <div 
-          className={`absolute top-0 inset-x-0 z-10 px-4 flex items-center justify-between gap-2 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
-          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
-        >
+{/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
+         <div 
+           className={`absolute top-0 inset-x-0 z-20 px-4 flex items-center justify-between gap-2 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
+           style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 1rem), 4rem)' }}
+         >
+           {/* Astuce pour montrer les contrôles */}
+           {!showControls && (
+             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-black/80 px-3 py-1 rounded-full whitespace-nowrap">
+               <span className="text-[9px] text-slate-300 uppercase tracking-widest">Toucher pour afficher les contrôles</span>
+             </div>
+           )}
 
-          {/* Score & Chrono & REC */}
-          <div className="flex items-center gap-2">
-            {/* Score */}
-            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
-              <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {homeScore} — {awayScore}
-              </span>
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
-            </div>
+           {/* Score & Chrono & REC */}
+           <div className="flex items-center gap-2">
+             {/* Score */}
+             <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
+               <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                 {homeScore} — {awayScore}
+               </span>
+               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
+             </div>
 
-            {/* Chrono */}
-            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-              <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
-              <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                {clockLabel}
-              </span>
-            </div>
+             {/* Chrono */}
+             <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+               <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
+               <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                 {clockLabel}
+               </span>
+             </div>
 
-            {/* Badge de transmission premium (REC) */}
-            <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-red-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[9px] font-black text-red-400 uppercase tracking-widest font-['Barlow_Condensed']">
-                REC
-              </span>
-            </div>
-          </div>
+             {/* Badge de transmission premium (REC) */}
+             <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-red-500/30">
+               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+               <span className="text-[9px] font-black text-red-400 uppercase tracking-widest font-['Barlow_Condensed']">
+                 REC
+               </span>
+             </div>
+           </div>
 
-          {/* Actions droite */}
-          <div className="flex items-center gap-2">
-            {/* Viewers */}
-            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
-              <Eye size={11} className="text-[#C8F135]" />
-              <span className="text-[10px] font-black text-slate-300">{viewerCount}</span>
-            </div>
+           {/* Actions droite */}
+           <div className="flex items-center gap-2">
+             {/* Viewers */}
+             <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
+               <Eye size={11} className="text-[#C8F135]" />
+               <span className="text-[10px] font-black text-slate-300">{viewerCount}</span>
+             </div>
 
-            {/* Réduire en PiP */}
-            <button
-              onClick={() => setMode('pip')}
-              className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
-              title="Réduire (continuer en arrière-plan)"
-            >
-              <Minimize2 size={15} />
-            </button>
+             {/* Réduire en PiP */}
+             <button
+               onClick={() => setMode('pip')}
+               className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+               title="Réduire (continuer en arrière-plan)"
+             >
+               <Minimize2 size={15} />
+             </button>
 
-            {/* Arrêter */}
-            <button
-              onClick={onStopBroadcast}
-              className="w-9 h-9 rounded-xl bg-red-500/80 border border-red-400/30 flex items-center justify-center text-white hover:bg-red-500 transition-all"
-              title="Arrêter le live"
-            >
-              <Square size={13} />
-            </button>
-          </div>
-        </div>
+             {/* Arrêter */}
+             <button
+               onClick={onStopBroadcast}
+               className="w-9 h-9 rounded-xl bg-red-500/80 border border-red-400/30 flex items-center justify-center text-white hover:bg-red-500 transition-all"
+               title="Arrêter le live"
+             >
+               <Square size={13} />
+             </button>
+           </div>
+         </div>
 
         {/* ── BARRE BASSE ─────────────────────────────────────────────────── */}
         <div 
@@ -290,11 +298,21 @@ export function BroadcastOverlay({
         className="w-full h-full object-cover pointer-events-none"
       />
 
-      {/* Badge live */}
-      <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 px-1.5 py-0.5 rounded-md">
-        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-        <span className="text-[7px] font-black text-white uppercase tracking-widest">LIVE</span>
-      </div>
+{/* Badge live */}
+       <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 px-1.5 py-0.5 rounded-md">
+         <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+         <span className="text-[7px] font-black text-white uppercase tracking-widest">LIVE</span>
+       </div>
+
+       {/* Bouton plein écran */}
+       <button
+         onClick={(e) => { e.stopPropagation(); setMode('fullscreen') }}
+         className="absolute top-2 right-8 w-6 h-6 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
+         title="Plein écran"
+         onPointerDown={e => e.stopPropagation()}
+       >
+         <Maximize2 size={10} className="text-white" />
+       </button>
 
       {/* Viewers */}
       <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded-md">

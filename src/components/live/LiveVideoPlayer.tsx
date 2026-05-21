@@ -505,220 +505,220 @@ export function LiveVideoPlayer({
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          OVERLAY SCOREBOARD (haut)
-      ══════════════════════════════════════════════════════════════════════ */}
-      {stream && overlay && (
-        <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%]">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.homeColor ?? '#3b82f6' }} />
-            <span className="text-[10px] font-black text-white uppercase truncate tracking-wide">{overlay.homeName}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/20 shadow-lg">
-            <span className="text-base font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.homeScore}</span>
-            <span className="text-[10px] text-slate-400 font-bold mx-0.5">-</span>
-            <span className="text-base font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.awayScore}</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] flex-row-reverse">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.awayColor ?? '#f59e0b' }} />
-            <span className="text-[10px] font-black text-white uppercase truncate tracking-wide">{overlay.awayName}</span>
-          </div>
-        </div>
-      )}
+{/* ══════════════════════════════════════════════════════════════════════
+           OVERLAY SCOREBOARD (haut) - Enhanced for better visibility
+       ══════════════════════════════════════════════════════════════════════ */}
+       {stream && overlay && (
+         <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2">
+           <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] shadow-lg">
+             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.homeColor ?? '#3b82f6' }} />
+             <span className="text-[10px] font-black text-white uppercase truncate tracking-wide drop-shadow">{overlay.homeName}</span>
+           </div>
+           <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/20 shadow-lg">
+             <span className="text-base font-black text-white tabular-nums drop-shadow" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.homeScore}</span>
+             <span className="text-[10px] text-slate-400 font-bold mx-0.5">-</span>
+             <span className="text-base font-black text-white tabular-nums drop-shadow" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.awayScore}</span>
+           </div>
+           <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] flex-row-reverse shadow-lg">
+             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.awayColor ?? '#f59e0b' }} />
+             <span className="text-[10px] font-black text-white uppercase truncate tracking-wide drop-shadow">{overlay.awayName}</span>
+           </div>
+         </div>
+       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          CONTRÔLES BAS — toujours visibles pour le viewer, auto-hide sinon
-      ══════════════════════════════════════════════════════════════════════ */}
-      {stream && (
-        <div
-          className={`absolute bottom-0 inset-x-0 z-20 transition-opacity duration-300 ${showControls || dvrEnabled || isLivePaused ? 'opacity-100' : 'opacity-0'}`}
-        >
-          {/* Dégradé de fond pour lisibilité */}
-          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+{/* ══════════════════════════════════════════════════════════════════════
+           CONTRÔLES BAS — plus visibles, toujours accessibles
+       ══════════════════════════════════════════════════════════════════════ */}
+       {stream && (
+         <div
+           className={`absolute bottom-0 inset-x-0 z-20 transition-opacity duration-300 ${showControls || dvrEnabled || isLivePaused ? 'opacity-100' : 'opacity-0'}`}
+         >
+           {/* Dégradé de fond pour lisibilité */}
+           <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
 
-          <div className="relative px-3 pb-3 pt-8 flex flex-col gap-2">
+           <div className="relative px-3 pb-3 pt-8 flex flex-col gap-2">
 
-            {/* ── TIMELINE DVR ─────────────────────────────────────────────
-                Gauche = passé (max retard), droite = direct (0s de retard).
-                progressPercent=100% = au direct, 0% = début du buffer.
-            ──────────────────────────────────────────────────────────────── */}
-            {isViewerMode && (
-              <div className="flex items-center gap-2 w-full">
-                {/* Label "EN DIRECT" ou bouton retour au live */}
-                {dvrSlider === 0 ? (
-                  <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-md shrink-0">
-                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                    <span className="text-[8px] font-black text-white uppercase tracking-widest">DIRECT</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={goLive}
-                    className="flex items-center gap-1 bg-red-500/90 hover:bg-red-500 px-2 py-0.5 rounded-md shrink-0 transition-colors"
-                    title="Revenir au direct"
-                  >
-                    <Radio size={8} className="text-white" />
-                    <span className="text-[8px] font-black text-white uppercase tracking-widest">LIVE</span>
-                  </button>
-                )}
+             {/* ── TIMELINE DVR ─────────────────────────────────────────────
+                 Gauche = passé (max retard), droite = direct (0s de retard).
+                 progressPercent=100% = au direct, 0% = début du buffer.
+             ──────────────────────────────────────────────────────────────── */}
+             {isViewerMode && (
+               <div className="flex items-center gap-2 w-full">
+                 {/* Label "EN DIRECT" ou bouton retour au live */}
+                 {dvrSlider === 0 ? (
+                   <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-md shrink-0">
+                     <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                     <span className="text-[8px] font-black text-white uppercase tracking-widest">DIRECT</span>
+                   </div>
+                 ) : (
+                   <button
+                     onClick={goLive}
+                     className="flex items-center gap-1 bg-red-500/90 hover:bg-red-500 px-2 py-0.5 rounded-md shrink-0 transition-colors"
+                     title="Revenir au direct"
+                   >
+                     <Radio size={8} className="text-white" />
+                     <span className="text-[8px] font-black text-white uppercase tracking-widest">LIVE</span>
+                   </button>
+                 )}
 
-                {/* Barre de progression — gauche=passé, droite=live */}
-                <div className="relative flex-1 h-5 flex items-center group cursor-pointer">
-                  {/* Track fond */}
-                  <div className="absolute inset-x-0 h-1 rounded-full bg-white/20" />
-                  {/* Track buffer disponible */}
-                  <div className="absolute left-0 h-1 rounded-full bg-white/40" style={{ width: '100%' }} />
-                  {/* Track progressé : de la gauche jusqu'à la position actuelle */}
-                  <div
-                    className={`absolute left-0 h-1 rounded-full transition-all ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                  {/* Input range : valeur inversée → max=gauche(passé), 0=droite(live) */}
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(dvrDuration, 1)}
-                    value={dvrDuration - dvrSlider}
-                    onChange={(e) => {
-                      const invertedVal = dvrDuration - parseInt(e.target.value)
-                      const clamped = Math.max(0, Math.min(dvrDuration, invertedVal))
-                      setDvrSlider(clamped)
-                      seekDvr(clamped)
-                    }}
-                    className="absolute inset-0 w-full opacity-0 cursor-pointer h-5"
-                    title={dvrSlider === 0 ? 'En direct' : `Retard : -${formatSeconds(dvrSlider)}`}
-                  />
-                  {/* Curseur visible aligné sur progressPercent */}
-                  <div
-                    className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg transition-all pointer-events-none ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
-                    style={{ left: `calc(${progressPercent}% - 6px)` }}
-                  />
-                </div>
+                 {/* Barre de progression — gauche=passé, droite=live */}
+                 <div className="relative flex-1 h-5 flex items-center group cursor-pointer">
+                   {/* Track fond */}
+                   <div className="absolute inset-x-0 h-1 rounded-full bg-white/20" />
+                   {/* Track buffer disponible */}
+                   <div className="absolute left-0 h-1 rounded-full bg-white/40" style={{ width: '100%' }} />
+                   {/* Track progressé : de la gauche jusqu'à la position actuelle */}
+                   <div
+                     className={`absolute left-0 h-1 rounded-full transition-all ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
+                     style={{ width: `${progressPercent}%` }}
+                   />
+                   {/* Input range : valeur inversée → max=gauche(passé), 0=droite(live) */}
+                   <input
+                     type="range"
+                     min={0}
+                     max={Math.max(dvrDuration, 1)}
+                     value={dvrDuration - dvrSlider}
+                     onChange={(e) => {
+                       const invertedVal = dvrDuration - parseInt(e.target.value)
+                       const clamped = Math.max(0, Math.min(dvrDuration, invertedVal))
+                       setDvrSlider(clamped)
+                       seekDvr(clamped)
+                     }}
+                     className="absolute inset-0 w-full opacity-0 cursor-pointer h-5"
+                     title={dvrSlider === 0 ? 'En direct' : `Retard : -${formatSeconds(dvrSlider)}`}
+                   />
+                   {/* Curseur visible aligné sur progressPercent */}
+                   <div
+                     className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg transition-all pointer-events-none ${dvrSlider === 0 ? 'bg-red-500' : 'bg-amber-400'}`}
+                     style={{ left: `calc(${progressPercent}% - 6px)` }}
+                   />
+                 </div>
 
-                {/* Temps de retard */}
-                <span className="text-[9px] font-black tabular-nums shrink-0 w-12 text-right text-slate-300">
-                  {dvrSlider === 0 ? 'LIVE' : `-${formatSeconds(dvrSlider)}`}
-                </span>
-              </div>
-            )}
+                 {/* Temps de retard */}
+                 <span className="text-[9px] font-black tabular-nums shrink-0 w-12 text-right text-slate-300">
+                   {dvrSlider === 0 ? 'LIVE' : `-${formatSeconds(dvrSlider)}`}
+                 </span>
+               </div>
+             )}
 
-            {/* ── BADGE DE LATENCE ET STABILITÉ CONNEXION ──────────────── */}
-            {isViewerMode && stream && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Indicateur statut connexion */}
-                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-500 ${
-                  connectionState === 'connected'
-                    ? 'bg-[#C8F135]/10 border border-[#C8F135]/20 text-[#C8F135]'
-                    : connectionState === 'connecting'
-                    ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
-                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    connectionState === 'connected'
-                      ? 'bg-[#C8F135] animate-pulse'
-                      : connectionState === 'connecting'
-                      ? 'bg-amber-400 animate-pulse'
-                      : 'bg-red-400'
-                  }`} />
-                  <span>{
-                    connectionState === 'connected' ? 'WebRTC Direct'
-                    : connectionState === 'connecting' ? 'Connexion...'
-                    : 'Reconnexion'
-                  }</span>
-                </div>
+             {/* ── BADGE DE LATENCE ET STABILITÉ CONNEXION ──────────────── */}
+             {isViewerMode && stream && (
+               <div className="flex items-center gap-2 flex-wrap">
+                 {/* Indicateur statut connexion */}
+                 <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-500 ${
+                   connectionState === 'connected'
+                     ? 'bg-[#C8F135]/10 border border-[#C8F135]/20 text-[#C8F135]'
+                     : connectionState === 'connecting'
+                     ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                     : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                 }`}>
+                   <span className={`w-1.5 h-1.5 rounded-full ${
+                     connectionState === 'connected'
+                       ? 'bg-[#C8F135] animate-pulse'
+                       : connectionState === 'connecting'
+                       ? 'bg-amber-400 animate-pulse'
+                       : 'bg-red-400'
+                   }`} />
+                   <span>{
+                     connectionState === 'connected' ? 'WebRTC Direct'
+                     : connectionState === 'connecting' ? 'Connexion...'
+                     : 'Reconnexion'
+                   }</span>
+                 </div>
 
-                {/* Indicateur retard DVR actif */}
-                {dvrSlider > 0 && (
-                  <button
-                    onClick={goLive}
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/20 transition-all animate-pulse"
-                  >
-                    <Radio size={8} />
-                    <span>Rattraper le direct</span>
-                  </button>
-                )}
-              </div>
-            )}
+                 {/* Indicateur retard DVR actif */}
+                 {dvrSlider > 0 && (
+                   <button
+                     onClick={goLive}
+                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/20 transition-all animate-pulse"
+                   >
+                     <Radio size={8} />
+                     <span>Rattraper le direct</span>
+                   </button>
+                 )}
+               </div>
+             )}
 
-            {/* ── BARRE DE CONTRÔLES ────────────────────────────────────── */}
-            <div className="flex items-center justify-between gap-2">
+             {/* ── BARRE DE CONTRÔLES AMÉLIORÉE ────────────────────────────────────── */}
+             <div className="flex items-center justify-between gap-2 bg-black/60 backdrop-blur-md px-2 py-2 rounded-xl border border-white/10">
 
-              {/* Gauche : chrono + période (si overlay) */}
-              {overlay ? (
-                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${overlay.isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
-                  <span className="text-[11px] font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                    {overlay.clockLabel}
-                  </span>
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest border-l border-white/20 pl-2">
-                    {overlay.isPaused ? 'SUSPENDU' : overlay.period}
-                  </span>
-                </div>
-              ) : (
-                <div /> /* spacer */
-              )}
+               {/* Gauche : chrono + période (si overlay) */}
+               {overlay ? (
+                 <div className="flex items-center gap-2">
+                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${overlay.isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
+                   <span className="text-[11px] font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                     {overlay.clockLabel}
+                   </span>
+                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest border-l border-white/20 pl-2">
+                     {overlay.isPaused ? 'SUSPENDU' : overlay.period}
+                   </span>
+                 </div>
+               ) : (
+                 <div /> /* spacer */
+               )}
 
-              {/* Centre : contrôles de lecture DVR (viewer uniquement) */}
-              {isViewerMode && (
-                <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-xl border border-white/10">
-                  {/* Reculer 10s */}
-                  <button
-                    onClick={rewind10}
-                    disabled={dvrDuration === 0}
-                    className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
-                    title="Reculer 10 secondes"
-                  >
-                    <Rewind size={13} />
-                  </button>
+               {/* Centre : contrôles de lecture DVR (viewer uniquement) */}
+               {isViewerMode && (
+                 <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-xl border border-white/20">
+                   {/* Reculer 10s */}
+                   <button
+                     onClick={rewind10}
+                     disabled={dvrDuration === 0}
+                     className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/20 transition-all disabled:opacity-30"
+                     title="Reculer 10 secondes"
+                   >
+                     <Rewind size={13} />
+                   </button>
 
-                  {/* Pause / Lecture */}
-                  <button
-                    onClick={dvrEnabled ? togglePauseDvr : togglePauseLive}
-                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white transition-all"
-                    title={isPausedDvr || isLivePaused ? 'Reprendre' : 'Pause'}
-                  >
-                    {isPausedDvr || isLivePaused
-                      ? <Play size={14} className="ml-0.5" />
-                      : <Pause size={14} />
-                    }
-                  </button>
+                   {/* Pause / Lecture */}
+                   <button
+                     onClick={dvrEnabled ? togglePauseDvr : togglePauseLive}
+                     className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white transition-all"
+                     title={isPausedDvr || isLivePaused ? 'Reprendre' : 'Pause'}
+                   >
+                     {isPausedDvr || isLivePaused
+                       ? <Play size={14} className="ml-0.5" />
+                       : <Pause size={14} />
+                     }
+                   </button>
 
-                  {/* Avancer 10s (vers le live) */}
-                  <button
-                    onClick={forward10}
-                    disabled={dvrSlider === 0 && !isLivePaused}
-                    className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
-                    title="Avancer 10 secondes"
-                  >
-                    <FastForward size={13} />
-                  </button>
-                </div>
-              )}
+                   {/* Avancer 10s (vers le live) */}
+                   <button
+                     onClick={forward10}
+                     disabled={dvrSlider === 0 && !isLivePaused}
+                     className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/20 transition-all disabled:opacity-30"
+                     title="Avancer 10 secondes"
+                   >
+                     <FastForward size={13} />
+                   </button>
+                 </div>
+               )}
 
-              {/* Droite : spectateurs + son + plein écran */}
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-                <span className="text-[9px] font-black text-slate-300 flex items-center gap-1.5">
-                  <Eye size={12} className="text-[#C8F135] shrink-0" /> {viewerCount}
-                </span>
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
-                  title={isMuted ? 'Activer le son' : 'Couper le son'}
-                >
-                  {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-[#C8F135]" />}
-                </button>
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
-                  title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-                >
-                  {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
-                </button>
-              </div>
-            </div>
+               {/* Droite : spectateurs + son + plein écran */}
+               <div className="flex items-center gap-2">
+                 <span className="text-[9px] font-black text-slate-300 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-lg">
+                   <Eye size={12} className="text-[#C8F135] shrink-0" /> {viewerCount}
+                 </span>
+                 <button
+                   onClick={() => setIsMuted(!isMuted)}
+                   className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
+                   title={isMuted ? 'Activer le son' : 'Couper le son'}
+                 >
+                   {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-[#C8F135]" />}
+                 </button>
+                 <button
+                   onClick={toggleFullscreen}
+                   className="p-0.5 text-slate-300 hover:text-white transition-colors border-l border-white/10 pl-2"
+                   title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                 >
+                   {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+                 </button>
+               </div>
+             </div>
 
-          </div>
-        </div>
-      )}
+           </div>
+         </div>
+       )}
     </div>
   )
 }
