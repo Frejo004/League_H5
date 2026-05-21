@@ -483,6 +483,239 @@ export interface Database {
         }
         Relationships: []
       }
+      global_channels: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          color: string
+          icon: string
+          is_read_only: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          color?: string
+          icon?: string
+          is_read_only?: boolean
+          created_at?: string
+        }
+        Update: {
+          slug?: string
+          name?: string
+          description?: string | null
+          color?: string
+          icon?: string
+          is_read_only?: boolean
+        }
+        Relationships: []
+      }
+      channel_messages: {
+        Row: {
+          id: string
+          channel_id: string
+          sender_id: string
+          content: string
+          reply_to_id: string | null
+          edited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          channel_id: string
+          sender_id: string
+          content: string
+          reply_to_id?: string | null
+          edited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          content?: string
+          reply_to_id?: string | null
+          edited_at?: string | null
+        }
+        Relationships: []
+      }
+      channel_message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          emoji?: string
+        }
+        Relationships: []
+      }
+      channel_read_receipts: {
+        Row: {
+          user_id: string
+          channel_id: string
+          last_read_at: string
+          last_read_msg: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          channel_id: string
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dm_conversations: {
+        Row: {
+          id: string
+          user_a: string
+          user_b: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_a: string
+          user_b: string
+          created_at?: string
+        }
+        Update: {
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: []
+      }
+      dm_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          reply_to_id: string | null
+          edited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          reply_to_id?: string | null
+          edited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          content?: string
+          reply_to_id?: string | null
+          edited_at?: string | null
+        }
+        Relationships: []
+      }
+      dm_message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          emoji?: string
+        }
+        Relationships: []
+      }
+      dm_read_receipts: {
+        Row: {
+          user_id: string
+          conversation_id: string
+          last_read_at: string
+          last_read_msg: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          conversation_id: string
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_read_at?: string
+          last_read_msg?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_presence: {
+        Row: {
+          user_id: string
+          online_at: string
+          last_seen: string
+        }
+        Insert: {
+          user_id: string
+          online_at?: string
+          last_seen?: string
+        }
+        Update: {
+          online_at?: string
+          last_seen?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          user_agent?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_invites: {
         Row: {
           id: string
@@ -735,6 +968,76 @@ export interface Database {
           last_name: string
           team_name: string
           is_valid: boolean
+        }[]
+      }
+      get_channel_previews: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          color: string
+          icon: string
+          is_read_only: boolean
+          created_at: string
+          last_message: string | null
+          last_message_at: string | null
+        }[]
+      }
+      get_dm_conversations_with_unread: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          user_a: string
+          user_b: string
+          created_at: string
+          other_id: string
+          other_full_name: string | null
+          other_avatar: string | null
+          last_message: string | null
+          last_message_at: string | null
+          unread_count: number
+        }[]
+      }
+      get_or_create_dm_conversation: {
+        Args: { other_user_id: string }
+        Returns: string
+      }
+      count_channel_messages_before: {
+        Args: { p_channel_id: string; p_before_id: string }
+        Returns: bigint
+      }
+      count_dm_messages_before: {
+        Args: { p_conversation_id: string; p_before_id: string }
+        Returns: bigint
+      }
+      count_team_messages_before: {
+        Args: { p_team_id: string; p_before_id: string }
+        Returns: bigint
+      }
+      get_team_unread_counts: {
+        Args: Record<string, never>
+        Returns: {
+          team_id: string
+          team_name: string
+          team_color: string
+          logo_url: string | null
+          last_message: string | null
+          last_message_at: string | null
+          unread_count: number
+        }[]
+      }
+      get_team_unread_counts_admin: {
+        Args: Record<string, never>
+        Returns: {
+          team_id: string
+          team_name: string
+          team_color: string
+          logo_url: string | null
+          last_message: string | null
+          last_message_at: string | null
+          unread_count: number
         }[]
       }
       claim_player_invite: {

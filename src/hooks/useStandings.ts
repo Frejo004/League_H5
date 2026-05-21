@@ -14,6 +14,7 @@ export interface StandingRow {
   goals_against: number
   goal_diff: number
   points: number
+  position_change?: number
   form: Array<'W' | 'D' | 'L'>
 }
 

@@ -89,6 +89,8 @@ export function LiveVideoPlayer({
   const [isPausedDvr, setIsPausedDvr]     = useState(false)
   const [dvrSlider, setDvrSlider]         = useState(0)   // 0 = live, >0 = retard en secondes
   const [showControls, setShowControls]   = useState(true)
+  // Transition croisée live ⇄ DVR : true pendant ~300ms pour le fondu
+  const [dvrTransitioning, setDvrTransitioning] = useState(false)
 
   // ── DVR : auto-progression du curseur via onTimeUpdate ─────────────────────
   // Déclaré APRÈS les useState pour ne pas violer les règles de lint TDZ
@@ -160,11 +162,18 @@ export function LiveVideoPlayer({
     const video = dvrVideoRef.current
     if (!video) return
     if (!dvrEnabled) {
-      video.src = ''
+      // Nettoyage proactif du décodeur : libère la mémoire GPU/CPU immédiatement
+      video.pause()
+      video.removeAttribute('src')
+      video.load()
+      console.debug('📡 [DVR] Décodeur libéré — retour au live')
       return
     }
     const url = dvrBlobUrl
     if (!url || video.src === url) return
+
+    // Déclencher la transition cross-fade avant de charger la nouvelle source
+    setDvrTransitioning(true)
 
     video.src = url
     video.load()
@@ -177,6 +186,8 @@ export function LiveVideoPlayer({
       video.play().catch(err => {
         if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
       })
+      // Fin de la transition cross-fade après un court délai
+      setTimeout(() => setDvrTransitioning(false), 280)
     }
 
     if (video.readyState >= 2) {
@@ -325,7 +336,48 @@ export function LiveVideoPlayer({
   // ── Calculer si la vidéo live est en pause ────────────────────────────────
   const isLivePaused = !dvrEnabled && isPausedDvr
 
-  if (!isLive) return null
+  if (!isLive) {
+    const homeColor = homeTeam?.color || overlay?.homeColor || '#3b82f6'
+    const awayColor = awayTeam?.color || overlay?.awayColor || '#ef4444'
+    return (
+      <div className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 aspect-video mt-6 flex flex-col items-center justify-center gap-4 select-none">
+        {/* Dynamic mesh decoration */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+          <div
+            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px]"
+            style={{ backgroundColor: homeColor }}
+          />
+          <div
+            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px]"
+            style={{ backgroundColor: awayColor }}
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-3 text-center px-6">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+          </div>
+          
+          <h3 className="text-sm font-black text-white uppercase tracking-widest mt-1">
+            En attente du signal vidéo
+          </h3>
+          <p className="text-[10px] font-bold text-slate-400 max-w-sm uppercase tracking-wider leading-relaxed">
+            La diffusion n'a pas encore commencé.<br />
+            Dès que le caméraman sera en ligne, le direct s'affichera automatiquement ici.
+          </p>
+
+          <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md mt-2">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              Mode Spectateur WebRTC
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Timeline inversée : gauche = passé, droite = direct (0s de retard) ───
   // progressPercent = 100% quand on est au direct, 0% au début du buffer
@@ -383,7 +435,7 @@ export function LiveVideoPlayer({
         </div>
       )}
 
-      {/* ── Vidéo live ────────────────────────────────────────────────────── */}
+      {/* ── Vidéo live — cross-fade fluide vers DVR ────────────────────────── */}
       <video
         ref={videoRef}
         autoPlay playsInline muted={isMuted}
@@ -391,10 +443,16 @@ export function LiveVideoPlayer({
         onPlaying={() => setIsStalled(false)}
         onStalled={() => setIsStalled(true)}
         onSuspend={() => setIsStalled(false)}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(dvrEnabled && dvrReady) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${
+          (dvrEnabled && dvrReady)
+            ? 'opacity-0 pointer-events-none scale-[1.01] blur-[2px]'
+            : dvrTransitioning
+              ? 'opacity-50 blur-[1px]'
+              : 'opacity-100'
+        }`}
       />
 
-      {/* ── Vidéo DVR ─────────────────────────────────────────────────────── */}
+      {/* ── Vidéo DVR — cross-fade depuis le live ─────────────────────────── */}
       <video
         ref={dvrVideoRef}
         playsInline muted={isMuted}
@@ -409,7 +467,11 @@ export function LiveVideoPlayer({
             video.currentTime = video.buffered.start(0)
           }
         }}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${(dvrEnabled && dvrReady) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${
+          (dvrEnabled && dvrReady)
+            ? dvrTransitioning ? 'opacity-70 blur-[1px]' : 'opacity-100'
+            : 'opacity-0 pointer-events-none'
+        }`}
       />
 
       {/* ── Spinner chargement DVR ────────────────────────────────────────── */}
@@ -536,6 +598,44 @@ export function LiveVideoPlayer({
                 <span className="text-[9px] font-black tabular-nums shrink-0 w-12 text-right text-slate-300">
                   {dvrSlider === 0 ? 'LIVE' : `-${formatSeconds(dvrSlider)}`}
                 </span>
+              </div>
+            )}
+
+            {/* ── BADGE DE LATENCE ET STABILITÉ CONNEXION ──────────────── */}
+            {isViewerMode && stream && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Indicateur statut connexion */}
+                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-500 ${
+                  connectionState === 'connected'
+                    ? 'bg-[#C8F135]/10 border border-[#C8F135]/20 text-[#C8F135]'
+                    : connectionState === 'connecting'
+                    ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    connectionState === 'connected'
+                      ? 'bg-[#C8F135] animate-pulse'
+                      : connectionState === 'connecting'
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-red-400'
+                  }`} />
+                  <span>{
+                    connectionState === 'connected' ? 'WebRTC Direct'
+                    : connectionState === 'connecting' ? 'Connexion...'
+                    : 'Reconnexion'
+                  }</span>
+                </div>
+
+                {/* Indicateur retard DVR actif */}
+                {dvrSlider > 0 && (
+                  <button
+                    onClick={goLive}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/20 transition-all animate-pulse"
+                  >
+                    <Radio size={8} />
+                    <span>Rattraper le direct</span>
+                  </button>
+                )}
               </div>
             )}
 
