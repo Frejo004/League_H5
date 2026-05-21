@@ -6,8 +6,9 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/database'
 import { saveMentions } from '@/hooks/useTeamChat'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,21 +87,14 @@ const PAGE_SIZE = 50
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function resolveReplies<T extends { reply_to_id?: string | null }>(
-  msgs: T[],
-  table: 'channel_messages' | 'dm_messages' | 'team_messages',
-  senderFk: string
-): Promise<Map<string, any>> {
-  const replyIds = [...new Set(msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[])]
-  const map = new Map<string, any>()
-  if (replyIds.length === 0) return map
+interface ReplyRow {
+  id: string
+  content: string
+  sender: { id: string; full_name: string | null } | null
+}
 
-  const { data } = await supabase
-    .from(table)
-    .select(`id, content, sender:profiles!${table}_sender_id_fkey(id, full_name)`.replace('!${table}_sender_id_fkey', `!${senderFk}`))
-    .in('id', replyIds)
-  for (const r of data ?? []) map.set(r.id, r)
-  return map
+type ChannelReceiptWithProfile = Database['public']['Tables']['channel_read_receipts']['Row'] & {
+  profile: { id: string; full_name: string | null; avatar_url: string | null } | null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,7 +126,7 @@ export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = 
     queryFn: async (): Promise<GlobalChannel[]> => {
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_channel_previews')
 
-      let rows: any[]
+      let rows: GlobalChannel[]
       if (rpcError || !rpcData) {
         const { data, error } = await supabase
           .from('global_channels')
@@ -141,7 +135,7 @@ export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = 
         if (error) throw error
         rows = (data ?? []).map(r => ({ ...r, last_message: null, last_message_at: null }))
       } else {
-        rows = rpcData as any[]
+        rows = rpcData
       }
 
       return rows.filter(c => {
@@ -183,19 +177,21 @@ async function fetchChannelPage(channelId: string, beforeId?: string): Promise<C
   if (error) throw error
   if (!msgs || msgs.length === 0) return []
 
-  const replyIds = [...new Set(msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[])]
-  const replyMap = new Map<string, any>()
+  const messages = msgs as unknown as ChannelMessage[]
+  const replyIds = [...new Set(messages.map(m => m.reply_to_id).filter(Boolean) as string[])]
+  const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('channel_messages')
       .select('id, content, sender:profiles!channel_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    for (const r of replies ?? []) replyMap.set(r.id, r)
+    const replyRows = replies as ReplyRow[] | null
+    for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
 
-  return msgs
-    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
-    .reverse() as unknown as ChannelMessage[]
+  return messages
+    .map(m => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
+    .reverse()
 }
 
 export function useChannelChat(channelId?: string, currentUserId?: string) {
@@ -251,8 +247,10 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
 
   // Reset pages anciennes quand on change de canal
   useEffect(() => {
-    setOlderPages([])
-    setOlderCount(0)
+    queueMicrotask(() => {
+      setOlderPages([])
+      setOlderCount(0)
+    })
   }, [channelId])
 
   const receiptsQuery = useQuery({
@@ -263,7 +261,7 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
         .from('channel_read_receipts')
         .select('user_id, channel_id, last_read_at, last_read_msg, updated_at, profile:profiles!channel_read_receipts_user_id_fkey(id, full_name, avatar_url)')
         .eq('channel_id', channelId!)
-      return (data ?? []) as any[]
+      return (data ?? []) as unknown as ChannelReceiptWithProfile[]
     },
     staleTime: 0,
   })
@@ -395,7 +393,7 @@ export function useDmConversations(userId?: string) {
         return []
       }
 
-      return (data ?? []).map((row: any) => ({
+      return (data ?? []).map((row: Database['public']['Functions']['get_dm_conversations_with_unread']['Returns'][number]) => ({
         id:             row.id,
         user_a:         row.user_a,
         user_b:         row.user_b,
@@ -408,7 +406,7 @@ export function useDmConversations(userId?: string) {
         last_message:    row.last_message ?? null,
         last_message_at: row.last_message_at ?? null,
         unread:          Number(row.unread_count ?? 0),
-      })) as DmConversation[]
+      }))
     },
     staleTime: 0,
     refetchInterval: 30_000,
@@ -483,19 +481,21 @@ async function fetchDmPage(conversationId: string, beforeId?: string): Promise<D
   if (error) throw error
   if (!msgs || msgs.length === 0) return []
 
-  const replyIds = [...new Set(msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[])]
-  const replyMap = new Map<string, any>()
+  const messages = msgs as unknown as DmMessage[]
+  const replyIds = [...new Set(messages.map(m => m.reply_to_id).filter(Boolean) as string[])]
+  const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('dm_messages')
       .select('id, content, sender:profiles!dm_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    for (const r of replies ?? []) replyMap.set(r.id, r)
+    const replyRows = replies as ReplyRow[] | null
+    for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
 
-  return msgs
-    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
-    .reverse() as unknown as DmMessage[]
+  return messages
+    .map(m => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
+    .reverse()
 }
 
 export function useDmChat(conversationId?: string, currentUserId?: string) {
@@ -545,8 +545,10 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
   }, [conversationId, messagesQuery.data])
 
   useEffect(() => {
-    setOlderPages([])
-    setOlderCount(0)
+    queueMicrotask(() => {
+      setOlderPages([])
+      setOlderCount(0)
+    })
   }, [conversationId])
 
   useEffect(() => {
