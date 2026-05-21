@@ -185,7 +185,7 @@ async function fetchChannelPage(channelId: string, beforeId?: string): Promise<C
       .from('channel_messages')
       .select('id, content, sender:profiles!channel_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    const replyRows = replies as ReplyRow[] | null
+    const replyRows = replies as unknown as ReplyRow[] | null
     for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
 
@@ -489,7 +489,7 @@ async function fetchDmPage(conversationId: string, beforeId?: string): Promise<D
       .from('dm_messages')
       .select('id, content, sender:profiles!dm_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    const replyRows = replies as ReplyRow[] | null
+    const replyRows = replies as unknown as ReplyRow[] | null
     for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
 
