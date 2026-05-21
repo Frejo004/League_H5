@@ -3,13 +3,14 @@
  * Screens : Résumé / Événements / Vidéo / Infos
  * Live vidéo WebRTC accessible sans connexion
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Calendar, Play, Share2, Zap, Trophy,
-  Radio, Clock, Users, ExternalLink, Video,
+  Clock, Users, ExternalLink,
 } from 'lucide-react'
 
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
@@ -17,7 +18,6 @@ import { useRealtimeMatch } from '@/hooks/useRealtime'
 import { useLiveClock, useMatchEvents } from '@/hooks/useMatchLive'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { LiveBadge } from '@/components/live/LiveBadge'
 import { LiveEventFeed } from '@/components/live/LiveEventFeed'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
@@ -48,103 +48,26 @@ function formatTime(dateStr: string | null) {
   return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr))
 }
 
-function getEmbedUrl(url: string | null): string | null {
-  if (!url) return null
-  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)
-  if (yt?.[1]) return `https://www.youtube.com/embed/${yt[1]}?autoplay=0&rel=0`
-  const tw = url.match(/twitch\.tv\/([^/?]+)/)
-  if (tw?.[1]) return `https://player.twitch.tv/?channel=${tw[1]}&parent=${window.location.hostname}&muted=true`
-  return url
-}
-
-function cs(cond: boolean, ...classes: string[]) {
-  return cond ? classes.join(' ') : ''
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildScoreClass(isLive: boolean, faded: boolean): string {
-  if (isLive) return 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-500/15 border border-red-500/35 shadow-[0_0_28px_rgba(239,68,68,0.14)]'
-  if (!faded) return 'flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--bg-pill)] border border-[var(--bd)]'
-  return 'flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-transparent border border-[var(--bd)] opacity-60'
-}
-
-function buildHeroClass(isLive: boolean, dark: boolean): string {
-  const base = 'relative overflow-hidden rounded-3xl p-8 sm:p-10 border'
-  if (isLive) return `${base} border-red-500/25 bg-gradient-to-br from-red-950/15 via-[#161c2d] to-[#161c2d]`
-  return `${base} border-[var(--bd)] shadow-[var(--sh-card)] ${dark
-      ? 'bg-gradient-to-br from-slate-900/50 to-slate-950/50 text-slate-100'
-      : 'bg-gradient-to-br from-white to-slate-50 text-slate-900'
-    }`
-}
-
-function buildGlowClass(isLive: boolean): string {
-  const base = 'absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] blur-3xl'
-  if (isLive) return `${base} opacity-[0.07] bg-red-500`
-  return `${base} opacity-[0.04] bg-[var(--t1)]`
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // TEAM BLOCK
 // ─────────────────────────────────────────────────────────────────────────────
-function TeamInline({ name, color, logoUrl }: { name: string; color: string; logoUrl?: string | null }) {
-  return (
-    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
-      style={{ backgroundColor: color }}>
-      {logoUrl
-        ? <img src={logoUrl} alt="" className="w-7 h-7 object-contain rounded-lg" />
-        : <span className="text-[11px] font-black">{name[0]}</span>
-      }
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // SCORE BADGE
 // ─────────────────────────────────────────────────────────────────────────────
-function ScoreBadge({ homeScore, awayScore, isLive, liveLabel, faded }:
-  { homeScore: number; awayScore: number; isLive?: boolean; liveLabel?: string; faded?: boolean }
-) {
-  if (isLive) {
-    return (
-      <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/15 border border-red-500/35 shadow-[0_0_28px_rgba(239,68,68,0.14)]">
-        <span className="text-[2.2rem] font-black tabular-nums text-white leading-none">{homeScore}</span>
-        <span className="text-red-500/50 font-black text-lg leading-none">:</span>
-        <span className="text-[2.2rem] font-black tabular-nums text-white leading-none">{awayScore}</span>
-        {liveLabel && (
-          <span className="flex items-center gap-1 text-[10px] font-black text-red-400 uppercase tracking-wider leading-none ml-1 shrink-0">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-            </span>
-            {liveLabel}
-          </span>
-        )}
-      </div>
-    )
-  }
-  const scoreClass = buildScoreClass(false, faded === true)
-  return (
-    <div className={scoreClass}>
-      <span className="text-2xl font-black tabular-nums text-[var(--t1)]">{homeScore ?? '0'}</span>
-      <span className="text-[var(--tm)] font-black text-sm">:</span>
-      <span className="text-2xl font-black tabular-nums text-[var(--t1)]">{awayScore ?? '0'}</span>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MATCH HERO
 // ─────────────────────────────────────────────────────────────────────────────
 function MatchHero({
-  match, home, away, goals, isLive, isCompleted, clock,
-  sortedGoals, homeScorers, awayScorers, dark,
+  match, home, away, isLive, isCompleted, clock,
+  sortedGoals, dark,
 }: {
-  match: any; home: TeamRef; away: TeamRef; goals: any[];
+  match: any; home: TeamRef; away: TeamRef;
   isLive: boolean; isCompleted: boolean; clock: any;
-  sortedGoals: any[]; homeScorers: any[]; awayScorers: any[];
+  sortedGoals: any[];
   dark: boolean;
 }) {
   const homeWon = isCompleted && (match.home_score ?? 0) > (match.away_score ?? 0)
@@ -311,39 +234,10 @@ function CardSection({ children, label, icon: Icon }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VIDEO EMBED
-// ─────────────────────────────────────────────────────────────────────────────
-function VideoEmbed({ url, title }: { url: string | null; title: string }) {
-  if (!url) return null
-  const embedUrl = getEmbedUrl(url)
-  if (!embedUrl) return (
-    <div className="rounded-2xl border border-[var(--bd)] bg-[var(--bg-surface)] p-6 text-center shadow-[var(--sh-card)]">
-      <p className="text-xs text-[var(--t2)]">Vidéo non supportée</p>
-      <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-400 hover:underline mt-2 inline-block">
-        Ouvrir {url}
-      </a>
-    </div>
-  )
-  return (
-    <div className="rounded-2xl overflow-hidden border border-[var(--bd)] bg-black shadow-[var(--sh-card)]">
-      <div className="aspect-video relative">
-        <iframe
-          src={embedUrl}
-          className="absolute inset-0 w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          title={title}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // SCORERS LIST
 // ─────────────────────────────────────────────────────────────────────────────
-function ScorersList({ sortedGoals, home, away, match }: {
-  sortedGoals: any[]; home: TeamRef; away: TeamRef; match: any
+function ScorersList({ sortedGoals, home, match }: {
+  sortedGoals: any[]; home: TeamRef; match: any
 }) {
   if (sortedGoals.length === 0) return null
 
@@ -428,32 +322,6 @@ function InfoSection({ match, season }: { match: any; season: any }) {
   const mapsHref = match.venue ? `https://maps.google.com/?q=${encodeURIComponent(match.venue)}` : null
   return (
     <div className="space-y-4">
-      {match.video_url && (match.status === 'live' || match.status === 'completed') && (
-        <div className="rounded-2xl overflow-hidden border border-[var(--bd)] bg-black shadow-[var(--sh-card)]">
-          <div className="aspect-video relative">
-            {(() => {
-              const embedUrl = getEmbedUrl(match.video_url)
-              if (!embedUrl) return (
-                <div className="rounded-2xl border border-[var(--bd)] bg-[var(--bg-surface)] p-6 h-full flex flex-col items-center justify-center">
-                  <p className="text-xs text-[var(--t2)]">Vidéo non supportée</p>
-                  <a href={match.video_url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-400 hover:underline mt-2">
-                    Ouvrir {match.video_url}
-                  </a>
-                </div>
-              )
-              return (
-                <iframe
-                  src={embedUrl}
-                  className="absolute inset-0 w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                  allowFullScreen
-                  title="Vidéo du match"
-                />
-              )
-            })()}
-          </div>
-        </div>
-      )}
       <div className="rounded-2xl border border-[var(--bd)] bg-[var(--bg-surface)] p-6 space-y-5 shadow-[var(--sh-card)] text-[var(--t1)]">
         {match.venue && (
           <div className="flex items-center gap-2">
@@ -494,7 +362,9 @@ function InfoSection({ match, season }: { match: any; season: any }) {
                     : `${match.home_team.name} s'impose ${hs}–${as_} face à ${match.away_team.name} · League H5`,
                   url: window.location.href,
                 })
-              } catch { }
+              } catch {
+                // Native sharing can be cancelled by the user.
+              }
             }}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold text-[var(--t2)] border border-[var(--bd)] hover:bg-[var(--bg-pill)] hover:text-[var(--t1)] transition-all cursor-pointer"
           >
@@ -513,7 +383,7 @@ function InfoSection({ match, season }: { match: any; season: any }) {
 export function PublicMatchDetailPage() {
   const navigate = useNavigate()
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
-  const { data: season, isLoading: _seasonLoading } = useActiveSeason()
+  const { data: season } = useActiveSeason()
 
   const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
 
@@ -553,8 +423,13 @@ export function PublicMatchDetailPage() {
   const pollEvents = useCallback(async () => {
     if (!id || fetchedOnceRef.current || !eventLoopEnabled) return
     try {
-      const { data } = await (window as any)?.supabase
-        ?.from('match_events')?.select('*')?.eq('match_id', id)?.order('created_at', { ascending: true })
+      const supabaseClient = (window as any)?.supabase
+      if (!supabaseClient) return
+      const { data } = await supabaseClient
+        .from('match_events')
+        .select('*')
+        .eq('match_id', id)
+        .order('created_at', { ascending: true })
       if ((data ?? []).length === 0) fetchedOnceRef.current = true
     } catch { fetchedOnceRef.current = true }
   }, [id, eventLoopEnabled])
@@ -590,15 +465,10 @@ export function PublicMatchDetailPage() {
   const isCompleted = match?.status === 'completed'
 
   const sortedGoals = useMemo(() => [...(goals ?? [])].sort((a: any, b: any) => (a.minute ?? 0) - (b.minute ?? 0)), [goals])
-  const homeScorers = useMemo(() => sortedGoals.filter((g: any) => g.team_id === home?.id), [sortedGoals, home])
-  const awayScorers = useMemo(() => sortedGoals.filter((g: any) => g.team_id === away?.id), [sortedGoals, away])
-
-  const hasLiveVideoTab = isLive && isStreamingLive && !match?.video_url
-  const hasEmbedVideoTab = !!match?.video_url && (isLive || isCompleted)
+  const hasLiveVideoTab = isLive && isStreamingLive
 
   const tabList: LiveTab[] = ['resume', 'events']
   if (hasLiveVideoTab) tabList.unshift('live-video')
-  if (hasEmbedVideoTab) tabList.push('live-video')
   tabList.push('info')
 
   // ── Loading ─────────────────────────────────────────────────────────────
@@ -650,13 +520,10 @@ export function PublicMatchDetailPage() {
               match={match}
               home={home}
               away={away}
-              goals={goals}
               isLive={isLive}
               isCompleted={isCompleted}
               clock={clock}
               sortedGoals={sortedGoals}
-              homeScorers={homeScorers}
-              awayScorers={awayScorers}
               dark={dark}
             />
           </div>
@@ -675,7 +542,7 @@ export function PublicMatchDetailPage() {
                 {activeTab === 'resume' && (
                   <motion.div key="resume" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="space-y-4 pt-1">
                     {(isLive || isCompleted) && sortedGoals.length > 0 && (
-                      <ScorersList sortedGoals={sortedGoals} home={home} away={away} match={match} />
+                      <ScorersList sortedGoals={sortedGoals} home={home} match={match} />
                     )}
                     <InfoSection match={match} season={season} />
                   </motion.div>
@@ -699,7 +566,7 @@ export function PublicMatchDetailPage() {
                 )}
 
                 {/* LIVE VIDEO — WebRTC */}
-                {activeTab === 'live-video' && isLive && isStreamingLive && !match?.video_url && (
+                {activeTab === 'live-video' && isLive && isStreamingLive && (
                   <motion.div key="live-video" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="space-y-4 pt-1">
                     <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-500/[0.07] border border-red-500/[0.18]">
                       <span className="relative flex h-2 w-2">
@@ -731,16 +598,6 @@ export function PublicMatchDetailPage() {
                         viewerCount: viewerCount ?? 0,
                       }}
                     />
-                  </motion.div>
-                )}
-
-                {/* LIVE VIDEO — Embed YouTube/Twitch */}
-                {activeTab === 'live-video' && match?.video_url && (isLive || isCompleted) && (
-                  <motion.div key="video-embed" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="pt-1 space-y-4">
-                    <CardSection label="Vidéo du match" icon={Video}>
-                      <VideoEmbed url={match.video_url} title={`Vidéo du match ${home.name} vs ${away.name}`} />
-                    </CardSection>
-                    <InfoSection match={match} season={season} />
                   </motion.div>
                 )}
 

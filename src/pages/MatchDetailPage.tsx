@@ -44,21 +44,6 @@ function formatTime(dateStr: string | null) {
   }).format(new Date(dateStr))
 }
 
-function getEmbedUrl(url: string | null) {
-  if (!url) return null;
-  // YouTube
-  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-  if (ytMatch && ytMatch[1]) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1`;
-  }
-  // Twitch
-  const twitchMatch = url.match(/twitch\.tv\/([^/?]+)/);
-  if (twitchMatch && twitchMatch[1]) {
-    return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${window.location.hostname}`;
-  }
-  return url;
-}
-
 // ── Match Stats Dashboard ───────────────────────────────────────────────────
 function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, stats: any }) {
   const rows = [
@@ -611,7 +596,7 @@ export function MatchDetailPage() {
     { id: 'standings',label: 'Classement',   icon: Star       },
   ]
 
-  if (isLive && !match.video_url) {
+  if (isLive) {
     tabs.unshift({ id: 'live-video', label: '🔴 DIRECT VIDÉO', icon: Play })
   }
 
@@ -906,19 +891,6 @@ export function MatchDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* ── Video Player ── */}
-      {match.video_url && (isLive || isCompleted) && (
-        <div className="mx-1 sm:mx-0 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video animate-fade-in-up mt-6">
-          <iframe 
-            src={getEmbedUrl(match.video_url) || match.video_url} 
-            className="absolute inset-0 w-full h-full border-0"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )}
-
 
       {/* ── Tab Navigation — style Sofascore/Google ── */}
       <div className="sticky top-[60px] z-30 bg-[#0f1420]/95 backdrop-blur-xl border-b border-white/10 shadow-lg">

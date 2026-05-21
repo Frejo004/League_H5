@@ -16,8 +16,6 @@ import { AppToastContainer } from '@/components/ui/AppToastContainer'
 import { useCameraDevices } from '@/hooks/useCameraDevices'
 import { BroadcastOverlay } from '@/components/live/BroadcastOverlay'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
-import { useMutation } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 
 // ── Modal de confirmation suppression ────────────────────────────────────────
 function DeleteConfirmModal({
@@ -114,14 +112,13 @@ interface AdminLiveControlsProps {
   homePlayers: Array<{ id: string; first_name: string; last_name: string }>
   awayPlayers: Array<{ id: string; first_name: string; last_name: string }>
   seasonId: string
-  videoUrl?: string | null
 }
 
 export function AdminLiveControls({
   matchId, status, liveStartedAt, halftimeAt, livePeriod,
   isPaused, pausedAt, totalPausedSeconds,
   homeTeam, awayTeam, homeScore, awayScore,
-  events, homePlayers, awayPlayers, seasonId, videoUrl
+  events, homePlayers, awayPlayers, seasonId
 }: AdminLiveControlsProps) {
   const { user } = useAuth()
   const { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent } = useAdminMatchLive(matchId)
@@ -139,9 +136,6 @@ export function AdminLiveControls({
   const [pauseReason, setPauseReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<MatchEvent | null>(null)
 
-  const [editingVideoUrl, setEditingVideoUrl] = useState(false)
-  const [videoUrlInput, setVideoUrlInput] = useState(videoUrl || '')
-
   // ── Sélection caméra / micro ──────────────────────────────────────────────
   const [showDevicePanel, setShowDevicePanel] = useState(false)
   const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string | undefined>()
@@ -152,6 +146,7 @@ export function AdminLiveControls({
 
   const isLive = status === 'live'
   const isScheduled = status === 'scheduled'
+  const currentPeriod: 1 | 2 = livePeriod ?? 1
 
   const currentPlayers = eventTeam === homeTeam.id ? homePlayers : awayPlayers
   const otherPlayers = eventTeam === homeTeam.id ? awayPlayers : homePlayers
@@ -276,16 +271,6 @@ export function AdminLiveControls({
     setEventPlayer2('')
     setEventComment('')
   }
-
-  const updateVideoUrl = useMutation({
-    mutationFn: async (url: string) => {
-      const { error } = await supabase.from('matches').update({ video_url: url }).eq('id', matchId)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditingVideoUrl(false)
-    }
-  })
 
   return (
     <>
@@ -414,45 +399,7 @@ export function AdminLiveControls({
               </button>
 
               <div className="flex items-center gap-2 ml-4 relative">
-                {editingVideoUrl ? (
-                  <div className="flex items-center gap-2 bg-black/40 rounded-lg border border-white/10 p-1">
-                    <input
-                      type="text"
-                      value={videoUrlInput}
-                      onChange={e => setVideoUrlInput(e.target.value)}
-                      placeholder="Lien YouTube ou Twitch..."
-                      className="bg-transparent border-none text-[10px] py-1.5 px-3 w-48 focus:ring-0 text-white font-bold"
-                    />
-                    <button
-                      onClick={() => updateVideoUrl.mutate(videoUrlInput)}
-                      disabled={updateVideoUrl.isPending}
-                      className="bg-primary-500 text-black px-3 py-1.5 rounded text-[10px] font-black uppercase"
-                    >
-                      OK
-                    </button>
-                    <button
-                      onClick={() => { setEditingVideoUrl(false); setVideoUrlInput(videoUrl || '') }}
-                      className="text-white/40 hover:text-white px-2 text-[10px] font-black uppercase"
-                    >
-                      X
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingVideoUrl(true)}
-                      className={clsx(
-                        "flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors border",
-                        videoUrl
-                          ? "bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30"
-                          : "bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10"
-                      )}
-                    >
-                      <Play size={14} />
-                      {videoUrl ? 'Changer Vidéo' : 'Lien Vidéo'}
-                    </button>
-
-                    {/* Broadcast from device */}
+                <div className="flex gap-2">
                     <button
                       onClick={isBroadcasting ? stopBroadcast : startBroadcast}
                       className={clsx(
@@ -479,7 +426,6 @@ export function AdminLiveControls({
                       </button>
                     )}
                   </div>
-                )}
               </div>
 
               {/* Panneau sélection caméra / micro */}
@@ -573,7 +519,11 @@ export function AdminLiveControls({
                   <div className="flex items-center gap-3 bg-red-500/10 p-1.5 rounded-xl border border-red-500/20">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-2">Score final :</span>
                     <button
-                      onClick={() => { endMatch.mutate({ homeScore: homeScoreVal, awayScore: awayScoreVal }); setConfirmEnd(false) }}
+                      onClick={() => {
+                        stopBroadcast()
+                        endMatch.mutate({ homeScore: homeScoreVal, awayScore: awayScoreVal })
+                        setConfirmEnd(false)
+                      }}
                       disabled={endMatch.isPending}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                     >
@@ -609,7 +559,7 @@ export function AdminLiveControls({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'shot', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'shot', team_id: homeTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir"}
                   >
@@ -617,7 +567,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: homeTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir cadré"}
                   >
@@ -625,7 +575,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'foul', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'foul', team_id: homeTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer une faute"}
                   >
@@ -633,7 +583,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'corner', team_id: homeTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'corner', team_id: homeTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un corner"}
                   >
@@ -651,7 +601,7 @@ export function AdminLiveControls({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'shot', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'shot', team_id: awayTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir"}
                   >
@@ -659,7 +609,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'shot_on_target', team_id: awayTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un tir cadré"}
                   >
@@ -667,7 +617,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'foul', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'foul', team_id: awayTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer une faute"}
                   >
@@ -675,7 +625,7 @@ export function AdminLiveControls({
                   </button>
                   <button
                     disabled={isPaused || addEvent.isPending}
-                    onClick={() => addEvent.mutate({ type: 'corner', team_id: awayTeam.id, minute: clock.minute, period: livePeriod as any })}
+                    onClick={() => addEvent.mutate({ type: 'corner', team_id: awayTeam.id, minute: clock.minute, period: currentPeriod })}
                     className="px-2 py-2 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black text-slate-300 uppercase hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
                     title={isPaused ? "Impossible d'ajouter des stats pendant une pause" : "Enregistrer un corner"}
                   >

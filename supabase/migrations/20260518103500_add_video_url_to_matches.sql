@@ -1,1 +1,2 @@
-ALTER TABLE public.matches ADD COLUMN video_url text;
+-- Removed: external video URLs are not part of the live feature anymore.
+-- Existing databases are cleaned up by 20260521120000_drop_video_url_from_matches.sql.
