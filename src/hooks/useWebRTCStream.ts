@@ -81,10 +81,14 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
       await meeting.startVideo()
       await meeting.unmuteLocalAudio()
 
-      // 6. Récupérer le flux local pour la preview
+      // 6. Récupérer le flux local pour la preview en haute qualité
       const localStream = await navigator.mediaDevices.getUserMedia({
-        video: options?.videoDeviceId ? { deviceId: { exact: options.videoDeviceId } } : { facingMode: 'environment' },
-        audio: options?.audioDeviceId ? { deviceId: { exact: options.audioDeviceId } } : true
+        video: options?.videoDeviceId
+          ? { deviceId: { exact: options.videoDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
+          : { facingMode: 'environment',                  width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        audio: options?.audioDeviceId
+          ? { deviceId: { exact: options.audioDeviceId }, echoCancellation: true, noiseSuppression: true }
+          : { echoCancellation: true, noiseSuppression: true },
       })
 
       setStream(localStream)
@@ -123,9 +127,9 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
         await meetingRef.current.chooseVideoInputDevice(target.deviceId)
         setFacingMode(newFacing)
         
-        // Mettre à jour la preview locale
+        // Mettre à jour la preview locale en haute qualité
         const newStream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: target.deviceId } },
+          video: { deviceId: { exact: target.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
           audio: false
         })
         const videoTrack = newStream.getVideoTracks()[0]
@@ -252,7 +256,7 @@ export function useWebRTCViewer(matchId: string) {
 
     const recorder = new MediaRecorder(liveStream, {
       mimeType,
-      videoBitsPerSecond: 500_000,
+      videoBitsPerSecond: 2_500_000, // 2.5 Mbps — qualité suffisante pour du sport
     })
     recorderRef.current = recorder
     let isFirstChunk = true
