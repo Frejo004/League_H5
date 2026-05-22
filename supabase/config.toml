@@ -1,0 +1,2 @@
+[functions.get-metered-config]
+verify_jwt = false

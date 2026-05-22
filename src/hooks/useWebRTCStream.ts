@@ -354,6 +354,12 @@ export function useWebRTCViewer(matchId: string) {
 
     const joinRoom = async () => {
       try {
+        // Vérifier que le SDK Metered est bien chargé
+        if (typeof Metered === 'undefined' || !Metered?.Meeting) {
+          console.warn('📡 [V] SDK Metered non disponible')
+          setConnectionState('failed')
+          return
+        }
         const { data, error } = await supabase.functions.invoke('get-metered-config', {
           body: { matchId }
         })
@@ -434,6 +440,11 @@ export function useWebRTCPresence(matchId: string) {
     if (!matchId) return
     const joinPresence = async () => {
       try {
+        // Vérifier que le SDK Metered est bien chargé
+        if (typeof Metered === 'undefined' || !Metered?.Meeting) {
+          console.warn('📡 [Presence] SDK Metered non disponible')
+          return null
+        }
         const { data, error } = await supabase.functions.invoke('get-metered-config', { body: { matchId } })
         if (error) throw error
         if (data?.error) throw new Error(data.error)
@@ -441,15 +452,22 @@ export function useWebRTCPresence(matchId: string) {
         const meeting = new Metered.Meeting()
         await meeting.join({ roomURL: data.roomURL, name: 'Presence-Tracker' })
         const update = async () => {
-          const p = await meeting.getParticipants()
-          setIsLive(p.some(participant => participant.name === 'Admin'))
-          setViewerCount(p.length)
+          try {
+            const p = await meeting.getParticipants()
+            setIsLive(p.some(participant => participant.name === 'Admin'))
+            setViewerCount(p.length)
+          } catch (e) {
+            console.warn('📡 [Presence] getParticipants error', e)
+          }
         }
         meeting.on("participantJoined", update)
         meeting.on("participantLeft", update)
         update()
         return meeting
-      } catch (e) { return null }
+      } catch (e) {
+        console.warn('📡 [Presence] join error', e)
+        return null
+      }
     }
     const meetingPromise = joinPresence()
     return () => { meetingPromise.then(m => m?.leaveMeeting()) }

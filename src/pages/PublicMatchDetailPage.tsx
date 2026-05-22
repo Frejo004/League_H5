@@ -453,8 +453,10 @@ export function PublicMatchDetailPage() {
     match?.total_paused_seconds ?? 0,
   )
 
-  // ── Présence WebRTC (sans connexion peer — juste pour savoir si le live est actif) ──
-  const { isLive: isStreamingLive, viewerCount } = useWebRTCPresence(id ?? '')
+  // ── Présence WebRTC : on considère le stream actif si le match est 'live'
+  // useWebRTCPresence est gardé pour le viewerCount uniquement
+  const { viewerCount } = useWebRTCPresence(id ?? '')
+  const isStreamingLive = isLive // Si le match est live en DB, le stream est actif
 
   // ── Derived ─────────────────────────────────────────────────────────────
   const home = match?.home_team as TeamRef | undefined
