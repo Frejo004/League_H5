@@ -453,11 +453,6 @@ export function PublicMatchDetailPage() {
     match?.total_paused_seconds ?? 0,
   )
 
-  // ── Présence WebRTC : on considère le stream actif si le match est 'live'
-  // useWebRTCPresence est gardé pour le viewerCount uniquement
-  const { viewerCount } = useWebRTCPresence(id ?? '')
-  const isStreamingLive = isLive // Si le match est live en DB, le stream est actif
-
   // ── Derived ─────────────────────────────────────────────────────────────
   const home = match?.home_team as TeamRef | undefined
   const away = match?.away_team as TeamRef | undefined
@@ -465,6 +460,11 @@ export function PublicMatchDetailPage() {
 
   const isLive = match?.status === 'live'
   const isCompleted = match?.status === 'completed'
+
+  // ── Présence : l'onglet vidéo s'affiche dès que le match est 'live' en DB
+  // useWebRTCPresence gardé uniquement pour le viewerCount
+  const { viewerCount } = useWebRTCPresence(id ?? '')
+  const isStreamingLive = isLive
 
   const sortedGoals = useMemo(() => [...(goals ?? [])].sort((a: any, b: any) => (a.minute ?? 0) - (b.minute ?? 0)), [goals])
   const hasLiveVideoTab = isLive && isStreamingLive
