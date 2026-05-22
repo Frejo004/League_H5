@@ -66,7 +66,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
       // 3. Rejoindre la room
       await meeting.join({
         roomURL,
-        name: user?.email || 'Admin'
+        name: 'Admin'
       })
 
       // 4. Configurer les devices
