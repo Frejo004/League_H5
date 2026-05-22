@@ -80,6 +80,16 @@ export function LiveVideoPlayer({
   const isStreamFull = isViewerMode ? localViewer.isStreamFull : false
   const connectionState = isViewerMode ? localViewer.connectionState : 'idle'
 
+  // Détection fin de match (Admin parti)
+  const [matchEnded, setMatchEnded] = useState(false)
+  useEffect(() => {
+    if (isViewerMode && isLive && !stream && connectionState === 'connected') {
+      setMatchEnded(true)
+    } else if (stream) {
+      setMatchEnded(false)
+    }
+  }, [isViewerMode, isLive, stream, connectionState])
+
   // ── Refs ────────────────────────────────────────────────────────────────────
 
   // ── State ───────────────────────────────────────────────────────────────────
@@ -467,12 +477,23 @@ export function LiveVideoPlayer({
             video.currentTime = video.buffered.start(0)
           }
         }}
-        className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${
+        className={`absolute inset-0 w-full h-full object-contain bg-black transition-all duration-500 ${
           (dvrEnabled && dvrReady)
-            ? dvrTransitioning ? 'opacity-70 blur-[1px]' : 'opacity-100'
+            ? dvrTransitioning ? 'opacity-0' : 'opacity-100'
             : 'opacity-0 pointer-events-none'
         }`}
       />
+
+      {/* ── Overlay Fin de Match ──────────────────────────────────────────── */}
+      {matchEnded && (
+        <div className="absolute inset-0 z-[40] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
+          <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 border border-white/20">
+            <Radio size={32} className="text-white/50" />
+          </div>
+          <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Match Terminé</h3>
+          <p className="text-sm text-slate-400 max-w-[240px]">Merci d'avoir suivi ce live ! Les statistiques finales sont disponibles sur la fiche du match.</p>
+        </div>
+      )}
 
       {/* ── Spinner chargement DVR ────────────────────────────────────────── */}
       {dvrEnabled && !dvrReady && (

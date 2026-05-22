@@ -132,6 +132,14 @@ export function BroadcastOverlay({
 
   const nq = NETWORK_STYLES[networkQuality]
 
+  // Vérifier l'orientation (portrait vs paysage)
+  const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setIsPortrait(window.innerHeight > window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   if (mode === 'hidden') return null
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -144,6 +152,17 @@ export function BroadcastOverlay({
         onPointerMove={resetControlsTimer}
         onTouchStart={resetControlsTimer}
       >
+        {/* Alerte Orientation */}
+        {isPortrait && isBroadcasting && (
+          <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/30">
+              <FlipHorizontal size={32} className="text-amber-500 animate-bounce" />
+            </div>
+            <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Tournez votre appareil</h3>
+            <p className="text-sm text-slate-400 max-w-[240px]">Pour une meilleure qualité de diffusion, filmez en mode paysage.</p>
+          </div>
+        )}
+
         {/* Vidéo — remplit tout l'écran, object-cover pour iPhone portrait */}
         <video
           ref={fsVideoRef}
@@ -157,17 +176,11 @@ export function BroadcastOverlay({
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
 {/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
+         {/* Barre de statut supérieure avec Safe Area */}
          <div 
            className={`absolute top-0 inset-x-0 z-20 px-4 flex items-center justify-between gap-2 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
-           style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 1rem), 4rem)' }}
+           style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 0.5rem), 1rem)' }}
          >
-           {/* Astuce pour montrer les contrôles */}
-           {!showControls && (
-             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-black/80 px-3 py-1 rounded-full whitespace-nowrap">
-               <span className="text-[9px] text-slate-300 uppercase tracking-widest">Toucher pour afficher les contrôles</span>
-             </div>
-           )}
-
            {/* Score & Chrono & REC */}
            <div className="flex items-center gap-2">
              {/* Score */}
