@@ -2,7 +2,7 @@ import { useState, useRef, useMemo, useEffect } from 'react'
 import {
   Camera, Check, Pencil, Mail,
   ShieldCheck, AlertCircle, Loader2,
-  Target, Zap, Calendar, Star, ArrowRight,
+  ArrowRight,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -130,7 +130,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
   return (
     <div className="relative group w-full max-w-sm mx-auto mb-6 perspective-1000">
       {/* Carte style FUT avec effet Tilt */}
-      <div className="relative overflow-hidden rounded-2xl p-[2px] transition-transform duration-500 transform-gpu group-hover:scale-105 group-hover:rotate-1"
+      <div className="relative overflow-hidden rounded-2xl p-0.5 transition-transform duration-500 transform-gpu group-hover:scale-105 group-hover:rotate-1"
            style={{ background: 'linear-gradient(135deg, #FFDF73 0%, #B8860B 50%, #FFDF73 100%)' }}>
         
         {/* Glow dynamique autour de la carte */}
@@ -140,13 +140,13 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
         {/* Intérieur de la carte */}
         <div className="relative bg-slate-900 h-full rounded-2xl overflow-hidden p-5 flex flex-col bg-grid-pattern">
           {/* Overlay doré translucide */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#B8860B]/20 via-transparent to-[#B8860B]/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-b from-[#B8860B]/20 via-transparent to-[#B8860B]/40 pointer-events-none" />
 
           {/* TOP SECTION : Note + Avatar */}
           <div className="flex items-start justify-between relative z-10">
             {/* Note globale & Info */}
             <div className="flex flex-col items-center">
-              <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#FFDF73] to-[#B8860B]"
+              <span className="text-5xl font-black text-transparent bg-clip-text bg-linear-to-b from-[#FFDF73] to-[#B8860B]"
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {rating}
               </span>
@@ -167,7 +167,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
                <span className="text-4xl font-black text-slate-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                  {profile.first_name[0]}{profile.last_name[0]}
                </span>
-               <div className="absolute inset-0 bg-gradient-to-tr from-[#FFDF73]/20 to-transparent mix-blend-overlay" />
+               <div className="absolute inset-0 bg-linear-to-tr from-[#FFDF73]/20 to-transparent mix-blend-overlay" />
             </div>
           </div>
 
@@ -230,7 +230,11 @@ export function ProfilePage() {
   useEffect(() => {
     // Ne réinitialise le nom que si l'utilisateur n'est pas en train d'éditer
     // (hasEditedName est mis à true dès la première frappe, remis à false après sauvegarde)
-    if (!hasEditedName) setDisplayName(profile?.full_name ?? '')
+    if (!hasEditedName) {
+      queueMicrotask(() => {
+        setDisplayName(profile?.full_name ?? '')
+      })
+    }
   }, [profile?.full_name, hasEditedName])
 
 
@@ -460,7 +464,13 @@ export function ProfilePage() {
           {nameSuccess && <Alert type="success">Nom mis à jour avec succès.</Alert>}
           <FormField
             id="displayName" label="Nom complet"
-            value={displayName} onChange={v => { setDisplayName(v); setHasEditedName(true); setNameSuccess(false) }}
+            value={displayName} 
+            onChange={v => { 
+              setDisplayName(v); 
+              setHasEditedName(true); 
+              setNameSuccess(false); 
+              setNameError(null); 
+            }}
             placeholder="Jean Dupont" required
           />
           <SubmitButton loading={nameLoading} label="Enregistrer" loadingLabel="Enregistrement…" />

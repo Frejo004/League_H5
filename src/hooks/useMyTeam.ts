@@ -24,7 +24,10 @@ export function useMyTeam(seasonId?: string) {
         .eq('is_active', true)
         .maybeSingle()
 
-      if (playerErr) throw playerErr
+      if (playerErr) {
+        console.error('[useMyTeam] Erreur lors de la récupération du joueur:', playerErr);
+        throw playerErr;
+      }
       if (!player) return { myTeamId: null, myTeam: null, myPlayer: null }
 
       // Récupérer l'équipe
@@ -34,7 +37,10 @@ export function useMyTeam(seasonId?: string) {
         .eq('id', player.team_id)
         .maybeSingle()
 
-      if (teamErr) throw teamErr
+      if (teamErr) {
+        console.error('[useMyTeam] Erreur lors de la récupération de l\'équipe:', teamErr);
+        throw teamErr;
+      }
 
       return {
         myTeamId: player.team_id,

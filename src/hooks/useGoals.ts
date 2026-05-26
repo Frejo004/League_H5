@@ -15,6 +15,7 @@ export function useAddGoal() {
       is_own_goal?: boolean
       seasonId: string  // nécessaire pour invalider les bonnes clés de cache
     }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('goals')
@@ -24,10 +25,10 @@ export function useAddGoal() {
       if (error) throw error
       return data as Goal
     },
-    onSuccess: (data, variables) => {
-      qc.invalidateQueries({ queryKey: ['matches', 'detail', data.match_id] })
-      qc.invalidateQueries({ queryKey: ['scorers', variables.seasonId] })
-      qc.invalidateQueries({ queryKey: ['standings', variables.seasonId] })
+    onSuccess: (data, variables) => { // TODO: Envisager d'implémenter des mises à jour optimistes pour une UX plus fluide.
+      qc.invalidateQueries({ queryKey: ['matches', 'detail', data.match_id] });
+      qc.invalidateQueries({ queryKey: ['scorers', variables.seasonId] });
+      qc.invalidateQueries({ queryKey: ['standings', variables.seasonId] });
     },
   })
 }
@@ -59,6 +60,7 @@ export function useAddAssist() {
       player_id: string
       seasonId: string  // nécessaire pour invalider les bonnes clés de cache
     }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('assists')

@@ -1,10 +1,12 @@
 import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useMatches } from '@/hooks/useMatches'
+import type { MatchWithTeams } from '@/hooks/useMatches'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { pushLocal } from '@/hooks/useRealtime'
+import { Spectator } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -17,6 +19,7 @@ export type NotifType =
   | 'invite_pending'
   | 'invite_expiring'
   | 'spectator_request'
+  | 'spectator_approved' // Nouveau type pour l'approbation de spectateur
   | 'tactique_selected'
   | 'mention'
 
@@ -112,6 +115,37 @@ function useMyVotedMatches(userId?: string, matchIds?: string[]) {
   })
 }
 
+// Type for the data returned by useMyNextLineup
+interface MyNextLineupData {
+  is_starter: boolean
+  team_id: string
+  matches: {
+    home_team_id: string
+    away_team: { name: string } | null
+    home_team: { name: string } | null
+  } | null
+}
+
+interface PendingInvite {
+  id: string
+  created_at: string
+  expires_at: string
+  used_at: string | null
+  players: {
+    id: string
+    first_name: string
+    last_name: string
+    teams: { name: string } | null
+  } | null
+}
+
+interface PendingSpectatorRequest {
+  id: string
+  requested_at: string
+  user_id: string
+  profiles: { full_name: string | null; email: string } | null
+}
+
 function useMyNextLineup(userId?: string, matchId?: string) {
   return useQuery({
     queryKey: ['notifications_my_lineup', userId, matchId],
@@ -129,7 +163,7 @@ function useMyNextLineup(userId?: string, matchId?: string) {
         .eq('player_id', p.id)
         .maybeSingle()
       if (error) throw error
-      return data
+      return data as MyNextLineupData | null
     },
   })
 }
@@ -172,9 +206,13 @@ export function useNotifications() {
         qc.invalidateQueries({ queryKey: ['notifications_spectators'] })
         qc.invalidateQueries({ queryKey: ['spectators'] })
 
+        // TODO: Si une demande de spectateur est approuvée, envoyer une notification à l'utilisateur concerné.
+        // Cela nécessiterait un canal Realtime séparé ou un mécanisme de notification push ciblé. (payload.new as Spectator).user_id
+        // if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'approved') { /* ... */ }
+
         // Si c'est une nouvelle demande, on envoie une notification push locale
         if (payload.eventType === 'INSERT') {
-          const newReq = payload.new as any
+          const newReq = payload.new as Spectator
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, email')
@@ -197,7 +235,8 @@ export function useNotifications() {
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {
-    const cutoff = Date.now() - 72 * 60 * 60 * 1000
+    const now = Date.now()
+    const cutoff = now - 72 * 60 * 60 * 1000
     return (matches ?? [])
       .filter(m => m.status === 'completed' && m.played_at && new Date(m.played_at).getTime() > cutoff)
       .map(m => m.id)
@@ -206,124 +245,140 @@ export function useNotifications() {
   const { data: votedMatchIds } = useMyVotedMatches(user?.id, recentCompletedIds)
 
   // Toutes les notifications (non filtrées)
-  const allNotifications = useMemo<Notification[]>(() => {    const notifs: Notification[] = []
+  const allNotifications = useMemo<Notification[]>(() => {
     const now = Date.now()
+    const notifs: Notification[] = [];
+
+    // Helper pour ajouter une notification
+    const addNotif = (notification: Notification) => notifs.push(notification);
 
     // ── 1. Matchs à venir (< 24h) ──────────────────────────────────────────
-    for (const m of matches ?? []) {
-      if (m.status !== 'scheduled' || !m.scheduled_at) continue
-      const diff = new Date(m.scheduled_at).getTime() - now
-      if (diff <= 0 || diff >= 24 * 60 * 60 * 1000) continue
-      const hours = Math.floor(diff / (60 * 60 * 1000))
-      const mins  = Math.floor((diff % (60 * 60 * 1000)) / 60000)
-      const home  = (m.home_team as { name: string })?.name ?? '?'
-      const away  = (m.away_team as { name: string })?.name ?? '?'
-      notifs.push({
-        id:        `upcoming-${m.id}`,
-        type:      'match_upcoming',
-        title:     'Match à venir',
-        message:   `${home} vs ${away} — dans ${hours > 0 ? `${hours}h` : `${mins}min`}`,
-        href:      `/matches/${m.id}`,
-        createdAt: new Date(m.scheduled_at),
-        urgent:    diff < 60 * 60 * 1000,
-      })
-    }
+    const generateUpcomingMatchNotifs = (matches: MatchWithTeams[]) => {
+      for (const m of matches ?? []) {
+        if (m.status !== 'scheduled' || !m.scheduled_at) continue;
+        const diff = new Date(m.scheduled_at).getTime() - now;
+        if (diff <= 0 || diff >= 24 * 60 * 60 * 1000) continue;
+        const hours = Math.floor(diff / (60 * 60 * 1000));
+        const mins = Math.floor((diff % (60 * 60 * 1000)) / 60000);
+        const home = (m.home_team as { name: string })?.name ?? '?';
+        const away = (m.away_team as { name: string })?.name ?? '?';
+        addNotif({
+          id: `upcoming-${m.id}`,
+          type: 'match_upcoming',
+          title: 'Match à venir',
+          message: `${home} vs ${away} — dans ${hours > 0 ? `${hours}h` : `${mins}min`}`,
+          href: `/matches/${m.id}`,
+          createdAt: new Date(m.scheduled_at),
+          urgent: diff < 60 * 60 * 1000,
+        });
+      }
+    };
+    generateUpcomingMatchNotifs(matches ?? []);
 
     // ── 2. Matchs terminés récemment (< 48h) ───────────────────────────────
-    for (const m of matches ?? []) {
-      if (m.status !== 'completed' || !m.played_at) continue
-      if (now - new Date(m.played_at).getTime() >= 48 * 60 * 60 * 1000) continue
-      const home = (m.home_team as { name: string })?.name ?? '?'
-      const away = (m.away_team as { name: string })?.name ?? '?'
-      notifs.push({
-        id:        `completed-${m.id}`,
-        type:      'match_completed',
-        title:     'Résultat disponible',
-        message:   `${home} ${m.home_score ?? 0} – ${m.away_score ?? 0} ${away}`,
-        href:      `/matches/${m.id}`,
-        createdAt: new Date(m.played_at),
-      })
-    }
+    const generateCompletedMatchNotifs = (matches: MatchWithTeams[]) => {
+      for (const m of matches ?? []) {
+        if (m.status !== 'completed' || !m.played_at) continue;
+        if (now - new Date(m.played_at).getTime() >= 48 * 60 * 60 * 1000) continue;
+        const home = (m.home_team as { name: string })?.name ?? '?';
+        const away = (m.away_team as { name: string })?.name ?? '?';
+        addNotif({
+          id: `completed-${m.id}`,
+          type: 'match_completed',
+          title: 'Résultat disponible',
+          message: `${home} ${m.home_score ?? 0} – ${m.away_score ?? 0} ${away}`,
+          href: `/matches/${m.id}`,
+          createdAt: new Date(m.played_at),
+        });
+      }
+    };
+    generateCompletedMatchNotifs(matches ?? []);
 
     // ── 3. Vote MVP disponible (match terminé, user n'a pas voté) ──────────
-    if (user) {
+    const generateMvpVoteNotifs = (matches: MatchWithTeams[], user: typeof useAuth extends () => infer R ? R extends { user: infer U } ? U : never : never, votedMatchIds: Set<string> | undefined) => {
+      if (!user) return;
       for (const m of matches ?? []) {
-        if (m.status !== 'completed' || !m.played_at) continue
-        if (now - new Date(m.played_at).getTime() >= 72 * 60 * 60 * 1000) continue
-        if (votedMatchIds?.has(m.id)) continue
-        const home = (m.home_team as { name: string })?.name ?? '?'
-        const away = (m.away_team as { name: string })?.name ?? '?'
-        notifs.push({
-          id:        `mvp-${m.id}`,
-          type:      'mvp_vote_open',
-          title:     'Vote MVP ouvert',
-          message:   `Élisez l'homme du match : ${home} vs ${away}`,
-          href:      `/matches/${m.id}`,
+        if (m.status !== 'completed' || !m.played_at) continue;
+        if (now - new Date(m.played_at).getTime() >= 72 * 60 * 60 * 1000) continue;
+        if (votedMatchIds?.has(m.id)) continue;
+        const home = (m.home_team as { name: string })?.name ?? '?';
+        const away = (m.away_team as { name: string })?.name ?? '?';
+        addNotif({
+          id: `mvp-${m.id}`,
+          type: 'mvp_vote_open',
+          title: 'Vote MVP ouvert',
+          message: `Élisez l'homme du match : ${home} vs ${away}`,
+          href: `/matches/${m.id}`,
           createdAt: new Date(m.played_at),
-        })
+        });
       }
-    }
+    };
+    generateMvpVoteNotifs(matches ?? [], user, votedMatchIds);
 
     // ── 4. Invitations en attente (admin/captain) ───────────────────────────
-    if (isPrivileged && invites) {
+    const generateInviteNotifs = (isPrivileged: boolean, invites: PendingInvite[]) => {
+      if (!isPrivileged || !invites) return;
       for (const inv of invites) {
-        const p = inv.players as unknown as {
-          first_name: string; last_name: string
-          teams: { name: string } | null
-        } | null
-        if (!p) continue
-        const msLeft     = new Date(inv.expires_at).getTime() - now
-        const isExpiring = msLeft < 30 * 60 * 1000
-        notifs.push({
-          id:        `invite-${inv.id}`,
-          type:      isExpiring ? 'invite_expiring' : 'invite_pending',
-          title:     isExpiring ? 'Invitation expire bientôt' : 'Invitation en attente',
-          message:   `${p.first_name} ${p.last_name} (${p.teams?.name ?? '?'}) n'a pas encore rejoint`,
-          href:      '/admin',
+        const p = inv.players as PendingInvite['players'];
+        if (!p) continue;
+        const msLeft = new Date(inv.expires_at).getTime() - now;
+        const isExpiring = msLeft < 30 * 60 * 1000;
+        addNotif({
+          id: `invite-${inv.id}`,
+          type: isExpiring ? 'invite_expiring' : 'invite_pending',
+          title: isExpiring ? 'Invitation expire bientôt' : 'Invitation en attente',
+          message: `${p.first_name} ${p.last_name} (${p.teams?.name ?? '?'}) n'a pas encore rejoint`,
+          href: '/admin',
           createdAt: new Date(inv.created_at),
-          urgent:    isExpiring,
-        })
+          urgent: isExpiring,
+        });
       }
-    }
+    };
+    generateInviteNotifs(isPrivileged, invites ?? []);
 
     // ── 5. Demandes d'accès spectateurs (admin uniquement) ─────────────────
-    if (isAdmin && pendingSpectators) {
+    const generateSpectatorRequestNotifs = (isAdmin: boolean, pendingSpectators: PendingSpectatorRequest[]) => {
+      if (!isAdmin || !pendingSpectators) return;
       for (const s of pendingSpectators) {
-        const p = s.profiles as unknown as { full_name: string | null; email: string } | null
-        const name = p?.full_name ?? p?.email ?? 'Utilisateur inconnu'
-        notifs.push({
-          id:        `spectator-${s.id}`,
-          type:      'spectator_request',
-          title:     'Demande d\'accès',
-          message:   `${name} souhaite accéder à la ligue`,
-          href:      '/admin?tab=spectators',
+        const p = s.profiles as PendingSpectatorRequest['profiles'];
+        const name = p?.full_name ?? p?.email ?? 'Utilisateur inconnu';
+        addNotif({
+          id: `spectator-${s.id}`,
+          type: 'spectator_request',
+          title: 'Demande d\'accès',
+          message: `${name} souhaite accéder à la ligue`,
+          href: '/admin?tab=spectators',
           createdAt: new Date(s.requested_at),
-          urgent:    true,
-        })
+          urgent: true,
+        });
       }
-    }
+    };
+    generateSpectatorRequestNotifs(isAdmin, pendingSpectators ?? []);
 
     // ── 6. Sélection tactique (User est titulaire pour le prochain match) ───
-    if (myLineup?.is_starter && nextMatch) {
-      const isHome = myLineup.team_id === (nextMatch as any).home_team_id
-      const opp = isHome ? (nextMatch.away_team as any)?.name : (nextMatch.home_team as any)?.name
-      notifs.push({
-        id: `tactique-starter-${nextMatch.id}`,
-        type: 'tactique_selected',
-        title: 'Tu es titulaire ! ⚽',
-        message: `Tu fais partie du 5 majeur pour le match contre ${opp || 'l\'adversaire'}`,
-        href: '/my-team?tab=tactique',
-        createdAt: nextMatch.scheduled_at ? new Date(nextMatch.scheduled_at) : new Date(),
-        urgent: true,
-      })
-    }
+    const generateTacticalSelectionNotifs = (myLineup: MyNextLineupData | null, nextMatch: MatchWithTeams | undefined) => {
+      if (myLineup?.is_starter && nextMatch) {
+        const isHome = myLineup.team_id === nextMatch.home_team_id;
+        const opp = isHome ? nextMatch.away_team?.name : nextMatch.home_team?.name;
+        addNotif({
+          id: `tactique-starter-${nextMatch.id}`,
+          type: 'tactique_selected',
+          title: 'Tu es titulaire ! ⚽',
+          message: `Tu fais partie du 5 majeur pour le match contre ${opp || 'l\'adversaire'}`,
+          href: '/my-team?tab=tactique',
+          createdAt: nextMatch.scheduled_at ? new Date(nextMatch.scheduled_at) : new Date(),
+          urgent: true,
+        });
+      }
+    };
+    generateTacticalSelectionNotifs(myLineup, nextMatch);
 
     return notifs.sort((a, b) => {
-      if (a.urgent && !b.urgent) return -1
-      if (!a.urgent && b.urgent) return 1
-      return b.createdAt.getTime() - a.createdAt.getTime()
-    })
-  }, [matches, invites, pendingSpectators, votedMatchIds, user, isAdmin, isPrivileged])
+      if (a.urgent && !b.urgent) return -1;
+      if (!a.urgent && b.urgent) return 1;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+  }, [matches, invites, pendingSpectators, votedMatchIds, user, isAdmin, isPrivileged, myLineup, nextMatch]);
 
   // Notifications non lues
   const notifications = useMemo(

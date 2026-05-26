@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Player, Database } from '@/types/database'
-
+import type { TeamRef } from '@/types/database' // Assurez-vous que TeamRef est bien importé ou défini
 export function usePlayers(seasonId?: string) {
   return useQuery({
     queryKey: ['players', seasonId],
@@ -35,7 +35,7 @@ export function usePlayers(seasonId?: string) {
         ...p,
         // avatar_url : priorité au profil lié (toujours à jour), fallback sur players.avatar_url
         avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
-        teams: teamsMap.get(p.team_id) ?? null,
+        teams: teamsMap.get(p.team_id) as TeamRef | null,
       }))
     },
   })

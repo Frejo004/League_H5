@@ -12,7 +12,10 @@ export function useSettings(seasonId?: string) {
         .select('*')
         .eq('season_id', seasonId!)
         .maybeSingle()
-      if (error) throw error
+      if (error) {
+        console.error('[useSettings] Erreur lors de la récupération des paramètres:', error);
+        throw error;
+      }
       return data as Settings | null
     },
   })

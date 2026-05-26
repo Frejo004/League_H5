@@ -7,7 +7,7 @@
  * - Durées : 1ère mi-temps 20min, repos 5min, 2ème mi-temps 20min
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { MatchEvent, LiveReaction, MatchEventType } from '@/types/database'
@@ -216,6 +216,7 @@ export function useLiveClock(
 
     if (status !== 'live' || !liveStartedAt) {
       if (status === 'completed') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setState({ minute: 20, seconds: 0, phase: 4, label: 'Terminé', shortLabel: 'FT', progress: 100, breakSecondsLeft: null, totalElapsedSeconds: null, isPaused: false })
       }
       return
@@ -336,11 +337,14 @@ export function useAdminMatchLive(matchId?: string) {
         is_paused: false,
         paused_at: null,
         total_paused_seconds: 0,
-        halftime_at: null,
-        last_pause_reason: null
-      } as any).eq('id', matchId!)
+        halftime_at: null
+      }).eq('id', matchId!)
 
-      const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! })
+      const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur au démarrage du match en direct:', error);
+        throw error;
+      }
       if (error) throw error
     },
     onSuccess: invalidate,
@@ -366,14 +370,18 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      await supabase.from('matches').update({
+      const { error } = await supabase.from('matches').update({
         live_started_at: new Date().toISOString(),
         live_period: 2,
         halftime_at: null,
         is_paused: false,
         paused_at: null,
         total_paused_seconds: 0
-      }).eq('id', matchId!)
+      }).eq('id', matchId!);
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error);
+        throw error;
+      }
     },
     onSuccess: invalidate,
   })
@@ -383,8 +391,11 @@ export function useAdminMatchLive(matchId?: string) {
       const { error } = await supabase.rpc('toggle_match_pause_v2', { 
         p_match_id: matchId!,
         p_reason: reason || undefined
-      })
-      if (error) throw error
+      });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors de l\'activation/désactivation de la pause:', error);
+        throw error;
+      }
     },
     onSuccess: invalidate,
   })
@@ -395,8 +406,11 @@ export function useAdminMatchLive(matchId?: string) {
         p_match_id: matchId!,
         p_home_score: homeScore,
         p_away_score: awayScore,
-      })
-      if (error) throw error
+      });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors de la fin du match:', error);
+        throw error;
+      }
     },
     onSuccess: invalidate,
   })
@@ -420,20 +434,25 @@ export function useAdminMatchLive(matchId?: string) {
         p_player_id: event.player_id || undefined,
         p_player2_id: event.player2_id || undefined,
         p_description: event.description || undefined,
-      })
-      if (error) throw error
+      });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors de l\'ajout d\'un événement de match:', error);
+        throw error;
+      }
     },
     onSuccess: invalidate,
   })
 
   const deleteEvent = useMutation({
     mutationFn: async (eventId: string) => {
-      const { error } = await supabase.rpc('delete_match_event_v2', { p_event_id: eventId })
-      if (error) throw error
+      const { error } = await supabase.rpc('delete_match_event_v2', { p_event_id: eventId });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors de la suppression d\'un événement de match:', error);
+        throw error;
+      }
     },
     onSuccess: invalidate,
   })
 
   return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent }
 }
-

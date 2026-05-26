@@ -173,13 +173,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (session?.user?.id) await fetchProfile(session.user.id)
-  }, [session?.user?.id, fetchProfile])
+  }, [session, fetchProfile])
 
   async function signOut() {
     try {
       await supabase.auth.signOut()
     } catch {
-      try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* ignore */ }
+      // En cas d'échec de la déconnexion standard, tenter une déconnexion locale.
+      // Cela peut être utile pour certains scénarios de session ou versions de Supabase.
+      // Si ce n'est pas un problème connu ou nécessaire, cette partie peut être simplifiée.
+      try { await supabase.auth.signOut({ scope: 'local' }) } catch (err) { console.error('[AuthContext] Error during local sign out fallback:', err); }
     }
     setSession(null)
     setProfile(null)

@@ -11,8 +11,12 @@ export interface InvitePlayerInfo {
 
 /** Resolve a token before signup — works unauthenticated */
 export async function resolveInviteToken(token: string): Promise<InvitePlayerInfo | null> {
-  const { data, error } = await supabase.rpc('get_invite_player', { p_token: token })
-  if (error || !data?.length) return null
+  const { data, error } = await supabase.rpc('get_invite_player', { p_token: token });
+  if (error) {
+    console.error('[resolveInviteToken] Erreur lors de la récupération de l\'invitation:', error);
+    return null;
+  }
+  if (!data?.length) return null;
   return data[0] as InvitePlayerInfo
 }
 
@@ -54,6 +58,9 @@ export function useCreateInvite() {
       createdBy: string
     }) => {
       // Supprimer l'invitation existante si elle existe
+      // NOTE: Cette opération n'est pas atomique. Si l'insertion échoue après cette suppression,
+      // le joueur sera temporairement sans invitation. Pour une atomicité complète,
+      // il est recommandé de déplacer cette logique vers une fonction Supabase (RPC).
       await supabase
         .from('player_invites')
         .delete()

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useAppToast } from '@/hooks/useAppToast'
 
 // ── Nombre maximum de viewers simultanés ───────────────────────────────────
 // Avec Metered SFU, cette limite peut être beaucoup plus haute (ex: 1000)
@@ -16,6 +17,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
   audioDeviceId?: string
 }) {
   const { user } = useAuth()
+  const { toast } = useAppToast()
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [viewerCount, setViewerCount] = useState(0)
@@ -47,8 +49,8 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
       })
       if (error) {
         // Extraire le message détaillé depuis le body de la réponse 500
-        const detail = (error as any)?.context
-          ? await (error as any).context.json().catch(() => ({}))
+        const detail = (error as { context?: Response })?.context
+          ? await (error as { context: Response }).context.json().catch(() => ({}))
           : {}
         console.error('📡 [BC] Edge Function error detail:', detail)
         throw new Error(detail?.error || error.message)
@@ -105,7 +107,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
 
     } catch (err) {
       console.error('📡 [BC] startBroadcast error', err)
-      const notify = options?.onError ?? ((msg: string) => alert(msg))
+      const notify = options?.onError ?? ((msg: string, det?: string) => toast.error(msg, det))
       notify('Impossible de démarrer le live via Metered', err instanceof Error ? err.message : 'Erreur inconnue')
       stopBroadcast()
     }

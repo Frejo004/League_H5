@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { pushLocal } from '@/hooks/useRealtime' // Importer la fonction d'aide
 
 export interface TeamUnread {
   teamId: string
@@ -27,14 +28,24 @@ export interface TeamUnread {
 async function fetchUnreadCounts(userId: string, isAdmin: boolean): Promise<TeamUnread[]> {
   const rpcName = isAdmin ? 'get_team_unread_counts_admin' : 'get_team_unread_counts'
 
-  const { data, error } = await supabase.rpc(rpcName as any)
+  interface UnreadCountRow {
+    team_id: string
+    team_name: string
+    team_color: string
+    logo_url: string | null
+    unread_count: number | string | null
+    last_message: string | null
+    last_message_at: string | null
+  }
+
+  const { data, error } = await supabase.rpc(rpcName as Parameters<typeof supabase.rpc>[0])
   if (error) {
     // Fallback gracieux si la migration n'est pas encore appliquée
     console.warn('[useChatUnread] RPC non disponible, fallback désactivé:', error.message)
     return []
   }
 
-  return (data ?? []).map((row: any) => ({
+  return ((data as unknown as UnreadCountRow[]) ?? []).map((row: UnreadCountRow) => ({
     teamId:        row.team_id,
     teamName:      row.team_name,
     teamColor:     row.team_color,
@@ -87,13 +98,10 @@ export function useChatUnreadRealtime(userId?: string) {
             supabase.from('teams').select('name').eq('id', newMsg.team_id).single(),
           ])
 
-          const title = `${profile?.full_name ?? 'Nouveau message'} — ${team?.name ?? 'Chat'}`
-          const body = newMsg.content.length > 80 ? newMsg.content.slice(0, 80) + '…' : newMsg.content
-
-          new Notification(title, {
-            body, icon: '/logo-h5.png', badge: '/logo-h5.png',
-            tag: `chat-${newMsg.team_id}`, renotify: true,
-          } as NotificationOptions & { renotify?: boolean })
+          const title = `${profile?.full_name ?? 'Nouveau message'} — ${team?.name ?? 'Chat'}`;
+          const body = newMsg.content.length > 80 ? newMsg.content.slice(0, 80) + '…' : newMsg.content;
+          // Utiliser la fonction d'aide pushLocal pour une gestion cohérente des notifications
+          pushLocal(title, body, `chat-${newMsg.team_id}`, `/team-chat/${newMsg.team_id}`); // Assumant une route de chat
         }
       )
       .on('postgres_changes',

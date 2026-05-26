@@ -63,6 +63,9 @@ export function useUpdateMatchLineup() {
       )
 
       // 2. Supprimer l'ancienne compo pour cette équipe
+      // NOTE: Cette opération n'est pas atomique. Si l'insertion échoue après cette suppression,
+      // la composition sera temporairement vide. Pour une atomicité complète,
+      // il est recommandé de déplacer cette logique vers une fonction Supabase (RPC).
       await supabase
         .from('match_lineups')
         .delete()

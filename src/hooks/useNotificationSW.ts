@@ -100,8 +100,10 @@ export function useNotificationSW() {
         badge: '/logo-h5.png',
         tag: options?.tag,
       })
-      if (options?.url) {
-        n.onclick = () => { window.focus(); window.location.href = options.url!; n.close() }
+      if (options?.url) { // TODO: Envisager d'utiliser la fonction `navigate` de React Router pour les URLs internes afin d'éviter un rechargement complet de la page.
+        n.onclick = () => {
+          window.focus(); window.location.href = options.url!; n.close()
+        }
       }
     }
   }, [])

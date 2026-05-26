@@ -26,25 +26,38 @@ export function useMatches(seasonId?: string) {
   })
 }
 
+// Fonction utilitaire pour éviter la duplication de code lors de la récupération des détails de match
+async function fetchMatchDetails(matchIdentifier: string, isSlug: boolean, seasonId?: string): Promise<MatchDetail> {
+  let query = supabase
+    .from('matches')
+    .select(`
+      *,
+      home_team:teams!home_team_id(id, name, color, logo_url, captain_id),
+      away_team:teams!away_team_id(id, name, color, logo_url, captain_id),
+      seasons(id, name),
+      goals(*, players(id, first_name, last_name, jersey_number)),
+      assists(*, players(id, first_name, last_name))
+    `);
+
+  if (isSlug) {
+    query = query.eq('slug', matchIdentifier);
+  } else {
+    query = query.eq('id', matchIdentifier);
+  }
+  if (seasonId) {
+    query = query.eq('season_id', seasonId);
+  }
+  const { data, error } = await query.single();
+  if (error) throw error;
+  return data as unknown as MatchDetail;
+}
+
 export function useMatch(matchId?: string) {
   return useQuery({
     queryKey: ['matches', 'detail', matchId],
     enabled: !!matchId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
-          *,
-          home_team:teams!home_team_id(id, name, color, logo_url, captain_id),
-          away_team:teams!away_team_id(id, name, color, logo_url, captain_id),
-          seasons(id, name),
-          goals(*, players(id, first_name, last_name, jersey_number)),
-          assists(*, players(id, first_name, last_name))
-        `)
-        .eq('id', matchId!)
-        .single()
-      if (error) throw error
-      return data as unknown as MatchDetail
+      return fetchMatchDetails(matchId!, false);
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -67,25 +80,7 @@ export function useMatchBySlug(slug?: string, seasonId?: string) {
     queryKey: ['matches', 'slug', slug, seasonId],
     enabled: !!slug,
     queryFn: async () => {
-      let query = supabase
-        .from('matches')
-        .select(`
-          *,
-          home_team:teams!home_team_id(id, name, color, logo_url, captain_id),
-          away_team:teams!away_team_id(id, name, color, logo_url, captain_id),
-          seasons(id, name),
-          goals(*, players(id, first_name, last_name, jersey_number)),
-          assists(*, players(id, first_name, last_name))
-        `)
-        .eq('slug', slug!)
-      
-      if (seasonId) {
-        query = query.eq('season_id', seasonId)
-      }
-      
-      const { data, error } = await query.single()
-      if (error) throw error
-      return data as unknown as MatchDetail
+      return fetchMatchDetails(slug!, true, seasonId);
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -121,6 +116,7 @@ export function useUpdateMatch() {
   return useMutation({
     mutationFn: async ({ id, ...values }: Partial<Match> & { id: string }) => {
       // Exclure les colonnes système pour éviter l'erreur de type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
       const { created_at, updated_at, ...updateData } = values as any
       
       const { data, error } = await supabase
@@ -147,6 +143,7 @@ export function useUpdateMatch() {
 export function useDeleteMatch() {
   const qc = useQueryClient()
   return useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: async ({ id, seasonId }: { id: string; seasonId: string }) => {
       const { error } = await supabase.from('matches').delete().eq('id', id)
       if (error) throw error

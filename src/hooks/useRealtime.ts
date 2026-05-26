@@ -6,6 +6,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { MatchWithTeams } from '@/types/database'
 
 /**
  * Helper : envoyer une notification via le Service Worker actif (iOS PWA + desktop)
@@ -69,8 +70,8 @@ export function useRealtimeMatch(matchId?: string) {
             .from('matches')
             .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
             .eq('id', matchId).single()
-          const home = (m as any)?.home_team?.name ?? '?'
-          const away = (m as any)?.away_team?.name ?? '?'
+          const home = (m as unknown as MatchWithTeams)?.home_team?.name ?? '?'
+          const away = (m as unknown as MatchWithTeams)?.away_team?.name ?? '?'
           pushLocal(
             '🏁 Match terminé',
             `${home} ${newMatch.home_score ?? 0} – ${newMatch.away_score ?? 0} ${away}`,
@@ -154,8 +155,9 @@ export function useRealtimeMatches(seasonId?: string) {
         qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
         qc.invalidateQueries({ queryKey: ['landing-stats'] })
 
-        const newMatch = payload.new as { id: string; status?: string }
-        const oldMatch = payload.old as { status?: string }
+        interface MatchPayload { id: string; status?: string; season_id?: string }
+        const newMatch = payload.new as MatchPayload
+        const oldMatch = payload.old as MatchPayload
         
         if (newMatch.status === 'live' && oldMatch.status !== 'live') {
           const { data: match } = await supabase

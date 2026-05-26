@@ -34,7 +34,7 @@ export async function saveMentions(
   const isEveryone = rawMentions.includes('everyone') || rawMentions.includes('tout') || rawMentions.includes('tous')
 
   // Récupérer les membres du contexte
-  let memberRows: { user_id: string }[] = []
+  let memberRows: { user_id: string }[]
   if (context === 'team') {
     const { data: players } = await supabase
       .from('players')
@@ -123,9 +123,10 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   if (!msgs || msgs.length === 0) return []
 
   const replyIds = [...new Set(
-    msgs.map(m => (m as any).reply_to_id).filter(Boolean) as string[]
+    msgs.map(m => m.reply_to_id).filter(Boolean) as string[]
   )]
-  const replyMap = new Map<string, any>()
+  type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
+  const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('team_messages')
@@ -135,7 +136,7 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   }
 
   return msgs
-    .map(m => ({ ...m, reply_to: (m as any).reply_to_id ? (replyMap.get((m as any).reply_to_id) ?? null) : null }))
+    .map(m => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
     .reverse() as unknown as TeamMessageFull[]
 }
 
@@ -187,9 +188,10 @@ async function fetchPinnedMessages(teamId: string): Promise<PinnedMessage[]> {
 
   // Résoudre les reply_to
   const replyIds = [...new Set(
-    (data as any[]).map((p: any) => p.message?.reply_to_id).filter(Boolean) as string[]
+    (data as unknown[]).map((p: any) => p.message?.reply_to_id).filter(Boolean) as string[]
   )]
-  const replyMap = new Map<string, any>()
+  type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
+  const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('team_messages')
@@ -198,7 +200,7 @@ async function fetchPinnedMessages(teamId: string): Promise<PinnedMessage[]> {
     for (const r of replies ?? []) replyMap.set(r.id, r)
   }
 
-  return (data as any[]).map((p: any) => ({
+  return (data as unknown[]).map((p: any) => ({
     ...p.message,
     reply_to: p.message?.reply_to_id ? (replyMap.get(p.message.reply_to_id) ?? null) : null,
     pinned_at: p.pinned_at,
@@ -279,6 +281,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   }, [teamId, messagesQuery.data])
 
   // Reset quand on change d'équipe
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setOlderPages([])
     setOlderCount(0)
@@ -346,20 +349,24 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   })
 
   // ── Mark as read ──────────────────────────────────────────────────────────
-  const markAsRead = useCallback(async (lastMsgId: string, lastMsgAt: string) => {
-    if (!teamId || !currentUserId) return
-    if (lastMarkedRef.current === lastMsgId) return
-    lastMarkedRef.current = lastMsgId
+  const markAsRead = useCallback(
+    // TODO: Envisager de débouncer/limiter cette fonction pour réduire les écritures en base de données lors d'un défilement rapide.
+    async (lastMsgId: string, lastMsgAt: string) => {
+      if (!teamId || !currentUserId) return;
+      if (lastMarkedRef.current === lastMsgId) return;
+      lastMarkedRef.current = lastMsgId;
 
-    await supabase
-      .from('chat_read_receipts')
-      .upsert({
-        user_id: currentUserId,
-        team_id: teamId,
-        last_read_at: lastMsgAt,
-        last_read_msg: lastMsgId,
-      }, { onConflict: 'user_id,team_id' })
-  }, [teamId, currentUserId])
+      await supabase
+        .from('chat_read_receipts')
+        .upsert({
+          user_id: currentUserId,
+          team_id: teamId,
+          last_read_at: lastMsgAt,
+          last_read_msg: lastMsgId,
+        }, { onConflict: 'user_id,team_id' });
+    },
+    [teamId, currentUserId]
+  );
 
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useMutation({
@@ -377,7 +384,25 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         await saveMentions(content, newMsg.id, senderId, 'team', teamId!)
       }
     },
-    onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
+    onMutate: async () => {
+      const queryKey = MESSAGES_KEY(teamId ?? '');
+      await qc.cancelQueries({ queryKey });
+      const previousMessages = qc.getQueryData<TeamMessageFull[]>(queryKey);
+
+      // Mise à jour optimiste (simplifiée, l'objet message réel serait plus complexe)
+      // Ceci est un placeholder pour une implémentation complète de mise à jour optimiste.
+      // qc.setQueryData(queryKey, (old) => [...(old || []), { id: 'temp-id', ...newMessage, createdAt: new Date().toISOString(), sender: { id: newMessage.senderId, full_name: 'Moi', avatar_url: null }, reactions: [] }]);
+
+      return { previousMessages };
+    },
+    onError: (_err, _newMessage, context) => {
+      if (context?.previousMessages) {
+        qc.setQueryData(MESSAGES_KEY(teamId ?? ''), context.previousMessages);
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: MESSAGES_KEY(teamId ?? '') });
+    },
   })
 
   // ── Delete message (optimiste) ────────────────────────────────────────────
@@ -411,7 +436,27 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         if (error) throw error
       }
     },
-    onSuccess: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
+    onMutate: async ({ messageId, emoji, userId, hasReacted }) => {
+      const queryKey = MESSAGES_KEY(teamId ?? '');
+      await qc.cancelQueries({ queryKey });
+      const previousMessages = qc.getQueryData<TeamMessageFull[]>(queryKey);
+
+      // Mise à jour optimiste de la réaction
+      qc.setQueryData<TeamMessageFull[]>(queryKey, (old) =>
+        old?.map((msg) => {
+          if (msg.id === messageId) {
+            const newReactions = hasReacted ? msg.reactions.filter((r) => r.user_id !== userId || r.emoji !== emoji) : [...msg.reactions, { id: 'temp-reaction', message_id: messageId, user_id: userId, emoji, created_at: new Date().toISOString(), profile: { id: userId, full_name: 'Moi' } }];
+            return { ...msg, reactions: newReactions };
+          }
+          return msg;
+        })
+      );
+      return { previousMessages };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousMessages) qc.setQueryData(MESSAGES_KEY(teamId ?? ''), context.previousMessages);
+    },
+    onSettled: () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId ?? '') }),
   })
 
   // ── Edit message ───────────────────────────────────────────────────────────
@@ -529,7 +574,7 @@ export function useTeamMembers(teamId?: string) {
       const seen = new Set<string>()
 
       for (const p of players ?? []) {
-        const profile = (p as any).profile
+        const profile = (p as any).profile as TeamMember
         if (profile && !seen.has(profile.id)) {
           seen.add(profile.id)
           members.push({ id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url })
@@ -544,7 +589,7 @@ export function useTeamMembers(teamId?: string) {
         .maybeSingle()
 
       if (team) {
-        const cap = (team as any).captain
+        const cap = (team as any).captain as TeamMember
         if (cap && !seen.has(cap.id)) {
           seen.add(cap.id)
           members.push({ id: cap.id, full_name: cap.full_name, avatar_url: cap.avatar_url })

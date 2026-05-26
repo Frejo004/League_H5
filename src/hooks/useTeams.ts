@@ -28,6 +28,36 @@ export function useTeams(seasonId?: string) {
   })
 }
 
+// Fonction utilitaire pour éviter la duplication de code lors de la récupération des joueurs et de leurs avatars
+async function fetchTeamPlayersWithAvatars(teamId: string) {
+  // Requête 2 : les joueurs actifs de l'équipe
+  const { data: players, error: playersErr } = await supabase
+    .from('players')
+    .select('*')
+    .eq('team_id', teamId)
+    .eq('is_active', true)
+    .order('jersey_number', { ascending: true })
+  if (playersErr) throw playersErr
+
+  // Requête 3 : avatars depuis profiles pour les joueurs avec un compte
+  const userIds = (players ?? []).map(p => p.user_id).filter(Boolean) as string[]
+  const profilesMap = new Map<string, string | null>()
+  if (userIds.length) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', userIds)
+    for (const prof of profiles ?? []) {
+      profilesMap.set(prof.id, prof.avatar_url)
+    }
+  }
+
+  return (players ?? []).map(p => ({
+    ...p,
+    avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
+  }))
+}
+
 export function useTeam(teamId?: string) {
   return useQuery({
     queryKey: ['teams', 'detail', teamId],
@@ -41,32 +71,7 @@ export function useTeam(teamId?: string) {
         .single()
       if (teamErr) throw teamErr
 
-      // Requête 2 : les joueurs actifs de l'équipe
-      const { data: players, error: playersErr } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_id', teamId!)
-        .eq('is_active', true)
-        .order('jersey_number', { ascending: true })
-      if (playersErr) throw playersErr
-
-      // Requête 3 : avatars depuis profiles pour les joueurs avec un compte
-      const userIds = (players ?? []).map(p => p.user_id).filter(Boolean) as string[]
-      const profilesMap = new Map<string, string | null>()
-      if (userIds.length) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, avatar_url')
-          .in('id', userIds)
-        for (const prof of profiles ?? []) {
-          profilesMap.set(prof.id, prof.avatar_url)
-        }
-      }
-
-      const playersWithAvatar = (players ?? []).map(p => ({
-        ...p,
-        avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
-      }))
+      const playersWithAvatar = await fetchTeamPlayersWithAvatars(teamId!);
 
       return { ...team, players: playersWithAvatar }
     },
@@ -98,31 +103,7 @@ export function useTeamBySlug(slug?: string, seasonId?: string) {
       if (teamErr) throw teamErr
 
       // Requête 2 : les joueurs actifs de l'équipe
-      const { data: players, error: playersErr } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_id', team.id)
-        .eq('is_active', true)
-        .order('jersey_number', { ascending: true })
-      if (playersErr) throw playersErr
-
-      // Requête 3 : avatars depuis profiles pour les joueurs avec un compte
-      const userIds = (players ?? []).map(p => p.user_id).filter(Boolean) as string[]
-      const profilesMap = new Map<string, string | null>()
-      if (userIds.length) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, avatar_url')
-          .in('id', userIds)
-        for (const prof of profiles ?? []) {
-          profilesMap.set(prof.id, prof.avatar_url)
-        }
-      }
-
-      const playersWithAvatar = (players ?? []).map(p => ({
-        ...p,
-        avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
-      }))
+      const playersWithAvatar = await fetchTeamPlayersWithAvatars(team.id);
 
       return { ...team, players: playersWithAvatar }
     },
@@ -162,7 +143,7 @@ export function useUpdateTeam() {
       if (error) throw error
       return data as Team
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalider toutes les queries qui contiennent des données d'équipes
       qc.invalidateQueries({ queryKey: ['teams'] })
       qc.invalidateQueries({ queryKey: ['matches'] })
@@ -184,7 +165,6 @@ export function useSetCaptain() {
       teamId,
       captainPlayerId,
       captainUserId,
-      seasonId: _seasonId,  // utilisé dans onSuccess via les variables
     }: {
       teamId: string
       captainPlayerId: string | null
@@ -208,7 +188,7 @@ export function useSetCaptain() {
 export function useDeleteTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, seasonId: _seasonId }: { id: string; seasonId: string }) => {
+    mutationFn: async ({ id }: { id: string; seasonId: string }) => {
       const { error } = await supabase.from('teams').delete().eq('id', id)
       if (error) throw error
     },

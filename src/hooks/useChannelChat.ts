@@ -568,13 +568,17 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
   }, [conversationId, qc])
 
   const markAsRead = useCallback(async (lastMsgId: string, lastMsgAt: string) => {
-    if (!conversationId || !currentUserId) return
-    if (lastMarkedRef.current === lastMsgId) return
-    lastMarkedRef.current = lastMsgId
-    await supabase.from('dm_read_receipts').upsert({
-      user_id: currentUserId, conversation_id: conversationId,
-      last_read_at: lastMsgAt, last_read_msg: lastMsgId,
-    }, { onConflict: 'user_id,conversation_id' })
+    // TODO: Envisager de débouncer/limiter cette fonction pour réduire les écritures en base de données lors d'un défilement rapide.
+    if (!conversationId || !currentUserId) return;
+    if (lastMarkedRef.current === lastMsgId) return;
+    lastMarkedRef.current = lastMsgId;
+    await supabase.from('dm_read_receipts').upsert(
+      {
+        user_id: currentUserId, conversation_id: conversationId,
+        last_read_at: lastMsgAt, last_read_msg: lastMsgId,
+      },
+      { onConflict: 'user_id,conversation_id' }
+    );
   }, [conversationId, currentUserId])
 
   const sendMessage = useMutation({

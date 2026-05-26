@@ -52,7 +52,9 @@ export function useCameraDevices() {
 
   // Énumération initiale (labels vides sur iOS avant permission)
   useEffect(() => {
-    enumerate()
+    queueMicrotask(() => {
+      enumerate()
+    })
     navigator.mediaDevices.addEventListener('devicechange', enumerate)
     return () => navigator.mediaDevices.removeEventListener('devicechange', enumerate)
   }, [enumerate])
@@ -67,7 +69,8 @@ export function useCameraDevices() {
       setHasPermission(true)
       await enumerate()
     } catch (err) {
-      console.warn('[useCameraDevices] permission denied', err)
+      console.warn('[useCameraDevices] permission denied', err);
+      // TODO: Intégrer avec `useAppToast` pour afficher un message convivial à l'utilisateur
     }
   }, [enumerate])
 

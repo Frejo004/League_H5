@@ -96,6 +96,10 @@ export function useUpdateSpectatorStatus() {
       if (error) throw error
 
       // 2. Si approuvé, mettre à jour le rôle du profil (spectator → spectator approuvé)
+      //    TODO: Envisager d'envoyer une notification en temps réel à l'utilisateur (userId)
+      //    si le statut est 'approved'. Cela pourrait être fait via un canal Realtime Supabase
+      //    spécifique à l'utilisateur ou en poussant une notification locale si l'utilisateur est en ligne.
+      //    Exemple: if (status === 'approved') pushLocal('Demande approuvée', 'Vous pouvez maintenant voir la ligue', 'spectator-approved', '/');
       //    On garde le rôle 'spectator' mais on marque via la table spectators
       //    Si refusé, on ne change rien au profil
       return data

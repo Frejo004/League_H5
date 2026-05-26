@@ -1,6 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { TeamRef } from '@/types/database'
+import type { Player, TeamRef } from '@/types/database'
+
+type PlayerProfileRaw = Pick<
+  Player,
+  | 'id'
+  | 'first_name'
+  | 'last_name'
+  | 'jersey_number'
+  | 'position'
+  | 'avatar_url'
+  | 'team_id'
+  | 'slug'
+  | 'season_id'
+  | 'user_id'
+> & {
+  team: TeamRef | TeamRef[] | null
+}
 
 export interface PlayerProfileData {
   id: string
@@ -49,119 +65,7 @@ export function usePlayerProfile(playerId?: string) {
         .single()
       if (playerErr) throw playerErr
 
-      const team = (Array.isArray(playerRaw.team) ? playerRaw.team[0] : playerRaw.team) as TeamRef
-
-      // Récupère l'avatar depuis profiles si le joueur a un compte
-      let resolvedAvatarUrl: string | null = playerRaw.avatar_url
-      if (playerRaw.user_id) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', playerRaw.user_id)
-          .single()
-        if (prof?.avatar_url) resolvedAvatarUrl = prof.avatar_url
-      }
-
-      // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
-      const [matchesRes, goalsRes, assistsRes] = await Promise.all([
-        // Matchs terminés de la saison impliquant l'équipe du joueur
-        supabase
-          .from('matches')
-          .select(`
-            id, slug, matchday, played_at, home_score, away_score,
-            home_team_id, away_team_id,
-            home_team:teams!home_team_id(id, name, color),
-            away_team:teams!away_team_id(id, name, color)
-          `)
-          .eq('season_id', playerRaw.season_id)
-          .eq('status', 'completed')
-          .or(`home_team_id.eq.${playerRaw.team_id},away_team_id.eq.${playerRaw.team_id}`)
-          .order('played_at', { ascending: false }),
-
-        // Buts du joueur dans la saison
-        supabase
-          .from('goals')
-          .select('match_id, is_own_goal')
-          .eq('player_id', playerId!),
-
-        // Passes du joueur dans la saison
-        supabase
-          .from('assists')
-          .select('match_id')
-          .eq('player_id', playerId!),
-      ])
-
-      if (matchesRes.error) throw matchesRes.error
-      if (goalsRes.error)   throw goalsRes.error
-      if (assistsRes.error) throw assistsRes.error
-
-      const matches = matchesRes.data ?? []
-      const goals   = goalsRes.data ?? []
-      const assists = assistsRes.data ?? []
-
-      // Filtrer goals/assists sur les matchs de la saison uniquement
-      const matchIdSet = new Set(matches.map(m => m.id))
-      const seasonGoals   = goals.filter(g => matchIdSet.has(g.match_id))
-      const seasonAssists = assists.filter(a => matchIdSet.has(a.match_id))
-
-      // ── Agrégation des stats ─────────────────────────────────────────────────
-      const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
-      const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
-      const totalAssists  = seasonAssists.length
-      // matchesPlayed = tous les matchs terminés de l'équipe dans la saison
-      // (indépendamment des contributions du joueur)
-      const matchesPlayed = matches.length
-
-      // Goals/assists par match pour l'affichage
-      const goalsByMatch   = new Map<string, number>()
-      const assistsByMatch = new Map<string, number>()
-      for (const g of seasonGoals.filter(g => !g.is_own_goal)) {
-        goalsByMatch.set(g.match_id, (goalsByMatch.get(g.match_id) ?? 0) + 1)
-      }
-      for (const a of seasonAssists) {
-        assistsByMatch.set(a.match_id, (assistsByMatch.get(a.match_id) ?? 0) + 1)
-      }
-
-      // ── Construction des derniers matchs ─────────────────────────────────────
-      const recentMatches = matches.slice(0, 10).map(m => {
-        const isHome   = m.home_team_id === playerRaw.team_id
-        const myScore  = isHome ? m.home_score! : m.away_score!
-        const oppScore = isHome ? m.away_score! : m.home_score!
-        const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
-
-        return {
-          match_id:        m.id,
-          match_slug:      m.slug,
-          matchday:        m.matchday,
-          played_at:       m.played_at,
-          home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
-          away_team:       (Array.isArray(m.away_team) ? m.away_team[0] : m.away_team) as TeamRef,
-          home_score:      m.home_score!,
-          away_score:      m.away_score!,
-          player_team_id:  playerRaw.team_id,
-          goals_in_match:  goalsByMatch.get(m.id) ?? 0,
-          assists_in_match: assistsByMatch.get(m.id) ?? 0,
-          result,
-        }
-      })
-
-      return {
-        id:            playerRaw.id,
-        first_name:    playerRaw.first_name,
-        last_name:     playerRaw.last_name,
-        jersey_number: playerRaw.jersey_number,
-        position:      playerRaw.position,
-        avatar_url:    resolvedAvatarUrl,
-        team_id:       playerRaw.team_id,
-        slug:          playerRaw.slug,
-        season_id:     playerRaw.season_id,
-        team,
-        goals:         totalGoals,
-        assists:       totalAssists,
-        own_goals:     totalOwnGoals,
-        matches_played: matchesPlayed,
-        recent_matches: recentMatches,
-      } as PlayerProfileData
+      return fetchPlayerProfileData(playerRaw as unknown as PlayerProfileRaw);
     },
   })
 }
@@ -190,117 +94,124 @@ export function usePlayerProfileBySlug(slug?: string, seasonId?: string) {
       const { data: playerRaw, error: playerErr } = await query.single()
       if (playerErr) throw playerErr
 
-      const team = (Array.isArray(playerRaw.team) ? playerRaw.team[0] : playerRaw.team) as TeamRef
-
-      // Récupère l'avatar depuis profiles si le joueur a un compte
-      let resolvedAvatarUrl: string | null = playerRaw.avatar_url
-      if (playerRaw.user_id) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', playerRaw.user_id)
-          .single()
-        if (prof?.avatar_url) resolvedAvatarUrl = prof.avatar_url
-      }
-
-      // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
-      const [matchesRes, goalsRes, assistsRes] = await Promise.all([
-        // Matchs terminés de la saison impliquant l'équipe du joueur
-        supabase
-          .from('matches')
-          .select(`
-            id, slug, matchday, played_at, home_score, away_score,
-            home_team_id, away_team_id,
-            home_team:teams!home_team_id(id, name, color),
-            away_team:teams!away_team_id(id, name, color)
-          `)
-          .eq('season_id', playerRaw.season_id)
-          .eq('status', 'completed')
-          .or(`home_team_id.eq.${playerRaw.team_id},away_team_id.eq.${playerRaw.team_id}`)
-          .order('played_at', { ascending: false }),
-
-        // Buts du joueur dans la saison
-        supabase
-          .from('goals')
-          .select('match_id, is_own_goal')
-          .eq('player_id', playerRaw.id),
-
-        // Passes du joueur dans la saison
-        supabase
-          .from('assists')
-          .select('match_id')
-          .eq('player_id', playerRaw.id),
-      ])
-
-      if (matchesRes.error) throw matchesRes.error
-      if (goalsRes.error)   throw goalsRes.error
-      if (assistsRes.error) throw assistsRes.error
-
-      const matches = matchesRes.data ?? []
-      const goals   = goalsRes.data ?? []
-      const assists = assistsRes.data ?? []
-
-      // Filtrer goals/assists sur les matchs de la saison uniquement
-      const matchIdSet = new Set(matches.map(m => m.id))
-      const seasonGoals   = goals.filter(g => matchIdSet.has(g.match_id))
-      const seasonAssists = assists.filter(a => matchIdSet.has(a.match_id))
-
-      // ── Agrégation des stats ─────────────────────────────────────────────────
-      const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
-      const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
-      const totalAssists  = seasonAssists.length
-      const matchesPlayed = matches.length
-
-      // Goals/assists par match pour l'affichage
-      const goalsByMatch   = new Map<string, number>()
-      const assistsByMatch = new Map<string, number>()
-      for (const g of seasonGoals.filter(g => !g.is_own_goal)) {
-        goalsByMatch.set(g.match_id, (goalsByMatch.get(g.match_id) ?? 0) + 1)
-      }
-      for (const a of seasonAssists) {
-        assistsByMatch.set(a.match_id, (assistsByMatch.get(a.match_id) ?? 0) + 1)
-      }
-
-      // ── Construction des derniers matchs ─────────────────────────────────────
-      const recentMatches = matches.slice(0, 10).map(m => {
-        const isHome   = m.home_team_id === playerRaw.team_id
-        const myScore  = isHome ? m.home_score! : m.away_score!
-        const oppScore = isHome ? m.away_score! : m.home_score!
-        const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
-
-        return {
-          match_id:        m.id,
-          match_slug:      m.slug,
-          matchday:        m.matchday,
-          played_at:       m.played_at,
-          home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
-          away_team:       (Array.isArray(m.away_team) ? m.away_team[0] : m.away_team) as TeamRef,
-          home_score:      m.home_score!,
-          away_score:      m.away_score!,
-          player_team_id:  playerRaw.team_id,
-          goals_in_match:  goalsByMatch.get(m.id) ?? 0,
-          assists_in_match: assistsByMatch.get(m.id) ?? 0,
-          result,
-        }
-      })
-
-      return {
-        id:            playerRaw.id,
-        first_name:    playerRaw.first_name,
-        last_name:     playerRaw.last_name,
-        jersey_number: playerRaw.jersey_number,
-        position:      playerRaw.position,
-        avatar_url:    resolvedAvatarUrl,
-        team_id:       playerRaw.team_id,
-        slug:          playerRaw.slug,
-        season_id:     playerRaw.season_id,
-        team,
-        goals:         totalGoals,
-        assists:       totalAssists,
-        own_goals:     totalOwnGoals,
-        matches_played: matchesPlayed,
-        recent_matches: recentMatches,
-      } as PlayerProfileData
+      return fetchPlayerProfileData(playerRaw as unknown as PlayerProfileRaw);
     },
   })
+}
+
+// Fonction utilitaire pour éviter la duplication de code
+async function fetchPlayerProfileData(playerRaw: PlayerProfileRaw): Promise<PlayerProfileData> {
+  const team = (Array.isArray(playerRaw.team) ? playerRaw.team[0] : playerRaw.team) as TeamRef
+
+  // Récupère l'avatar depuis profiles si le joueur a un compte
+  let resolvedAvatarUrl: string | null = playerRaw.avatar_url
+  if (playerRaw.user_id) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', playerRaw.user_id)
+      .single()
+    if (prof?.avatar_url) resolvedAvatarUrl = prof.avatar_url
+  }
+
+  // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
+  const [matchesRes, goalsRes, assistsRes] = await Promise.all([
+    // Matchs terminés de la saison impliquant l'équipe du joueur
+    supabase
+      .from('matches')
+      .select(`
+        id, slug, matchday, played_at, home_score, away_score,
+        home_team_id, away_team_id,
+        home_team:teams!home_team_id(id, name, color),
+        away_team:teams!away_team_id(id, name, color)
+      `)
+      .eq('season_id', playerRaw.season_id)
+      .eq('status', 'completed')
+      .or(`home_team_id.eq.${playerRaw.team_id},away_team_id.eq.${playerRaw.team_id}`)
+      .order('played_at', { ascending: false }),
+
+    // Buts du joueur dans la saison
+    supabase
+      .from('goals')
+      .select('match_id, is_own_goal')
+      .eq('player_id', playerRaw.id),
+
+    // Passes du joueur dans la saison
+    supabase
+      .from('assists')
+      .select('match_id')
+      .eq('player_id', playerRaw.id),
+  ])
+
+  if (matchesRes.error) throw matchesRes.error
+  if (goalsRes.error)   throw goalsRes.error
+  if (assistsRes.error) throw assistsRes.error
+
+  const matches = matchesRes.data ?? []
+  const goals   = goalsRes.data ?? []
+  const assists = assistsRes.data ?? []
+
+  // Filtrer goals/assists sur les matchs de la saison uniquement
+  const matchIdSet = new Set(matches.map(m => m.id))
+  const seasonGoals   = goals.filter(g => matchIdSet.has(g.match_id))
+  const seasonAssists = assists.filter(a => matchIdSet.has(a.match_id))
+
+  // ── Agrégation des stats ─────────────────────────────────────────────────
+  const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
+  const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
+  const totalAssists  = seasonAssists.length
+  // matchesPlayed = tous les matchs terminés de l'équipe dans la saison
+  // (indépendamment des contributions du joueur)
+  const matchesPlayed = matches.length
+
+  // Goals/assists par match pour l'affichage
+  const goalsByMatch   = new Map<string, number>()
+  const assistsByMatch = new Map<string, number>()
+  for (const g of seasonGoals.filter(g => !g.is_own_goal)) {
+    goalsByMatch.set(g.match_id, (goalsByMatch.get(g.match_id) ?? 0) + 1)
+  }
+  for (const a of seasonAssists) {
+    assistsByMatch.set(a.match_id, (assistsByMatch.get(a.match_id) ?? 0) + 1)
+  }
+
+  // ── Construction des derniers matchs ─────────────────────────────────────
+  const recentMatches = matches.slice(0, 10).map(m => {
+    const isHome   = m.home_team_id === playerRaw.team_id
+    const myScore  = isHome ? m.home_score! : m.away_score!
+    const oppScore = isHome ? m.away_score! : m.home_score!
+    const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
+
+    return {
+      match_id:        m.id,
+      match_slug:      m.slug,
+      matchday:        m.matchday,
+      played_at:       m.played_at,
+      home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
+      away_team:       (Array.isArray(m.away_team) ? m.away_team[0] : m.away_team) as TeamRef,
+      home_score:      m.home_score!,
+      away_score:      m.away_score!,
+      player_team_id:  playerRaw.team_id,
+      goals_in_match:  goalsByMatch.get(m.id) ?? 0,
+      assists_in_match: assistsByMatch.get(m.id) ?? 0,
+      result,
+    }
+  })
+
+  return {
+    id:            playerRaw.id,
+    first_name:    playerRaw.first_name,
+    last_name:     playerRaw.last_name,
+    jersey_number: playerRaw.jersey_number,
+    position:      playerRaw.position,
+    avatar_url:    resolvedAvatarUrl,
+    team_id:       playerRaw.team_id,
+    slug:          playerRaw.slug,
+    season_id:     playerRaw.season_id,
+    team,
+    goals:         totalGoals,
+    assists:       totalAssists,
+    own_goals:     totalOwnGoals,
+    matches_played: matchesPlayed,
+    recent_matches: recentMatches,
+  } as PlayerProfileData
 }

@@ -108,8 +108,16 @@ export function useDisciplinaryStats(seasonId?: string) {
 
       const matchIds = matches.map(m => m.id)
 
+      interface EventRow {
+        type: 'yellow_card' | 'red_card'
+        team_id: string
+        player_id: string | null
+        team: { id: string; name: string; color: string } | null
+        player: { id: string; first_name: string; last_name: string } | null
+      }
+
       // Récupérer tous les événements cartons de la saison
-      const { data: events, error } = await supabase
+      const { data, error } = await supabase
         .from('match_events')
         .select(`
           type, team_id, player_id,
@@ -117,7 +125,9 @@ export function useDisciplinaryStats(seasonId?: string) {
           player:players(id, first_name, last_name)
         `)
         .in('match_id', matchIds)
-        .in('type', ['yellow_card', 'red_card']) as any
+        .in('type', ['yellow_card', 'red_card'])
+
+      const events = data as unknown as EventRow[]
 
       if (error) throw error
       if (!events?.length) return { players: [], teams: [], totalYellow: 0, totalRed: 0 }
@@ -207,13 +217,21 @@ export function useSuspensions(seasonId?: string) {
         .eq('season_id', seasonId!)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data as any
+      return data as unknown as Suspension[]
     },
   })
 
   const addSuspension = useMutation({
     mutationFn: async (payload: Partial<Suspension>) => {
-      const { data, error } = await supabase.from('suspensions').insert(payload as any).select().single()
+      const { data, error } = await supabase.from('suspensions').insert({
+        player_id: payload.player_id!,
+        season_id: payload.season_id!,
+        reason: payload.reason!,
+        match_id_trigger: payload.match_id_trigger ?? null,
+        matches_count: payload.matches_count ?? 0,
+        matches_served: payload.matches_served ?? 0,
+        is_active: payload.is_active ?? true,
+      }).select().single()
       if (error) throw error
       return data
     },
@@ -222,7 +240,7 @@ export function useSuspensions(seasonId?: string) {
 
   const toggleSuspension = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from('suspensions').update({ is_active } as any).eq('id', id)
+      const { error } = await supabase.from('suspensions').update({ is_active }).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
@@ -238,7 +256,7 @@ export function useSuspensions(seasonId?: string) {
 
   const updateServed = useMutation({
     mutationFn: async ({ id, matches_served }: { id: string; matches_served: number }) => {
-      const { error } = await supabase.from('suspensions').update({ matches_served } as any).eq('id', id)
+      const { error } = await supabase.from('suspensions').update({ matches_served }).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),

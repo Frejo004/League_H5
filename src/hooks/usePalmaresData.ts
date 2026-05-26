@@ -38,7 +38,7 @@ export function usePalmaresData(seasonId?: string) {
       const matches = matchesRes.data ?? []
 
       const totalGoals = matches.reduce(
-        (sum, m) => sum + (m.home_score ?? 0) + (m.away_score ?? 0), 0
+        (sum, m) => sum + (Number(m.home_score) || 0) + (Number(m.away_score) || 0), 0
       )
 
       const topScorer   = scorers.filter(s => s.goals > 0).sort((a, b) => b.goals - a.goals)[0] ?? null

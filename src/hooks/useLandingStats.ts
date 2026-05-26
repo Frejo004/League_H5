@@ -6,13 +6,17 @@ export function useLandingStats() {
     queryKey: ['landing-stats'],
     queryFn: async () => {
       // 1. Get active season
-      const { data: season } = await supabase
+      const { data: season, error: seasonErr } = await supabase
         .from('seasons')
         .select('id, name')
         .eq('is_active', true)
         .maybeSingle()
-      
-      if (!season) return { teams: 0, players: 0, seasonName: 'Saison' }
+
+      if (seasonErr) {
+        console.error('[useLandingStats] Erreur lors de la récupération de la saison active:', seasonErr);
+        throw seasonErr;
+      }
+      if (!season) return { teams: 0, players: 0, seasonName: 'Saison' };
 
       // 2. Count teams
       const { count: teamsCount } = await supabase

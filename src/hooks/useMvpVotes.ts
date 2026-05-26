@@ -11,6 +11,27 @@ export interface MvpResult {
   votes: number
 }
 
+// Helper pour grouper les votes par match et déterminer le(s) gagnant(s)
+function getMvpWinnersByMatch(votes: Array<{ match_id: string; player_id: string }>) {
+  const votesByMatch = new Map<string, Map<string, number>>()
+  for (const v of votes) {
+    if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
+    const mv = votesByMatch.get(v.match_id)!
+    mv.set(v.player_id, (mv.get(v.player_id) ?? 0) + 1)
+  }
+
+  const winnersByMatch = new Map<string, string[]>()
+  for (const [matchId, matchVotes] of votesByMatch) {
+    if (matchVotes.size === 0) continue
+    const maxVotes = Math.max(...matchVotes.values())
+    const winners = [...matchVotes.entries()]
+      .filter(([_, vCount]) => vCount === maxVotes)
+      .map(([pId]) => pId)
+    winnersByMatch.set(matchId, winners)
+  }
+  return { votesByMatch, winnersByMatch }
+}
+
 // ── Votes for a single match ──────────────────────────────────────────────────
 
 export function useMvpVotes(matchId?: string) {
