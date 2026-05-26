@@ -23,9 +23,9 @@ export function AdminSpectatorsPage() {
   const { data: spectators, isLoading } = useSpectators()
   const updateStatus = useUpdateSpectatorStatus()
 
-  async function handleUpdate(id: string, status: SpectatorStatus, userId: string) {
+  async function handleUpdate(id: string, status: SpectatorStatus) {
     if (!user) return
-    await updateStatus.mutateAsync({ id, status, reviewedBy: user.id, userId })
+    await updateStatus.mutateAsync({ id, status, reviewedBy: user.id })
   }
 
   const pending  = (spectators ?? []).filter((s): s is SpectatorWithProfile => s.status === 'pending')
@@ -72,7 +72,7 @@ export function AdminSpectatorsPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                         <button
-                          onClick={() => handleUpdate(s.id, 'approved', s.user_id)}
+                          onClick={() => handleUpdate(s.id, 'approved')}
                           disabled={updateStatus.isPending}
                           className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)]"
                         >
@@ -80,7 +80,7 @@ export function AdminSpectatorsPage() {
                           Approuver
                         </button>
                         <button
-                          onClick={() => handleUpdate(s.id, 'rejected', s.user_id)}
+                          onClick={() => handleUpdate(s.id, 'rejected')}
                           disabled={updateStatus.isPending}
                           className="flex-1 sm:flex-none btn-danger flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)]"
                         >

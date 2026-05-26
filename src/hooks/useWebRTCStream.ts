@@ -1,27 +1,30 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
 import { useAppToast } from '@/hooks/useAppToast'
 
 // ── Nombre maximum de viewers simultanés ───────────────────────────────────
 // Avec Metered SFU, cette limite peut être beaucoup plus haute (ex: 1000)
-const MAX_VIEWERS = 1000
 
 // ── Durée max du buffer DVR côté viewer (en secondes) ───────────────────────
 const DVR_BUFFER_SECONDS = 300 // 5 minutes de retour en arrière possible
 
 // ── useWebRTCBroadcaster ──────────────────────────────────────────────────────
+type NetworkQuality = 'good' | 'degraded' | 'poor'
+type RemoteTrackItem = {
+  type: 'video' | 'audio'
+  track: MediaStreamTrack
+}
+
 export function useWebRTCBroadcaster(matchId: string, options?: {
   onError?: (message: string, detail?: string) => void
   videoDeviceId?: string
   audioDeviceId?: string
 }) {
-  const { user } = useAuth()
   const { toast } = useAppToast()
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [viewerCount, setViewerCount] = useState(0)
-  const [networkQuality, setNetworkQuality] = useState<'good' | 'degraded' | 'poor'>('good')
+  const networkQuality: NetworkQuality = 'good'
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
 
   const meetingRef = useRef<MeteredMeeting | null>(null)
@@ -157,12 +160,11 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
 
 // ── useWebRTCViewer ───────────────────────────────────────────────────────────
 export function useWebRTCViewer(matchId: string) {
-  const { user } = useAuth()
   const [stream, setStream]           = useState<MediaStream | null>(null)
   const [isLive, setIsLive]           = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'idle'>('idle')
-  const [isStreamFull, setIsStreamFull] = useState(false)
+  const isStreamFull = false
 
   const [dvrEnabled,   setDvrEnabled]   = useState(false)
   const [dvrOffset,    setDvrOffset]    = useState(0)
@@ -226,7 +228,9 @@ export function useWebRTCViewer(matchId: string) {
       try {
         const ms = mediaSourceRef.current
         if (ms && ms.readyState === 'open') ms.removeSourceBuffer(sourceBufferRef.current)
-      } catch (e) {}
+      } catch {
+        console.warn('📡 [DVR] removeSourceBuffer ignored')
+      }
       sourceBufferRef.current = null
     }
     if (mediaSourceRef.current) {
@@ -290,7 +294,7 @@ export function useWebRTCViewer(matchId: string) {
 
   const stopDvrRecording = useCallback(() => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      try { recorderRef.current.stop() } catch {}
+      try { recorderRef.current.stop() } catch { /* ignore */ }
     }
     recorderRef.current = null
     dvrChunksRef.current = []
@@ -383,7 +387,7 @@ export function useWebRTCViewer(matchId: string) {
         meeting.on("participantJoined", updateCount)
         meeting.on("participantLeft", updateCount)
 
-        meeting.on("remoteTrackStarted", (trackItem: any) => {
+        meeting.on("remoteTrackStarted", (trackItem: RemoteTrackItem) => {
           if (trackItem.type === "video") {
             remoteStreamRef.current.getVideoTracks().forEach(t => t.stop())
             remoteStreamRef.current.addTrack(trackItem.track)

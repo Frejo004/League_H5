@@ -6,7 +6,25 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { MatchWithTeams } from '@/types/database'
+import type { Match, MatchLineupRow, MatchWithTeams, Team } from '@/types/database'
+
+type RealtimeMatchPayload = Pick<Match, 'id' | 'season_id' | 'status' | 'home_score' | 'away_score'>
+type RealtimeTeamPayload = Pick<Team, 'season_id'>
+type RealtimeLineupPayload = Pick<MatchLineupRow, 'team_id'>
+type TeamNameRef = Pick<Team, 'name'>
+type MatchTeamNames = {
+  home_team: TeamNameRef | TeamNameRef[] | null
+  away_team: TeamNameRef | TeamNameRef[] | null
+}
+
+function getRealtimeRow<T>(row: unknown): Partial<T> {
+  return row && typeof row === 'object' ? row as Partial<T> : {}
+}
+
+function getTeamName(team: TeamNameRef | TeamNameRef[] | null | undefined, fallback: string) {
+  const value = Array.isArray(team) ? team[0] : team
+  return value?.name ?? fallback
+}
 
 /**
  * Helper : envoyer une notification via le Service Worker actif (iOS PWA + desktop)
@@ -146,7 +164,9 @@ export function useRealtimeMatches(seasonId?: string) {
         schema: 'public', 
         table: 'matches' 
       }, async (payload) => {
-        const matchSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+        const newPayload = getRealtimeRow<RealtimeMatchPayload>(payload.new)
+        const oldPayload = getRealtimeRow<RealtimeMatchPayload>(payload.old)
+        const matchSeasonId = newPayload.season_id ?? oldPayload.season_id
         if (matchSeasonId !== seasonId) return
 
         console.log('🔄 Realtime: Match update for season', seasonId)
@@ -155,19 +175,19 @@ export function useRealtimeMatches(seasonId?: string) {
         qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
         qc.invalidateQueries({ queryKey: ['landing-stats'] })
 
-        interface MatchPayload { id: string; status?: string; season_id?: string }
-        const newMatch = payload.new as MatchPayload
-        const oldMatch = payload.old as MatchPayload
+        const newMatch = newPayload
+        const oldMatch = oldPayload
         
-        if (newMatch.status === 'live' && oldMatch.status !== 'live') {
+        if (newMatch.id && newMatch.status === 'live' && oldMatch.status !== 'live') {
           const { data: match } = await supabase
             .from('matches')
             .select('home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)')
             .eq('id', newMatch.id)
             .single()
           
-          const home = (match as any)?.home_team?.name ?? 'Équipe A'
-          const away = (match as any)?.away_team?.name ?? 'Équipe B'
+          const matchTeams = match as unknown as MatchTeamNames | null
+          const home = getTeamName(matchTeams?.home_team, 'Équipe A')
+          const away = getTeamName(matchTeams?.away_team, 'Équipe B')
           
           pushLocal(
             '🔴 Match en direct !',
@@ -218,7 +238,9 @@ export function useRealtimeTeams(seasonId?: string) {
         schema: 'public', 
         table: 'teams' 
       }, (payload) => {
-        const teamSeasonId = (payload.new as any)?.season_id || (payload.old as any)?.season_id
+        const newPayload = getRealtimeRow<RealtimeTeamPayload>(payload.new)
+        const oldPayload = getRealtimeRow<RealtimeTeamPayload>(payload.old)
+        const teamSeasonId = newPayload.season_id ?? oldPayload.season_id
         if (teamSeasonId !== seasonId) return
 
         console.log('🛡️ Realtime: Team update received')
@@ -257,7 +279,9 @@ export function useRealtimeTactics(teamId?: string, matchId?: string) {
         table: 'match_lineups', 
         filter: `match_id=eq.${matchId}` 
       }, async (payload) => {
-        const item = (payload.new as any) || (payload.old as any)
+        const item = payload.new && Object.keys(payload.new).length > 0
+          ? getRealtimeRow<RealtimeLineupPayload>(payload.new)
+          : getRealtimeRow<RealtimeLineupPayload>(payload.old)
         if (item.team_id !== teamId) return
 
         console.log('📋 Realtime: Tactical update')

@@ -12,7 +12,7 @@ export interface MvpResult {
 }
 
 // Helper pour grouper les votes par match et déterminer le(s) gagnant(s)
-function getMvpWinnersByMatch(votes: Array<{ match_id: string; player_id: string }>) {
+export function getMvpWinnersByMatch(votes: Array<{ match_id: string; player_id: string }>) {
   const votesByMatch = new Map<string, Map<string, number>>()
   for (const v of votes) {
     if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
@@ -25,7 +25,7 @@ function getMvpWinnersByMatch(votes: Array<{ match_id: string; player_id: string
     if (matchVotes.size === 0) continue
     const maxVotes = Math.max(...matchVotes.values())
     const winners = [...matchVotes.entries()]
-      .filter(([_, vCount]) => vCount === maxVotes)
+      .filter((entry) => entry[1] === maxVotes)
       .map(([pId]) => pId)
     winnersByMatch.set(matchId, winners)
   }
@@ -163,7 +163,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         if (matchVotes.size === 0) continue
         const maxVotes = Math.max(...matchVotes.values())
         const winners = [...matchVotes.entries()]
-          .filter(([_, vCount]) => vCount === maxVotes)
+          .filter((entry) => entry[1] === maxVotes)
           .map(([pId]) => pId)
 
         if (winners.includes(playerId!)) {
@@ -234,11 +234,11 @@ export function useMvpRanking(seasonId?: string) {
       const mvpCountByPlayer = new Map<string, number>()
       const totalVotesByPlayer = new Map<string, number>()
 
-      for (const [_, matchVotes] of votesByMatch) {
+      for (const matchVotes of votesByMatch.values()) {
         if (matchVotes.size === 0) continue
         const maxVotes = Math.max(...matchVotes.values())
         const winners = [...matchVotes.entries()]
-          .filter(([_, vCount]) => vCount === maxVotes)
+          .filter((entry) => entry[1] === maxVotes)
           .map(([pId]) => pId)
 
         for (const pId of winners) {

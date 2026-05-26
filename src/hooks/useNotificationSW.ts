@@ -30,19 +30,17 @@ async function getSwRegistration(): Promise<ServiceWorkerRegistration | null> {
 
 export type NotifPermission = 'default' | 'granted' | 'denied' | 'unsupported'
 
+function getNotificationPermission(): NotifPermission {
+  if (typeof Notification === 'undefined') return 'unsupported'
+  return Notification.permission as NotifPermission
+}
+
 export function useNotificationSW() {
-  const [permission, setPermission] = useState<NotifPermission>('default')
+  const [permission, setPermission] = useState<NotifPermission>(getNotificationPermission)
   const [swReady, setSwReady] = useState(false)
 
-  // Lire la permission actuelle
+  // Pré-enregistrer le SW dès le montage
   useEffect(() => {
-    if (typeof Notification === 'undefined') {
-      setPermission('unsupported')
-      return
-    }
-    setPermission(Notification.permission as NotifPermission)
-
-    // Pré-enregistrer le SW dès le montage
     getSwRegistration().then((reg) => setSwReady(!!reg))
   }, [])
 

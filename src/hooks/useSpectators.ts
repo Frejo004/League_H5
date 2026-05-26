@@ -79,12 +79,10 @@ export function useUpdateSpectatorStatus() {
       id,
       status,
       reviewedBy,
-      userId,
     }: {
       id: string
       status: SpectatorStatus
       reviewedBy: string
-      userId: string
     }) => {
       // 1. Mettre à jour le statut de la demande
       const { data, error } = await supabase

@@ -9,7 +9,7 @@
  * - useIsTeamMember : vérifie l'appartenance à l'équipe
  */
 
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
@@ -93,6 +93,21 @@ const PINNED_KEY    = (teamId: string) => ['team-chat', 'pinned', teamId]
 const TYPING_KEY    = (teamId: string) => ['team-chat', 'typing', teamId]
 const PAGE_SIZE = 50
 
+type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
+type PinnedMessageRow = {
+  pinned_at: string
+  pinned_by: string
+  message: (TeamMessageFull & { reply_to_id: string | null }) | null
+}
+type TeamMemberPlayerRow = {
+  user_id: string | null
+  profile: TeamMember | null
+}
+type TeamCaptainRow = {
+  captain_id: string | null
+  captain: TeamMember | null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Fetch messages
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,14 +140,13 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   const replyIds = [...new Set(
     msgs.map(m => m.reply_to_id).filter(Boolean) as string[]
   )]
-  type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
   const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('team_messages')
       .select('id, content, sender:profiles!team_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    for (const r of replies ?? []) replyMap.set(r.id, r)
+    for (const r of (replies ?? []) as unknown as ReplyRow[]) replyMap.set(r.id, r)
   }
 
   return msgs
@@ -187,20 +201,20 @@ async function fetchPinnedMessages(teamId: string): Promise<PinnedMessage[]> {
   if (!data) return []
 
   // Résoudre les reply_to
+  const pinnedRows = data as unknown as PinnedMessageRow[]
   const replyIds = [...new Set(
-    (data as unknown[]).map((p: any) => p.message?.reply_to_id).filter(Boolean) as string[]
+    pinnedRows.map(p => p.message?.reply_to_id).filter(Boolean) as string[]
   )]
-  type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
   const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
     const { data: replies } = await supabase
       .from('team_messages')
       .select('id, content, sender:profiles!team_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
-    for (const r of replies ?? []) replyMap.set(r.id, r)
+    for (const r of (replies ?? []) as unknown as ReplyRow[]) replyMap.set(r.id, r)
   }
 
-  return (data as unknown[]).map((p: any) => ({
+  return pinnedRows.filter(p => p.message).map((p) => ({
     ...p.message,
     reply_to: p.message?.reply_to_id ? (replyMap.get(p.message.reply_to_id) ?? null) : null,
     pinned_at: p.pinned_at,
@@ -234,9 +248,14 @@ async function fetchTypingUsers(teamId: string): Promise<TypingUser[]> {
 export function useTeamChat(teamId?: string, currentUserId?: string) {
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
-  const [olderPages, setOlderPages] = useState<TeamMessageFull[][]>([])
-  const [olderCount, setOlderCount] = useState(0)
+  const [olderPagesState, setOlderPagesState] = useState<{ teamId?: string; pages: TeamMessageFull[][] }>({ pages: [] })
+  const [olderCountState, setOlderCountState] = useState<{ teamId?: string; count: number }>({ count: 0 })
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
+  const olderPages = useMemo(
+    () => olderPagesState.teamId === teamId ? olderPagesState.pages : [],
+    [olderPagesState, teamId]
+  )
+  const olderCount = olderCountState.teamId === teamId ? olderCountState.count : 0
 
   // ── Messages (page courante) ──────────────────────────────────────────────
   const messagesQuery = useQuery({
@@ -256,14 +275,17 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     try {
       const page = await fetchMessages(teamId, oldest.id)
       if (page.length > 0) {
-        setOlderPages(prev => [page, ...prev])
+        setOlderPagesState(prev => ({
+          teamId,
+          pages: prev.teamId === teamId ? [page, ...prev.pages] : [page],
+        }))
         const { data } = await supabase.rpc('count_team_messages_before', {
           p_team_id: teamId,
           p_before_id: page[0].id,
         })
-        setOlderCount(Number(data ?? 0))
+        setOlderCountState({ teamId, count: Number(data ?? 0) })
       } else {
-        setOlderCount(0)
+        setOlderCountState({ teamId, count: 0 })
       }
     } finally {
       setIsLoadingOlder(false)
@@ -277,15 +299,8 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     supabase.rpc('count_team_messages_before', {
       p_team_id: teamId,
       p_before_id: first.id,
-    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+    }).then(({ data }) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
   }, [teamId, messagesQuery.data])
-
-  // Reset quand on change d'équipe
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    setOlderPages([])
-    setOlderCount(0)
-  }, [teamId])
 
   // ── Read receipts ─────────────────────────────────────────────────────────
   const receiptsQuery = useQuery({
@@ -573,8 +588,8 @@ export function useTeamMembers(teamId?: string) {
       const members: TeamMember[] = []
       const seen = new Set<string>()
 
-      for (const p of players ?? []) {
-        const profile = (p as any).profile as TeamMember
+      for (const p of (players ?? []) as unknown as TeamMemberPlayerRow[]) {
+        const profile = p.profile
         if (profile && !seen.has(profile.id)) {
           seen.add(profile.id)
           members.push({ id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url })
@@ -589,7 +604,7 @@ export function useTeamMembers(teamId?: string) {
         .maybeSingle()
 
       if (team) {
-        const cap = (team as any).captain as TeamMember
+        const cap = (team as unknown as TeamCaptainRow).captain
         if (cap && !seen.has(cap.id)) {
           seen.add(cap.id)
           members.push({ id: cap.id, full_name: cap.full_name, avatar_url: cap.avatar_url })

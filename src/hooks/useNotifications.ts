@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { pushLocal } from '@/hooks/useRealtime'
-import { Spectator } from '@/types/database'
+import type { Spectator } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -74,7 +74,7 @@ function useActiveInvites(enabled: boolean) {
         .is('used_at', null)
         .gt('expires_at', new Date().toISOString())
       if (error) throw error
-      return data ?? []
+      return (data ?? []) as unknown as PendingInvite[]
     },
   })
 }
@@ -93,7 +93,7 @@ function usePendingSpectators(enabled: boolean) {
         .eq('status', 'pending')
         .order('requested_at', { ascending: false })
       if (error) throw error
-      return data ?? []
+      return (data ?? []) as unknown as PendingSpectatorRequest[]
     },
   })
 }
@@ -188,6 +188,12 @@ export function useNotifications() {
   }, [matches])
 
   const { data: myLineup } = useMyNextLineup(user?.id, nextMatch?.id)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
@@ -235,18 +241,16 @@ export function useNotifications() {
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {
-    const now = Date.now()
     const cutoff = now - 72 * 60 * 60 * 1000
     return (matches ?? [])
       .filter(m => m.status === 'completed' && m.played_at && new Date(m.played_at).getTime() > cutoff)
       .map(m => m.id)
-  }, [matches])
+  }, [matches, now])
 
   const { data: votedMatchIds } = useMyVotedMatches(user?.id, recentCompletedIds)
 
   // Toutes les notifications (non filtrées)
   const allNotifications = useMemo<Notification[]>(() => {
-    const now = Date.now()
     const notifs: Notification[] = [];
 
     // Helper pour ajouter une notification
@@ -371,14 +375,14 @@ export function useNotifications() {
         });
       }
     };
-    generateTacticalSelectionNotifs(myLineup, nextMatch);
+    generateTacticalSelectionNotifs(myLineup ?? null, nextMatch);
 
     return notifs.sort((a, b) => {
       if (a.urgent && !b.urgent) return -1;
       if (!a.urgent && b.urgent) return 1;
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
-  }, [matches, invites, pendingSpectators, votedMatchIds, user, isAdmin, isPrivileged, myLineup, nextMatch]);
+  }, [matches, invites, pendingSpectators, votedMatchIds, user, isAdmin, isPrivileged, myLineup, nextMatch, now]);
 
   // Notifications non lues
   const notifications = useMemo(
