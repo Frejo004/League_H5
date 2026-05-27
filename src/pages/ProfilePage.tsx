@@ -109,6 +109,22 @@ function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; labe
   )
 }
 
+function invalidateIdentityQueries(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['players'] })
+  qc.invalidateQueries({ queryKey: ['teams'] })
+  qc.invalidateQueries({ queryKey: ['player_profile'] })
+  qc.invalidateQueries({ queryKey: ['matches'] })
+  qc.invalidateQueries({ queryKey: ['scorers'] })
+  qc.invalidateQueries({ queryKey: ['assists'] })
+  qc.invalidateQueries({ queryKey: ['mvp_votes'] })
+  qc.invalidateQueries({ queryKey: ['mvp_ranking'] })
+  qc.invalidateQueries({ queryKey: ['player_mvp'] })
+  qc.invalidateQueries({ queryKey: ['disciplinary-stats'] })
+  qc.invalidateQueries({ queryKey: ['player-discipline'] })
+  qc.invalidateQueries({ queryKey: ['suspensions'] })
+  qc.invalidateQueries({ queryKey: ['all-players-for-dm'] })
+}
+
 // ── PlayerStatsCard — stats saison du joueur lié au compte ──────────────────
 
 function PlayerStatsCard({ userId }: { userId?: string }) {
@@ -164,9 +180,13 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
 
             {/* Photo Joueur (Avatar temporaire) */}
             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#B8860B] shadow-2xl relative z-10 bg-slate-800 flex items-center justify-center">
-               <span className="text-4xl font-black text-slate-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                 {profile.first_name[0]}{profile.last_name[0]}
-               </span>
+               {profile.avatar_url ? (
+                 <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+               ) : (
+                 <span className="text-4xl font-black text-slate-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                   {profile.first_name[0]}{profile.last_name[0]}
+                 </span>
+               )}
                <div className="absolute inset-0 bg-linear-to-tr from-[#FFDF73]/20 to-transparent mix-blend-overlay" />
             </div>
           </div>
@@ -284,10 +304,7 @@ export function ProfilePage() {
 
       setAvatarBroken(false)
       await refreshProfile()
-      // Invalide tous les caches qui affichent des avatars de joueurs
-      qc.invalidateQueries({ queryKey: ['players'] })
-      qc.invalidateQueries({ queryKey: ['teams', 'detail'] })
-      qc.invalidateQueries({ queryKey: ['player_profile'] })
+      invalidateIdentityQueries(qc)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur upload avatar'
       // Message lisible si c'est une erreur RLS Supabase
@@ -330,6 +347,7 @@ export function ProfilePage() {
       setNameSuccess(true)
       setHasEditedName(false)
       await refreshProfile()
+      invalidateIdentityQueries(qc)
     } catch (err: unknown) {
       setNameError(err instanceof Error ? err.message : 'Erreur mise à jour')
     } finally {

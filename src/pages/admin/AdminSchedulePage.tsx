@@ -6,7 +6,7 @@ import { useTeams } from '@/hooks/useTeams'
 import { useMatches, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { MatchStatus } from '@/types/database'
+import type { Match, MatchStatus } from '@/types/database'
 import clsx from 'clsx'
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
@@ -48,6 +48,156 @@ function generateRoundRobin(teamIds: string[]): Array<Array<[string, string]>> {
   return [...rounds, ...returnRounds]
 }
 
+type SchedulableMatch = Pick<
+  Match,
+  'id' | 'home_team_id' | 'away_team_id' | 'matchday' | 'scheduled_at' | 'played_at' | 'status' | 'created_at'
+>
+
+const SCHEDULABLE_MATCH_SELECT = 'id,home_team_id,away_team_id,matchday,scheduled_at,played_at,status,created_at'
+
+type MatchdayBalanceOptions = {
+  requireTwoMatches?: boolean
+  keepCancelledSeparate?: boolean
+}
+
+function getRoundRobinRoundCount(teamCount: number) {
+  if (teamCount < 2) return 0
+  return (teamCount % 2 === 0 ? teamCount - 1 : teamCount) * 2
+}
+
+function fixtureKey(homeTeamId: string, awayTeamId: string) {
+  return `${homeTeamId}:${awayTeamId}`
+}
+
+function compareNullableDate(a?: string | null, b?: string | null) {
+  if (!a && !b) return 0
+  if (!a) return 1
+  if (!b) return -1
+  return new Date(a).getTime() - new Date(b).getTime()
+}
+
+function compareMatchesForScheduling(a: SchedulableMatch, b: SchedulableMatch) {
+  const statusPriority: Record<MatchStatus, number> = {
+    completed: 0,
+    live: 1,
+    scheduled: 2,
+    cancelled: 3,
+  }
+
+  return (
+    statusPriority[a.status] - statusPriority[b.status] ||
+    compareNullableDate(a.played_at ?? a.scheduled_at, b.played_at ?? b.scheduled_at) ||
+    a.matchday - b.matchday ||
+    compareNullableDate(a.created_at, b.created_at)
+  )
+}
+
+function canPlaceInMatchday(dayMatches: SchedulableMatch[], match: SchedulableMatch) {
+  if (dayMatches.length >= 2) return false
+  return !dayMatches.some(
+    dayMatch =>
+      dayMatch.home_team_id === match.home_team_id ||
+      dayMatch.away_team_id === match.home_team_id ||
+      dayMatch.home_team_id === match.away_team_id ||
+      dayMatch.away_team_id === match.away_team_id
+  )
+}
+
+function hasDuplicateTeamInMatchday(dayMatches: SchedulableMatch[]) {
+  const teamIds = dayMatches.flatMap(match => [match.home_team_id, match.away_team_id])
+  return new Set(teamIds).size !== teamIds.length
+}
+
+function hasValidMatchdays(matches: SchedulableMatch[], requireTwoMatches = false) {
+  const matchdayNumbers = [...new Set(matches.map(match => match.matchday))].sort((a, b) => a - b)
+  if (matchdayNumbers.some((matchday, index) => matchday !== index + 1)) return false
+
+  return matchdayNumbers.every(matchday => {
+    const dayMatches = matches.filter(match => match.matchday === matchday)
+    const cancelledMatches = dayMatches.filter(match => match.status === 'cancelled')
+
+    if (requireTwoMatches) {
+      return dayMatches.length === 2 && cancelledMatches.length === 0 && !hasDuplicateTeamInMatchday(dayMatches)
+    }
+
+    if (cancelledMatches.length > 0) {
+      return dayMatches.length === 1
+    }
+
+    return dayMatches.length <= 2 && !hasDuplicateTeamInMatchday(dayMatches)
+  })
+}
+
+function buildBalancedMatchdayUpdates(matches: SchedulableMatch[], keepCancelledSeparate = true) {
+  const matchdays: SchedulableMatch[][] = []
+  const activeMatches = matches
+    .filter(match => !keepCancelledSeparate || match.status !== 'cancelled')
+    .sort(compareMatchesForScheduling)
+
+  for (const match of activeMatches) {
+    const existingDay = matchdays.find(dayMatches => canPlaceInMatchday(dayMatches, match))
+    if (existingDay) {
+      existingDay.push(match)
+    } else {
+      matchdays.push([match])
+    }
+  }
+
+  if (keepCancelledSeparate) {
+    const cancelledMatches = matches
+      .filter(match => match.status === 'cancelled')
+      .sort(compareMatchesForScheduling)
+
+    for (const match of cancelledMatches) {
+      matchdays.push([match])
+    }
+  }
+
+  return matchdays.flatMap((dayMatches, index) => {
+    const matchday = index + 1
+    return dayMatches
+      .filter(match => match.matchday !== matchday)
+      .map(match => ({ id: match.id, matchday }))
+  })
+}
+
+async function applyBalancedMatchdays(
+  seasonId: string,
+  knownMatches?: SchedulableMatch[],
+  options: MatchdayBalanceOptions = {}
+) {
+  let matchesToBalance = knownMatches
+
+  if (!matchesToBalance) {
+    const { data, error } = await supabase
+      .from('matches')
+      .select(SCHEDULABLE_MATCH_SELECT)
+      .eq('season_id', seasonId)
+    if (error) throw error
+    matchesToBalance = (data ?? []) as SchedulableMatch[]
+  }
+
+  if (hasValidMatchdays(matchesToBalance, options.requireTwoMatches)) return
+
+  const matchdayUpdates = buildBalancedMatchdayUpdates(
+    matchesToBalance,
+    options.keepCancelledSeparate ?? true
+  )
+  if (matchdayUpdates.length === 0) return
+
+  const updateResults = await Promise.all(
+    matchdayUpdates.map(update =>
+      supabase
+        .from('matches')
+        .update({ matchday: update.matchday })
+        .eq('id', update.id)
+    )
+  )
+
+  const updateError = updateResults.find(result => result.error)?.error
+  if (updateError) throw updateError
+}
+
 // Convertit une date UTC reçue de la BDD en chaîne locale Benin YYYY-MM-DDTHH:mm (sans décalage DST, toujours UTC+1)
 function toBeninInputString(dateStr: string | null | undefined): string {
   if (!dateStr) return ''
@@ -60,6 +210,7 @@ function toBeninInputString(dateStr: string | null | undefined): string {
 // ── Date editor pour un match ─────────────────────────────────────────────────
 function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const updateMatch = useUpdateMatch()
+  const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(
     toBeninInputString(match.scheduled_at)
@@ -91,6 +242,8 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   }
 
   async function performUpdate(deleteInfos: boolean) {
+    const shouldRebalanceMatchdays = deleteInfos || status !== match.status
+
     if (deleteInfos) {
       // Supprimer les données liées avec vérification d'erreur
       const [resGoals, resAssists, resEvents, resVotes] = await Promise.all([
@@ -123,6 +276,13 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         played_at: status === 'completed' ? (match.played_at ?? new Date().toISOString()) : match.played_at,
       })
     }
+
+    if (shouldRebalanceMatchdays) {
+      await applyBalancedMatchdays(match.season_id)
+      qc.invalidateQueries({ queryKey: ['matches', match.season_id] })
+      qc.invalidateQueries({ queryKey: ['standings', match.season_id] })
+    }
+
     setEditing(false)
     setShowCancelModal(false)
     resetFormToMatch()
@@ -315,15 +475,23 @@ export function AdminSchedulePage() {
 
     try {
       const rounds = generateRoundRobin(teamList.map(t => t.id))
+      const generatedMatchdays = new Map<string, number>()
+      rounds.forEach((round, index) => {
+        const matchday = index + 1
+        round.forEach(([homeId, awayId]) => {
+          generatedMatchdays.set(fixtureKey(homeId, awayId), matchday)
+        })
+      })
+
+      const existingFixtureKeys = new Set(
+        (matches ?? []).map(match => fixtureKey(match.home_team_id, match.away_team_id))
+      )
+
       // Construire tous les matchs à créer en filtrant ceux qui existent déjà
       const allMatchesToCreate = rounds.flatMap((round, i) => {
         const matchday = i + 1
         return round
-          .filter(([homeId, awayId]) =>
-            !(matches ?? []).some(
-              m => m.home_team_id === homeId && m.away_team_id === awayId && m.matchday === matchday
-            )
-          )
+          .filter(([homeId, awayId]) => !existingFixtureKeys.has(fixtureKey(homeId, awayId)))
           .map(([homeId, awayId]) => ({
             season_id: season.id,
             home_team_id: homeId,
@@ -334,20 +502,92 @@ export function AdminSchedulePage() {
           }))
       })
 
-      if (allMatchesToCreate.length === 0) {
-        setGenSuccess(true)
-        setTimeout(() => setGenSuccess(false), 3000)
-        return
+      let createdMatches: Match[] = []
+      if (allMatchesToCreate.length > 0) {
+        const { data, error } = await supabase
+          .from('matches')
+          .insert(allMatchesToCreate)
+          .select('*')
+        if (error) throw error
+        createdMatches = (data ?? []) as Match[]
       }
 
-      // Insérer tous les matchs en un seul batch
-      const { error } = await supabase
-        .from('matches')
-        .insert(allMatchesToCreate)
-      if (error) throw error
+      const allSeasonMatches: SchedulableMatch[] = [
+        ...(matches ?? []),
+        ...createdMatches,
+      ]
+      const matchesByFixture = new Map<string, SchedulableMatch[]>()
+      for (const match of allSeasonMatches) {
+        const key = fixtureKey(match.home_team_id, match.away_team_id)
+        if (!generatedMatchdays.has(key)) continue
+        matchesByFixture.set(key, [...(matchesByFixture.get(key) ?? []), match])
+      }
+
+      const duplicateMatchIds = [...matchesByFixture.values()].flatMap(fixtureMatches =>
+        fixtureMatches
+          .sort(compareMatchesForScheduling)
+          .slice(1)
+          .map(match => match.id)
+      )
+
+      if (duplicateMatchIds.length > 0) {
+        const { error } = await supabase
+          .from('matches')
+          .delete()
+          .in('id', duplicateMatchIds)
+        if (error) throw error
+      }
+
+      const uniqueSeasonMatches = allSeasonMatches.filter(match => !duplicateMatchIds.includes(match.id))
+      const cancelledMatchesToRevive = uniqueSeasonMatches.filter(match => match.status === 'cancelled')
+      if (cancelledMatchesToRevive.length > 0) {
+        const reviveResults = await Promise.all(
+          cancelledMatchesToRevive.map(match =>
+            supabase
+              .from('matches')
+              .update({
+                status: 'scheduled',
+                home_score: null,
+                away_score: null,
+                played_at: null,
+              })
+              .eq('id', match.id)
+          )
+        )
+
+        const reviveError = reviveResults.find(result => result.error)?.error
+        if (reviveError) throw reviveError
+      }
+
+      const matchesForGeneration = uniqueSeasonMatches.map(match =>
+        match.status === 'cancelled'
+          ? { ...match, status: 'scheduled' as MatchStatus, played_at: null }
+          : match
+      )
+
+      const matchdayUpdates = matchesForGeneration.flatMap(match => {
+        const matchday = generatedMatchdays.get(fixtureKey(match.home_team_id, match.away_team_id))
+        if (!matchday || match.matchday === matchday) return []
+        return [{ id: match.id, matchday }]
+      })
+
+      if (matchdayUpdates.length > 0) {
+        const updateResults = await Promise.all(
+          matchdayUpdates.map(update =>
+            supabase
+              .from('matches')
+              .update({ matchday: update.matchday })
+              .eq('id', update.id)
+          )
+        )
+
+        const updateError = updateResults.find(result => result.error)?.error
+        if (updateError) throw updateError
+      }
 
       // Invalider le cache des matchs pour la saison courante
       qc.invalidateQueries({ queryKey: ['matches', season.id] })
+      qc.invalidateQueries({ queryKey: ['standings', season.id] })
 
       setGenSuccess(true)
       setTimeout(() => setGenSuccess(false), 3000)
@@ -363,6 +603,8 @@ export function AdminSchedulePage() {
       ? teamList.length * (teamList.length - 1)
       : (teamList.length - 1) * teamList.length
     : 0
+  const totalRoundRobinRounds = getRoundRobinRoundCount(teamList.length)
+  const roundsPerLeg = totalRoundRobinRounds / 2
 
   return (
     <div className="space-y-4">
@@ -419,7 +661,7 @@ export function AdminSchedulePage() {
               </p>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mt-1.5">
                 {teamList.length} équipes → {totalMatches} matchs
-                <span className="block mt-0.5 text-[#FFDF73]/70">({teamList.length - 1} journées aller + {teamList.length - 1} journées retour)</span>
+                <span className="block mt-0.5 text-[#FFDF73]/70">({roundsPerLeg} journées aller + {roundsPerLeg} journées retour)</span>
               </p>
             </div>
             <button
