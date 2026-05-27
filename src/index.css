@@ -31,31 +31,12 @@
   --color-gold-400: #fbbf24;
   --color-gold-500: #f59e0b;
 
-  /* ── Dark theme colors (default) ── */
-  --color-surface:         var(--color-surface);
-  --color-surface-card:    var(--color-surface-card);
-  --color-surface-raised:  var(--color-surface-raised);
-  --color-surface-border:  var(--color-surface-border);
-  --color-surface-muted:   var(--color-surface-muted);
-
-  /* ── Status Colors (W/D/L) ── */
-  --color-win:             var(--color-win);
-  --color-win-text:        var(--color-win-text);
-  --color-draw:            var(--color-draw);
-  --color-draw-text:       var(--color-draw-text);
-  --color-loss:            var(--color-loss);
-  --color-loss-text:       var(--color-loss-text);
-
   /* ── Chat surface tokens ── */
   --color-chat-bg:         #0D1117;
   --color-chat-panel:      #161B22;
   --color-chat-bubble-in:  #1e2530;
   --color-chat-action-bar: #1a2030;
   --color-chat-input-bg:   #0D1117;
-  
-  --color-text-primary:    var(--color-text-primary);
-  --color-text-secondary:  var(--color-text-secondary);
-  --color-text-muted:      var(--color-text-muted);
 
   --font-sans: 'Inter', system-ui, sans-serif;
   /* ── Keyframes ── */
@@ -284,10 +265,55 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   DARK MODE (DEFAULT)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Dark mode via .dark class for Tailwind v4 */
+.dark {
+  color-scheme: dark;
+  --color-surface:         #121212;
+  --color-surface-card:    #1e1e1e;
+  --color-surface-raised:  #252525;
+  --color-surface-border:  #2a2a2a;
+  --color-surface-muted:   #444444;
+  --color-text-primary:    #eaeaea;
+  --color-text-secondary:  #aaaaaa;
+  --color-text-muted:      #777777;
+  --card-bg: linear-gradient(135deg, #1e1e1e 0%, #121212 100%);
+
+  /* Status Colors */
+  --color-win:             #4caf50;
+  --color-win-text:        #ffffff;
+  --color-draw:            #ffeb3b;
+  --color-draw-text:       #121212;
+  --color-loss:            #ef5350;
+  --color-loss-text:       #ffffff;
+
+  /* Chat */
+  --color-chat-bg:         #0D1117;
+  --color-chat-panel:      #161B22;
+  --color-chat-bubble-in:  #1e2530;
+  --color-chat-action-bar: #1a2030;
+  --color-chat-input-bg:   #0D1117;
+
+  --glass-bg: rgba(22, 28, 45, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
+
+  /* Header */
+  --header-bg: #0D1117;
+  --header-sub: #161B22;
+  --header-border: rgba(255,255,255,0.08);
+  --header-nav-off: rgba(255,255,255,0.5);
+  --header-nav-hov: rgba(255,255,255,0.85);
+  --header-text: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════
    LIGHT MODE
    ═══════════════════════════════════════════════════════════ */
 
-:root[data-theme='light'] {
+:root:not(.dark) {
   /* Light theme colors */
   --color-surface:         #f5f5f5;
   --color-surface-card:    #ffffff;
@@ -331,17 +357,420 @@ body {
   --color-loss-text:       #ffffff;
 }
 
-html[data-theme='light'],
-html[data-theme='light'] body {
+/* Light mode styles for non-.dark elements */
+html:not(.dark),
+html:not(.dark) body {
   background-color: #f5f5f5 !important;
   color: #1a1a1a !important;
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,102,204,0.03) 0%, transparent 60%);
 }
 
-/* Update text colors for light mode */
-:root[data-theme='light'] {
-  color-scheme: light;
+/* Comprehensive light mode overrides for all components */
+:root:not(.dark) .page-title,
+:root:not(.dark) h1,
+:root:not(.dark) h2,
+:root:not(.dark) h3,
+:root:not(.dark) h4,
+:root:not(.dark) h5,
+:root:not(.dark) h6 {
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .card,
+:root:not(.dark) .card-hover,
+:root:not(.dark) .card-featured,
+:root:not(.dark) .stat-card,
+:root:not(.dark) .match-card,
+:root:not(.dark) .skeleton-card {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-surface-border);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .card-hover:hover {
+  background-color: var(--color-surface-raised);
+}
+
+:root:not(.dark) .stat-card:hover,
+:root:not(.dark) .match-card:hover {
+  background-color: var(--color-surface-raised);
+}
+
+:root:not(.dark) .glass-card {
+  background: rgba(248, 250, 252, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .glass-card:hover {
+  background: rgba(248, 250, 252, 0.85);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+:root:not(.dark) .glass-stat {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(34, 197, 94, 0.04) 100%);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .input {
+  background-color: var(--color-surface);
+  border-color: var(--color-surface-border);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .input::placeholder {
+  color: var(--color-text-muted);
+}
+
+:root:not(.dark) .input:hover {
+  border-color: var(--color-surface-muted);
+  background-color: var(--color-surface-card);
+}
+
+:root:not(.dark) .btn-secondary {
+  background-color: var(--color-surface-card);
+  color: var(--color-text-secondary);
+  border-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .btn-secondary:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .tooltip {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border-color: var(--color-surface-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:root:not(.dark) .empty-state-icon {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-surface-border);
+  color: var(--color-text-muted);
+}
+
+:root:not(.dark) .spinner {
+  border-color: var(--color-surface-border);
+  border-top-color: #2563eb;
+}
+
+:root:not(.dark) .skeleton,
+:root:not(.dark) .skeleton-text,
+:root:not(.dark) .skeleton-circle {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 20%, #cbd5e1 40%, #e2e8f0 60%, #f1f5f9 100%);
+  background-size: 200% 100%;
+}
+
+:root:not(.dark) .mobile-nav {
+  background: linear-gradient(180deg, transparent, #f8fafc 10%);
+  border-top-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .sf-row {
+  border-bottom-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .sf-row:hover {
+  background-color: var(--color-surface-raised);
+}
+
+:root:not(.dark) .sf-tabs {
+  border-bottom-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .sf-tab {
+  color: var(--color-text-muted);
+}
+
+:root:not(.dark) .sf-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+:root:not(.dark) .sf-tab.active {
+  color: #2563eb;
+}
+
+:root:not(.dark) .section-title {
+  color: var(--color-text-muted);
+}
+
+:root:not(.dark) .page-header {
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .divider {
+  background-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .score-block {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .empty-state {
+  color: var(--color-text-secondary);
+}
+
+:root:not(.dark) .badge-live {
+  background-color: rgba(220,38,38,0.1);
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.3);
+}
+
+:root:not(.dark) .label {
+  color: var(--color-text-muted);
+}
+
+/* Override dark hex background classes for light mode */
+:root:not(.dark) .bg-\[\#161c2d\],
+:root:not(.dark) .bg-\[\#0f1420\],
+:root:not(.dark) .bg-\[\#111827\],
+:root:not(.dark) .bg-\[\#1e2640\] {
+  background-color: var(--color-surface-card) !important;
+}
+
+:root:not(.dark) .border-\[\#2d3a5a\],
+:root:not(.dark) .border-\[\#252f4a\] {
+  border-color: var(--color-surface-border) !important;
+}
+
+:root:not(.dark) .divide-white\/5 > * + *,
+:root:not(.dark) .divide-white\/8 > * + * {
+  border-color: var(--color-surface-border) !important;
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — CARD OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .card,
+:root:not(.dark) .card-featured,
+:root:not(.dark) .card-hover,
+:root:not(.dark) .stat-card,
+:root:not(.dark) .match-card {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .card:hover {
+  border-color: var(--color-surface-muted);
+}
+
+:root:not(.dark) .card-featured {
+  background-color: var(--color-surface-card);
+  border-color: rgba(37,99,235,0.5);
+}
+
+:root:not(.dark) .card-hover:hover {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-surface-muted);
+}
+
+:root:not(.dark) .stat-card {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .stat-card:hover {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-surface-muted);
+}
+
+:root:not(.dark) .match-card {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .match-card:hover {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-surface-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — INPUT & FORM OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .input {
+  background-color: #ffffff;
+  border-color: var(--color-surface-border);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .input:hover {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-surface-muted);
+}
+
+:root:not(.dark) .input:focus {
+  background-color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+
+:root:not(.dark) .score-block {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: var(--color-surface-border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — GLASS MORPHISM OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .glass-card {
+  background: rgba(248, 250, 252, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+:root:not(.dark) .glass-card:hover {
+  background: rgba(248, 250, 252, 0.85);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+:root:not(.dark) .glass-stat {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border-color: rgba(37, 99, 235, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — BADGE & LIVE OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .badge-live {
+  background-color: rgba(220,38,38,0.08);
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.2);
+}
+
+:root:not(.dark) .badge-success {
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+:root:not(.dark) .badge-warning {
+  background: rgba(251, 191, 36, 0.08);
+  color: #d97706;
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+:root:not(.dark) .badge-danger {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+:root:not(.dark) .badge-info {
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — TABLE & TAB OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .sf-row {
+  background-color: transparent;
+  border-bottom-color: var(--color-surface-border);
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .sf-row:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+:root:not(.dark) .sf-tabs {
+  border-bottom-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .sf-tab {
+  color: var(--color-text-muted);
+  border-bottom-color: transparent;
+}
+
+:root:not(.dark) .sf-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+:root:not(.dark) .sf-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — TEXT & HEADING OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .page-title {
+  color: var(--color-text-primary);
+}
+
+:root:not(.dark) .section-title {
+  color: var(--color-text-muted);
+}
+
+:root:not(.dark) .divider {
+  background-color: var(--color-surface-border);
+}
+
+:root:not(.dark) .empty-state {
+  color: var(--color-text-secondary);
+}
+
+:root:not(.dark) .empty-state-icon {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-surface-border);
+  color: var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — TOOLTIP OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .tooltip {
+  background: var(--color-surface-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-surface-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:root:not(.dark) .tooltip-arrow-top {
+  border-color: var(--color-surface-card) transparent transparent transparent;
+}
+
+:root:not(.dark) .tooltip-arrow-bottom {
+  border-color: transparent transparent var(--color-surface-card) transparent;
+}
+
+:root:not(.dark) .tooltip-arrow-left {
+  border-color: transparent transparent transparent var(--color-surface-card);
+}
+
+:root:not(.dark) .tooltip-arrow-right {
+  border-color: transparent var(--color-surface-card) transparent transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — LOADING STATES OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+:root:not(.dark) .spinner {
+  border-color: var(--color-surface-border);
+  border-top-color: #2563eb;
 }
 
 :root[data-theme='light'] .page-title,

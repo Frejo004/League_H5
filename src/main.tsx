@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+// Ensure theme is initialized immediately
+import '@/hooks/useTheme'
 
 // Force global timezone to Benin (Africa/Porto-Novo - UTC+1) across the entire app
 const OriginalDateTimeFormat = Intl.DateTimeFormat;

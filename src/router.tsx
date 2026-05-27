@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { ComponentType, lazy, Suspense } from 'react'
 import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -6,10 +6,10 @@ import { PlayerOrCaptainGuard } from '@/components/auth/PlayerOrCaptainGuard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 // Helper pour les imports nommés avec gestion intelligente des erreurs de déploiement (chunk load errors)
-const lazyPage = (importFn: () => Promise<any>, name: string) => 
+const lazyPage = (importFn: () => Promise<Record<string, unknown>>, name: string) => 
   lazy(() => 
     importFn()
-      .then(module => ({ default: module[name] }))
+      .then(module => ({ default: module[name] as ComponentType<unknown> }))
       .catch(error => {
         console.error(`Erreur lors du chargement de ${name} :`, error)
         
@@ -59,22 +59,18 @@ const ChatPage            = lazyPage(() => import('@/pages/ChatPage'), 'ChatPage
 const PlayoffsPage        = lazyPage(() => import('@/pages/PlayoffsPage'), 'PlayoffsPage')
 const NotFoundPage        = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
 
-function SuspenseWrapper() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
-        <LoadingSpinner size="lg" />
-      </div>
-    }>
-      <Outlet />
-    </Suspense>
-  )
-}
-
 export const router = createBrowserRouter(
   [
     {
-      element: <SuspenseWrapper />,
+      element: (
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
+            <LoadingSpinner size="lg" />
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
+      ),
       children: [
         // Routes publiques (sans auth)
         { path: '/',              element: <LandingPage /> },
