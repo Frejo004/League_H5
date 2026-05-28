@@ -5,6 +5,7 @@ export interface MvpResult {
   player_id: string
   first_name: string
   last_name: string
+  avatar_url: string | null
   team_id: string
   team_name: string
   team_color: string
@@ -217,7 +218,7 @@ export function useMvpRanking(seasonId?: string) {
         .select(`
           match_id,
           player_id,
-          players(id, first_name, last_name, team_id, teams!players_team_id_fkey(id, name, color))
+          players(id, first_name, last_name, team_id, user_id, avatar_url, teams!players_team_id_fkey(id, name, color))
         `)
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
@@ -255,6 +256,25 @@ export function useMvpRanking(seasonId?: string) {
       const seen = new Set<string>()
       const ranking: Array<MvpResult & { mvp_titles: number }> = []
 
+      // Récupérer les avatars depuis profiles pour les joueurs avec user_id
+      const allPlayers = votes
+        .map(v => v.players as unknown as {
+          id: string; first_name: string; last_name: string
+          team_id: string; user_id: string | null; avatar_url: string | null
+          teams: { id: string; name: string; color: string } | null
+        } | null)
+        .filter(Boolean)
+
+      const userIds = [...new Set(allPlayers.map(p => p!.user_id).filter(Boolean) as string[])]
+      const profilesMap = new Map<string, string | null>()
+      if (userIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', userIds)
+        for (const pr of profiles ?? []) profilesMap.set(pr.id, pr.avatar_url)
+      }
+
       for (const v of votes) {
         if (seen.has(v.player_id)) continue
         seen.add(v.player_id)
@@ -264,14 +284,19 @@ export function useMvpRanking(seasonId?: string) {
           first_name: string
           last_name: string
           team_id: string
+          user_id: string | null
+          avatar_url: string | null
           teams: { id: string; name: string; color: string } | null
         } | null
         if (!p) continue
+
+        const avatar = (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url ?? null
 
         ranking.push({
           player_id:  p.id,
           first_name: p.first_name,
           last_name:  p.last_name,
+          avatar_url: avatar,
           team_id:    p.team_id,
           team_name:  p.teams?.name  ?? '—',
           team_color: p.teams?.color ?? '#16a34a',

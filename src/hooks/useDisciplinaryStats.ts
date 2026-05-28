@@ -30,6 +30,7 @@ export interface PlayerDiscipline {
   player_id: string
   first_name: string
   last_name: string
+  avatar_url: string | null
   team_id: string
   team_name: string
   team_color: string
@@ -113,7 +114,7 @@ export function useDisciplinaryStats(seasonId?: string) {
         team_id: string
         player_id: string | null
         team: { id: string; name: string; color: string } | null
-        player: { id: string; first_name: string; last_name: string } | null
+        player: { id: string; first_name: string; last_name: string; user_id: string | null; avatar_url: string | null } | null
       }
 
       // Récupérer tous les événements cartons de la saison
@@ -122,7 +123,7 @@ export function useDisciplinaryStats(seasonId?: string) {
         .select(`
           type, team_id, player_id,
           team:teams(id, name, color),
-          player:players(id, first_name, last_name)
+          player:players(id, first_name, last_name, user_id, avatar_url)
         `)
         .in('match_id', matchIds)
         .in('type', ['yellow_card', 'red_card'])
@@ -131,6 +132,19 @@ export function useDisciplinaryStats(seasonId?: string) {
 
       if (error) throw error
       if (!events?.length) return { players: [], teams: [], totalYellow: 0, totalRed: 0 }
+
+      // Récupérer les avatars depuis profiles pour les joueurs avec user_id
+      const allPlayerIds = [...new Set(
+        events.map(e => e.player?.user_id).filter(Boolean) as string[]
+      )]
+      const profilesMap = new Map<string, string | null>()
+      if (allPlayerIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', allPlayerIds)
+        for (const pr of profiles ?? []) profilesMap.set(pr.id, pr.avatar_url)
+      }
 
       // Agréger par joueur
       const playerMap = new Map<string, PlayerDiscipline>()
@@ -159,11 +173,13 @@ export function useDisciplinaryStats(seasonId?: string) {
 
         // Joueur
         if (player) {
+          const avatar = (player.user_id ? profilesMap.get(player.user_id) : null) ?? player.avatar_url ?? null
           if (!playerMap.has(player.id)) {
             playerMap.set(player.id, {
               player_id: player.id,
               first_name: player.first_name,
               last_name: player.last_name,
+              avatar_url: avatar,
               team_id: team.id,
               team_name: team.name,
               team_color: team.color,

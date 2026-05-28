@@ -8,6 +8,8 @@ export type MatchLineup = MatchLineupRow & {
     last_name: string
     jersey_number: number | null
     position: string | null
+    user_id: string | null
+    avatar_url: string | null
   } | null
 }
 
@@ -20,7 +22,7 @@ export function useMatchLineups(matchId?: string) {
         .from('match_lineups')
         .select(`
           *,
-          player:players(first_name, last_name, jersey_number, position)
+          player:players(first_name, last_name, jersey_number, position, user_id, avatar_url)
         `)
         .eq('match_id', matchId)
       

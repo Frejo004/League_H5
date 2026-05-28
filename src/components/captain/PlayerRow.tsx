@@ -5,6 +5,7 @@ import { POSITION_LABELS } from '@/components/ui/SharedBadges'
 import { useUpdatePlayer } from '@/hooks/usePlayers'
 import { InviteButton } from '@/components/ui/InviteButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import type { Player, PlayerPosition } from '@/types/database'
 
 function positionLabel(pos: PlayerPosition | null) {
@@ -64,12 +65,17 @@ export function PlayerRow({
         {/* Avatar cliquable → stats */}
         <button
           onClick={() => onViewStats(player)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 hover:ring-2 hover:ring-white/30 transition-all"
-          style={{ backgroundColor: teamColor }}
+          className="hover:ring-2 hover:ring-white/30 transition-all rounded-full"
           title="Voir les stats"
           aria-label={`Stats de ${player.first_name} ${player.last_name}`}
         >
-          {player.first_name[0]}{player.last_name[0]}
+          <PlayerAvatar
+            firstName={player.first_name}
+            lastName={player.last_name}
+            avatarUrl={player.avatar_url}
+            teamColor={teamColor}
+            size={28}
+          />
         </button>
 
         {/* Nom + meta — cliquable aussi */}

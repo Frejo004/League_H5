@@ -7,6 +7,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 
 export function StatsPage() {
@@ -132,12 +133,13 @@ export function StatsPage() {
                   {topScorers.map((s, i) => (
                     <div key={s.player_id} className="flex items-center gap-3">
                       <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
-                        style={{ backgroundColor: s.team_color }}
-                      >
-                        {s.first_name[0]}{s.last_name[0]}
-                      </div>
+                      <PlayerAvatar
+                        firstName={s.first_name}
+                        lastName={s.last_name}
+                        avatarUrl={s.avatar_url}
+                        teamColor={s.team_color}
+                        size={32}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -177,12 +179,13 @@ export function StatsPage() {
                   {topAssisters.map((s, i) => (
                     <div key={s.player_id} className="flex items-center gap-3">
                       <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
-                        style={{ backgroundColor: s.team_color }}
-                      >
-                        {s.first_name[0]}{s.last_name[0]}
-                      </div>
+                      <PlayerAvatar
+                        firstName={s.first_name}
+                        lastName={s.last_name}
+                        avatarUrl={s.avatar_url}
+                        teamColor={s.team_color}
+                        size={32}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -231,12 +234,13 @@ export function StatsPage() {
                       <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">
                         {i === 0 ? '🏆' : i + 1}
                       </span>
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
-                        style={{ backgroundColor: m.team_color }}
-                      >
-                        {m.first_name[0]}{m.last_name[0]}
-                      </div>
+                      <PlayerAvatar
+                        firstName={m.first_name}
+                        lastName={m.last_name}
+                        avatarUrl={m.avatar_url}
+                        teamColor={m.team_color}
+                        size={32}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-semibold truncate">{m.first_name} {m.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -352,12 +356,13 @@ export function StatsPage() {
                     {discipline.players.slice(0, 8).map((p, i) => (
                       <div key={p.player_id} className="flex items-center gap-3">
                         <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
-                          style={{ backgroundColor: p.team_color }}
-                        >
-                          {p.first_name[0]}{p.last_name[0]}
-                        </div>
+                        <PlayerAvatar
+                          firstName={p.first_name}
+                          lastName={p.last_name}
+                          avatarUrl={p.avatar_url}
+                          teamColor={p.team_color}
+                          size={32}
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">

@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { useLiveClock } from '@/hooks/useMatchLive'
 import { clsx } from 'clsx'
 
@@ -360,10 +361,14 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
 
       <div className="flex items-center gap-3 relative">
         <div className="relative shrink-0">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-lg"
-            style={{ backgroundColor: scorer.team_color }}>
-            {scorer.first_name[0]}{scorer.last_name[0]}
-          </div>
+          <PlayerAvatar
+            firstName={scorer.first_name}
+            lastName={scorer.last_name}
+            avatarUrl={scorer.avatar_url}
+            teamColor={scorer.team_color}
+            size={44}
+            shape="lg"
+          />
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-surface-card">
             <Target size={9} className="text-white" />
           </div>

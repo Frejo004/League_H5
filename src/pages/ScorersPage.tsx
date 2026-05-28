@@ -4,6 +4,7 @@ import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 
 export function ScorersPage() {
@@ -99,15 +100,17 @@ export function ScorersPage() {
 
                 {/* Player */}
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0 relative z-10">
-                  <div
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white text-sm sm:text-base font-black shrink-0 border-2 shadow-lg"
-                    style={{ 
-                      backgroundColor: row.team_color, 
-                      borderColor: i === 0 ? '#FFDF73' : 'var(--color-surface-border)' 
-                    }}
-                  >
-                    {row.first_name[0]}{row.last_name[0]}
-                  </div>
+                  <PlayerAvatar
+                    firstName={row.first_name}
+                    lastName={row.last_name}
+                    avatarUrl={row.avatar_url}
+                    teamColor={row.team_color}
+                    size={44}
+                    className={clsx(
+                      'border-2 shadow-lg',
+                      i === 0 ? 'border-[#FFDF73]' : 'border-[var(--color-surface-border)]'
+                    )}
+                  />
                   <div className="min-w-0 flex flex-col justify-center">
                     <p className={clsx(
                       "text-base sm:text-lg font-black uppercase tracking-wider truncate",

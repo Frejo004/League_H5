@@ -23,6 +23,7 @@ import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { MatchLineups } from '@/components/matches/MatchLineups'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 import type { TeamRef } from '@/types/database'
 import { PublicLayout } from '@/components/layout/PublicLayout'
@@ -184,7 +185,9 @@ function MatchHero({
           <div className="flex-1 overflow-y-auto pr-1 ns space-y-2 max-h-[140px]">
             {sortedGoals.map((g: any) => {
               const isHome = g.team_id === home.id
-              const playerName = g.players ? `${g.players.first_name} ${g.players.last_name}` : '—'
+              const player = g.players
+              const playerName = player ? `${player.first_name} ${player.last_name}` : '—'
+              const teamColor = isHome ? home.color : away.color
               return (
                 <div key={g.id} className={clsx(
                   "flex items-center gap-2.5 text-xs leading-none ci",
@@ -193,7 +196,16 @@ function MatchHero({
                   <span className="text-[10px] text-[var(--tm)] font-mono font-black shrink-0 w-8">
                     {g.minute}'
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 flex items-center gap-1.5" style={{ flexDirection: isHome ? 'row' : 'row-reverse' }}>
+                    {player && (
+                      <PlayerAvatar
+                        firstName={player.first_name}
+                        lastName={player.last_name}
+                        avatarUrl={player.avatar_url ?? null}
+                        teamColor={teamColor}
+                        size={20}
+                      />
+                    )}
                     <p className="font-semibold text-[var(--t1)] truncate">{playerName}</p>
                   </div>
                   <span className="w-5 h-5 rounded-full bg-[var(--bg-pill)] text-[var(--t1)] flex items-center justify-center font-black text-[10px] shrink-0">
@@ -247,10 +259,13 @@ function ScorersList({ sortedGoals, home, match }: {
       <div className="space-y-3">
         {sortedGoals.map((g: any) => {
           const isHome = g.team_id === home.id
-          const playerName = g.players ? `${g.players.first_name} ${g.players.last_name}` : '—'
+          const player = g.players
+          const playerName = player ? `${player.first_name} ${player.last_name}` : '—'
+          const teamColor = isHome ? home.color : away.color
           const assistRec = (match.assists ?? []).find((a: any) => a.goal_id === g.id)
-          const assistName = assistRec?.players
-            ? `${assistRec.players.first_name} ${assistRec.players.last_name}`
+          const assistPlayer = assistRec?.players
+          const assistName = assistPlayer
+            ? `${assistPlayer.first_name} ${assistPlayer.last_name}`
             : null
           return (
             <div key={g.id} className={clsx(
@@ -264,13 +279,24 @@ function ScorersList({ sortedGoals, home, match }: {
               </div>
 
               {/* Player details */}
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-[var(--t1)] truncate">{playerName}</p>
-                {assistName && (
-                  <p className="text-[11px] text-[var(--tm)] mt-0.5">
-                    Passe : <span className="text-[var(--t2)] font-bold">{assistName}</span>
-                  </p>
+              <div className={clsx("flex items-center gap-2.5 min-w-0", !isHome && "flex-row-reverse")}>
+                {player && (
+                  <PlayerAvatar
+                    firstName={player.first_name}
+                    lastName={player.last_name}
+                    avatarUrl={player.avatar_url ?? null}
+                    teamColor={teamColor}
+                    size={32}
+                  />
                 )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[var(--t1)] truncate">{playerName}</p>
+                  {assistName && (
+                    <p className={clsx("text-[11px] text-[var(--tm)] mt-0.5", !isHome && "text-right")}>
+                      Passe : <span className="text-[var(--t2)] font-bold">{assistName}</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Spacer to push to opposite sides */}

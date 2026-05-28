@@ -6,6 +6,7 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import type { Player } from '@/types/database'
 
 function positionLabel(pos: string | null) {
@@ -79,10 +80,16 @@ export function PlayerStatsDrawer({
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+            className="w-10 h-10 rounded-full overflow-hidden shrink-0"
             style={{ backgroundColor: teamColor }}
           >
-            {player.first_name[0]}{player.last_name[0]}
+            <PlayerAvatar
+              firstName={player.first_name}
+              lastName={player.last_name}
+              avatarUrl={player.avatar_url}
+              teamColor={teamColor}
+              size={40}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-white truncate">

@@ -35,8 +35,8 @@ async function fetchMatchDetails(matchIdentifier: string, isSlug: boolean, seaso
       home_team:teams!home_team_id(id, name, color, logo_url, captain_id),
       away_team:teams!away_team_id(id, name, color, logo_url, captain_id),
       seasons(id, name),
-      goals(*, players(id, first_name, last_name, jersey_number)),
-      assists(*, players(id, first_name, last_name))
+      goals(*, players(id, first_name, last_name, jersey_number, user_id, avatar_url)),
+      assists(*, players(id, first_name, last_name, user_id, avatar_url))
     `);
 
   if (isSlug) {

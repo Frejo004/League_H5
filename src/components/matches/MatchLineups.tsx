@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Users, UserCheck, Shield, Edit3, Save, Layout, Calendar, ShieldAlert, UserX } from 'lucide-react'
+import { Users, UserCheck, Shield, Edit3, Layout, ShieldAlert, UserX } from 'lucide-react'
 import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSuspensions } from '@/hooks/useDisciplinaryStats'
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -473,11 +474,17 @@ function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?
       "group flex items-center gap-4 p-3 rounded-2xl bg-surface-muted/10 border border-surface-border/50 transition-all cursor-default",
       isSuspended ? "opacity-50 grayscale-[0.5] border-red-500/20" : "hover:bg-surface-muted/20"
     )}>
+      {/* Avatar ou numéro */}
       <div className={clsx(
-        "w-10 h-10 rounded-xl bg-surface-card/60 flex items-center justify-center text-sm font-black text-text-primary border border-surface-border group-hover:border-primary-500/50 transition-colors",
+        "w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-black text-text-primary border border-surface-border group-hover:border-primary-500/50 transition-colors shrink-0",
         isSuspended && "border-red-500/40"
       )}>
-        {lineup.player?.jersey_number ?? '—'}
+        {lineup.player?.avatar_url
+          ? <img src={lineup.player.avatar_url} alt="" className="w-full h-full object-cover" />
+          : <span className="bg-surface-card/60 w-full h-full flex items-center justify-center">
+              {lineup.player?.jersey_number ?? '—'}
+            </span>
+        }
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -490,7 +497,9 @@ function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?
             </span>
           )}
         </div>
-        <p className="text-[10px] text-text-muted/60 font-bold uppercase tracking-wider">{lineup.player?.position || '—'}</p>
+        <p className="text-[10px] text-text-muted/60 font-bold uppercase tracking-wider">
+          {lineup.player?.jersey_number ? `#${lineup.player.jersey_number} · ` : ''}{lineup.player?.position || '—'}
+        </p>
       </div>
     </div>
   )
@@ -529,12 +538,17 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
             >
               <div
                 className={clsx(
-                  "relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white shadow-2xl flex items-center justify-center text-white font-black text-xs sm:text-sm transition-all",
+                  "relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white font-black text-xs sm:text-sm transition-all",
                   isSuspended && "border-red-500 scale-90"
                 )}
                 style={{ backgroundColor: isSuspended ? '#ef4444' : teamColor }}
               >
-                {isSuspended ? <UserX size={16} /> : (l.player?.jersey_number || (idx + 1))}
+                {isSuspended
+                  ? <UserX size={16} />
+                  : l.player?.avatar_url
+                    ? <img src={l.player.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : (l.player?.jersey_number || (idx + 1))
+                }
                 {isSuspended && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-white flex items-center justify-center shadow-lg animate-pulse">
                     <ShieldAlert size={8} />
@@ -620,12 +634,17 @@ function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [
           >
             <div
               className={clsx(
-                "relative w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white font-black text-[10px] sm:text-xs",
+                "relative w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-xl overflow-hidden flex items-center justify-center text-white font-black text-[10px] sm:text-xs",
                 isSuspended && "border-red-500 scale-90"
               )}
               style={{ backgroundColor: isSuspended ? '#ef4444' : teamColor }}
             >
-              {isSuspended ? <UserX size={12} /> : (l.player?.jersey_number || (idx + 1))}
+              {isSuspended
+                ? <UserX size={12} />
+                : l.player?.avatar_url
+                  ? <img src={l.player.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : (l.player?.jersey_number || (idx + 1))
+              }
             </div>
             <div className={clsx(
               "px-2 py-0.5 rounded-full border shadow-lg backdrop-blur-md",
