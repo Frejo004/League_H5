@@ -22,6 +22,7 @@ import { LiveEventFeed } from '@/components/live/LiveEventFeed'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
+import { MatchLineups } from '@/components/matches/MatchLineups'
 import { clsx } from 'clsx'
 import type { TeamRef } from '@/types/database'
 import { PublicLayout } from '@/components/layout/PublicLayout'
@@ -29,7 +30,7 @@ import { PublicLayout } from '@/components/layout/PublicLayout'
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
-type LiveTab = 'resume' | 'events' | 'live-video' | 'info'
+type LiveTab = 'resume' | 'events' | 'live-video' | 'info' | 'lineups'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utils
@@ -306,6 +307,7 @@ function TabBar({ tabs, activeTab, onChange, dark }: {
           >
             {tab === 'resume' && <><Calendar size={14} />Résumé</>}
             {tab === 'events' && <><Zap size={14} />Événements</>}
+            {tab === 'lineups' && <><Users size={14} />Compos</>}
             {tab === 'live-video' && <><Play size={14} />{activeTab === 'live-video' ? 'En direct' : 'Vidéo'}</>}
             {tab === 'info' && <><MapPin size={14} />Infos</>}
           </button>
@@ -469,7 +471,7 @@ export function PublicMatchDetailPage() {
   const sortedGoals = useMemo(() => [...(goals ?? [])].sort((a: any, b: any) => (a.minute ?? 0) - (b.minute ?? 0)), [goals])
   const hasLiveVideoTab = isLive && isStreamingLive
 
-  const tabList: LiveTab[] = ['resume', 'events']
+  const tabList: LiveTab[] = ['resume', 'events', 'lineups']
   if (hasLiveVideoTab) tabList.unshift('live-video')
   tabList.push('info')
 
@@ -564,6 +566,13 @@ export function PublicMatchDetailPage() {
                         <p className="text-xs text-[var(--tm)] mt-2">Les événements apparaîtront ici en direct</p>
                       </div>
                     )}
+                  </motion.div>
+                )}
+
+                {/* COMPOSITIONS */}
+                {activeTab === 'lineups' && (
+                  <motion.div key="lineups" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="pt-1">
+                    <MatchLineups matchId={id!} homeTeam={home} awayTeam={away} scheduledAt={match?.scheduled_at} />
                   </motion.div>
                 )}
 
