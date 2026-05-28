@@ -123,12 +123,12 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
   const isLocked = matchTime > 0 && (matchTime - now < 3600000)
   const canEdit = (isCaptain && activeTeam.captain_id === profile?.id) && !isLocked
 
-  if (isLoading) return <div className="p-8 text-center text-slate-500">Chargement des compositions...</div>
+  if (isLoading) return <div className="p-8 text-center text-text-muted">Chargement des compositions...</div>
 
   return (
-    <div className="card p-0 overflow-hidden glass-morphism border border-white/10 shadow-2xl">
+    <div className="card p-0 overflow-hidden glass-morphism border border-surface-border shadow-2xl">
       {/* Tabs Équipes */}
-      <div className="flex border-b border-white/5 bg-black/40 backdrop-blur-md">
+      <div className="flex border-b border-surface-border bg-surface-muted/30 backdrop-blur-md">
         {[
           { ...homeTeam, tabId: 'home' as const },
           { id: 'both', name: 'Face à Face', color: '#C8F135', tabId: 'both' as const },
@@ -143,7 +143,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
               onClick={() => { setActiveTab(team.tabId); setIsEditing(false) }}
               className={clsx(
                 "flex-1 relative flex items-center justify-center gap-3 py-5 text-[10px] font-black uppercase tracking-[0.15em] transition-all",
-                isActive ? "text-white" : "text-slate-500 hover:text-slate-300"
+                isActive ? "text-text-primary" : "text-text-muted hover:text-text-secondary"
               )}
             >
               {!isBoth && <div className="w-2.5 h-2.5 rounded shadow-lg" style={{ backgroundColor: (team as any).color }} />}
@@ -165,18 +165,18 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Users size={20} className="text-primary-500" />
-              <h3 className="text-sm font-black text-white uppercase tracking-widest">Composition</h3>
+              <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Composition</h3>
             </div>
 
             {!isEditing && activeTab !== 'both' && (
-              <div className="flex p-1 bg-black/40 rounded-xl border border-white/5">
+              <div className="flex p-1 bg-surface-muted/30 rounded-xl border border-surface-border">
                 {['pitch', 'list'].map(mode => (
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode as any)}
                     className={clsx(
                       "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                      viewMode === mode ? "bg-white/10 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                      viewMode === mode ? "bg-surface-muted text-text-primary shadow-lg" : "text-text-muted hover:text-text-secondary"
                     )}
                   >
                     {mode === 'pitch' ? 'Terrain' : 'Liste'}
@@ -219,15 +219,15 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
           <div className="space-y-8 animate-fade-in">
             <div className="flex items-center justify-center gap-12 text-center">
               <div className="flex flex-col items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{homeTeam.name}</p>
-                <p className="text-xl font-black text-white">{homeFormationDetected}</p>
-                <p className="text-[9px] text-slate-600 font-bold uppercase">{FORMATIONS[homeFormationDetected]?.style}</p>
+                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">{homeTeam.name}</p>
+                <p className="text-xl font-black text-text-primary">{homeFormationDetected}</p>
+                <p className="text-[9px] text-text-muted/60 font-bold uppercase">{FORMATIONS[homeFormationDetected]?.style}</p>
               </div>
-              <div className="w-px h-12 bg-white/10" />
+              <div className="w-px h-12 bg-surface-border" />
               <div className="flex flex-col items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{awayTeam.name}</p>
-                <p className="text-xl font-black text-white">{awayFormationDetected}</p>
-                <p className="text-[9px] text-slate-600 font-bold uppercase">{FORMATIONS[awayFormationDetected]?.style}</p>
+                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">{awayTeam.name}</p>
+                <p className="text-xl font-black text-text-primary">{awayFormationDetected}</p>
+                <p className="text-[9px] text-text-muted/60 font-bold uppercase">{FORMATIONS[awayFormationDetected]?.style}</p>
               </div>
             </div>
             <FullMatchPitch
@@ -247,10 +247,10 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
               {/* Col Gauche : Terrain */}
               <div className="space-y-6">
                 <div className="flex items-center justify-center gap-4 text-center">
-                  <div className="px-6 py-2 rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+                  <div className="px-6 py-2 rounded-2xl bg-surface-muted/30 border border-surface-border shadow-xl">
                     <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">Formation</p>
-                    <p className="text-xl font-black text-white">{currentFormation}</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{FORMATIONS[currentFormation]?.style}</p>
+                    <p className="text-xl font-black text-text-primary">{currentFormation}</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{FORMATIONS[currentFormation]?.style}</p>
                   </div>
                 </div>
                 <PitchView
@@ -269,7 +269,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                     <div className="w-8 h-8 rounded-xl bg-[#C8F135]/10 flex items-center justify-center">
                       <UserCheck size={16} className="text-[#C8F135]" />
                     </div>
-                    <span className="text-xs font-black text-white uppercase tracking-widest">Titulaires</span>
+                    <span className="text-xs font-black text-text-primary uppercase tracking-widest">Titulaires</span>
                   </div>
                   <div className="space-y-2">
                     {teamLineup.filter(l => l.is_starter).map(l => (
@@ -289,7 +289,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                     <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
                       <Shield size={16} className="text-blue-400" />
                     </div>
-                    <span className="text-xs font-black text-white uppercase tracking-widest">Banc</span>
+                    <span className="text-xs font-black text-text-primary uppercase tracking-widest">Banc</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
                     {teamLineup.filter(l => !l.is_starter).map(l => (
@@ -366,7 +366,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] px-2 flex items-center gap-2">
               <Layout size={12} className="text-primary-500" />
               Formation
             </label>
@@ -378,7 +378,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
                   onClick={() => setFormation(key)}
                   className={clsx(
                     "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all",
-                    formation === key ? "bg-primary-600 border-primary-500 text-white shadow-lg" : "bg-white/5 border-white/5 text-slate-500"
+                    formation === key ? "bg-primary-600 border-primary-500 text-white shadow-lg" : "bg-surface-muted/30 border-surface-border text-text-muted"
                   )}
                 >
                   <span className="text-xs font-black">{FORMATIONS[key].label}</span>
@@ -396,8 +396,8 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sélection</p>
-            <span className="text-[10px] font-black text-white bg-black/40 px-3 py-1 rounded-full border border-white/5">{starters.length}/5</span>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Sélection</p>
+            <span className="text-[10px] font-black text-text-primary bg-surface-muted/30 px-3 py-1 rounded-full border border-surface-border">{starters.length}/5</span>
           </div>
           <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
             {players?.map(p => {
@@ -417,18 +417,18 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
                         ? "bg-primary-500/10 border-primary-500/30"
                         : subs.includes(p.id)
                           ? "bg-blue-500/10 border-blue-500/30"
-                          : "bg-white/2 border-white/5 opacity-60"
+                          : "bg-surface-muted/10 border-surface-border opacity-60"
                   )}
                 >
                   <div className={clsx(
-                    "w-10 h-10 rounded-xl bg-black/60 flex items-center justify-center text-sm font-black text-white border border-white/10 transition-colors",
+                    "w-10 h-10 rounded-xl bg-surface-card/60 flex items-center justify-center text-sm font-black text-text-primary border border-surface-border transition-colors",
                     isSuspended && "border-red-500/30"
                   )}>
                     {p.jersey_number ?? '—'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className={clsx("font-bold truncate transition-colors", isSuspended ? "text-red-400/80" : "text-white")}>
+                      <p className={clsx("font-bold truncate transition-colors", isSuspended ? "text-red-400/80" : "text-text-primary")}>
                         {p.first_name} {p.last_name}
                       </p>
                       {isSuspended && (
@@ -437,7 +437,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-600 font-bold uppercase">{p.position}</p>
+                    <p className="text-[10px] text-text-muted/60 font-bold uppercase">{p.position}</p>
                   </div>
                 </button>
               )
@@ -453,15 +453,15 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
         </div>
       )}
 
-      <div className="flex gap-3 pt-6 border-t border-white/5">
+      <div className="flex gap-3 pt-6 border-t border-surface-border">
         <button
           onClick={handleSave}
           disabled={!canSave || updateLineup.isPending}
-          className={clsx("flex-1 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] transition-all", canSave ? "bg-primary-600 text-white shadow-xl hover:bg-primary-500 active:scale-[0.98]" : "bg-slate-800 text-slate-500 cursor-not-allowed")}
+          className={clsx("flex-1 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] transition-all", canSave ? "bg-primary-600 text-white shadow-xl hover:bg-primary-500 active:scale-[0.98]" : "bg-surface-muted text-text-muted cursor-not-allowed")}
         >
           {updateLineup.isPending ? "Transmission..." : "Valider"}
         </button>
-        <button onClick={onClose} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest hover:bg-white/10 transition-colors">Annuler</button>
+        <button onClick={onClose} className="px-8 py-4 rounded-2xl bg-surface-muted/30 border border-surface-border text-text-primary font-black uppercase tracking-widest hover:bg-surface-muted transition-colors">Annuler</button>
       </div>
     </div>
   )
@@ -470,18 +470,18 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
 function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?: boolean, isSuspended?: boolean }) {
   return (
     <div className={clsx(
-      "group flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 transition-all cursor-default",
-      isSuspended ? "opacity-50 grayscale-[0.5] border-red-500/20" : "hover:bg-white/10"
+      "group flex items-center gap-4 p-3 rounded-2xl bg-surface-muted/10 border border-surface-border/50 transition-all cursor-default",
+      isSuspended ? "opacity-50 grayscale-[0.5] border-red-500/20" : "hover:bg-surface-muted/20"
     )}>
       <div className={clsx(
-        "w-10 h-10 rounded-xl bg-black/60 flex items-center justify-center text-sm font-black text-white border border-white/10 group-hover:border-primary-500/50 transition-colors",
+        "w-10 h-10 rounded-xl bg-surface-card/60 flex items-center justify-center text-sm font-black text-text-primary border border-surface-border group-hover:border-primary-500/50 transition-colors",
         isSuspended && "border-red-500/40"
       )}>
         {lineup.player?.jersey_number ?? '—'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-bold text-white truncate group-hover:text-primary-400 transition-colors">
+          <p className="font-bold text-text-primary truncate group-hover:text-primary-400 transition-colors">
             {lineup.player?.first_name} {lineup.player?.last_name}
           </p>
           {isSuspended && (
@@ -490,7 +490,7 @@ function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?
             </span>
           )}
         </div>
-        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">{lineup.player?.position || '—'}</p>
+        <p className="text-[10px] text-text-muted/60 font-bold uppercase tracking-wider">{lineup.player?.position || '—'}</p>
       </div>
     </div>
   )
@@ -499,7 +499,7 @@ function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?
 export function PitchView({ players, teamColor, formation, suspendedPlayerIds = [] }: any) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   return (
-    <div className="relative aspect-[16/10] w-full max-w-2xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl">
+    <div className="relative aspect-[16/10] w-full max-w-2xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-surface-border shadow-2xl">
       {/* Texture & Lignes Landscape */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#2d6a4f_0%,#1b4332_100%)] opacity-40" />
       <div className="absolute inset-6 border-2 border-white/20 rounded-sm">
@@ -543,11 +543,11 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
               </div>
               <div className={clsx(
                 "px-3 py-1 rounded-full border shadow-xl backdrop-blur-md",
-                isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-black/60 border-white/10"
+                isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-surface-card/80 border-surface-border"
               )}>
                 <p className={clsx(
                   "text-[8px] sm:text-[10px] font-black uppercase tracking-tight whitespace-nowrap",
-                  isSuspended ? "text-red-400" : "text-white"
+                  isSuspended ? "text-red-400" : "text-text-primary"
                 )}>
                   {l.player?.last_name}
                 </p>
@@ -562,7 +562,7 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
 
 export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor, homeFormation, awayFormation, suspendedPlayerIds = [] }: any) {
   return (
-    <div className="relative aspect-[16/10] w-full max-w-4xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+    <div className="relative aspect-[16/10] w-full max-w-4xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-surface-border shadow-[0_0_50px_rgba(0,0,0,0.5)]">
       {/* Texture & Lignes Landscape */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#2d6a4f_0%,#1b4332_100%)] opacity-40" />
       <div className="absolute inset-6 border-2 border-white/20 rounded-sm">
@@ -629,11 +629,11 @@ function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [
             </div>
             <div className={clsx(
               "px-2 py-0.5 rounded-full border shadow-lg backdrop-blur-md",
-              isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-black/60 border-white/10"
+              isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-surface-card/80 border-surface-border"
             )}>
               <p className={clsx(
                 "text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap",
-                isSuspended ? "text-red-400" : "text-white"
+                isSuspended ? "text-red-400" : "text-text-primary"
               )}>
                 {l.player?.last_name}
               </p>

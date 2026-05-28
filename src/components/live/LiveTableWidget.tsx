@@ -71,10 +71,10 @@ export function LiveTableWidget({
                     <div className="flex items-center gap-2.5">
                       <div className="relative">
                         <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-1 ring-white/10"
-                          style={{ backgroundColor: row.team_color }}>
+                          style={{ backgroundColor: row.team_color || '#334155' }}>
                           {row.team_logo && row.team_logo !== 'null' ? (
-                            <img src={row.team_logo} className="w-4 h-4 object-contain" />
-                          ) : row.team_name[0]}
+                            <img src={row.team_logo} alt={row.team_name} className="w-4 h-4 object-contain" />
+                          ) : (row.team_name?.[0] || '?')}
                         </div>
                         {/* Indicateur de changement */}
                         {row.position_change !== 0 && (

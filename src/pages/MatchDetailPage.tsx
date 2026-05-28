@@ -59,13 +59,13 @@ function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, s
   ]
 
   return (
-    <div className="card border-white/5 bg-black/40 backdrop-blur-xl">
+    <div className="card border-surface-border/50 bg-surface-card/40 backdrop-blur-xl">
       <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+        <h3 className="text-xs font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2">
           <BarChart2 size={16} className="text-[#C8F135]" />
           Statistiques du Match
         </h3>
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Temps Réel</span>
+        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Temps Réel</span>
       </div>
 
       <div className="space-y-6">
@@ -77,11 +77,11 @@ function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, s
           return (
             <div key={i} className="space-y-2">
               <div className="flex justify-between items-end px-1">
-                <span className="text-lg font-black text-white tabular-nums">{row.home}</span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{row.label}</span>
-                <span className="text-lg font-black text-white tabular-nums">{row.away}</span>
+                <span className="text-lg font-black text-text-primary tabular-nums">{row.home}</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">{row.label}</span>
+                <span className="text-lg font-black text-text-primary tabular-nums">{row.away}</span>
               </div>
-              <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-white/5 gap-0.5">
+              <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-surface-muted gap-0.5">
                 <div
                   className="h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--color-rgb),0.5)]"
                   style={{
@@ -124,11 +124,11 @@ function GoalEvent({
   if (side === 'own') {
     return (
       <div className="flex items-center justify-center gap-3 py-2.5 border-b border-surface-border/40 last:border-b-0">
-        <span className="text-xs text-slate-600 font-mono w-8 text-right shrink-0">
+        <span className="text-xs text-text-muted font-mono w-8 text-right shrink-0">
           {minute ? `${minute}'` : ''}
         </span>
         <span className="text-base">⚽</span>
-        <span className="text-xs text-slate-500 italic">
+        <span className="text-xs text-text-secondary italic">
           CSC — {playerName}
         </span>
       </div>
@@ -145,10 +145,10 @@ function GoalEvent({
       <div className={clsx('flex-1 flex items-start', isHome ? 'justify-end pr-2' : '')}>
         {isHome && (
           <div className="text-right">
-            <p className="text-sm font-semibold text-white leading-tight">{playerName}</p>
+            <p className="text-sm font-semibold text-text-primary leading-tight">{playerName}</p>
             {assistName && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                Passe déc. <span className="text-slate-400">{assistName}</span>
+              <p className="text-xs text-text-muted mt-0.5">
+                Passe déc. <span className="text-text-secondary">{assistName}</span>
               </p>
             )}
           </div>
@@ -165,7 +165,7 @@ function GoalEvent({
           <span className="text-sm leading-none">⚽</span>
         </div>
         {minute && (
-          <span className="text-[10px] text-slate-600 font-mono">{minute}'</span>
+          <span className="text-[10px] text-text-muted font-mono">{minute}'</span>
         )}
       </div>
 
@@ -173,10 +173,10 @@ function GoalEvent({
       <div className={clsx('flex-1 flex items-start', !isHome ? 'pl-2' : 'justify-end')}>
         {!isHome && (
           <div>
-            <p className="text-sm font-semibold text-white leading-tight">{playerName}</p>
+            <p className="text-sm font-semibold text-text-primary leading-tight">{playerName}</p>
             {assistName && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                Passe déc. <span className="text-slate-400">{assistName}</span>
+              <p className="text-xs text-text-muted mt-0.5">
+                Passe déc. <span className="text-text-secondary">{assistName}</span>
               </p>
             )}
           </div>
@@ -491,23 +491,23 @@ export function MatchDetailPage() {
 
         <Breadcrumbs items={[{ label: 'Matchs', to: '/matches' }, { label: `${home.name} vs ${away.name}` }]} homeTo="/dashboard" />
 
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900 shadow-2xl">
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-surface-border/50 bg-surface-card shadow-2xl">
           <div className="absolute inset-0 bg-linear-to-br from-blue-600/10 via-transparent to-purple-600/10" />
           <div className="relative z-10 px-6 py-12 flex flex-col items-center">
             <div className="flex items-center justify-center gap-8 sm:gap-24 w-full max-w-4xl">
               <div className="flex-1 flex flex-col items-center gap-4 group">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.5rem] bg-white/5 flex items-center justify-center p-4 border border-white/10 shadow-2xl transition-transform duration-500 group-hover:scale-110">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.5rem] bg-surface-muted/30 flex items-center justify-center p-4 border border-surface-border/50 shadow-2xl transition-transform duration-500 group-hover:scale-110">
                   {home.logo_url
                     ? <img src={home.logo_url} alt="" className="w-full h-full object-contain" />
-                    : <span className="text-5xl font-black text-white">{home.name[0]}</span>
+                    : <span className="text-5xl font-black text-text-primary">{home.name[0]}</span>
                   }
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight text-center">{home.name}</h2>
+                <h2 className="text-lg sm:text-2xl font-black text-text-primary uppercase tracking-tight text-center">{home.name}</h2>
               </div>
 
               <div className="flex flex-col items-center gap-3">
-                <div className="px-6 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                  <span className="text-2xl sm:text-4xl font-black text-white tabular-nums">
+                <div className="px-6 py-2 rounded-2xl bg-surface-muted/30 border border-surface-border/50 backdrop-blur-md">
+                  <span className="text-2xl sm:text-4xl font-black text-text-primary tabular-nums">
                     {formatTime(match.scheduled_at)}
                   </span>
                 </div>
@@ -515,24 +515,24 @@ export function MatchDetailPage() {
                   <span className="text-[10px] font-black text-primary-500 uppercase tracking-[0.3em] mb-1">
                     {match.scheduled_at ? formatDate(match.scheduled_at).split(' ')[0] : 'À venir'}
                   </span>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{match.venue || 'Stade Municipal'}</p>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{match.venue || 'Stade Municipal'}</p>
                 </div>
               </div>
 
               <div className="flex-1 flex flex-col items-center gap-4 group">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.5rem] bg-white/5 flex items-center justify-center p-4 border border-white/10 shadow-2xl transition-transform duration-500 group-hover:scale-110">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.5rem] bg-surface-muted/30 flex items-center justify-center p-4 border border-surface-border/50 shadow-2xl transition-transform duration-500 group-hover:scale-110">
                   {away.logo_url
                     ? <img src={away.logo_url} alt="" className="w-full h-full object-contain" />
-                    : <span className="text-5xl font-black text-white">{away.name[0]}</span>
+                    : <span className="text-5xl font-black text-text-primary">{away.name[0]}</span>
                   }
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight text-center">{away.name}</h2>
+                <h2 className="text-lg sm:text-2xl font-black text-text-primary uppercase tracking-tight text-center">{away.name}</h2>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2 p-1.5 bg-slate-900/80 backdrop-blur-xl rounded-2xl mx-1 border border-white/10 shadow-2xl sticky top-20 z-30">
+        <div className="flex gap-2 p-1.5 bg-surface-card/80 backdrop-blur-xl rounded-2xl mx-1 border border-surface-border/50 shadow-2xl sticky top-20 z-30">
           {[
             { id: 'lineups', label: 'Compositions', icon: UsersIcon },
             { id: 'standings', label: 'Classement', icon: BarChart2 },
@@ -545,7 +545,7 @@ export function MatchDetailPage() {
                 "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
                 activeTab === tab.id
                   ? "bg-[#C8F135] text-black shadow-[0_0_20px_rgba(200,241,53,0.4)] scale-[1.02]"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-surface-muted/20"
               )}
             >
               <tab.icon size={14} />
@@ -575,11 +575,11 @@ export function MatchDetailPage() {
           )}
           {activeTab === 'stats' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
-              <div className="card text-center py-12">
-                <MapPin size={32} className="mx-auto mb-4 text-slate-700" />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Infos Match</p>
-                <p className="text-white text-xl font-black mt-2">{match.venue || 'Terrain principal'}</p>
-                <p className="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{formatDate(match.scheduled_at)}</p>
+              <div className="card text-center py-12 border-surface-border bg-surface-card">
+                <MapPin size={32} className="mx-auto mb-4 text-text-muted/40" />
+                <p className="text-text-muted font-bold uppercase tracking-widest text-xs">Infos Match</p>
+                <p className="text-text-primary text-xl font-black mt-2">{match.venue || 'Terrain principal'}</p>
+                <p className="text-text-muted text-[10px] mt-1 font-bold uppercase tracking-widest">{formatDate(match.scheduled_at)}</p>
               </div>
             </motion.div>
           )}
@@ -636,27 +636,27 @@ export function MatchDetailPage() {
       )}
 
       {/* ── Broadcast Hero Banner ── */}
-      <div className="relative overflow-hidden rounded-4xl border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] mx-1 sm:mx-0">
+      <div className="relative overflow-hidden rounded-4xl border border-surface-border/50 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] mx-1 sm:mx-0 bg-surface-card">
 
         {/* Dynamic Mesh Background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
-            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px] opacity-30 animate-pulse-slow"
+            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px] opacity-20 animate-pulse-slow"
             style={{ backgroundColor: home.color }}
           />
           <div
-            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px] opacity-30 animate-pulse-slow"
+            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px] opacity-20 animate-pulse-slow"
             style={{ backgroundColor: away.color }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/40 to-black/80 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-linear-to-b from-surface-card/20 via-surface-card/40 to-surface-card/80 backdrop-blur-[1px]" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
         </div>
 
         {/* Header Content */}
         <div className="relative z-10 p-6 sm:p-8">
           <div className="flex flex-col items-center mb-8 relative z-10">
-            <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-6 shadow-xl">
-              <span className="text-[10px] font-bold text-slate-400 tabular-nums uppercase tracking-widest">
+            <div className="px-4 py-1.5 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-xl mb-6 shadow-xl">
+              <span className="text-[10px] font-bold text-text-muted tabular-nums uppercase tracking-widest">
                 {match.scheduled_at
                   ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at)).replace(',', ' •')
                   : 'Date à définir'
@@ -666,11 +666,11 @@ export function MatchDetailPage() {
 
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-1">
+                <span className="text-[10px] font-black text-text-muted/60 uppercase tracking-[0.4em] mb-1">
                   {match.seasons?.name ?? 'Saison Live'}
                 </span>
                 <Breadcrumbs
-                  className="text-white/20"
+                  className="text-text-muted/40"
                   items={[
                     { label: 'Matchs', to: '/matches' },
                     { label: `${home.name} vs ${away.name}` }
@@ -695,8 +695,8 @@ export function MatchDetailPage() {
                     } catch { }
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                            text-white/40 hover:text-white border border-white/10 hover:border-white/20
-                            hover:bg-white/5 transition-all backdrop-blur-md"
+                            text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
+                            hover:bg-surface-muted/20 transition-all backdrop-blur-md"
                 >
                   <Share2 size={12} />
                   <span className="hidden sm:inline">Partager</span>
@@ -710,13 +710,13 @@ export function MatchDetailPage() {
             <div className="flex items-center justify-between w-full max-w-2xl mb-6">
               {/* Team Home */}
               <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-surface-muted/30 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-surface-border/50 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {home.logo_url
                     ? <img src={home.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
-                    : <span className="text-3xl sm:text-4xl font-black text-white">{home.name[0]}</span>
+                    : <span className="text-3xl sm:text-4xl font-black text-text-primary">{home.name[0]}</span>
                   }
                 </div>
-                <span className="text-[10px] sm:text-sm font-black text-white uppercase tracking-wider text-center">{home.name}</span>
+                <span className="text-[10px] sm:text-sm font-black text-text-primary uppercase tracking-wider text-center">{home.name}</span>
               </div>
 
               {/* Center Score — Boxed Style */}
@@ -727,23 +727,23 @@ export function MatchDetailPage() {
                     "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayHomeScore > displayAwayScore
                       ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
-                      : "bg-white/5 border-white/10 shadow-2xl"
+                      : "bg-surface-muted/30 border-surface-border/50 shadow-2xl"
                   )}>
-                    <span className="text-3xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    <span className="text-3xl sm:text-7xl font-black text-text-primary tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayHomeScore : ''}
                     </span>
                   </div>
 
-                  <span className="text-xl sm:text-2xl font-black text-white/20 italic">—</span>
+                  <span className="text-xl sm:text-2xl font-black text-text-muted/20 italic">—</span>
 
                   {/* Box Away */}
                   <div className={clsx(
                     "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayAwayScore > displayHomeScore
                       ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
-                      : "bg-white/5 border-white/10 shadow-2xl"
+                      : "bg-surface-muted/30 border-surface-border/50 shadow-2xl"
                   )}>
-                    <span className="text-3xl sm:text-7xl font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    <span className="text-3xl sm:text-7xl font-black text-text-primary tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                       {(isLive || isCompleted) ? displayAwayScore : ''}
                     </span>
                   </div>
@@ -787,15 +787,15 @@ export function MatchDetailPage() {
                   ) : isLive ? (
                     /* ── Match en cours ── */
                     <div className="flex flex-col items-center gap-2 w-full">
-                      <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                      <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-md">
                         <span className={clsx(
                           "w-1.5 h-1.5 rounded-full shrink-0",
                           clock.isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"
                         )} />
-                        <span className="text-sm font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        <span className="text-sm font-black text-text-primary tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {clock.label}
                         </span>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
                           {clock.isPaused ? 'Suspendu' : clock.phase === 3 ? '2ème MT' : '1ère MT'}
                         </span>
                       </div>
@@ -832,12 +832,12 @@ export function MatchDetailPage() {
                       )}
                     </div>
                   ) : isCompleted ? (
-                    <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Match Terminé</span>
+                    <div className="px-4 py-1 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-md">
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em]">Match Terminé</span>
                     </div>
                   ) : (
-                    <div className="px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">À venir</span>
+                    <div className="px-4 py-1 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-md">
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em]">À venir</span>
                     </div>
                   )}
                 </div>
@@ -845,13 +845,13 @@ export function MatchDetailPage() {
 
               {/* Team Away */}
               <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-surface-muted/30 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-surface-border/50 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {away.logo_url
                     ? <img src={away.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
-                    : <span className="text-3xl sm:text-4xl font-black text-white">{away.name[0]}</span>
+                    : <span className="text-3xl sm:text-4xl font-black text-text-primary">{away.name[0]}</span>
                   }
                 </div>
-                <span className="text-[10px] sm:text-sm font-black text-white uppercase tracking-wider text-center">{away.name}</span>
+                <span className="text-[10px] sm:text-sm font-black text-text-primary uppercase tracking-wider text-center">{away.name}</span>
               </div>
             </div>
 
@@ -862,8 +862,8 @@ export function MatchDetailPage() {
                 <div className="flex-1 flex flex-col items-end text-right space-y-1">
                   {goals.filter(g => g.team_id === home.id).map(g => (
                     <div key={g.id} className="group cursor-default">
-                      <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors">
-                        {g.players?.last_name} <span className="text-slate-600 ml-1">{g.minute}'</span>
+                      <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
+                        {g.players?.last_name} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}
@@ -871,7 +871,7 @@ export function MatchDetailPage() {
 
                 {/* Center Icon Separator */}
                 <div className="px-6 py-1">
-                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                  <div className="w-6 h-6 rounded-full bg-surface-muted/30 flex items-center justify-center border border-surface-border/50 shadow-inner">
                     <span className="text-[10px] opacity-60">⚽</span>
                   </div>
                 </div>
@@ -880,8 +880,8 @@ export function MatchDetailPage() {
                 <div className="flex-1 flex flex-col items-start text-left space-y-1">
                   {goals.filter(g => g.team_id === away.id).map(g => (
                     <div key={g.id} className="group cursor-default">
-                      <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors">
-                        {g.players?.last_name} <span className="text-slate-600 ml-1">{g.minute}'</span>
+                      <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
+                        {g.players?.last_name} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}
@@ -903,7 +903,7 @@ export function MatchDetailPage() {
                 "shrink-0 flex items-center gap-1.5 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 border-b-2 whitespace-nowrap",
                 activeTab === tab.id
                   ? "border-[#C8F135] text-[#C8F135]"
-                  : "border-transparent text-slate-500 hover:text-slate-300 hover:border-white/20"
+                  : "border-transparent text-text-muted hover:text-text-primary hover:border-surface-border/50"
               )}
             >
               <tab.icon size={13} />

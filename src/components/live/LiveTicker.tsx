@@ -14,7 +14,7 @@ export function LiveTicker() {
     .slice(0, 10)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[60] bg-surface/80 backdrop-blur-md border-t border-surface-border h-8 flex items-center overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-t border-surface-border h-8 flex items-center overflow-hidden">
       <div className="flex items-center h-full px-4 bg-primary-500 text-white text-[10px] font-black uppercase tracking-widest skew-x-[-20deg] ml-[-10px] pr-6 z-10">
         <span className="skew-x-[20deg]">DIRECT</span>
       </div>
