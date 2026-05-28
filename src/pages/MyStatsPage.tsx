@@ -69,8 +69,8 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
       <div className="relative overflow-hidden rounded-2xl p-[2px]"
            style={{ background: 'linear-gradient(135deg, #FFDF73 0%, #B8860B 50%, #FFDF73 100%)' }}>
         
-        <div className="relative bg-slate-900 h-full rounded-2xl overflow-hidden p-6 flex items-center gap-5 bg-grid-pattern">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#B8860B]/10 via-transparent to-[#B8860B]/30 pointer-events-none" />
+        <div className="relative bg-white dark:bg-slate-950 h-full rounded-2xl overflow-hidden p-6 flex items-center gap-5 bg-grid-pattern">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#B8860B]/10 dark:from-[#B8860B]/20 via-transparent to-[#B8860B]/30 pointer-events-none" />
 
           {/* Avatar avec glow or */}
           <div className="relative shrink-0 z-10">
@@ -104,12 +104,12 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
               )}
             </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <div className="flex items-center gap-1.5 font-bold text-slate-300 text-sm tracking-wide">
+              <div className="flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-300 text-sm tracking-wide">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: profile.team.color }} />
                 {profile.team.name}
               </div>
               {profile.position && (
-                <span className="text-xs font-bold text-[#FFDF73] uppercase tracking-widest bg-black/30 px-2 py-0.5 rounded border border-[#B8860B]/20">
+                <span className="text-xs font-bold text-amber-700 dark:text-[#FFDF73] uppercase tracking-widest bg-amber-500/10 dark:bg-black/30 px-2 py-0.5 rounded border border-amber-500/20 dark:border-[#B8860B]/20">
                   {positionLabel}
                 </span>
               )}

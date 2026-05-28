@@ -55,8 +55,8 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="group relative bg-slate-900/60 border border-slate-800/70 rounded-2xl overflow-hidden
-                    transition-all duration-300 hover:border-slate-700/70">
+    <div className="group relative bg-white dark:bg-slate-900/60 border border-surface-border rounded-2xl overflow-hidden
+                    transition-all duration-300 hover:border-primary-500/30">
       {/* top accent line */}
       <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-primary-500/30 to-transparent" />
       <div className="p-6">
@@ -86,8 +86,8 @@ function FormField({
         id={id} type={type} value={value} required={required}
         autoComplete={autoComplete} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-3.5 py-2.5 bg-slate-800/70 border border-slate-700/60 rounded-xl
-                   text-white text-sm placeholder:text-slate-600
+        className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
+                   text-text-primary text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600
                    focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50
                    transition-all"
       />
@@ -418,7 +418,7 @@ export function ProfilePage() {
       <PlayerStatsCard userId={profile?.id} />
 
       {/* ── Hero card ── */}
-      <div className="relative bg-slate-900/80 border border-slate-800/70 rounded-2xl overflow-hidden">
+      <div className="relative bg-white dark:bg-slate-900/80 border border-surface-border rounded-2xl overflow-hidden shadow-sm">
         {/* background stripe */}
         <div className="absolute inset-0 bg-linear-to-br from-primary-900/20 via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-primary-500/40 to-transparent" />
@@ -444,7 +444,7 @@ export function ProfilePage() {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={avatarUploading}
-              className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-primary-600 hover:bg-primary-500
+              className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-primary-600 hover:bg-primary-500 shadow-lg
                          border-2 border-slate-900 flex items-center justify-center transition-colors"
               title="Changer la photo"
             >

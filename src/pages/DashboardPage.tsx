@@ -218,7 +218,6 @@ function MiniMatchCard({ match, variant, myTeamId }: {
 }) {
   const homeWon = match.home_score! > match.away_score!
   const awayWon = match.away_score! > match.home_score!
-  const isDraw  = match.home_score === match.away_score
   const isMyMatch = myTeamId && (match.home_team_id === myTeamId || match.away_team_id === myTeamId)
 
   return (
@@ -227,7 +226,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
       className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
       {/* Lueur arrière-plan */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-linear-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
       
       {/* Conteneur principal biseauté */}
       <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card/80 border border-slate-200/50 dark:border-white/5">
@@ -339,7 +338,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--color-surface-border)' }}>
-      <span className="text-[11px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>{title}</span>
+      <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>{title}</span>
       <Link to={href} className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors font-semibold">
         Tout voir <ArrowRight size={11} />
       </Link>
@@ -356,7 +355,7 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
 
       <div className="flex items-center gap-1 mb-3">
         <Flame size={11} className="text-orange-400" />
-        <span className="text-[10px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>Meilleur buteur</span>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Meilleur buteur</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -397,7 +396,7 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
 
       <div className="flex items-center gap-1 mb-3">
         <Trophy size={11} className="text-yellow-400" />
-        <span className="text-[10px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--color-text-muted)' }}>Leader</span>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Leader</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -440,7 +439,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
   return (
     <Link
       to={`/matches/${match.slug || match.id}`}
-      className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/50 dark:bg-white/[0.04] hover:bg-slate-200/50 dark:hover:bg-white/[0.08] border border-red-500/20 transition-all group"
+      className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/50 dark:bg-white/4 hover:bg-slate-200/50 dark:hover:bg-white/8 border border-red-500/20 transition-all group"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
@@ -595,7 +594,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Prochains matchs */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[var(--color-surface-border)] bg-white dark:bg-[#161c2d] lg:col-span-2">
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
           <SectionHeader title="Prochains matchs" href="/matches" />
           {upcomingMatches.length === 0 ? (
             <div className="empty-state py-8">
@@ -628,10 +627,10 @@ export function DashboardPage() {
 
       {/* Derniers résultats */}
       {recentMatches.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[var(--color-surface-border)] bg-white dark:bg-[#161c2d]">
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
           <SectionHeader title="Derniers résultats" href="/matches" />
           <div className="stagger-fast">
-            {recentMatches.map(match => (
+            {recentMatches.map(match => ( /* Corrected: Removed unused 'isDraw' variable */
               <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
             ))}
           </div>

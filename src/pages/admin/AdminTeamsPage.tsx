@@ -125,7 +125,7 @@ function TeamRow({
             <>
               {/* ── Sélecteur de capitaine ── */}
               <div className="space-y-2 bg-surface/50 p-4 rounded-xl border border-surface-border">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-300 flex items-center gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                   <Crown size={14} className="text-amber-400" />
                   Capitaine de l'équipe
                 </label>
@@ -161,7 +161,7 @@ function TeamRow({
 
               {/* ── Liste des joueurs ── */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Joueurs</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 px-1">Joueurs</label>
                 {(players ?? []).length === 0 ? (
                   <p className="text-xs text-slate-500 italic px-1">Aucun joueur dans cette équipe.</p>
                 ) : (
@@ -170,7 +170,7 @@ function TeamRow({
                       <div key={p.id}
                         className="flex items-center justify-between py-2.5 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-slate-500 font-black text-sm w-6 text-center shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          <span className="text-text-muted font-black text-sm w-6 text-center shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {p.jersey_number ?? '—'}
                           </span>
                           <div className="min-w-0">
@@ -183,7 +183,7 @@ function TeamRow({
                               )}
                             </div>
                             {p.position && (
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                 {POSITION_LABELS[p.position]}
                               </span>
                             )}
@@ -244,7 +244,7 @@ function TeamRow({
               ) : (
                 <button
                   onClick={() => setShowPlayerForm(true)}
-                  className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#FFDF73] hover:bg-[#FFDF73]/10 transition-colors w-full py-3 rounded-xl border border-dashed border-[#FFDF73]/30 mt-2"
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-[#FFDF73] hover:bg-amber-600/5 dark:hover:bg-[#FFDF73]/10 transition-colors w-full py-3 rounded-xl border border-dashed border-amber-600/30 dark:border-[#FFDF73]/30 mt-2"
                 >
                   <Plus size={14} />
                   Ajouter un joueur

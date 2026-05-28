@@ -193,12 +193,9 @@ export function RulesPage() {
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden rounded-2xl border border-amber-500/30 p-6 text-center"
-        style={{ background: 'var(--card-bg, linear-gradient(135deg, #1a1200 0%, #0f1420 50%, #0a0d1a 100%))' }}
+        style={{ background: 'var(--color-surface-card)' }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,158,11,0.15) 0%, transparent 70%)' }}
-        />
+        <div className="absolute inset-0 pointer-events-none bg-linear-to-br from-amber-500/5 to-transparent" />
         <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
 
         <div className="relative">

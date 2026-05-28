@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play } from 'lucide-react'
+import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play } from 'lucide-react'
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -27,7 +27,12 @@ import { useMatchLineups } from '@/hooks/useLineups'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { GoalWithPlayer, AssistWithPlayer, TeamRef } from '@/types/database'
+import type { GoalWithPlayer, AssistWithPlayer, TeamRef, MatchEvent } from '@/types/database'
+
+interface MatchStatsData {
+  home: { shots: number; shotsOnTarget: number; fouls: number; corners: number };
+  away: { shots: number; shotsOnTarget: number; fouls: number; corners: number };
+}
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return 'Date inconnue'
@@ -45,7 +50,7 @@ function formatTime(dateStr: string | null) {
 }
 
 // ── Match Stats Dashboard ───────────────────────────────────────────────────
-function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, stats: any }) {
+function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, stats: MatchStatsData }) {
   const rows = [
     { label: 'Tirs Totaux', home: stats.home.shots, away: stats.away.shots },
     { label: 'Tirs Cadrés', home: stats.home.shotsOnTarget, away: stats.away.shotsOnTarget },
@@ -108,14 +113,12 @@ function GoalEvent({
   playerName,
   assistName,
   minute,
-  isOwnGoal,
   teamColor,
 }: {
   side: 'home' | 'away' | 'own'
   playerName: string
   assistName?: string | null
   minute?: number | null
-  isOwnGoal?: boolean
   teamColor: string
 }) {
   if (side === 'own') {
@@ -249,12 +252,11 @@ export function MatchDetailPage() {
   // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
   const matchStats = useMemo(() => {
     const homeId = match?.home_team_id
-    const awayId = match?.away_team_id
-    const stats = {
+    const stats: MatchStatsData = {
       home: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 },
       away: { shots: 0, shotsOnTarget: 0, fouls: 0, corners: 0 }
     }
-    liveEvents.forEach(ev => {
+    liveEvents.forEach((ev: MatchEvent) => {
       const side = ev.team_id === homeId ? 'home' : 'away'
       if (ev.type === 'shot') stats[side].shots++
       if (ev.type === 'shot_on_target') {
@@ -269,7 +271,7 @@ export function MatchDetailPage() {
       if (ev.type === 'corner') stats[side].corners++
     })
     return stats
-  }, [liveEvents, match?.home_team_id, match?.away_team_id])
+  }, [liveEvents, match?.home_team_id])
 
   // Trigger celebration on new goals — doit être avant tout early return (règles des hooks)
   useEffect(() => {
@@ -407,8 +409,6 @@ export function MatchDetailPage() {
   const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
-  const homeWon = isCompleted && match.home_score! > match.away_score!
-  const awayWon = isCompleted && match.away_score! > match.home_score!
 
   const assistMap = new Map(
     assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
@@ -438,7 +438,7 @@ export function MatchDetailPage() {
   }
   const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
   const topMvpIds = voteMap.size > 0
-    ? [...voteMap.entries()].filter(([_, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
+    ? [...voteMap.entries()].filter(([, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
     : []
 
   // Joueurs MVP (les plus votés, gère les ex-aequo)
@@ -448,7 +448,7 @@ export function MatchDetailPage() {
   // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
   // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
   // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
-  const liveScore = liveEvents.reduce((acc, event) => {
+  const liveScore = liveEvents.reduce((acc, event: MatchEvent) => {
     if (event.type === 'goal' || event.type === 'own_goal') {
       const isHomeGoal = event.type === 'own_goal'
         ? event.team_id !== match.home_team_id
@@ -471,9 +471,9 @@ export function MatchDetailPage() {
             <AdminLiveControls
               matchId={match.id}
               status={match.status}
-              liveStartedAt={match.live_started_at}
-              halftimeAt={(match as any).halftime_at}
-              livePeriod={match.live_period as any}
+            liveStartedAt={match.live_started_at ?? undefined}
+              halftimeAt={(match as unknown as { halftime_at: string }).halftime_at}
+            livePeriod={match.live_period as 1 | 2 | null}
               homeTeam={home}
               awayTeam={away}
               homeScore={displayHomeScore}
@@ -540,7 +540,7 @@ export function MatchDetailPage() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as LiveTab)}
               className={clsx(
                 "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
                 activeTab === tab.id
@@ -636,7 +636,7 @@ export function MatchDetailPage() {
       )}
 
       {/* ── Broadcast Hero Banner ── */}
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] mx-1 sm:mx-0">
+      <div className="relative overflow-hidden rounded-4xl border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] mx-1 sm:mx-0">
 
         {/* Dynamic Mesh Background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -648,7 +648,7 @@ export function MatchDetailPage() {
             className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px] opacity-30 animate-pulse-slow"
             style={{ backgroundColor: away.color }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/80 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/40 to-black/80 backdrop-blur-[1px]" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
         </div>
 
@@ -710,7 +710,7 @@ export function MatchDetailPage() {
             <div className="flex items-center justify-between w-full max-w-2xl mb-6">
               {/* Team Home */}
               <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-[2rem] bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {home.logo_url
                     ? <img src={home.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
                     : <span className="text-3xl sm:text-4xl font-black text-white">{home.name[0]}</span>
@@ -845,7 +845,7 @@ export function MatchDetailPage() {
 
               {/* Team Away */}
               <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-[2rem] bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-white/5 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-white/10 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {away.logo_url
                     ? <img src={away.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
                     : <span className="text-3xl sm:text-4xl font-black text-white">{away.name[0]}</span>
@@ -893,14 +893,14 @@ export function MatchDetailPage() {
       </div>
 
       {/* ── Tab Navigation — style Sofascore/Google ── */}
-      <div className="sticky top-[60px] z-30 bg-[#0f1420]/95 backdrop-blur-xl border-b border-white/10 shadow-lg">
+      <div className="sticky top-15 z-30 bg-surface/95 backdrop-blur-xl border-b border-surface-border shadow-lg">
         <div className="flex overflow-x-auto scrollbar-hide">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as LiveTab)}
               className={clsx(
-                "flex-shrink-0 flex items-center gap-1.5 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 border-b-2 whitespace-nowrap",
+                "shrink-0 flex items-center gap-1.5 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-200 border-b-2 whitespace-nowrap",
                 activeTab === tab.id
                   ? "border-[#C8F135] text-[#C8F135]"
                   : "border-transparent text-slate-500 hover:text-slate-300 hover:border-white/20"
@@ -1095,7 +1095,7 @@ export function MatchDetailPage() {
                   </div>
                 )}
                 {!canVoteMvp && (
-                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center mx-1">
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-center mx-1">
                     <p className="text-[11.5px] font-bold text-amber-400">
                       ⚠️ Match sans action clé
                     </p>

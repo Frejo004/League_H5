@@ -204,7 +204,7 @@ export function MatchesPage() {
       />
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/6 overflow-hidden bg-slate-50 dark:bg-[#161c2d]">
+        <div className="rounded-2xl border border-surface-border overflow-hidden bg-surface-card">
           {[1,2,3,4].map(i => <SkeletonMatchCard key={i} />)}
         </div>
       ) : !season ? (
@@ -222,10 +222,10 @@ export function MatchesPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/6 overflow-hidden bg-slate-50 dark:bg-[#161c2d]">
+        <div className="rounded-2xl border border-surface-border overflow-hidden bg-surface-card">
 
           {/* Matchday tabs — style pill */}
-          <div className="flex items-center gap-1 px-3 py-3 border-b border-slate-200 dark:border-white/6 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1 px-3 py-3 border-b border-surface-border overflow-x-auto scrollbar-none">
             {matchdays.map(day => {
               const isActive = currentMatchday === day
               const dayMatches = (matches ?? []).filter(m => m.matchday === day)
@@ -234,10 +234,10 @@ export function MatchesPage() {
                 <button
                   key={day}
                   onClick={() => setActiveMatchday(day)}
-                  className={clsx(
+              className={clsx( /* Corrected: Tailwind Intellisense suggestion */
                     'relative flex flex-col items-center px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all duration-200',
                     isActive
-                      ? 'bg-primary-600/20 text-primary-400 border border-primary-600/30'
+                      ? 'bg-primary-600/10 dark:bg-primary-600/20 text-primary-600 dark:text-primary-400 border border-primary-600/30'
                       : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/4 border border-transparent'
                   )}
                 >

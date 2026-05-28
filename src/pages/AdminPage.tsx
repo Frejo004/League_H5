@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate, useSearchParams, Link } from 'react-router-dom'
@@ -31,13 +31,6 @@ export function AdminPage() {
     tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'seasons'
   )
 
-  // Sync URL param → tab actif (ex: clic sur notif spectateur)
-  useEffect(() => {
-    if (tabParam && TABS.some(t => t.id === tabParam)) {
-      setActiveTab(tabParam as TabId)
-    }
-  }, [tabParam])
-
   // Demandes en attente pour le badge
   const { data: spectators } = useSpectators()
   const pendingCount = (spectators ?? []).filter(s => s.status === 'pending').length
@@ -67,14 +60,14 @@ export function AdminPage() {
               className={clsx(
                 'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0',
                 activeTab === id
-                  ? 'bg-primary-600/20 text-primary-400 border-b-2 border-primary-500'
+                  ? 'bg-primary-600/10 dark:bg-primary-600/20 text-primary-600 dark:text-primary-400 border-b-2 border-primary-500'
                   : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-surface-border/30'
               )}
             >
               <Icon size={15} />
               {label}
               {isPending && (
-                <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow-500 text-black text-[10px] font-black flex items-center justify-center">
+                <span className="ml-0.5 min-w-4.5 h-4.5 px-1 rounded-full bg-yellow-500 text-black text-[10px] font-black flex items-center justify-center">
                   {pendingCount}
                 </span>
               )}
@@ -97,8 +90,8 @@ export function AdminPage() {
             <div className="flex items-center gap-3 p-4 rounded-2xl border border-primary-500/20 bg-primary-500/5">
               <Swords size={16} className="text-primary-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-black text-white uppercase tracking-wider">Phase finale</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                <p className="text-xs font-black text-text-primary uppercase tracking-wider">Phase finale</p>
+                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
                   Gérer le bracket et les matchs de playoffs
                 </p>
               </div>

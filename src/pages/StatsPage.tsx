@@ -309,7 +309,7 @@ export function StatsPage() {
 
                   {/* Goals per team bar chart */}
                   <div className="space-y-2 pt-1">
-                    <p className="text-xs text-slate-600 font-semibold uppercase tracking-wider">Buts marqués par équipe</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Buts marqués par équipe</p>
                     {[...standings]
                       .sort((a, b) => b.goals_for - a.goals_for)
                       .map(s => (

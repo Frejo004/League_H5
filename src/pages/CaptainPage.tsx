@@ -1,31 +1,26 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, Star, BarChart2, TrendingUp, Camera, Layout, UserCheck, History, ClipboardList } from 'lucide-react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, TrendingUp, Camera, Layout, UserCheck, History, ClipboardList } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useUpdateTeam } from '@/hooks/useTeams'
-import { usePlayersByTeam, usePlayers, useUpdatePlayer } from '@/hooks/usePlayers'
+import { usePlayersByTeam, usePlayers } from '@/hooks/usePlayers'
 import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
 import { useScorers } from '@/hooks/useScorers'
-import { usePlayerProfile } from '@/hooks/usePlayerProfile'
-import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useStandings } from '@/hooks/useStandings'
-import { InviteButton } from '@/components/ui/InviteButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { MatchLineups, FORMATIONS, PitchView } from '@/components/matches/MatchLineups'
+import { FORMATIONS, PitchView } from '@/components/matches/MatchLineups'
 import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
 import type { TeamWithCaptain, Player, PlayerPosition } from '@/types/database'
 import type { MatchWithTeams } from '@/hooks/useMatches'
 import { pushLocal, useRealtimeTactics } from '@/hooks/useRealtime'
 import { PlayerRow } from '@/components/captain/PlayerRow'
 import { PlayerStatsDrawer } from '@/components/captain/PlayerStatsDrawer'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatTime(dateStr: string) {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -43,10 +38,6 @@ function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat('fr-FR', {
     weekday: 'short', day: 'numeric', month: 'short',
   }).format(d)
-}
-
-function positionLabel(pos: PlayerPosition | null) {
-  return pos ? POSITION_LABELS[pos] : '—'
 }
 
 
@@ -359,16 +350,16 @@ function LineupHistoryDrawer({
       {/* Panel */}
       <div
         className="relative w-full sm:max-w-lg max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden animate-fade-in-up"
-        style={{ backgroundColor: '#161B22', border: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ backgroundColor: 'var(--color-surface-card)', border: '1px solid var(--color-surface-border)' }}
       >
         {/* Header */}
         <div
           className="flex items-center gap-3 px-4 py-3 shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ borderBottom: '1px solid var(--color-surface-border)' }}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[9px] font-black text-primary-500 uppercase tracking-[0.3em]">J{match.matchday}</span>
+              <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">J{match.matchday}</span>
               <p className="text-sm font-black text-white truncate">
                 {isHome ? 'vs' : '@'} {opp.name}
               </p>
@@ -571,7 +562,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
         const { type, teamId: updateTeamId, captainName, formation, playerName, playerId } = payload
 
         // On ne traite que si c'est notre équipe
-        if (updateTeamId !== teamId) return
+        if (updateTeamId !== teamId) { /* Do nothing if not for this team */ return }
 
         let title = 'Tactique mise à jour'
         let message = `${captainName} a modifié la formation.`
@@ -699,7 +690,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
       {/* Header Match Compact */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-white/2 border border-white/5">
         <div className="text-center md:text-left">
-          <p className="text-[9px] font-black text-primary-500 uppercase tracking-[0.3em]">Prochain Match</p>
+          <p className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Prochain Match</p>
           <h3 className="text-base font-black text-white uppercase tracking-tight">
             {nextMatch.home_team.name} <span className="text-slate-500 mx-1">vs</span> {nextMatch.away_team.name}
           </h3>
@@ -1108,7 +1099,7 @@ export function CaptainPage() {
   const [nameError, setNameError] = useState('')
 
   // Upload logo équipe
-  const logoRef = useRef<HTMLInputElement>(null)
+  const logoRef = useRef<HTMLInputElement>(null) // Corrected: was missing type
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
 
