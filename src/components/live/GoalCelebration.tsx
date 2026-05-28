@@ -107,8 +107,8 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
               BUT !!!
             </motion.div>
 
-            <div className="mt-4 p-4 bg-black/60 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl">
-              <p className="text-sm font-black text-slate-300 uppercase tracking-[0.3em] mb-1">But pour</p>
+            <div className="mt-4 p-4 bg-surface/60 backdrop-blur-xl border border-surface-border/20 rounded-2xl shadow-2xl">
+              <p className="text-sm font-black text-text-primary uppercase tracking-[0.3em] mb-1">But pour</p>
               <h2
                 className="text-2xl font-black uppercase tracking-wider mb-2"
                 style={{ color: teamColor }}
@@ -116,7 +116,7 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
                 {teamName}
               </h2>
               {playerName && (
-                <p className="text-lg font-bold text-white border-t border-white/10 pt-2">
+                <p className="text-lg font-bold text-text-primary border-t border-surface-border/10 pt-2">
                   {playerName}
                 </p>
               )}

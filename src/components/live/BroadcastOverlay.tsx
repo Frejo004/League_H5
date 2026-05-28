@@ -155,8 +155,8 @@ export function BroadcastOverlay({
         {/* Alerte Orientation */}
         {isPortrait && isBroadcasting && (
           <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/30">
-              <FlipHorizontal size={32} className="text-amber-500 animate-bounce" />
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/30"> 
+              <FlipHorizontal size={32} className="text-amber-500 animate-bounce" /> 
             </div>
             <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Tournez votre appareil</h3>
             <p className="text-sm text-slate-400 max-w-[240px]">Pour une meilleure qualité de diffusion, filmez en mode paysage.</p>
@@ -171,12 +171,12 @@ export function BroadcastOverlay({
         />
 
         {/* Dégradé haut */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-surface/70 to-transparent pointer-events-none" />
         {/* Dégradé bas */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none" />
 
 {/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
-         {/* Barre de statut supérieure avec Safe Area */}
+         {/* Barre de statut supérieure avec Safe Area */} 
          <div 
            className={`absolute top-0 inset-x-0 z-20 px-4 flex items-center justify-between gap-2 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
            style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 0.5rem), 1rem)' }}
@@ -184,14 +184,14 @@ export function BroadcastOverlay({
            {/* Score & Chrono & REC */}
            <div className="flex items-center gap-2">
              {/* Score */}
-             <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+             <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-surface-border/10">
                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
                <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                  {homeScore} — {awayScore}
                </span>
                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
              </div>
-
+ 
              {/* Chrono */}
              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
                <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
@@ -199,7 +199,7 @@ export function BroadcastOverlay({
                  {clockLabel}
                </span>
              </div>
-
+ 
              {/* Badge de transmission premium (REC) */}
              <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-red-500/30">
                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -208,13 +208,13 @@ export function BroadcastOverlay({
                </span>
              </div>
            </div>
-
+ 
            {/* Actions droite */}
            <div className="flex items-center gap-2">
              {/* Viewers */}
-             <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
+             <div className="flex items-center gap-1 bg-surface/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-surface-border/10">
                <Eye size={11} className="text-[#C8F135]" />
-               <span className="text-[10px] font-black text-slate-300">{viewerCount}</span>
+               <span className="text-[10px] font-black text-text-primary">{viewerCount}</span>
              </div>
 
              {/* Réduire en PiP */}
@@ -222,7 +222,7 @@ export function BroadcastOverlay({
                onClick={() => setMode('pip')}
                className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
                title="Réduire (continuer en arrière-plan)"
-             >
+             > 
                <Minimize2 size={15} />
              </button>
 
@@ -231,7 +231,7 @@ export function BroadcastOverlay({
                onClick={onStopBroadcast}
                className="w-9 h-9 rounded-xl bg-red-500/80 border border-red-400/30 flex items-center justify-center text-white hover:bg-red-500 transition-all"
                title="Arrêter le live"
-             >
+             > 
                <Square size={13} />
              </button>
            </div>
@@ -250,14 +250,14 @@ export function BroadcastOverlay({
               <span className={nq.text}>{nq.label}</span>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md text-[9px] font-black text-slate-300 uppercase tracking-widest">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-surface-border/10 bg-surface/5 backdrop-blur-md text-[9px] font-black text-text-primary uppercase tracking-widest">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C8F135] animate-pulse" />
               <span>FLUX AUDIO/VIDÉO DIRECT</span>
             </div>
           </div>
 
           {/* Contrôles caméra */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3"> 
             <button
               onClick={onSwitchCamera}
               className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 text-white hover:bg-white/20 transition-all"
@@ -267,17 +267,17 @@ export function BroadcastOverlay({
                 {facingMode === 'environment' ? 'Caméra avant' : 'Caméra arrière'}
               </span>
             </button>
-
+ 
             <button
               onClick={() => setIsMuted(m => !m)}
               className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
-            >
+            > 
               {isMuted ? <VolumeX size={14} className="text-red-400" /> : <Volume2 size={14} className="text-[#C8F135]" />}
             </button>
           </div>
 
           {/* Slot actions live (buts, cartons…) */}
-          {actionsSlot && (
+          {actionsSlot && ( 
             <div className="bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 p-3 max-h-[45vh] overflow-y-auto">
               {actionsSlot}
             </div>
@@ -293,7 +293,7 @@ export function BroadcastOverlay({
   return (
     <div
       ref={pipRef}
-      className="fixed z-[9999] rounded-2xl overflow-hidden border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black cursor-grab active:cursor-grabbing select-none"
+      className="fixed z-[9999] rounded-2xl overflow-hidden border border-surface-border/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-surface cursor-grab active:cursor-grabbing select-none"
       style={{
         width: 180,
         aspectRatio: '9/16',
@@ -306,15 +306,15 @@ export function BroadcastOverlay({
       onPointerUp={onPointerUp}
     >
       <video
-        ref={pipVideoRef}
-        autoPlay playsInline muted={isMuted}
-        className="w-full h-full object-cover pointer-events-none"
-      />
+        ref={pipVideoRef} 
+        autoPlay playsInline muted={isMuted} 
+        className="w-full h-full object-cover pointer-events-none" 
+      /> 
 
-{/* Badge live */}
+      {/* Badge live */}
        <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 px-1.5 py-0.5 rounded-md">
          <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-         <span className="text-[7px] font-black text-white uppercase tracking-widest">LIVE</span>
+         <span className="text-[7px] font-black text-white uppercase tracking-widest">LIVE</span> 
        </div>
 
        {/* Bouton plein écran */}
@@ -322,15 +322,15 @@ export function BroadcastOverlay({
          onClick={(e) => { e.stopPropagation(); setMode('fullscreen') }}
          className="absolute top-2 right-8 w-6 h-6 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
          title="Plein écran"
-         onPointerDown={e => e.stopPropagation()}
-       >
+         onPointerDown={e => e.stopPropagation()} 
+       > 
          <Maximize2 size={10} className="text-white" />
        </button>
 
       {/* Viewers */}
-      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded-md">
+      <div className="absolute top-2 right-2 flex items-center gap-1 bg-surface/60 px-1.5 py-0.5 rounded-md">
         <Eye size={8} className="text-[#C8F135]" />
-        <span className="text-[7px] font-black text-slate-300">{viewerCount}</span>
+        <span className="text-[7px] font-black text-text-primary">{viewerCount}</span>
       </div>
 
       {/* Boutons bas */}

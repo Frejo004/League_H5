@@ -14,8 +14,8 @@ export function LiveTicker() {
     .slice(0, 10)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[60] bg-black/80 backdrop-blur-md border-t border-white/10 h-8 flex items-center overflow-hidden">
-      <div className="flex items-center h-full px-4 bg-[#C8F135] text-black text-[10px] font-black uppercase tracking-widest skew-x-[-20deg] ml-[-10px] pr-6 z-10">
+    <div className="fixed bottom-0 left-0 right-0 z-[60] bg-surface/80 backdrop-blur-md border-t border-surface-border h-8 flex items-center overflow-hidden">
+      <div className="flex items-center h-full px-4 bg-primary-500 text-white text-[10px] font-black uppercase tracking-widest skew-x-[-20deg] ml-[-10px] pr-6 z-10">
         <span className="skew-x-[20deg]">DIRECT</span>
       </div>
 
@@ -27,33 +27,33 @@ export function LiveTicker() {
         >
           {tickerItems.map((m, i) => (
             <div key={i} className="flex items-center gap-4 group cursor-default">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
                 {m.status === 'completed' ? 'Résultat' : 'À Venir'}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-white uppercase">{m.home_team?.name}</span>
-                <div className="bg-white/10 px-2 py-0.5 rounded text-[11px] font-black text-[#C8F135] tabular-nums">
-                  {m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'VS'}
+                <span className="text-[11px] font-black text-text-primary uppercase">{m.home_team?.name}</span>
+                <div className="bg-primary-500/10 px-2 py-0.5 rounded text-[11px] font-black text-primary-400 tabular-nums">
+                {m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'VS'}
                 </div>
-                <span className="text-[11px] font-black text-white uppercase">{m.away_team?.name}</span>
+                <span className="text-[11px] font-black text-text-primary uppercase">{m.away_team?.name}</span>
               </div>
-              <div className="w-1 h-1 rounded-full bg-slate-700" />
+              <div className="w-1 h-1 rounded-full bg-surface-muted" />
             </div>
           ))}
           {/* Doubler pour l'effet de boucle infinie sans saut */}
           {tickerItems.map((m, i) => (
             <div key={`dup-${i}`} className="flex items-center gap-4 group cursor-default">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
                 {m.status === 'completed' ? 'Résultat' : 'À Venir'}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-white uppercase">{m.home_team?.name}</span>
-                <div className="bg-white/10 px-2 py-0.5 rounded text-[11px] font-black text-[#C8F135] tabular-nums">
+                <span className="text-[11px] font-black text-text-primary uppercase">{m.home_team?.name}</span>
+                <div className="bg-primary-500/10 px-2 py-0.5 rounded text-[11px] font-black text-primary-400 tabular-nums">
                   {m.status === 'completed' ? `${m.home_score} - ${m.away_score}` : 'VS'}
                 </div>
-                <span className="text-[11px] font-black text-white uppercase">{m.away_team?.name}</span>
+                <span className="text-[11px] font-black text-text-primary uppercase">{m.away_team?.name}</span>
               </div>
-              <div className="w-1 h-1 rounded-full bg-slate-700" />
+              <div className="w-1 h-1 rounded-full bg-surface-muted" />
             </div>
           ))}
         </motion.div>

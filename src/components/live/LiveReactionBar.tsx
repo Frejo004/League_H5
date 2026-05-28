@@ -67,14 +67,14 @@ export function LiveReactionBar({ matchId, className }: LiveReactionBarProps) {
               disabled={isCool || !user}
               className={clsx(
                 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm transition-all',
-                'border border-white/10 hover:border-white/20 hover:bg-white/8',
-                isCool ? 'scale-110 bg-white/10 border-white/20' : 'bg-white/[0.04]',
+                'border border-border hover:border-border/80 hover:bg-muted/10',
+                isCool ? 'scale-110 bg-primary/10 border-primary/20' : 'bg-muted/5',
                 !user && 'opacity-50 cursor-not-allowed',
               )}
             >
               <span>{emoji}</span>
               {count > 0 && (
-                <span className="text-[10px] font-bold text-slate-400 tabular-nums">{count}</span>
+                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{count}</span>
               )}
             </button>
           )

@@ -144,11 +144,11 @@ export function LiveEventFeed({
     if (event.type === 'comment') {
       return (
         <div key={event.id} className="relative flex items-center justify-center py-4 animate-in fade-in duration-700">
-          <div className="max-w-xs px-5 py-3 rounded-2xl bg-[var(--bg-pill)] border border-[var(--bd)] shadow-xl text-center">
-            <p className="text-xs font-semibold text-[var(--t2)] italic leading-relaxed">
+          <div className="max-w-xs px-5 py-3 rounded-2xl bg-surface-raised border border-surface-border shadow-xl text-center">
+            <p className="text-xs font-semibold text-text-secondary italic leading-relaxed">
               💬 {event.description}
             </p>
-            <span className="mt-1.5 block text-[10px] font-bold text-[var(--tm)] tabular-nums">{displayMinute}'</span>
+            <span className="mt-1.5 block text-[10px] font-bold text-text-muted tabular-nums">{displayMinute}'</span>
           </div>
         </div>
       )
@@ -209,8 +209,8 @@ export function LiveEventFeed({
         {/* Central Icon */}
         <div className={clsx(
           "z-10 w-10 h-10 rounded-2xl border flex items-center justify-center shadow-2xl overflow-hidden ring-8 transition-all duration-500 group-hover:scale-110",
-          "ring-[var(--bg-surface)]", // Dynamic background ring
-          event.type === 'goal' ? "bg-blue-600 border-blue-400/50 rotate-12 text-white" : "bg-[var(--bg-surface-h)] border-[var(--bd)] text-[var(--t1)]"
+          "ring-surface", // Dynamic background ring
+          event.type === 'goal' ? "bg-blue-600 border-blue-400/50 rotate-12 text-white" : "bg-surface-raised border-surface-border text-text-primary"
         )}>
           {event.type === 'goal' ? (
             <span className="text-lg drop-shadow-md">⚽</span>
@@ -232,8 +232,8 @@ export function LiveEventFeed({
           {!isHome && (
             <div className="flex flex-col items-start text-left transition-transform group-hover:translate-x-1 duration-300">
               <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold text-[var(--tm)] tabular-nums">{displayMinute}'</span>
-                <span className="text-sm font-black text-[var(--t1)] uppercase tracking-tight leading-none">
+                <span className="text-[11px] font-bold text-text-muted tabular-nums">{displayMinute}'</span>
+                <span className="text-sm font-black text-text-primary uppercase tracking-tight leading-none">
                   {playerName || EVENT_LABELS[event.type]}
                 </span>
                 {(event.type === 'goal' || event.type === 'own_goal') && (
@@ -244,14 +244,14 @@ export function LiveEventFeed({
               </div>
               {event.type === 'substitution' && player2Name && (
                 <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  <span className="text-[10px] text-[var(--t2)] font-medium">
+                  <span className="text-[10px] text-text-secondary font-medium">
                     <span className="text-emerald-500 mr-1">↑</span> {player2Name}
                   </span>
                 </div>
               )}
               {event.type === 'goal' && player2Name && (
-                <span className="text-[10px] text-[var(--tm)] italic mt-1 font-medium bg-[var(--bg-pill)] px-2 py-0.5 rounded">
-                  Passe: <span className="text-[var(--t2)] font-semibold">{player2Name}</span>
+                <span className="text-[10px] text-text-muted italic mt-1 font-medium bg-surface-raised px-2 py-0.5 rounded">
+                  Passe: <span className="text-text-secondary font-semibold">{player2Name}</span>
                 </span>
               )}
             </div>
@@ -287,8 +287,8 @@ export function LiveEventFeed({
             className={clsx(
               "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border",
               activeFilter === opt.id
-                ? "bg-[#C8F135] text-[#0d1117] border-[#C8F135] shadow-sm font-black"
-                : "bg-[var(--bg-pill)] text-[var(--t2)] border-transparent hover:bg-[var(--bg-pill-h)] hover:text-[var(--t1)]"
+                ? "bg-primary-500 text-white border-primary-500 shadow-sm font-black"
+                : "bg-surface-raised text-text-secondary border-transparent hover:bg-surface-card hover:text-text-primary"
             )}
             title={opt.desc}
           >
@@ -298,11 +298,11 @@ export function LiveEventFeed({
       </div>
 
       {/* Central Timeline Vertical Line */}
-      <div className="absolute left-1/2 top-16 bottom-0 w-px bg-[var(--bd)] transform -translate-x-1/2" />
+      <div className="absolute left-1/2 top-16 bottom-0 w-px bg-surface-border transform -translate-x-1/2" />
 
       {/* Empty State for Filter */}
       {filteredEvents.length === 0 ? (
-        <div className="text-center py-12 text-[var(--tm)]">
+        <div className="text-center py-12 text-text-muted">
           <p className="text-xs font-bold uppercase tracking-widest">Aucun événement dans cette catégorie</p>
         </div>
       ) : (
@@ -310,15 +310,15 @@ export function LiveEventFeed({
           {/* FIN DU MATCH */}
           {fulltimeEvent && activeFilter !== 'actions' && (
             <div className="relative py-8 flex flex-col items-center justify-center gap-3 animate-in fade-in slide-in-from-top-4 duration-700">
-              <div className="absolute inset-x-0 top-1/2 h-px bg-[var(--bd)]" />
-              <div className="relative px-4 bg-[var(--bg-surface)] flex flex-col items-center gap-1.5">
+              <div className="absolute inset-x-0 top-1/2 h-px bg-surface-border" />
+              <div className="relative px-4 bg-surface flex flex-col items-center gap-1.5">
                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">Fin du match</span>
                 <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-md shadow-xl">
                   <span className="text-sm font-black text-emerald-600 dark:text-emerald-300 tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     FT {getScoreAt(events, fulltimeEvent)}
                   </span>
                 </div>
-              </div>
+              </div> 
             </div>
           )}
 
@@ -332,8 +332,8 @@ export function LiveEventFeed({
           {/* SÉPARATEUR MI-TEMPS */}
           {(halftimeEvent || period2.length > 0) && activeFilter !== 'actions' && (
             <div className="relative py-8 flex flex-col items-center justify-center gap-3">
-              <div className="absolute inset-x-0 top-1/2 h-px bg-[var(--bd)]" />
-              <div className="relative px-4 bg-[var(--bg-surface)] flex flex-col items-center gap-1.5">
+              <div className="absolute inset-x-0 top-1/2 h-px bg-surface-border" />
+              <div className="relative px-4 bg-surface flex flex-col items-center gap-1.5">
                 <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Mi-temps</span>
                 <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 backdrop-blur-md shadow-xl">
                   <span className="text-sm font-black text-blue-600 dark:text-blue-300 tracking-widest tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
@@ -354,7 +354,7 @@ export function LiveEventFeed({
           {/* DÉBUT DU MATCH */}
           {activeFilter !== 'actions' && (
             <div className="relative pt-4 flex flex-col items-center justify-center">
-              <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 bg-[var(--bg-surface)] z-10">
+              <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 bg-surface z-10">
                 <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em]">COUP D'ENVOI</span>
               </div>
             </div>

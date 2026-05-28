@@ -46,7 +46,7 @@ function DeleteConfirmModal({
         onClick={onCancel}
       />
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-[#0f1420] border border-red-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] p-6 space-y-5 animate-in zoom-in-95 fade-in duration-200">
+      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-surface-card border border-red-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] p-6 space-y-5 animate-in zoom-in-95 fade-in duration-200">
         {/* Icon */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shrink-0">
@@ -60,10 +60,10 @@ function DeleteConfirmModal({
 
         {/* Event preview */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
-          <span className="text-xs font-black text-slate-400 tabular-nums w-8 shrink-0">
+          <span className="text-xs font-black text-text-muted tabular-nums w-8 shrink-0">
             {event.minute !== null ? `${event.minute}'` : '—'}
           </span>
-          <span className="text-xs font-black text-white uppercase tracking-wide flex-1">
+          <span className="text-xs font-black text-text-primary uppercase tracking-wide flex-1">
             {typeLabel[event.type] ?? event.type}
           </span>
           {event.player && (
@@ -78,7 +78,7 @@ function DeleteConfirmModal({
           <button
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-xl border border-white/10 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/5 transition-all"
-          >
+          > 
             Annuler
           </button>
           <button
@@ -336,7 +336,7 @@ export function AdminLiveControls({
                   placeholder="Motif (ex: Blessure...)"
                   value={pauseReason}
                   onChange={e => setPauseReason(e.target.value)}
-                  className="bg-black/40 border-none text-[10px] py-1.5 px-3 rounded-lg w-32 focus:ring-1 focus:ring-amber-500/50 text-amber-200 placeholder:text-amber-500/30 font-bold uppercase"
+                  className="bg-surface/40 border-none text-[10px] py-1.5 px-3 rounded-lg w-32 focus:ring-1 focus:ring-amber-500/50 text-amber-200 placeholder:text-amber-500/30 font-bold uppercase"
                 />
               )}
               <button
@@ -418,7 +418,7 @@ export function AdminLiveControls({
                     {/* Bouton sélection caméra/micro (avant démarrage uniquement) */}
                     {!isBroadcasting && (
                       <button
-                        onClick={() => { refreshDevices(); setShowDevicePanel(v => !v) }}
+                        onClick={() => { refreshDevices(); setShowDevicePanel(v => !v) }} 
                         className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                         title="Choisir caméra / micro"
                       >
@@ -430,7 +430,7 @@ export function AdminLiveControls({
 
               {/* Panneau sélection caméra / micro */}
               {showDevicePanel && !isBroadcasting && (
-                <div className="w-full mt-3 rounded-xl border border-white/10 bg-black/40 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                <div className="w-full mt-3 rounded-xl border border-surface-border/10 bg-surface/40 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <Camera size={11} /> Caméra &amp; Micro
                   </p>
@@ -440,7 +440,7 @@ export function AdminLiveControls({
                     <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block flex items-center gap-1">
                       <Camera size={9} /> Caméra
                     </label>
-                    <select
+                    <select 
                       value={selectedVideoDeviceId ?? ''}
                       onChange={e => setSelectedVideoDeviceId(e.target.value || undefined)}
                       className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-[#C8F135]/50 focus:outline-none"
@@ -457,7 +457,7 @@ export function AdminLiveControls({
                     <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block flex items-center gap-1">
                       <Mic size={9} /> Micro
                     </label>
-                    <select
+                    <select 
                       value={selectedAudioDeviceId ?? ''}
                       onChange={e => setSelectedAudioDeviceId(e.target.value || undefined)}
                       className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-[#C8F135]/50 focus:outline-none"
@@ -477,7 +477,7 @@ export function AdminLiveControls({
 
               {/* BroadcastOverlay — plein écran au démarrage, PiP si réduit */}
               {/* La preview inline est supprimée : l'overlay gère tout */}
-              {isBroadcasting && !stream && (
+              {isBroadcasting && !stream && ( 
                 <div className="w-full mt-4 rounded-xl border border-white/10 bg-black/40 aspect-video flex flex-col items-center justify-center gap-2">
                   <div className="w-6 h-6 border-2 border-[#C8F135] border-t-transparent rounded-full animate-spin" />
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Accès caméra...</p>
@@ -530,7 +530,7 @@ export function AdminLiveControls({
                       {endMatch.isPending ? <LoadingSpinner size="sm" /> : <Square size={12} />}
                       Confirmer {homeScoreVal}-{awayScoreVal}
                     </button>
-                    <button onClick={() => setConfirmEnd(false)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white px-2">
+                    <button onClick={() => setConfirmEnd(false)} className="text-[10px] font-bold uppercase tracking-widest text-text-muted hover:text-white px-2">
                       Annuler
                     </button>
                   </div>
@@ -543,11 +543,11 @@ export function AdminLiveControls({
         {/* Stats Rapides */}
         {isLive && (
           <div className="pt-2 border-t border-white/5 space-y-3 relative z-10">
-            <div className="flex items-center justify-between px-1">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Actions Rapides (Stats)</p>
+            <div className="flex items-center justify-between px-1"> 
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Actions Rapides (Stats)</p>
               {isPaused && (
                 <span className="text-[9px] font-bold text-amber-500 uppercase animate-pulse">Jeu Suspendu</span>
-              )}
+              )} 
             </div>
             <div className="grid grid-cols-2 gap-4">
               {/* Home Team Stats */}
@@ -555,7 +555,7 @@ export function AdminLiveControls({
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: homeTeam.color }} />
                   <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{homeTeam.name}</span>
-                </div>
+                </div> 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     disabled={isPaused || addEvent.isPending}
@@ -595,7 +595,7 @@ export function AdminLiveControls({
               {/* Away Team Stats */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 mb-1 justify-end text-right">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{awayTeam.name}</span>
+                  <span className="text-[9px] font-bold text-text-muted uppercase truncate">{awayTeam.name}</span>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: awayTeam.color }} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -670,7 +670,7 @@ export function AdminLiveControls({
 
         {/* Formulaire d'événement */}
         {showEventForm && isLive && (
-          <div className="rounded-xl p-5 space-y-4 bg-black/40 border border-white/10 shadow-inner relative z-10 animate-in slide-in-from-top-2 duration-300">
+          <div className="rounded-xl p-5 space-y-4 bg-surface/40 border border-surface-border/10 shadow-inner relative z-10 animate-in slide-in-from-top-2 duration-300">
             <p className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_5px_currentColor]"></span>
               Nouvel événement
@@ -681,7 +681,7 @@ export function AdminLiveControls({
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Type</label>
                 <select
-                  value={eventType}
+                  value={eventType} 
                   onChange={e => setEventType(e.target.value as MatchEventType)}
                   className="input text-sm font-medium py-2 bg-black/40 border-white/10"
                 >
@@ -698,7 +698,7 @@ export function AdminLiveControls({
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Minute</label>
                 <input
-                  type="number"
+                  type="number" 
                   value={eventMinute}
                   onChange={e => setEventMinute(e.target.value)}
                   min={0} max={120}
@@ -714,7 +714,7 @@ export function AdminLiveControls({
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Équipe</label>
                 <div className="flex gap-2">
-                  {[homeTeam, awayTeam].map(team => (
+                  {[homeTeam, awayTeam].map(team => ( 
                     <button
                       key={team.id}
                       onClick={() => { setEventTeam(team.id); setEventPlayer(''); setEventPlayer2('') }}
@@ -739,7 +739,7 @@ export function AdminLiveControls({
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">
                     {eventType === 'substitution' ? 'Joueur sortant' : 'Joueur'}
-                  </label>
+                  </label> 
                   <select
                     value={eventPlayer}
                     onChange={e => setEventPlayer(e.target.value)}
@@ -763,7 +763,7 @@ export function AdminLiveControls({
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">
                     {eventType === 'substitution' ? 'Joueur entrant' : 'Passeur (optionnel)'}
-                  </label>
+                  </label> 
                   <select
                     value={eventPlayer2}
                     onChange={e => setEventPlayer2(e.target.value)}
@@ -784,7 +784,7 @@ export function AdminLiveControls({
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Commentaire</label>
                   <input
                     type="text"
-                    value={eventComment}
+                    value={eventComment} 
                     onChange={e => setEventComment(e.target.value)}
                     className="input text-sm py-2 bg-black/40 border-white/10"
                     placeholder="Ex: Beau jeu collectif..."
@@ -812,8 +812,8 @@ export function AdminLiveControls({
         {/* Gestion des derniers événements (Correction) */}
         {isLive && events && events.length > 0 && (
           <div className="pt-6 border-t border-white/5 space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Dernières Actions (Correction)</p>
+            <div className="flex items-center justify-between px-1"> 
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Dernières Actions (Correction)</p>
               <span className="text-[9px] font-bold text-slate-600 uppercase">Supprimer pour annuler</span>
             </div>
 
@@ -821,7 +821,7 @@ export function AdminLiveControls({
               {[...events].reverse().slice(0, 5).map((ev) => (
                 <div key={ev.id} className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5 group hover:border-red-500/30 transition-all">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-500 tabular-nums w-6 shrink-0">{ev.minute !== null ? `${ev.minute}'` : '—'}</span>
+                    <span className="text-xs font-black text-text-muted tabular-nums w-6 shrink-0">{ev.minute !== null ? `${ev.minute}'` : '—'}</span>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black text-white uppercase tracking-wider">
@@ -840,7 +840,7 @@ export function AdminLiveControls({
                                                   ev.type === 'pause' ? '⏸️ Pause' :
                                                     ev.type === 'resume' ? '▶️ Reprise' :
                                                       ev.type === 'comment' ? `💬 Commentaire` : ev.type}
-                        </span>
+                        </span> 
                         {ev.team && (
                           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
                         )}
@@ -848,7 +848,7 @@ export function AdminLiveControls({
                       <span className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[200px]">
                         {ev.type === 'substitution'
                           ? `${ev.player?.first_name} → ${ev.player2?.first_name}`
-                          : ev.type === 'comment'
+                          : ev.type === 'comment' 
                             ? ev.description
                             : ev.player
                               ? `${ev.player.first_name} ${ev.player.last_name}`
@@ -906,7 +906,7 @@ export function AdminLiveControls({
         actionsSlot={isLive ? (
           <div className="space-y-3">
             {/* Stats rapides — accessible depuis la vue fullscreen */}
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Actions rapides</p>
+            <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Actions rapides</p>
             <div className="grid grid-cols-2 gap-3">
               {/* Domicile */}
               <div className="space-y-1.5">
@@ -914,7 +914,7 @@ export function AdminLiveControls({
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
                   <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{homeTeam.name}</span>
                 </div>
-                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
+                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => ( 
                   <button
                     key={type}
                     disabled={isPaused || addEvent.isPending}
@@ -928,7 +928,7 @@ export function AdminLiveControls({
               {/* Extérieur */}
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5 mb-1 justify-end">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase truncate">{awayTeam.name}</span>
+                  <span className="text-[9px] font-bold text-text-muted uppercase truncate">{awayTeam.name}</span>
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
                 </div>
                 {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
@@ -957,4 +957,3 @@ export function AdminLiveControls({
     </>
   )
 }
-

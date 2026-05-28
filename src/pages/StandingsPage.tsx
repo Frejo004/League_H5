@@ -151,8 +151,8 @@ function FormChart({
     <div className="card space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp size={16} className="text-primary-400" />
-        <h3 className="text-xs font-black text-white uppercase tracking-widest">Évolution du classement</h3>
-        <span className="text-[10px] text-slate-600 font-bold">— Points cumulés par journée</span>
+        <h3 className="text-xs font-black text-text-primary uppercase tracking-widest">Évolution du classement</h3>
+        <span className="text-[10px] text-text-muted font-bold">— Points cumulés par journée</span>
       </div>
 
       <div className="overflow-x-auto">
@@ -244,13 +244,13 @@ function FormChart({
             className={clsx(
               'flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wider',
               hoveredTeam === row.team_id
-                ? 'border-white/20 bg-white/8 text-white'
-                : 'border-white/5 bg-transparent text-slate-500 hover:text-slate-300',
+                ? 'border-surface-border bg-surface-raised text-text-primary'
+                : 'border-surface-border/20 bg-transparent text-text-muted hover:text-text-primary',
             )}
           >
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.team_color }} />
             {row.team_name}
-            <span className="text-slate-600 font-black">{row.points}pts</span>
+            <span className="text-text-muted font-black">{row.points}pts</span>
           </button>
         ))}
         {standings.length > 5 && (
@@ -297,14 +297,14 @@ function PodiumCard({ row, rank, teamSlug }: { row: StandingRow; rank: 1 | 2 | 3
       </div>
       
       <div className="text-center relative z-10 w-full mt-1">
-        <p className="text-sm font-black text-white truncate uppercase tracking-wider w-full" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+        <p className="text-sm font-black text-text-primary truncate uppercase tracking-wider w-full" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
           {row.team_name}
         </p>
         <div className="flex items-baseline justify-center gap-1 mt-1">
           <span className="text-3xl font-black tabular-nums leading-none" style={{ color: c.glow, fontFamily: "'Barlow Condensed', sans-serif" }}>
             {row.points}
           </span>
-          <span className="text-[9px] uppercase font-bold tracking-widest text-slate-500">pts</span>
+          <span className="text-[9px] uppercase font-bold tracking-widest text-text-muted">pts</span>
         </div>
       </div>
     </Link>
@@ -382,8 +382,8 @@ export function StandingsPage() {
                     className={clsx(
                       'px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200',
                       filter === f
-                        ? 'bg-white/8 text-white border border-white/10'
-                        : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                        ? 'bg-surface-raised text-text-primary border border-surface-border'
+                        : 'text-text-muted hover:text-text-primary border border-transparent'
                     )}
                   >
                     {f === 'all' ? 'Général' : f === 'home' ? 'Domicile' : 'Extérieur'}
@@ -408,7 +408,7 @@ export function StandingsPage() {
                     })),
                     `classement-${season?.name ?? 'saison'}`
                   )}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-300 hover:bg-white/8 transition-colors"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors"
                   title="Exporter en CSV"
                 >
                   <Download size={12} />
@@ -463,9 +463,9 @@ export function StandingsPage() {
                         <span className={clsx(
                           'w-7 h-7 flex items-center justify-center text-[13px] font-black',
                           isFirst ? 'bg-[#FFDF73] text-black rounded shadow-[0_0_10px_rgba(255,223,115,0.5)]' :
-                          i === 1 ? 'bg-slate-300 text-black rounded' :
+                          i === 1 ? 'bg-surface-raised text-text-primary rounded border border-surface-border' :
                           i === 2 ? 'bg-amber-600 text-white rounded' :
-                          'text-slate-500 tabular-nums'
+                          'text-text-muted tabular-nums'
                         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {i + 1}
                         </span>
@@ -479,7 +479,7 @@ export function StandingsPage() {
                           }
                         </div>
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className={clsx('text-[15px] font-black uppercase tracking-wider truncate group-hover:text-white transition-colors', isFirst ? 'text-white' : 'text-slate-200')}
+                          <span className={clsx('text-[15px] font-black uppercase tracking-wider truncate group-hover:text-text-primary transition-colors', isFirst ? 'text-text-primary' : 'text-text-secondary')}
                                 style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {row.team_name}
                           </span>
@@ -490,25 +490,25 @@ export function StandingsPage() {
                           )}
                         </div>
                       </div>
-                      <span className="text-center text-xs text-slate-400 font-bold tabular-nums">{row.played}</span>
+                      <span className="text-center text-xs text-text-muted font-bold tabular-nums">{row.played}</span>
                       <span className="text-center text-xs font-black text-win tabular-nums bg-win/10 rounded py-0.5">{row.won}</span>
-                      <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">{row.drawn}</span>
+                      <span className="text-center text-xs font-bold text-text-muted tabular-nums">{row.drawn}</span>
                       <span className="text-center text-xs font-black text-loss tabular-nums bg-loss/10 rounded py-0.5">{row.lost}</span>
                       <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-win' : row.goal_diff < 0 ? 'text-loss' : 'text-slate-500')}
                             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                         {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                       </span>
-                      <span className="text-center text-[11px] font-bold text-slate-500 tabular-nums tracking-widest">{row.goals_for}:{row.goals_against}</span>
+                      <span className="text-center text-[11px] font-bold text-text-muted tabular-nums tracking-widest">{row.goals_for}:{row.goals_against}</span>
                       <div className="flex items-center gap-1 justify-center">
                         {row.form.length === 0
-                          ? <span className="text-xs text-slate-700">—</span>
+                          ? <span className="text-xs text-text-muted">—</span>
                           : row.form.slice(-5).map((r, idx) => <FormBadge key={idx} result={r} />)
                         }
                       </div>
                       <div className="text-right flex items-center justify-end">
                         <span className={clsx(
                           'text-2xl font-black tabular-nums px-2 rounded-lg',
-                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-500' : 'text-white'
+                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-text-primary' : i === 2 ? 'text-amber-500' : 'text-text-primary'
                         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {row.points}
                         </span>

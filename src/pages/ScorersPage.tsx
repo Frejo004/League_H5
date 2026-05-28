@@ -62,11 +62,11 @@ export function ScorersPage() {
       ) : (
         <div className="space-y-2">
           {/* Header style broadcast */}
-          <div className="hidden sm:grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 px-6 py-2 bg-surface-raised rounded-t-2xl border-b border-surface-border">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Rang</span>
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Joueur</span>
-            <span className="text-[10px] font-black text-[#FFDF73] uppercase tracking-widest text-center">Buts</span>
-            <span className="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest text-center">Passes</span>
+          <div className="hidden sm:grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 px-6 py-2 bg-surface-card border-b border-surface-border">
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">#</span>
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest pl-4">Joueur</span>
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">Buts</span>
+            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">Passes</span>
           </div>
 
           <div className="flex flex-col gap-1.5 sm:gap-2 stagger-fast">
@@ -88,11 +88,11 @@ export function ScorersPage() {
                 <div className="flex justify-center relative z-10">
                   <span className={clsx(
                     'w-8 h-8 flex items-center justify-center text-sm font-black rounded shadow-lg',
-                  i === 0 ? 'bg-[#FFDF73] text-black shadow-[0_0_15px_rgba(255,223,115,0.6)]' :
-                    i === 1 ? 'bg-slate-300 text-black shadow-[0_0_10px_rgba(203,213,225,0.4)]' : 
+                    i === 0 ? 'bg-[#FFDF73] text-black shadow-[0_0_15px_rgba(255,223,115,0.6)]' :
+                    i === 1 ? 'bg-surface-raised text-text-primary shadow-[0_0_10px_rgba(0,0,0,0.4)]' : 
                     i === 2 ? 'bg-amber-600 text-white shadow-[0_0_10px_rgba(217,119,6,0.4)]' : 
-                  'text-text-muted tabular-nums bg-surface-raised border border-surface-border'
-                  )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    'text-text-muted tabular-nums bg-surface-raised border border-surface-border'
+                  )}>
                     {i + 1}
                   </span>
                 </div>
@@ -115,11 +115,10 @@ export function ScorersPage() {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                         style={{ backgroundColor: row.team_color }} />
-                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest truncate">{row.team_name}</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest truncate">{row.team_name}</span>
                     </div>
                   </div>
                 </div>
-
                 {/* Goals */}
                 <div className="flex justify-center relative z-10">
                   <span className={clsx(

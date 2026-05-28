@@ -43,7 +43,7 @@ export function LiveClock({
         )}
         <span className={clsx(
           'font-black tabular-nums',
-          isLive ? (isPaused ? 'text-amber-400' : 'text-white') : 'text-lg text-slate-400',
+          isLive ? (isPaused ? 'text-amber-500' : 'text-text-primary') : 'text-lg text-text-muted',
         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
           {isCompleted ? 'FT' : isLive ? clock.label : '—'}
         </span>
@@ -62,7 +62,7 @@ export function LiveClock({
         <div className="w-full max-w-xs flex items-center gap-0.5 h-1.5">
           {/* Segment 1ère MT */}
           <div
-            className="relative h-full rounded-l-full overflow-hidden bg-white/10"
+            className="relative h-full rounded-l-full overflow-hidden bg-surface-muted/30"
             style={{ width: `${seg1}%` }}
           >
             <div
@@ -78,8 +78,8 @@ export function LiveClock({
 
           {/* Séparateur pause */}
           <div
-            className="h-full bg-white/10 rounded-sm overflow-hidden"
-            style={{ width: `${seg2}%` }}
+            className="h-full bg-surface-muted/30 rounded-sm overflow-hidden"
+            style={{ width: `${seg2}%` }} 
           >
             {(isCompleted || livePeriod === 2) && (
               <div className="h-full bg-slate-500 w-full" />
@@ -88,7 +88,7 @@ export function LiveClock({
 
           {/* Segment 2ème MT */}
           <div
-            className="relative h-full rounded-r-full overflow-hidden bg-white/10 flex-1"
+            className="relative h-full rounded-r-full overflow-hidden bg-surface-muted/30 flex-1"
           >
             <div
               className="absolute inset-y-0 left-0 rounded-r-full transition-all duration-1000"
@@ -107,7 +107,7 @@ export function LiveClock({
 
       {/* Labels segments */}
       {(isLive || isCompleted) && (
-        <div className="w-full max-w-xs flex justify-between text-[9px] text-slate-700 font-medium">
+        <div className="w-full max-w-xs flex justify-between text-[9px] text-text-muted/60 font-medium">
           <span>0'</span>
           <span>{HALF_DURATION}'</span>
           <span>{HALF_DURATION + BREAK_DURATION}'</span>

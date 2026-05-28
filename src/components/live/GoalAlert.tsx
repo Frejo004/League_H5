@@ -95,7 +95,7 @@ export function GoalAlert({ matchId, homeTeam, awayTeam }: GoalAlertProps) {
           {activeGoal.playerName}
         </p>
 
-        {/* Team Name Badge */}
+        {/* Team Name Badge */} 
         <div className="relative mt-2 px-3 py-1 rounded bg-white/10 border border-white/20">
           <span className="text-xs font-black uppercase tracking-[0.3em]" style={{ color: activeGoal.teamColor }}>
             {activeGoal.teamName}

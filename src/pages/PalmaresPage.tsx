@@ -17,8 +17,8 @@ function SeasonKpi({ label, value, icon: Icon, color }: {
         <Icon size={15} style={{ color }} />
       </div>
       <div className="min-w-0">
-        <p className="text-xs text-slate-500 font-medium truncate">{label}</p>
-        <p className="text-sm font-bold text-white truncate">{value}</p>
+        <p className="text-xs text-text-secondary font-medium truncate">{label}</p>
+        <p className="text-sm font-bold text-text-primary truncate">{value}</p>
       </div>
     </div>
   )
@@ -69,8 +69,8 @@ function SeasonDetail({ season }: { season: Season }) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80 mb-0.5">
               🏆 Champion
             </p>
-            <p className="text-lg font-black text-white truncate">{champion.team_name}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-lg font-black text-text-primary truncate">{champion.team_name}</p>
+            <p className="text-xs text-text-muted mt-0.5">
               {champion.points} pts · {champion.won}V {champion.drawn}N {champion.lost}D
             </p>
           </div>
@@ -78,7 +78,7 @@ function SeasonDetail({ season }: { season: Season }) {
             <p className="text-3xl font-black tabular-nums" style={{ color: champion.team_color }}>
               {champion.points}
             </p>
-            <p className="text-[10px] text-slate-600">points</p>
+            <p className="text-[10px] text-text-muted">points</p>
           </div>
         </div>
       )}
@@ -123,7 +123,7 @@ function SeasonDetail({ season }: { season: Season }) {
                 {/* Rank */}
                 <span className={clsx(
                   'w-6 text-center text-sm font-bold tabular-nums shrink-0',
-                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-600' : 'text-slate-600'
+                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-text-muted' : i === 2 ? 'text-amber-600' : 'text-text-muted'
                 )}>
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                 </span>
@@ -136,10 +136,10 @@ function SeasonDetail({ season }: { season: Season }) {
                     : row.team_name[0]
                   }
                 </div>
-                <span className="flex-1 text-sm font-semibold text-slate-200 truncate">{row.team_name}</span>
+                <span className="flex-1 text-sm font-semibold text-text-primary truncate">{row.team_name}</span>
 
                 {/* Stats */}
-                <div className="hidden sm:flex items-center gap-3 text-xs text-slate-500 shrink-0">
+                <div className="hidden sm:flex items-center gap-3 text-xs text-text-muted shrink-0">
                   <span><span className="text-green-400 font-semibold">{row.won}</span>V</span>
                   <span>{row.drawn}N</span>
                   <span><span className="text-red-400 font-semibold">{row.lost}</span>D</span>
@@ -147,7 +147,7 @@ function SeasonDetail({ season }: { season: Season }) {
 
                 <span className={clsx(
                   'text-base font-black tabular-nums shrink-0 w-8 text-right',
-                  i === 0 ? 'text-yellow-400' : 'text-white'
+                  i === 0 ? 'text-yellow-400' : 'text-text-primary'
                 )}>
                   {row.points}
                 </span>
@@ -187,26 +187,26 @@ function SeasonCard({ season, isActive, isExpanded, onToggle }: {
           'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
           isActive ? 'bg-green-500/15 border border-green-500/25' : 'bg-surface-raised border border-surface-border'
         )}>
-          <Trophy size={18} className={isActive ? 'text-green-400' : 'text-slate-500'} />
+          <Trophy size={18} className={isActive ? 'text-green-400' : 'text-text-muted'} />
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-bold text-white">{season.name}</p>
+            <p className="text-sm font-bold text-text-primary">{season.name}</p>
             {isActive && (
               <span className="flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-500/15 border border-green-500/25 px-2 py-0.5 rounded-full">
                 <span className="live-dot" /> En cours
               </span>
             )}
             {season.is_locked && !isActive && (
-              <span className="text-[10px] font-bold text-slate-500 bg-surface-raised border border-surface-border px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-text-muted bg-surface-raised border border-surface-border px-2 py-0.5 rounded-full">
                 Terminée
               </span>
             )}
           </div>
           {(start || end) && (
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               {start}{start && end ? ' → ' : ''}{end}
             </p>
           )}
@@ -217,7 +217,7 @@ function SeasonCard({ season, isActive, isExpanded, onToggle }: {
           'shrink-0 transition-transform duration-200',
           isExpanded && 'rotate-180'
         )}>
-          <ChevronDown size={16} className="text-slate-500" />
+          <ChevronDown size={16} className="text-text-muted" />
         </div>
       </button>
 

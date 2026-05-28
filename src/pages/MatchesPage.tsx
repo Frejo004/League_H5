@@ -32,9 +32,9 @@ function TeamBlock({ name, color, logoUrl, won, isCompleted, align }: {
     <div className={clsx('flex items-center gap-3 flex-1 min-w-0', align === 'right' && 'flex-row-reverse')}>
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shrink-0 shadow-lg"
         style={{ backgroundColor: color }}>
-        {logoUrl
-          ? <img src={logoUrl} alt="" className="w-10 h-10 object-contain rounded-xl" />
-          : name[0]
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="w-10 h-10 object-contain rounded-xl" />
+        ) : (name[0])
         }
       </div>
       <span className={clsx(
@@ -63,10 +63,10 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
         'relative overflow-hidden mx-3 my-2 rounded-2xl border transition-all duration-200',
         'hover:-translate-y-0.5 hover:shadow-xl',
         isLive
-          ? 'border-red-500/40 hover:border-red-500/60 bg-linear-to-br from-red-500/5 to-red-600/5 dark:from-[#1a0f0f] dark:to-[#0f1420]'
+          ? 'border-red-500/40 hover:border-red-500/60 bg-red-500/5 dark:bg-red-950/5'
           : isCompleted
-          ? 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-linear-to-br dark:from-[#161c2d] dark:to-[#0f1420]'
-          : 'border-primary-600/15 dark:border-primary-600/20 bg-slate-50/50 dark:bg-linear-to-br dark:from-[#161c2d] dark:to-[#0f1420]'
+          ? 'border-surface-border bg-surface-card'
+          : 'border-primary-600/15 bg-surface-card'
       )}>
 
         {/* Barre rouge animée en haut si live */}
@@ -95,30 +95,30 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
             {isLive ? (
               <>
                 <div className="flex items-center gap-2.5 bg-red-500/10 px-4 py-2 rounded-xl border border-red-500/30">
-                  <span className="text-2xl font-black tabular-nums leading-none text-white">
+                  <span className="text-2xl font-black tabular-nums leading-none text-text-primary">
                     {match.home_score ?? 0}
                   </span>
-                  <span className="text-slate-700 text-sm font-light">–</span>
-                  <span className="text-2xl font-black tabular-nums leading-none text-white">
+                  <span className="text-text-muted text-sm font-light">–</span>
+                  <span className="text-2xl font-black tabular-nums leading-none text-text-primary">
                     {match.away_score ?? 0}
                   </span>
                 </div>
                 <LiveBadge size="sm" />
               </>
             ) : isCompleted ? (
-              <>
-                <div className="flex items-center gap-2.5 bg-slate-200/50 dark:bg-black/40 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/6">
+              <> 
+                <div className="flex items-center gap-2.5 bg-surface-raised px-4 py-2 rounded-xl border border-surface-border">
                   <span className={clsx('text-2xl font-black tabular-nums leading-none',
-                    homeWon ? 'text-slate-900 dark:text-white' : isDraw ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-600')}>
+                    homeWon ? 'text-text-primary' : isDraw ? 'text-text-secondary' : 'text-text-muted')}>
                     {match.home_score}
                   </span>
-                  <span className="text-slate-400 dark:text-slate-700 text-sm font-light">–</span>
+                  <span className="text-text-muted text-sm font-light">–</span>
                   <span className={clsx('text-2xl font-black tabular-nums leading-none',
-                    awayWon ? 'text-slate-900 dark:text-white' : isDraw ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-600')}>
+                    awayWon ? 'text-text-primary' : isDraw ? 'text-text-secondary' : 'text-text-muted')}>
                     {match.away_score}
                   </span>
                 </div>
-                <span className="text-[9px] font-black text-slate-500 dark:text-slate-600 uppercase tracking-widest">Terminé</span>
+                <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Terminé</span>
               </>
             ) : isCancelled ? (
               <>
@@ -129,11 +129,11 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
             ) : match.scheduled_at ? (
               <>
                 <div className="bg-primary-600/15 border border-primary-600/25 px-3 py-2 rounded-xl text-center">
-                  <span className="text-lg font-black text-slate-800 dark:text-white tabular-nums leading-none block">
+                  <span className="text-lg font-black text-text-primary tabular-nums leading-none block">
                     {formatTime(match.scheduled_at)}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-medium capitalize">
+                <span className="text-[10px] text-text-muted font-medium capitalize">
                   {formatDay(match.scheduled_at)}
                 </span>
               </>
@@ -158,7 +158,7 @@ function MatchCard({ match }: { match: MatchWithTeams }) {
 
         {/* Venue */}
         {match.venue && (
-          <div className="flex items-center justify-center gap-1 pb-3 -mt-1 text-xs text-slate-700">
+          <div className="flex items-center justify-center gap-1 pb-3 -mt-1 text-xs text-text-muted">
             <MapPin size={9} />
             {match.venue}
           </div>
@@ -206,7 +206,7 @@ export function MatchesPage() {
       {isLoading ? (
         <div className="rounded-2xl border border-surface-border overflow-hidden bg-surface-card">
           {[1,2,3,4].map(i => <SkeletonMatchCard key={i} />)}
-        </div>
+        </div> 
       ) : !season ? (
         <div className="card">
           <div className="empty-state">
@@ -217,7 +217,7 @@ export function MatchesPage() {
       ) : !matches?.length ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon"><Calendar size={20} /></div>
+            <div className="empty-state-icon"><Calendar size={20} /></div> 
             <p className="text-slate-300 font-medium">Aucun match programmé</p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export function MatchesPage() {
                     'relative flex flex-col items-center px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all duration-200',
                     isActive
                       ? 'bg-primary-600/10 dark:bg-primary-600/20 text-primary-600 dark:text-primary-400 border border-primary-600/30'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/4 border border-transparent'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-raised border border-transparent'
                   )}
                 >
                   <span>J{day}</span>
@@ -252,7 +252,7 @@ export function MatchesPage() {
 
           {/* Journée summary */}
           {(completedCount > 0 || scheduledCount > 0) && (
-            <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-200 dark:border-white/4">
+            <div className="flex items-center gap-3 px-4 py-2 border-b border-surface-border">
               {completedCount > 0 && (
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-600">
                   {completedCount} terminé{completedCount > 1 ? 's' : ''}

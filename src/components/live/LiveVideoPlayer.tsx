@@ -349,8 +349,8 @@ export function LiveVideoPlayer({
   if (!isLive) {
     const homeColor = homeTeam?.color || overlay?.homeColor || '#3b82f6'
     const awayColor = awayTeam?.color || overlay?.awayColor || '#ef4444'
-    return (
-      <div className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 aspect-video mt-6 flex flex-col items-center justify-center gap-4 select-none">
+    return ( 
+      <div className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-surface-border shadow-2xl bg-surface-card aspect-video mt-6 flex flex-col items-center justify-center gap-4 select-none">
         {/* Dynamic mesh decoration */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
           <div
@@ -364,23 +364,23 @@ export function LiveVideoPlayer({
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-3 text-center px-6">
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-surface/5 border border-surface-border shadow-xl">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
             </span>
           </div>
           
-          <h3 className="text-sm font-black text-white uppercase tracking-widest mt-1">
+          <h3 className="text-sm font-black text-text-primary uppercase tracking-widest mt-1">
             En attente du signal vidéo
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 max-w-sm uppercase tracking-wider leading-relaxed">
+          <p className="text-[10px] font-bold text-text-secondary max-w-sm uppercase tracking-wider leading-relaxed">
             La diffusion n'a pas encore commencé.<br />
             Dès que le caméraman sera en ligne, le direct s'affichera automatiquement ici.
           </p>
 
-          <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md mt-2">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+          <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-surface/5 border border-surface-border backdrop-blur-md mt-2">
+            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">
               Mode Spectateur WebRTC
             </span>
           </div>
@@ -397,14 +397,14 @@ export function LiveVideoPlayer({
     <div
       ref={wrapperRef}
       onMouseMove={resetControlsTimer}
-      onTouchStart={resetControlsTimer}
-      className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video mt-6 select-none"
+      onTouchStart={resetControlsTimer} 
+      className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-surface-border/10 shadow-2xl bg-surface aspect-video mt-6 select-none"
     >
       {/* ── Spinner connexion ─────────────────────────────────────────────── */}
       {!stream && !isStreamFull && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 gap-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-card z-10 gap-3">
           {connectionState === 'failed' ? (
-            <>
+            <> 
               <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center">
                 <span className="text-red-400 text-lg font-black">!</span>
               </div>
@@ -413,7 +413,7 @@ export function LiveVideoPlayer({
                 Problème réseau (NAT/TURN).<br />Nouvelle tentative en cours...
               </p>
             </>
-          ) : (
+          ) : ( 
             <>
               <div className="w-8 h-8 rounded-full border-2 border-[#C8F135] border-t-transparent animate-spin" />
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -426,7 +426,7 @@ export function LiveVideoPlayer({
 
       {/* ── Overlay stream complet ────────────────────────────────────────── */}
       {isStreamFull && !stream && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 gap-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-card z-10 gap-3">
           <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
             <Eye size={18} className="text-amber-400" />
           </div>
@@ -439,7 +439,7 @@ export function LiveVideoPlayer({
 
       {/* ── Overlay reconnexion ───────────────────────────────────────────── */}
       {stream && isStalled && !dvrEnabled && !isLivePaused && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-30">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/60 backdrop-blur-md z-30">
           <div className="w-6 h-6 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mb-2" />
           <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Reconnexion au direct...</p>
         </div>
@@ -452,7 +452,7 @@ export function LiveVideoPlayer({
         onWaiting={() => setIsStalled(true)}
         onPlaying={() => setIsStalled(false)}
         onStalled={() => setIsStalled(true)}
-        onSuspend={() => setIsStalled(false)}
+        onSuspend={() => setIsStalled(false)} 
         className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${
           (dvrEnabled && dvrReady)
             ? 'opacity-0 pointer-events-none scale-[1.01] blur-[2px]'
@@ -484,7 +484,7 @@ export function LiveVideoPlayer({
         }`}
       />
 
-      {/* ── Overlay Fin de Match ──────────────────────────────────────────── */}
+      {/* ── Overlay Fin de Match ──────────────────────────────────────────── */} 
       {matchEnded && (
         <div className="absolute inset-0 z-[40] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 border border-white/20">
@@ -497,7 +497,7 @@ export function LiveVideoPlayer({
 
       {/* ── Spinner chargement DVR ────────────────────────────────────────── */}
       {dvrEnabled && !dvrReady && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/60 z-10">
           <div className="w-6 h-6 rounded-full border-2 border-amber-400 border-t-transparent animate-spin mb-2" />
           <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Chargement du replay...</p>
         </div>
@@ -530,12 +530,12 @@ export function LiveVideoPlayer({
            OVERLAY SCOREBOARD (haut) - Enhanced for better visibility
        ══════════════════════════════════════════════════════════════════════ */}
        {stream && overlay && (
-         <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2">
-           <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] shadow-lg">
+         <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2"> 
+           <div className="flex items-center gap-1.5 bg-surface/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-surface-border/10 max-w-[35%] shadow-lg">
              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.homeColor ?? '#3b82f6' }} />
              <span className="text-[10px] font-black text-white uppercase truncate tracking-wide drop-shadow">{overlay.homeName}</span>
            </div>
-           <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/20 shadow-lg">
+           <div className="flex items-center gap-2 bg-surface/80 backdrop-blur-md px-4 py-1.5 rounded-xl border border-surface-border/20 shadow-lg">
              <span className="text-base font-black text-white tabular-nums drop-shadow" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.homeScore}</span>
              <span className="text-[10px] text-slate-400 font-bold mx-0.5">-</span>
              <span className="text-base font-black text-white tabular-nums drop-shadow" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{overlay.awayScore}</span>
@@ -543,7 +543,7 @@ export function LiveVideoPlayer({
            <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] flex-row-reverse shadow-lg">
              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.awayColor ?? '#f59e0b' }} />
              <span className="text-[10px] font-black text-white uppercase truncate tracking-wide drop-shadow">{overlay.awayName}</span>
-           </div>
+           </div> 
          </div>
        )}
 
@@ -554,7 +554,7 @@ export function LiveVideoPlayer({
          <div
            className={`absolute bottom-0 inset-x-0 z-20 transition-opacity duration-300 ${showControls || dvrEnabled || isLivePaused ? 'opacity-100' : 'opacity-0'}`}
          >
-           {/* Dégradé de fond pour lisibilité */}
+           {/* Dégradé de fond pour lisibilité */} 
            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
 
            <div className="relative px-3 pb-3 pt-8 flex flex-col gap-2">
@@ -564,7 +564,7 @@ export function LiveVideoPlayer({
                  progressPercent=100% = au direct, 0% = début du buffer.
              ──────────────────────────────────────────────────────────────── */}
              {isViewerMode && (
-               <div className="flex items-center gap-2 w-full">
+               <div className="flex items-center gap-2 w-full"> 
                  {/* Label "EN DIRECT" ou bouton retour au live */}
                  {dvrSlider === 0 ? (
                    <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-md shrink-0">
@@ -575,7 +575,7 @@ export function LiveVideoPlayer({
                    <button
                      onClick={goLive}
                      className="flex items-center gap-1 bg-red-500/90 hover:bg-red-500 px-2 py-0.5 rounded-md shrink-0 transition-colors"
-                     title="Revenir au direct"
+                     title="Revenir au direct" 
                    >
                      <Radio size={8} className="text-white" />
                      <span className="text-[8px] font-black text-white uppercase tracking-widest">LIVE</span>
@@ -583,7 +583,7 @@ export function LiveVideoPlayer({
                  )}
 
                  {/* Barre de progression — gauche=passé, droite=live */}
-                 <div className="relative flex-1 h-5 flex items-center group cursor-pointer">
+                 <div className="relative flex-1 h-5 flex items-center group cursor-pointer"> 
                    {/* Track fond */}
                    <div className="absolute inset-x-0 h-1 rounded-full bg-white/20" />
                    {/* Track buffer disponible */}
@@ -604,7 +604,7 @@ export function LiveVideoPlayer({
                        const clamped = Math.max(0, Math.min(dvrDuration, invertedVal))
                        setDvrSlider(clamped)
                        seekDvr(clamped)
-                     }}
+                     }} 
                      className="absolute inset-0 w-full opacity-0 cursor-pointer h-5"
                      title={dvrSlider === 0 ? 'En direct' : `Retard : -${formatSeconds(dvrSlider)}`}
                    />
@@ -616,7 +616,7 @@ export function LiveVideoPlayer({
                  </div>
 
                  {/* Temps de retard */}
-                 <span className="text-[9px] font-black tabular-nums shrink-0 w-12 text-right text-slate-300">
+                 <span className="text-[9px] font-black tabular-nums shrink-0 w-12 text-right text-text-primary">
                    {dvrSlider === 0 ? 'LIVE' : `-${formatSeconds(dvrSlider)}`}
                  </span>
                </div>
@@ -624,7 +624,7 @@ export function LiveVideoPlayer({
 
              {/* ── BADGE DE LATENCE ET STABILITÉ CONNEXION ──────────────── */}
              {isViewerMode && stream && (
-               <div className="flex items-center gap-2 flex-wrap">
+               <div className="flex items-center gap-2 flex-wrap"> 
                  {/* Indicateur statut connexion */}
                  <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-500 ${
                    connectionState === 'connected'
@@ -646,13 +646,13 @@ export function LiveVideoPlayer({
                      : 'Reconnexion'
                    }</span>
                  </div>
-
+ 
                  {/* Indicateur retard DVR actif */}
                  {dvrSlider > 0 && (
                    <button
                      onClick={goLive}
                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/20 transition-all animate-pulse"
-                   >
+                   > 
                      <Radio size={8} />
                      <span>Rattraper le direct</span>
                    </button>
@@ -662,7 +662,7 @@ export function LiveVideoPlayer({
 
              {/* ── BARRE DE CONTRÔLES AMÉLIORÉE ────────────────────────────────────── */}
              <div className="flex items-center justify-between gap-2 bg-black/60 backdrop-blur-md px-2 py-2 rounded-xl border border-white/10">
-
+ 
                {/* Gauche : chrono + période (si overlay) */}
                {overlay ? (
                  <div className="flex items-center gap-2">
@@ -670,14 +670,14 @@ export function LiveVideoPlayer({
                    <span className="text-[11px] font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                      {overlay.clockLabel}
                    </span>
-                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest border-l border-white/20 pl-2">
+                   <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest border-l border-surface-border/20 pl-2">
                      {overlay.isPaused ? 'SUSPENDU' : overlay.period}
                    </span>
                  </div>
                ) : (
                  <div /> /* spacer */
                )}
-
+ 
                {/* Centre : contrôles de lecture DVR (viewer uniquement) */}
                {isViewerMode && (
                  <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-xl border border-white/20">
@@ -685,7 +685,7 @@ export function LiveVideoPlayer({
                    <button
                      onClick={rewind10}
                      disabled={dvrDuration === 0}
-                     className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/20 transition-all disabled:opacity-30"
+                     className="flex items-center justify-center w-7 h-7 rounded-lg text-text-primary hover:text-white hover:bg-white/20 transition-all disabled:opacity-30"
                      title="Reculer 10 secondes"
                    >
                      <Rewind size={13} />
@@ -693,7 +693,7 @@ export function LiveVideoPlayer({
 
                    {/* Pause / Lecture */}
                    <button
-                     onClick={dvrEnabled ? togglePauseDvr : togglePauseLive}
+                     onClick={dvrEnabled ? togglePauseDvr : togglePauseLive} 
                      className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white transition-all"
                      title={isPausedDvr || isLivePaused ? 'Reprendre' : 'Pause'}
                    >
