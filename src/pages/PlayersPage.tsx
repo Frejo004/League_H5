@@ -109,75 +109,41 @@ function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
             <div className="p-5 space-y-5">
               {/* Noms des joueurs */}
               <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
-                <PlayerHeader player={a} />
-                <span className="text-slate-600 font-black text-sm">VS</span>
-                <PlayerHeader player={b} side="right" />
-              </div>
-
-              {/* Positions */}
-              <div className="grid grid-cols-2 gap-2">
-                {[a, b].map((p, idx) => (
-                  <div
-                    key={idx}
-                    className="text-center py-1.5 px-2 rounded-lg bg-white/4 border border-white/6"
-                  >
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-                      {p.position
-                        ? POSITION_LABELS_COMPARE[p.position as PlayerPosition] ?? p.position
-                        : '—'}
-                    </span>
+                <div className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 rounded-2xl bg-surface-muted/30 border border-surface-border flex items-center justify-center overflow-hidden">
+                    {a.avatar_url ? <img src={a.avatar_url} className="w-full h-full object-cover" /> : <User size={32} className="text-text-muted" />}
                   </div>
-                ))}
+                  <p className="text-sm font-black text-text-primary uppercase tracking-tight text-center">{a.last_name}</p>
+                </div>
+                <div className="px-4 py-1 rounded-full bg-primary-500/10 border border-primary-500/20">
+                  <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">VS</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 rounded-2xl bg-surface-muted/30 border border-surface-border flex items-center justify-center overflow-hidden">
+                    {b.avatar_url ? <img src={b.avatar_url} className="w-full h-full object-cover" /> : <User size={32} className="text-text-muted" />}
+                  </div>
+                  <p className="text-sm font-black text-text-primary uppercase tracking-tight text-center">{b.last_name}</p>
+                </div>
               </div>
 
               {/* Stats */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {stats.map(({ label, a: va, b: vb, icon, lowerIsBetter }) => {
+                  const maxVal = Math.max(va, vb, 1)
                   const aWins = lowerIsBetter ? va < vb : va > vb
                   const bWins = lowerIsBetter ? vb < va : vb > va
                   const tied = va === vb
-                  const maxVal = Math.max(va, vb, 1)
+
                   return (
                     <div key={label} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className={clsx(
-                          'text-base font-black tabular-nums w-6 text-left',
-                          !tied && aWins ? 'text-white' : 'text-slate-500'
-                        )}>
-                          {va}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          {icon} {label}
-                        </span>
-                        <span className={clsx(
-                          'text-base font-black tabular-nums w-6 text-right',
-                          !tied && bWins ? 'text-white' : 'text-slate-500'
-                        )}>
-                          {vb}
-                        </span>
+                      <div className="flex justify-between px-1">
+                        <span className={clsx("text-xs font-black tabular-nums", !tied && aWins ? "text-primary-500" : "text-text-primary")}>{va}</span>
+                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-[0.2em]">{icon} {label}</span>
+                        <span className={clsx("text-xs font-black tabular-nums", !tied && bWins ? "text-primary-500" : "text-text-primary")}>{vb}</span>
                       </div>
-                      <div className="flex items-center gap-1 h-1.5">
-                        {/* Barre A (droite vers gauche) */}
-                        <div className="flex-1 flex justify-end">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${(va / maxVal) * 100}%`,
-                              backgroundColor: !tied && aWins ? a.team.color : 'rgba(255,255,255,0.12)',
-                            }}
-                          />
-                        </div>
-                        <div className="w-px h-3 bg-white/10 shrink-0" />
-                        {/* Barre B (gauche vers droite) */}
-                        <div className="flex-1">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${(vb / maxVal) * 100}%`,
-                              backgroundColor: !tied && bWins ? b.team.color : 'rgba(255,255,255,0.12)',
-                            }}
-                          />
-                        </div>
+                      <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-surface-muted/30 gap-0.5">
+                        <div className={clsx("h-full transition-all duration-1000", !tied && aWins ? "bg-primary-500" : "bg-text-muted/20")} style={{ width: `${(va / maxVal) * 50}%` }} />
+                        <div className={clsx("h-full transition-all duration-1000", !tied && bWins ? "bg-primary-500" : "bg-text-muted/20")} style={{ width: `${(vb / maxVal) * 50}%` }} />
                       </div>
                     </div>
                   )
@@ -279,7 +245,7 @@ export function PlayersPage() {
   const hasFilters = !!search || !!filterTeam || !!filterPos
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-20">
 
       {/* Modal comparaison */}
       {showCompare && compareIds.length === 2 && season && (
@@ -293,10 +259,10 @@ export function PlayersPage() {
 
       {/* Bannière comparaison flottante */}
       {compareIds.length > 0 && (
-        <div className="sticky top-20 z-20 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-primary-500/30 bg-primary-500/10 backdrop-blur-md shadow-xl">
+        <div className="sticky top-20 z-20 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-primary-500/30 bg-surface-card/90 backdrop-blur-md shadow-xl">
           <div className="flex items-center gap-2">
             <GitCompare size={14} className="text-primary-400" />
-            <span className="text-xs font-black text-white uppercase tracking-wider">
+            <span className="text-xs font-black text-text-primary uppercase tracking-wider">
               {compareIds.length === 1 ? 'Sélectionne un 2ème joueur' : '2 joueurs sélectionnés'}
             </span>
           </div>
@@ -304,14 +270,14 @@ export function PlayersPage() {
             {compareIds.length === 2 && (
               <button
                 onClick={() => setShowCompare(true)}
-                className="px-3 py-1.5 rounded-xl bg-primary-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-primary-500 transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-primary-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-primary-500 transition-all active:scale-95"
               >
                 Comparer
               </button>
             )}
             <button
               onClick={() => setCompareIds([])}
-              className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-wider transition-colors"
+              className="text-[10px] font-black text-text-muted hover:text-text-primary uppercase tracking-wider transition-colors"
             >
               Annuler
             </button>
@@ -341,13 +307,13 @@ export function PlayersPage() {
         <div className="flex flex-wrap gap-2">
           {/* Search */}
           <div className="relative flex-1 min-w-[160px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             <input
               type="text"
               placeholder="Rechercher un joueur…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="input input-icon-l py-2 text-sm"
+              className="input input-icon-l py-2 text-sm bg-surface-card border-surface-border/50 focus:border-primary-500/50"
             />
           </div>
 
@@ -356,13 +322,13 @@ export function PlayersPage() {
             <select
               value={filterTeam}
               onChange={e => setFilterTeam(e.target.value)}
-              className="input py-2 text-sm pr-8 appearance-none cursor-pointer"
+              className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 140 }}
             >
               <option value="">Toutes les équipes</option>
               {teams?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
 
           {/* Position filter */}
@@ -370,7 +336,7 @@ export function PlayersPage() {
             <select
               value={filterPos}
               onChange={e => setFilterPos(e.target.value as PlayerPosition | '')}
-              className="input py-2 text-sm pr-8 appearance-none cursor-pointer"
+              className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 130 }}
             >
               <option value="">Tous les postes</option>
@@ -378,7 +344,7 @@ export function PlayersPage() {
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
 
           {/* Sort */}
@@ -386,21 +352,21 @@ export function PlayersPage() {
             <select
               value={sortKey}
               onChange={e => setSortKey(e.target.value as SortKey)}
-              className="input py-2 text-sm pr-8 appearance-none cursor-pointer"
+              className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 120 }}
             >
               <option value="name">Trier : Nom</option>
               <option value="jersey">Trier : N°</option>
               <option value="position">Trier : Poste</option>
             </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
 
           {/* Reset */}
           {hasFilters && (
             <button
               onClick={() => { setSearch(''); setFilterTeam(''); setFilterPos('') }}
-              className="btn-secondary py-2 text-xs"
+              className="btn-secondary py-2 text-xs px-4 rounded-xl border-surface-border/50"
             >
               Réinitialiser
             </button>
@@ -410,9 +376,9 @@ export function PlayersPage() {
 
       {/* Compteur */}
       {!isLoading && hasFilters && (
-        <p className="text-xs text-slate-500 animate-fade-in">
+        <p className="text-xs text-text-muted animate-fade-in">
           {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
-          {search && <> pour « <span className="text-slate-300">{search}</span> »</>}
+          {search && <> pour « <span className="text-text-secondary">{search}</span> »</>}
         </p>
       )}
 
@@ -429,14 +395,14 @@ export function PlayersPage() {
         <div className="card">
           <div className="empty-state">
             <div className="empty-state-icon"><User size={20} /></div>
-            <p className="text-slate-400">Aucune saison active</p>
+            <p className="text-text-muted">Aucune saison active</p>
           </div>
         </div>
       ) : !filtered.length ? (
         <div className="card">
           <div className="empty-state">
             <div className="empty-state-icon"><User size={20} /></div>
-            <p className="text-slate-400">
+            <p className="text-text-muted">
               {players?.length ? 'Aucun résultat.' : 'Aucun joueur enregistré.'}
             </p>
             {hasFilters && (
@@ -450,14 +416,14 @@ export function PlayersPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="card p-0 overflow-hidden border border-surface-border/50">
           {/* Header row */}
-          <div className="grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 px-4 py-2 border-b border-surface-border">
-            <span className="section-title">#</span>
-            <span className="section-title">Joueur</span>
-            <span className="section-title hidden sm:block">Équipe</span>
-            <span className="section-title hidden md:block">Poste</span>
-            <span className="section-title"><GitCompare size={11} className="text-slate-600" /></span>
+          <div className="grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 px-4 py-2 border-b border-surface-border bg-surface-muted/10">
+            <span className="section-title text-[10px] font-black text-text-muted uppercase tracking-widest">#</span>
+            <span className="section-title text-[10px] font-black text-text-muted uppercase tracking-widest">Joueur</span>
+            <span className="section-title text-[10px] font-black text-text-muted uppercase tracking-widest hidden sm:block">Équipe</span>
+            <span className="section-title text-[10px] font-black text-text-muted uppercase tracking-widest hidden md:block">Poste</span>
+            <span className="section-title"><GitCompare size={11} className="text-text-muted" /></span>
           </div>
 
           <div className="stagger-fast">
@@ -472,19 +438,19 @@ export function PlayersPage() {
                   key={p.id}
                   to={`/players/${p.slug || p.id}`}
                   className={clsx(
-                    'grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 items-center px-4 py-2.5',
-                    'hover:bg-surface-raised transition-colors',
-                    i < filtered.length - 1 && 'border-b border-surface-border/50',
-                    compareIds.includes(p.id) && 'bg-primary-500/8 border-l-2 border-l-primary-500',
+                    'grid grid-cols-[2.5rem_1fr_auto_auto_auto] gap-2 items-center px-4 py-2.5 transition-all',
+                    'hover:bg-surface-muted/20',
+                    i < filtered.length - 1 && 'border-b border-surface-border/30',
+                    compareIds.includes(p.id) && 'bg-primary-500/5 border-l-2 border-l-primary-500',
                   )}
                 >
-                  <span className="text-sm text-slate-600 font-mono text-center">
+                  <span className="text-sm text-text-muted/60 font-mono text-center">
                     {p.jersey_number ?? '—'}
                   </span>
 
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden relative"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden relative shadow-sm"
                       style={{ backgroundColor: team?.color ?? '#16a34a' }}
                     >
                       {p.avatar_url
@@ -498,11 +464,11 @@ export function PlayersPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-sm text-slate-200 font-medium truncate">
+                      <span className="text-sm text-text-primary font-medium truncate group-hover:text-primary-400">
                         {p.first_name} {p.last_name}
                       </span>
                       {isCaptain && (
-                        <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[9px] px-1.5 py-0.5 shrink-0">
+                        <span className="badge bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[9px] px-1.5 py-0.5 shrink-0">
                           Capitaine
                         </span>
                       )}
@@ -512,8 +478,8 @@ export function PlayersPage() {
                   <div className="hidden sm:flex items-center gap-1.5">
                     {team && (
                       <>
-                        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: team.color }} />
-                        <span className="text-xs text-slate-400 truncate max-w-[80px]">{team.name}</span>
+                        <span className="w-2.5 h-2.5 rounded-sm shrink-0 shadow-xs" style={{ backgroundColor: team.color }} />
+                        <span className="text-xs text-text-muted truncate max-w-[80px]">{team.name}</span>
                       </>
                     )}
                   </div>
@@ -521,13 +487,16 @@ export function PlayersPage() {
                   <div className="hidden md:block">
                     {p.position ? (
                       <span className={clsx(
-                        'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-                        POSITION_COLORS[p.position]
+                        'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border',
+                        p.position === 'goalkeeper' ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
+                        p.position === 'forward' ? 'text-red-400 bg-red-400/10 border-red-400/20' :
+                        p.position === 'midfielder' ? 'text-green-400 bg-green-400/10 border-green-400/20' :
+                        'text-blue-400 bg-blue-400/10 border-blue-400/20'
                       )}>
                         {POSITION_LABELS[p.position]}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-600">—</span>
+                      <span className="text-xs text-text-muted">—</span>
                     )}
                   </div>
 
@@ -535,10 +504,10 @@ export function PlayersPage() {
                   <button
                     onClick={e => { e.preventDefault(); toggleCompare(p.id) }}
                     className={clsx(
-                      'p-1.5 rounded-lg transition-colors shrink-0',
+                      'p-1.5 rounded-lg transition-all shrink-0 border',
                       compareIds.includes(p.id)
-                        ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                        : 'text-slate-700 hover:text-slate-400 hover:bg-white/5',
+                        ? 'bg-primary-500/20 text-primary-400 border-primary-500/30'
+                        : 'text-text-muted/40 hover:text-text-primary hover:bg-surface-muted/30 border-transparent',
                     )}
                     title={compareIds.includes(p.id) ? 'Retirer de la comparaison' : 'Ajouter à la comparaison'}
                   >
@@ -551,13 +520,13 @@ export function PlayersPage() {
 
           {/* Bouton charger plus */}
           {hasMore && (
-            <div className="flex items-center justify-center py-4 border-t border-surface-border/50">
+            <div className="flex items-center justify-center py-4 border-t border-surface-border/30 bg-surface-muted/5">
               <button
                 onClick={() => setPage(p => p + 1)}
-                className="btn-secondary text-sm flex items-center gap-2"
+                className="btn-secondary text-xs flex items-center gap-2 px-6 py-2 rounded-xl"
               >
                 Charger plus
-                <span className="text-slate-600 text-xs">
+                <span className="text-text-muted opacity-60">
                   ({filtered.length - paginated.length} restants)
                 </span>
               </button>
@@ -565,9 +534,9 @@ export function PlayersPage() {
           )}
 
           {/* Compteur total */}
-          <div className="px-4 py-2 border-t border-surface-border/30 text-center">
-            <p className="text-[10px] text-slate-700">
-              {paginated.length} / {filtered.length} joueur{filtered.length > 1 ? 's' : ''}
+          <div className="px-4 py-2 border-t border-surface-border/20 text-center bg-surface-muted/5">
+            <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-40">
+              {paginated.length} / {filtered.length} JOUEURS
             </p>
           </div>
         </div>

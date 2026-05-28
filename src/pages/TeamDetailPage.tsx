@@ -96,17 +96,17 @@ function TeamGoalsChart({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart2 size={14} className="text-slate-400" />
-          <p className="text-xs font-black text-white uppercase tracking-widest">Buts par journée</p>
+          <BarChart2 size={14} className="text-text-muted" />
+          <p className="text-xs font-black text-text-primary uppercase tracking-widest">Buts par journée</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: teamColor }} />
-            <span className="text-[10px] text-slate-500 font-bold">Marqués</span>
+            <span className="text-[10px] text-text-muted font-bold">Marqués</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <span className="text-[10px] text-slate-500 font-bold">Encaissés</span>
+            <span className="text-[10px] text-text-muted font-bold">Encaissés</span>
           </div>
         </div>
       </div>
@@ -119,13 +119,15 @@ function TeamGoalsChart({
             <line
               x1={PAD.left} y1={yScale(tick)}
               x2={W - PAD.right} y2={yScale(tick)}
-              stroke="rgba(255,255,255,0.06)" strokeWidth="1"
+              stroke="var(--color-surface-border)" strokeWidth="1"
+              opacity={0.3}
             />
             <text
               x={PAD.left - 4} y={yScale(tick) + 3}
               textAnchor="end"
-              fill="rgba(255,255,255,0.2)"
+              fill="var(--color-text-muted)"
               fontSize="7" fontFamily="monospace"
+              opacity={0.5}
             >
               {tick}
             </text>
@@ -197,8 +199,9 @@ function TeamGoalsChart({
           <text key={`lbl-${i}`}
             x={xScale(i)} y={H - 6}
             textAnchor="middle"
-            fill="rgba(255,255,255,0.2)"
+            fill="var(--color-text-muted)"
             fontSize="7" fontFamily="monospace"
+            opacity={0.5}
           >
             J{d.matchday}
           </text>
@@ -206,23 +209,23 @@ function TeamGoalsChart({
       </svg>
 
       {/* Résumé */}
-      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-white/5">
+      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-surface-border/50">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: teamColor, opacity: 0.8 }} />
-          <span className="text-[10px] text-slate-500 font-bold">
+          <span className="text-[10px] text-text-secondary font-bold">
             {totalScored} buts marqués
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-sm bg-red-400 opacity-80" />
-          <span className="text-[10px] text-slate-500 font-bold">
+          <span className="text-[10px] text-text-secondary font-bold">
             {totalConceded} buts encaissés
           </span>
         </div>
       </div>
 
       {/* Forme V/N/D */}
-      <div className="flex items-center gap-4 pt-1 border-t border-white/5">
+      <div className="flex items-center gap-4 pt-1 border-t border-surface-border/50">
         {[
           { label: 'Victoires', count: wins,   color: 'bg-green-500' },
           { label: 'Nuls',      count: draws,  color: 'bg-amber-500' },
@@ -230,7 +233,7 @@ function TeamGoalsChart({
         ].map(({ label, count, color }) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className={clsx('w-2 h-2 rounded-sm opacity-70', color)} />
-            <span className="text-[10px] text-slate-500 font-bold">{count} {label}</span>
+            <span className="text-[10px] text-text-secondary font-bold">{count} {label}</span>
           </div>
         ))}
       </div>
@@ -269,7 +272,7 @@ export function TeamDetailPage() {
   if (!team) {
     return (
       <div className="card text-center py-16">
-        <p className="text-slate-400">Équipe introuvable.</p>
+        <p className="text-text-muted">Équipe introuvable.</p>
         <Link to="/teams" className="btn-secondary mt-4 inline-flex">← Retour aux équipes</Link>
       </div>
     )
@@ -316,7 +319,7 @@ export function TeamDetailPage() {
       {/* ── Team hero ── */}
       <motion.div
         variants={itemVariants}
-        className="relative overflow-hidden rounded-3xl border border-white/10 bg-surface-card shadow-2xl"
+        className="relative overflow-hidden rounded-3xl border border-surface-border bg-surface-card shadow-2xl"
       >
         {/* Decorative background elements */}
         <div className="absolute inset-0 bg-mesh opacity-20" />
@@ -338,7 +341,7 @@ export function TeamDetailPage() {
             className="relative group"
           >
             <div
-              className="w-32 h-32 md:w-40 md:h-40 rounded-3xl flex items-center justify-center text-white text-5xl md:text-6xl font-black shadow-2xl relative z-10 overflow-hidden ring-4 ring-white/5"
+              className="w-32 h-32 md:w-40 md:h-40 rounded-3xl flex items-center justify-center text-text-primary text-5xl md:text-6xl font-black shadow-2xl relative z-10 overflow-hidden ring-4 ring-surface-border/50"
               style={{ backgroundColor: team.color }}
             >
               {team.logo_url ? (
@@ -359,7 +362,7 @@ export function TeamDetailPage() {
           <div className="flex-1 text-center md:text-left space-y-4">
             <div>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
-                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                <span className="px-3 py-1 rounded-full bg-surface-muted/10 border border-surface-border text-[10px] font-bold uppercase tracking-widest text-text-muted">
                   Équipe Officielle
                 </span>
                 {standing && standings && (
@@ -368,15 +371,15 @@ export function TeamDetailPage() {
                   </span>
                 )}
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight text-glow-sm">
+              <h1 className="text-4xl md:text-5xl font-black text-text-primary tracking-tight text-glow-sm">
                 {team.name}
               </h1>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-slate-400">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-text-muted">
               <div className="flex items-center gap-2">
                 <Users size={18} className="text-primary-500" />
-                <span className="font-semibold text-white">{players.length}</span>
+                <span className="font-semibold text-text-primary">{players.length}</span>
                 <span className="text-sm">joueurs</span>
               </div>
               {form.length > 0 && (
@@ -391,21 +394,21 @@ export function TeamDetailPage() {
 
             {/* Quick Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 backdrop-blur-sm">
-                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Buts</div>
-                <div className="text-2xl font-black text-white">{standing?.goals_for || 0}</div>
+              <div className="bg-surface-muted/5 border border-surface-border/50 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Buts</div>
+                <div className="text-2xl font-black text-text-primary">{standing?.goals_for || 0}</div>
               </div>
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 backdrop-blur-sm">
-                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Différence</div>
-                <div className="text-2xl font-black text-white">{standing?.goal_diff || 0}</div>
+              <div className="bg-surface-muted/5 border border-surface-border/50 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Différence</div>
+                <div className="text-2xl font-black text-text-primary">{standing?.goal_diff || 0}</div>
               </div>
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 backdrop-blur-sm">
-                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Matchs</div>
-                <div className="text-2xl font-black text-white">{standing?.played || 0}</div>
+              <div className="bg-surface-muted/5 border border-surface-border/50 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Matchs</div>
+                <div className="text-2xl font-black text-text-primary">{standing?.played || 0}</div>
               </div>
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 backdrop-blur-sm">
-                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Win Rate</div>
-                <div className="text-2xl font-black text-white">
+              <div className="bg-surface-muted/5 border border-surface-border/50 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Win Rate</div>
+                <div className="text-2xl font-black text-text-primary">
                   {standing?.played ? Math.round((standing.won / standing.played) * 100) : 0}%
                 </div>
               </div>
@@ -433,7 +436,7 @@ export function TeamDetailPage() {
               <stat.icon className={clsx('absolute -right-4 -bottom-4 w-20 h-20 opacity-5 group-hover:scale-110 transition-transform duration-500', stat.color)} />
               <div className="relative z-10">
                 <p className={clsx('text-3xl font-black mb-1', stat.color)}>{stat.value}</p>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{stat.label}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -444,22 +447,22 @@ export function TeamDetailPage() {
         {/* ── Squad Section (2/3 width) ── */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-black text-white flex items-center gap-3">
+            <h2 className="text-xl font-black text-text-primary flex items-center gap-3">
               <Users size={20} className="text-primary-500" />
               Effectif
             </h2>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-text-muted uppercase tracking-widest bg-surface-muted/10 px-3 py-1 rounded-full border border-surface-border/50">
               {players.length} Joueurs
             </span>
           </div>
 
-          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+          <div className="glass-morphism rounded-3xl overflow-hidden border border-surface-border/50">
             {players.length === 0 ? (
               <div className="py-20 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto text-slate-600">
+                <div className="w-16 h-16 rounded-full bg-surface-muted/10 flex items-center justify-center mx-auto text-text-muted">
                   <Users size={32} />
                 </div>
-                <p className="text-slate-500 font-medium italic">Aucun joueur enregistré.</p>
+                <p className="text-text-muted font-medium italic">Aucun joueur enregistré.</p>
               </div>
             ) : (
               <div className="p-2 space-y-8 my-4">
@@ -479,15 +482,15 @@ export function TeamDetailPage() {
                           <motion.div
                             key={p.id}
                             whileHover={{ scale: 1.01, x: 4 }}
-                            className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-white/5 transition-all duration-200 cursor-pointer border border-transparent hover:border-white/10"
+                            className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-surface-muted/10 transition-all duration-200 cursor-pointer border border-transparent hover:border-surface-border/50"
                           >
-                            <div className="w-8 font-mono text-xs font-black text-slate-600 group-hover:text-primary-400 transition-colors">
+                            <div className="w-8 font-mono text-xs font-black text-text-muted/60 group-hover:text-primary-400 transition-colors">
                               #{p.jersey_number ?? '—'}
                             </div>
 
                             <div className="relative">
                               <div
-                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-lg overflow-hidden relative ring-2 ring-white/5"
+                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-text-primary text-sm font-black shadow-lg overflow-hidden relative ring-2 ring-surface-border/50"
                                 style={{ backgroundColor: team.color }}
                               >
                                 {p.avatar_url ? (
@@ -507,7 +510,7 @@ export function TeamDetailPage() {
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-white font-bold truncate group-hover:text-primary-400 transition-colors">
+                                <p className="text-text-primary font-bold truncate group-hover:text-primary-400 transition-colors">
                                   {p.first_name} {p.last_name}
                                 </p>
                                 {isCaptain && (
@@ -516,12 +519,12 @@ export function TeamDetailPage() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                              <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">
                                 {POSITION_LABELS[p.position!] || 'Non défini'}
                               </p>
                             </div>
 
-                            <ChevronRight size={16} className="text-slate-700 group-hover:text-white transition-colors" />
+                            <ChevronRight size={16} className="text-text-muted group-hover:text-text-primary transition-colors" />
                           </motion.div>
                         )
                       })}
@@ -538,12 +541,12 @@ export function TeamDetailPage() {
           {/* Recent results */}
           {teamMatches.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-black text-white flex items-center gap-3 px-2">
+              <h2 className="text-xl font-black text-text-primary flex items-center gap-3 px-2">
                 <TrendingUp size={20} className="text-primary-500" />
                 Résultats
               </h2>
 
-              <div className="glass-morphism rounded-3xl p-2 space-y-1.5">
+              <div className="glass-morphism rounded-3xl p-2 space-y-1.5 border border-surface-border/50">
                 {teamMatches.map(m => {
                   const isHome = m.home_team_id === id
                   const myScore = isHome ? m.home_score! : m.away_score!
@@ -555,16 +558,16 @@ export function TeamDetailPage() {
                     <Link
                       key={m.id}
                       to={getMatchUrl(m)}
-                      className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all duration-200 border border-transparent hover:border-white/10"
+                      className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-surface-muted/10 transition-all duration-200 border border-transparent hover:border-surface-border/50"
                     >
                       <FormBadge result={result} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: opponent.color }} />
-                          <span className="text-slate-300 text-xs font-bold truncate group-hover:text-white">{opponent.name}</span>
+                          <span className="text-text-secondary text-xs font-bold truncate group-hover:text-text-primary">{opponent.name}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white font-black text-lg tabular-nums">
+                          <span className="text-text-primary font-black text-lg tabular-nums">
                             {isHome ? `${myScore} – ${oppScore}` : `${oppScore} – ${myScore}`}
                           </span>
                           <span className={clsx(
@@ -575,7 +578,7 @@ export function TeamDetailPage() {
                           </span>
                         </div>
                       </div>
-                      <ChevronRight size={14} className="text-slate-700 group-hover:text-white" />
+                      <ChevronRight size={14} className="text-text-muted group-hover:text-text-primary" />
                     </Link>
                   )
                 })}
@@ -586,7 +589,7 @@ export function TeamDetailPage() {
           {/* Goals chart par journée */}
           {matches && matches.filter(m => m.home_team_id === id || m.away_team_id === id).length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-black text-white flex items-center gap-3 px-2">
+              <h2 className="text-xl font-black text-text-primary flex items-center gap-3 px-2">
                 <BarChart2 size={20} className="text-primary-500" />
                 Évolution
               </h2>
@@ -601,51 +604,51 @@ export function TeamDetailPage() {
           {/* Offensive stats */}
           {standing && (
             <div className="space-y-4">
-              <h2 className="text-xl font-black text-white flex items-center gap-3 px-2">
+              <h2 className="text-xl font-black text-text-primary flex items-center gap-3 px-2">
                 <Target size={20} className="text-primary-500" />
                 Statistiques
               </h2>
 
-              <div className="glass-morphism rounded-3xl p-6 space-y-8 relative overflow-hidden">
+              <div className="glass-morphism rounded-3xl p-6 space-y-8 relative overflow-hidden border border-surface-border/50">
                 {/* Background decoration */}
                 <Target className="absolute -right-8 -bottom-8 w-32 h-32 text-primary-500/5 rotate-12" />
 
                 <div className="space-y-6 relative z-10">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="text-3xl font-black text-white">{standing.goals_for}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Buts marqués</p>
+                      <p className="text-3xl font-black text-text-primary">{standing.goals_for}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Buts marqués</p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
                       <Zap size={24} />
                     </div>
                   </div>
 
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-surface-border/50" />
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="text-3xl font-black text-white">{standing.goals_against}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Buts encaissés</p>
+                      <p className="text-3xl font-black text-text-primary">{standing.goals_against}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Buts encaissés</p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
                       <Shield size={24} />
                     </div>
                   </div>
 
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-surface-border/50" />
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <p className={clsx(
                         'text-3xl font-black',
-                        standing.goal_diff > 0 ? 'text-green-400' : standing.goal_diff < 0 ? 'text-red-400' : 'text-white'
+                        standing.goal_diff > 0 ? 'text-green-400' : standing.goal_diff < 0 ? 'text-red-400' : 'text-text-primary'
                       )}>
                         {standing.goal_diff > 0 ? `+${standing.goal_diff}` : standing.goal_diff}
                       </p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Différence</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Différence</p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400">
+                    <div className="w-12 h-12 rounded-2xl bg-surface-muted/10 flex items-center justify-center text-text-muted">
                       <Activity size={24} />
                     </div>
                   </div>
