@@ -565,11 +565,9 @@ export function AdminSchedulePage() {
           : match
       )
 
-      const matchdayUpdates = matchesForGeneration.flatMap(match => {
-        const matchday = generatedMatchdays.get(fixtureKey(match.home_team_id, match.away_team_id))
-        if (!matchday || match.matchday === matchday) return []
-        return [{ id: match.id, matchday }]
-      })
+      // Application de l'algorithme de rangement (Requirement 1, 2 & 3)
+      // On ignore le matchday théorique du Round Robin pour forcer un rangement serré de 2 matchs/jour
+      const matchdayUpdates = buildBalancedMatchdayUpdates(matchesForGeneration, true)
 
       if (matchdayUpdates.length > 0) {
         const updateResults = await Promise.all(
