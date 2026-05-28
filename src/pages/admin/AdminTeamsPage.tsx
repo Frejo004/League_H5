@@ -87,7 +87,8 @@ function TeamRow({
   return (
     <div className={clsx(
       "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
-      expanded ? "glass-morphism border2hfr
+      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted"
+    )}>
       <div
         className="flex items-center justify-between gap-4 cursor-pointer relative z-10"
         onClick={() => setExpanded(!expanded)}
@@ -98,7 +99,10 @@ function TeamRow({
             {team.name.substring(0, 2).toUpperCase()}
           </div>
           <div>
-            <s
+            <span className="text-text-primary font-black text-sm uppercase tracking-wider block" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {team.name}
+            </span>
+            {captainPlayerId && (
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Crown size={12} className="text-amber-400" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Capitaine assigné</span>
@@ -106,11 +110,11 @@ function TeamRow({
             )}
           </div>
         </div>
-        <button
+        <div
           className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-text-primary transition-colors bg-surface-raised px-3 py-1.5 rounded-lg border border-surface-border"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+        </div>
       </div>
 
       {expanded && (
@@ -118,6 +122,7 @@ function TeamRow({
           {isLoading ? (
             <div className="flex justify-center py-4"><LoadingSpinner /></div>
           ) : (
+            <>
               {/* ── Sélecteur de capitaine ── */}
               <div className="space-y-2 bg-surface/50 p-4 rounded-xl border border-surface-border">
                 <label className="text-xs font-bold uppercase tracking-widest text-slate-300 flex items-center gap-1.5">
@@ -214,14 +219,17 @@ function TeamRow({
                     <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
                       className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="Nom" required />
                   </div>
-                  <div className=
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="number" value={jersey} onChange={e => setJersey(e.target.value)}
                       className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="N° maillot" min={1} max={99} />
                     <select value={position} onChange={e => setPosition(e.target.value as PlayerPosition | '')}
                       className="input text-sm py-2 bg-surface/50 border-surface-border">
                       <option value="">Poste (optionnel)</option>
+                      {POSITIONS.map(pos => (
                         <option key={pos} value={pos}>{POSITION_LABELS[pos]}</option>
                       ))}
                     </select>
+                  </div>
                   <div className="flex gap-2">
                     <button type="submit" disabled={createPlayer.isPending}
                       className="btn-primary text-xs font-bold uppercase tracking-wider py-2 px-4">
