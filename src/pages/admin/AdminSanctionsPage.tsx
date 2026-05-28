@@ -12,7 +12,6 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useDisciplinaryStats, useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { usePlayers } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { clsx } from 'clsx'
 
 export function AdminSanctionsPage() {
   const { data: season } = useActiveSeason()
@@ -58,11 +57,11 @@ export function AdminSanctionsPage() {
       {/* ── Header & Action ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-lg font-black text-text-primary uppercase tracking-wider flex items-center gap-2">
             <ShieldAlert className="text-red-500" size={20} />
             Discipline & Sanctions
           </h2>
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">
+          <p className="text-xs text-text-secondary font-medium uppercase tracking-widest mt-1">
             Gérer les suspensions et suivre les cartons de la saison
           </p>
         </div>
@@ -79,17 +78,17 @@ export function AdminSanctionsPage() {
       {showAddForm && (
         <div className="card border-red-500/30 bg-red-500/[0.03] space-y-4 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-white uppercase tracking-widest">Ajouter une suspension manuelle</h3>
-            <button onClick={() => setShowAddForm(false)} className="text-slate-500 hover:text-white transition-colors">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Ajouter une suspension manuelle</h3>
+            <button onClick={() => setShowAddForm(false)} className="text-text-secondary hover:text-text-primary transition-colors">
               <UserX size={18} />
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Joueur</label>
+              <label className="text-[10px] font-black text-text-secondary uppercase tracking-widest mb-1.5 block">Joueur</label>
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
                 <input
                   type="text"
                   placeholder="Rechercher..."
@@ -150,7 +149,7 @@ export function AdminSanctionsPage() {
         {/* ── Suspensions Actives (Main Column) ── */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
               <Calendar size={16} className="text-primary-400" />
               Suspensions en cours
               <span className="ml-2 text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full">
@@ -176,7 +175,7 @@ export function AdminSanctionsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-white truncate">
+                        <span className="text-sm font-black text-text-primary truncate">
                           {s.player?.first_name} {s.player?.last_name}
                         </span>
                         <span
@@ -186,7 +185,7 @@ export function AdminSanctionsPage() {
                           {s.player?.team?.name}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                      <p className="text-[11px] text-text-secondary mt-0.5 flex items-center gap-1.5">
                         <Info size={12} className="text-red-500/50" />
                         {s.reason}
                       </p>
@@ -195,9 +194,9 @@ export function AdminSanctionsPage() {
                     <div className="text-right shrink-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Matchs purgés</span>
-                        <span className="text-sm font-black text-white tabular-nums">{s.matches_served} / {s.matches_count}</span>
+                        <span className="text-sm font-black text-text-primary tabular-nums">{s.matches_served} / {s.matches_count}</span>
                       </div>
-                      <div className="w-32 h-1.5 rounded-full bg-black/40 border border-white/5 overflow-hidden">
+                      <div className="w-32 h-1.5 rounded-full bg-surface/50 border border-surface-border overflow-hidden">
                         <div
                           className="h-full bg-red-500 transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
                           style={{ width: `${(s.matches_served / s.matches_count) * 100}%` }}
@@ -209,7 +208,7 @@ export function AdminSanctionsPage() {
                       <button
                         onClick={() => updateServed.mutate({ id: s.id, matches_served: Math.min(s.matches_count, s.matches_served + 1) })}
                         title="+1 match purgé"
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                        className="p-2 rounded-lg bg-surface-raised hover:bg-surface-raised/80 text-slate-500 hover:text-text-primary transition-all border border-surface-border"
                       >
                         <Plus size={14} />
                       </button>
@@ -240,11 +239,11 @@ export function AdminSanctionsPage() {
                 <History size={12} />
                 Sanctions levées récemment
               </h4>
-              <div className="space-y-2 opacity-60">
+              <div className="space-y-2 opacity-80">
                 {pastSuspensions.slice(0, 5).map(s => (
-                  <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.01]">
+                  <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-surface-border bg-surface-raised/30">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-slate-300">{s.player?.first_name} {s.player?.last_name}</span>
+                      <span className="text-xs font-bold text-text-secondary">{s.player?.first_name} {s.player?.last_name}</span>
                       <span className="text-[10px] text-slate-500">({s.reason})</span>
                     </div>
                     <button
@@ -265,17 +264,17 @@ export function AdminSanctionsPage() {
 
           {/* Top Cartons */}
           <div className="card">
-            <h3 className="text-[11px] font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
               <AlertCircle size={14} className="text-amber-400" />
               Joueurs les plus sanctionnés
             </h3>
             <div className="space-y-3">
               {stats?.players.slice(0, 5).map((p, i) => (
-                <div key={p.player_id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                <div key={p.player_id} className="flex items-center justify-between p-2 rounded-lg bg-surface-raised/50 border border-surface-border">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-[10px] font-bold text-slate-500 w-4">{i + 1}.</span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{p.first_name} {p.last_name}</p>
+                      <p className="text-xs font-bold text-text-primary truncate">{p.first_name} {p.last_name}</p>
                       <p className="text-[9px] text-slate-500 truncate">{p.team_name}</p>
                     </div>
                   </div>

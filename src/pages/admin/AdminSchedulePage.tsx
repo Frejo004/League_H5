@@ -296,19 +296,19 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     : 'À venir'
 
   return (
-    <div className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
+    <div className="border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
       {/* Match row */}
       <div className="flex items-center gap-3 px-4 py-3 relative z-10">
         {/* Home */}
         <div className="flex items-center justify-end gap-2.5 flex-1 min-w-0">
-          <span className="text-sm font-black text-white uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="text-sm font-black text-text-primary uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: home.color }} />
         </div>
 
         {/* Score / date */}
         <div className="shrink-0 text-center min-w-[90px] px-2">
           {match.status === 'completed' ? (
-            <span className="text-xl font-black tabular-nums text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="text-xl font-black tabular-nums text-text-primary" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score} <span className="text-[#FFDF73] text-sm mx-0.5">-</span> {match.away_score}
             </span>
           ) : match.status === 'live' ? (
@@ -334,13 +334,13 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         {/* Away */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
-          <span className="text-sm font-black text-white uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
+          <span className="text-sm font-black text-text-primary uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
         </div>
 
         {/* Edit button */}
         <button
           onClick={() => setEditing(!editing)}
-          className="text-slate-500 hover:text-white bg-black/20 hover:bg-white/10 p-2 rounded-lg shrink-0 transition-colors border border-white/5"
+          className="text-slate-500 hover:text-text-primary bg-surface-raised/50 hover:bg-surface-raised p-2 rounded-lg shrink-0 transition-colors border border-surface-border"
         >
           <Pencil size={13} />
         </button>
@@ -348,23 +348,23 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
       {/* Edit panel */}
       {editing && (
-        <div className="px-5 pb-5 pt-2 space-y-4 bg-black/40 border-t border-white/10 shadow-inner relative overflow-hidden">
+        <div className="px-5 pb-5 pt-2 space-y-4 bg-surface-raised/30 border-t border-surface-border shadow-inner relative overflow-hidden">
           {/* Modal Annulation — Overlay plein écran pour une visibilité totale */}
           {showCancelModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
               {/* Backdrop */}
               <div 
-                className="absolute inset-0 bg-[#070b14]/90 backdrop-blur-md animate-in fade-in duration-300"
+                className="absolute inset-0 bg-surface/80 backdrop-blur-md animate-in fade-in duration-300"
                 onClick={() => setShowCancelModal(false)}
               />
               
               {/* Modal Content */}
-              <div className="relative w-full max-w-sm bg-[#0f1420] border border-white/10 rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300">
+              <div className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300">
                 <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto mb-6 text-red-500">
                   <X size={32} />
                 </div>
                 
-                <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <h3 className="text-2xl font-black text-text-primary uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                   Annuler le match ?
                 </h3>
                 
@@ -375,7 +375,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
                 <div className="flex flex-col gap-3">
                   <button 
                     onClick={() => performUpdate(false)}
-                    className="w-full py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
+                    className="w-full py-3.5 rounded-2xl bg-surface-raised border border-surface-border text-text-primary text-[11px] font-black uppercase tracking-widest hover:bg-surface-raised/80 transition-all active:scale-95"
                   >
                     Conserver les infos
                   </button>
@@ -403,23 +403,23 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
-                className="input text-sm py-2 bg-black/40 border-white/10"
+                className="input text-sm py-2 bg-surface/50 border-surface-border"
               />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Score (dom – ext)</label>
               <div className="flex items-center gap-2">
                 <input type="number" value={homeScore} onChange={e => setHomeScore(e.target.value)}
-                  className="input text-base font-black tabular-nums py-2 text-center bg-black/40 border-white/10" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+                  className="input text-base font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
                 <span className="text-slate-500 shrink-0 font-bold">–</span>
                 <input type="number" value={awayScore} onChange={e => setAwayScore(e.target.value)}
-                  className="input text-base font-black tabular-nums py-2 text-center bg-black/40 border-white/10" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+                  className="input text-base font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border" min={0} placeholder="0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
               </div>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Statut</label>
               <select value={status} onChange={e => setStatus(e.target.value as MatchStatus)}
-                className="input text-sm py-2 bg-black/40 border-white/10">
+                className="input text-sm py-2 bg-surface/50 border-surface-border">
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -430,7 +430,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
               {updateMatch.isPending ? <LoadingSpinner size="sm" /> : <Check size={14} />}
               Enregistrer
             </button>
-            <button onClick={() => { setEditing(false); resetFormToMatch() }} className="btn-secondary py-2 px-3 bg-surface-raised border border-white/10 hover:bg-white/10">
+            <button onClick={() => { setEditing(false); resetFormToMatch() }} className="btn-secondary py-2 px-3 bg-surface-raised border border-surface-border hover:bg-surface-raised/80">
               <X size={14} />
             </button>
           </div>
@@ -612,12 +612,12 @@ export function AdminSchedulePage() {
       {/* Modale de confirmation génération calendrier */}
       {showGenConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#070b14]/90 backdrop-blur-md" onClick={() => setShowGenConfirm(false)} />
-          <div className="relative w-full max-w-sm bg-[#0f1420] border border-white/10 rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <div className="absolute inset-0 bg-surface/80 backdrop-blur-md" onClick={() => setShowGenConfirm(false)} />
+          <div className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
             <div className="w-16 h-16 rounded-full bg-[#FFDF73]/20 border border-[#FFDF73]/30 flex items-center justify-center mx-auto mb-6">
               <Calendar size={28} className="text-[#FFDF73]" />
             </div>
-            <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <h3 className="text-2xl font-black text-text-primary uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               Regénérer le calendrier ?
             </h3>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 text-center leading-relaxed">
@@ -643,7 +643,7 @@ export function AdminSchedulePage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-white">
+        <h2 className="text-base font-semibold text-text-primary">
           Calendrier
           {season && <span className="text-slate-500 font-normal text-sm ml-2">— {season.name}</span>}
         </h2>
@@ -655,7 +655,7 @@ export function AdminSchedulePage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-[#FFDF73]/10 to-transparent pointer-events-none" />
           <div className="flex items-start justify-between gap-4 relative z-10">
             <div>
-              <p className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+              <p className="text-sm font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
                 <Zap size={16} className="text-[#FFDF73]" />
                 Génération automatique
               </p>
@@ -695,7 +695,7 @@ export function AdminSchedulePage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !matches?.length ? (
-        <div className="card glass-morphism text-center py-8 border border-white/10">
+        <div className="card glass-morphism text-center py-8 border border-surface-border">
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
             Aucun match. Cliquez sur "Générer le calendrier" pour créer tous les matchs aller-retour.
           </p>
@@ -706,9 +706,9 @@ export function AdminSchedulePage() {
             const dayMatches = (matches ?? []).filter(m => m.matchday === day)
             const isRetour = day > (matchdays.length / 2)
             return (
-              <div key={day} className="card p-0 overflow-hidden glass-morphism border border-white/10">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-black/40">
-                  <span className="text-lg font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <div key={day} className="card p-0 overflow-hidden glass-morphism border border-surface-border">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-surface-border bg-surface-raised/50">
+                  <span className="text-lg font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Journée {day}
                   </span>
                   <span className={clsx(

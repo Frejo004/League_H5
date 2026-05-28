@@ -112,7 +112,7 @@ export function AdminSeasonsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Saisons</h2>
+        <h2 className="text-lg font-semibold text-text-primary">Saisons</h2>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2">
           <Plus size={16} />
           Nouvelle saison
@@ -122,7 +122,7 @@ export function AdminSeasonsPage() {
       {/* Formulaire création */}
       {showForm && (
         <div className="card">
-          <h3 className="font-medium text-white mb-4">Créer une saison</h3>
+          <h3 className="font-medium text-text-primary mb-4">Créer une saison</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             {createError && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
@@ -173,13 +173,13 @@ export function AdminSeasonsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !seasons?.length ? (
-        <div className="card glass-morphism text-center py-12 border border-white/10">
+        <div className="card glass-morphism text-center py-12 border border-surface-border">
           <p className="text-slate-400">Aucune saison créée.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {seasons.map(season => (
-            <div key={season.id} className="relative overflow-hidden p-5 rounded-2xl glass-morphism border border-white/5 hover:border-white/20 transition-all duration-300">
+            <div key={season.id} className="relative overflow-hidden p-5 rounded-2xl glass-morphism border border-surface-border hover:border-surface-muted transition-all duration-300">
 
               {/* Background accent si la saison est active */}
               {season.is_active && (
@@ -230,7 +230,7 @@ export function AdminSeasonsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="text-xl font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        <h3 className="text-xl font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {season.name}
                         </h3>
                         {season.is_active && (
@@ -264,12 +264,12 @@ export function AdminSeasonsPage() {
                         Confirmer
                       </button>
                       <button onClick={() => setDeleteConfirmId(null)}
-                        className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-1.5 px-3 rounded-lg bg-surface-raised border border-white/10">
+                        className="btn-secondary flex items-center justify-center gap-1.5 text-sm py-1.5 px-3 rounded-lg bg-surface-raised border border-surface-border">
                         <X size={14} /> Annuler
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-t border-white/5 pt-3">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-t border-surface-border pt-3">
                       {!season.is_active && (
                         <button onClick={() => toggleActive(season)} disabled={updateSeason.isPending}
                           className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#FFDF73] bg-[#FFDF73]/10 hover:bg-[#FFDF73]/20 border border-[#FFDF73]/30 px-3 py-2 rounded-lg transition-colors">
@@ -285,7 +285,7 @@ export function AdminSeasonsPage() {
                         {season.is_locked ? 'Déverrouiller' : 'Verrouiller'}
                       </button>
                       <button onClick={() => startEdit(season)}
-                        className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-lg transition-colors">
+                        className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-text-primary bg-surface-raised px-3 py-2 rounded-lg border border-surface-border transition-colors">
                         <Pencil size={13} /> Modifier
                       </button>
                       <button onClick={() => setDeleteConfirmId(season.id)}

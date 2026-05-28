@@ -87,8 +87,7 @@ function TeamRow({
   return (
     <div className={clsx(
       "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
-      expanded ? "glass-morphism border border-white/20 shadow-2xl" : "glass-morphism border border-white/5 hover:border-white/10"
-    )}>
+      expanded ? "glass-morphism border2hfr
       <div
         className="flex items-center justify-between gap-4 cursor-pointer relative z-10"
         onClick={() => setExpanded(!expanded)}
@@ -99,8 +98,7 @@ function TeamRow({
             {team.name.substring(0, 2).toUpperCase()}
           </div>
           <div>
-            <span className="font-black text-white text-lg uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{team.name}</span>
-            {(team.captain_id || designatedCaptainPlayerId) && (
+            <s
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Crown size={12} className="text-amber-400" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Capitaine assigné</span>
@@ -109,21 +107,19 @@ function TeamRow({
           </div>
         </div>
         <button
-          className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"
+          className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-text-primary transition-colors bg-surface-raised px-3 py-1.5 rounded-lg border border-surface-border"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          Gérer
         </button>
       </div>
 
       {expanded && (
-        <div className="mt-5 pt-5 border-t border-white/10 space-y-5 relative z-10">
+        <div className="mt-5 pt-5 border-t border-surface-border space-y-5 relative z-10">
           {isLoading ? (
             <div className="flex justify-center py-4"><LoadingSpinner /></div>
           ) : (
-            <>
               {/* ── Sélecteur de capitaine ── */}
-              <div className="space-y-2 bg-black/20 p-4 rounded-xl border border-white/5">
+              <div className="space-y-2 bg-surface/50 p-4 rounded-xl border border-surface-border">
                 <label className="text-xs font-bold uppercase tracking-widest text-slate-300 flex items-center gap-1.5">
                   <Crown size={14} className="text-amber-400" />
                   Capitaine de l'équipe
@@ -138,12 +134,12 @@ function TeamRow({
                       value={captainPlayerId ?? ''}
                       onChange={e => handleSetCaptain(e.target.value || null)}
                       disabled={setCaptain.isPending}
-                      className="input text-sm py-2 flex-1 font-medium bg-black/40 border-white/10"
+                      className="input text-sm py-2 flex-1 font-medium bg-surface/50 border-surface-border"
                     >
                       <option value="">— Aucun capitaine —</option>
                       {(players ?? []).map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.first_name} {p.last_name}
+                          {p.jersey_number ? `#${p.jersey_number} ` : ''}{p.first_name} {p.last_name}
                           {!p.user_id ? ' (sans compte)' : ' ✓'}
                         </option>
                       ))}
@@ -164,17 +160,17 @@ function TeamRow({
                 {(players ?? []).length === 0 ? (
                   <p className="text-xs text-slate-500 italic px-1">Aucun joueur dans cette équipe.</p>
                 ) : (
-                  <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                  <div className="bg-surface/50 rounded-xl border border-surface-border overflow-hidden">
                     {(players ?? []).map(p => (
                       <div key={p.id}
-                        className="flex items-center justify-between py-2.5 px-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
+                        className="flex items-center justify-between py-2.5 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-slate-500 font-black text-sm w-6 text-center shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {p.jersey_number ?? '—'}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                              <span className="text-base font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                                 {p.first_name} {p.last_name}
                               </span>
                               {p.id === captainPlayerId && (
@@ -182,7 +178,7 @@ function TeamRow({
                               )}
                             </div>
                             {p.position && (
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-[#FFDF73]">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                 {POSITION_LABELS[p.position]}
                               </span>
                             )}
@@ -210,33 +206,29 @@ function TeamRow({
 
               {/* ── Formulaire ajout joueur ── */}
               {showPlayerForm ? (
-                <form onSubmit={handleAddPlayer} className="space-y-3 pt-3 border-t border-white/10">
+                <form onSubmit={handleAddPlayer} className="space-y-3 pt-3 border-t border-surface-border">
                   {playerError && <p className="text-red-400 text-xs">{playerError}</p>}
                   <div className="grid grid-cols-2 gap-3">
                     <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
-                      className="input text-sm py-2 bg-black/40 border-white/10" placeholder="Prénom" required />
+                      className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="Prénom" required />
                     <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
-                      className="input text-sm py-2 bg-black/40 border-white/10" placeholder="Nom" required />
+                      className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="Nom" required />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="number" value={jersey} onChange={e => setJersey(e.target.value)}
-                      className="input text-sm py-2 bg-black/40 border-white/10" placeholder="N° maillot" min={1} max={99} />
+                  <div className=
+                      className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="N° maillot" min={1} max={99} />
                     <select value={position} onChange={e => setPosition(e.target.value as PlayerPosition | '')}
-                      className="input text-sm py-2 bg-black/40 border-white/10">
+                      className="input text-sm py-2 bg-surface/50 border-surface-border">
                       <option value="">Poste (optionnel)</option>
-                      {POSITIONS.map(pos => (
                         <option key={pos} value={pos}>{POSITION_LABELS[pos]}</option>
                       ))}
                     </select>
-                  </div>
                   <div className="flex gap-2">
                     <button type="submit" disabled={createPlayer.isPending}
-                      className="btn-primary text-xs font-bold uppercase tracking-wider py-2 px-4 flex items-center gap-1.5">
-                      {createPlayer.isPending ? <LoadingSpinner size="sm" /> : null}
-                      Ajouter
+                      className="btn-primary text-xs font-bold uppercase tracking-wider py-2 px-4">
+                      {createPlayer.isPending ? <LoadingSpinner size="sm" /> : 'Ajouter'}
                     </button>
                     <button type="button" onClick={() => setShowPlayerForm(false)}
-                      className="btn-secondary text-xs font-bold uppercase tracking-wider py-2 px-4 bg-surface-raised border border-white/10">
+                      className="btn-secondary text-xs font-bold uppercase tracking-wider py-2 px-4 bg-surface-raised border border-surface-border">
                       Annuler
                     </button>
                   </div>
@@ -286,7 +278,7 @@ export function AdminTeamsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-white">
+        <h2 className="text-base font-semibold text-text-primary">
           Équipes & Joueurs
           {season && <span className="text-slate-500 font-normal text-sm ml-2">— {season.name}</span>}
         </h2>
@@ -306,7 +298,7 @@ export function AdminTeamsPage() {
 
       {showForm && season && (
         <div className="card space-y-4">
-          <h3 className="text-sm font-semibold text-white">Créer une équipe</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Créer une équipe</h3>
           <form onSubmit={handleCreate} className="space-y-3">
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div>

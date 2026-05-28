@@ -106,30 +106,30 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   return (
     <div className={clsx(
       "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
-      expanded ? "glass-morphism border border-white/20 shadow-2xl" : "glass-morphism border border-white/5 hover:border-white/10"
+      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted"
     )}>
       <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between gap-4 relative z-10">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: home.color }} />
-          <span className="text-white font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
-          <span className="text-slate-300 text-lg font-black tabular-nums drop-shadow-md mx-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+          <span className="text-text-primary font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="text-text-secondary text-lg font-black tabular-nums drop-shadow-md mx-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
             {match.home_score ?? '—'} <span className="text-[#FFDF73] text-sm">-</span> {match.away_score ?? '—'}
           </span>
-          <span className="text-white font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
+          <span className="text-text-primary font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {/* Progression buts enregistrés */}
-          <span className="text-[10px] font-bold uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded border border-white/5 text-[#FFDF73]">
+          <span className="text-[10px] font-bold uppercase tracking-widest bg-surface/50 px-2 py-0.5 rounded border border-surface-border text-[#FFDF73]">
             {goals.length}/{(match.home_score ?? 0) + (match.away_score ?? 0)} buts
           </span>
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">J{match.matchday}</span>
-          {expanded ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-slate-400" />}
+          {expanded ? <ChevronUp size={16} className="text-text-primary" /> : <ChevronDown size={16} className="text-slate-400" />}
         </div>
       </button>
 
       {expanded && (
-        <div className="mt-5 pt-5 border-t border-white/10 space-y-5 relative z-10">
+        <div className="mt-5 pt-5 border-t border-surface-border space-y-5 relative z-10">
           {isLoading ? (
             <div className="flex justify-center py-4"><LoadingSpinner /></div>
           ) : (
@@ -137,20 +137,20 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
               {/* ── Buts enregistrés ── */}
               {goals.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                  <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest px-1">
                     Buts enregistrés ({goals.length}/{(match.home_score ?? 0) + (match.away_score ?? 0)})
                   </p>
-                  <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
+                  <div className="bg-surface/50 rounded-xl border border-surface-border overflow-hidden">
                     {goals.map(g => {
                       const assist = assistMap.get(g.id)
                       const teamColor = g.team_id === home.id ? home.color : away.color
                       return (
-                        <div key={g.id} className="flex items-center gap-3 py-2 px-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
+                        <div key={g.id} className="flex items-center gap-3 py-2 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
                           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
-                          <span className="text-white text-sm flex-1 font-black uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                          <span className="text-text-primary text-sm flex-1 font-black uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             <span className="text-[#FFDF73] mr-1">{g.is_own_goal ? '⚽ CSC' : '⚽'}</span>
                             {g.players ? `${g.players.first_name} ${g.players.last_name}` : '—'}
-                            {g.minute ? <span className="text-slate-400 font-normal ml-1">({g.minute}')</span> : ''}
+                            {g.minute ? <span className="text-text-secondary font-normal ml-1">({g.minute}')</span> : ''}
                             {assist?.players && (
                               <span className="text-emerald-400 text-xs ml-3 font-normal tracking-wide">
                                 🅰 Passe : {assist.players.first_name} {assist.players.last_name}
@@ -178,8 +178,8 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
 
               {/* ── Ajouter un but ── */}
               {goals.length < (match.home_score ?? 0) + (match.away_score ?? 0) ? (
-                <div className="space-y-3 bg-black/20 p-4 rounded-xl border border-white/5">
-                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <div className="space-y-3 bg-surface/50 p-4 rounded-xl border border-surface-border">
+                  <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#FFDF73] shadow-[0_0_5px_#FFDF73]"></span>
                     Ajouter un but
                   </p>
@@ -305,11 +305,11 @@ export function AdminGoalsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-white">
+        <h2 className="text-base font-semibold text-text-primary">
           Buts & Passes
-          {season && <span className="text-slate-500 font-normal text-sm ml-2">— {season.name}</span>}
+          {season && <span className="text-text-secondary font-normal text-sm ml-2">— {season.name}</span>}
         </h2>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-text-secondary">
           {completedMatches.length} match{completedMatches.length !== 1 ? 's' : ''} terminé{completedMatches.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -317,7 +317,7 @@ export function AdminGoalsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !completedMatches.length ? (
-        <div className="card glass-morphism text-center py-8 border border-white/10">
+        <div className="card glass-morphism text-center py-8 border border-surface-border">
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
             Aucun match terminé. Marquez des matchs comme "Terminé" dans l'onglet Calendrier.
           </p>

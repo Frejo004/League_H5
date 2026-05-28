@@ -54,7 +54,7 @@ function SettingsForm({ settings, seasonId, seasonName }: {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+      <h2 className="text-xl font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
         Paramètres
         <span className="text-[#FFDF73] text-sm ml-2 font-black">— {seasonName}</span>
       </h2>
@@ -65,35 +65,35 @@ function SettingsForm({ settings, seasonId, seasonName }: {
         )}
 
         {/* Points system */}
-        <div className="relative overflow-hidden p-6 rounded-2xl glass-morphism border border-white/5 space-y-5">
-          <h3 className="text-base font-black text-white uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+        <div className="relative overflow-hidden p-6 rounded-2xl glass-morphism border border-surface-border space-y-5">
+          <h3 className="text-base font-black text-text-primary uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
             <span className="w-2 h-2 rounded-full bg-[#FFDF73] shadow-[0_0_5px_#FFDF73]"></span>
             Système de points
           </h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Victoire</label>
-              <input type="number" value={pointsWin} onChange={e => setPointsWin(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-black/40 border-white/10 text-emerald-400" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsWin} onChange={e => setPointsWin(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-emerald-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Nul</label>
-              <input type="number" value={pointsDraw} onChange={e => setPointsDraw(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-black/40 border-white/10 text-yellow-400" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsDraw} onChange={e => setPointsDraw(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-amber-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Défaite</label>
-              <input type="number" value={pointsLoss} onChange={e => setPointsLoss(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-black/40 border-white/10 text-red-400" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsLoss} onChange={e => setPointsLoss(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-red-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
           </div>
         </div>
 
         {/* Playoff settings */}
-        <div className="relative overflow-hidden p-6 rounded-2xl glass-morphism border border-white/5 space-y-5">
+        <div className="relative overflow-hidden p-6 rounded-2xl glass-morphism border border-surface-border space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-black text-white uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <h3 className="text-base font-black text-text-primary uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               <span className="w-2 h-2 rounded-full bg-[#FFDF73] shadow-[0_0_5px_#FFDF73]"></span>
               Phase finale (Playoffs)
             </h3>
-            <label className="flex items-center gap-2 cursor-pointer bg-black/40 px-3 py-1.5 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+            <label className="flex items-center gap-2 cursor-pointer bg-surface/50 px-3 py-1.5 rounded-lg border border-surface-border hover:bg-surface-raised transition-colors">
               <input
                 type="checkbox"
                 checked={playoffEnabled}
@@ -105,17 +105,17 @@ function SettingsForm({ settings, seasonId, seasonName }: {
           </div>
 
           {playoffEnabled && (
-            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-surface-border">
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Format</label>
-                <select value={playoffFormat} onChange={e => setPlayoffFormat(e.target.value as 'single' | 'two_legs')} className="input text-sm font-medium py-2 bg-black/40 border-white/10">
+                <select value={playoffFormat} onChange={e => setPlayoffFormat(e.target.value as 'single' | 'two_legs')} className="input text-sm font-medium py-2 bg-surface/50 border-surface-border">
                   <option value="single">Match unique</option>
                   <option value="two_legs">Aller-retour</option>
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Équipes qualifiées</label>
-                <input type="number" value={teamsInPlayoff} onChange={e => setTeamsInPlayoff(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-black/40 border-white/10 text-[#FFDF73]" min={2} max={16} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+                <input type="number" value={teamsInPlayoff} onChange={e => setTeamsInPlayoff(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-[#FFDF73]" min={2} max={16} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
               </div>
             </div>
           )}
@@ -137,7 +137,7 @@ export function AdminSettingsPage() {
 
   if (!season) {
     return (
-      <div className="card glass-morphism text-center py-12 border border-white/10">
+      <div className="card glass-morphism text-center py-12 border border-surface-border">
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Aucune saison active.</p>
       </div>
     )

@@ -33,7 +33,7 @@ export function AdminSpectatorsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+      <h2 className="text-xl font-black text-text-primary uppercase tracking-wider flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
         Demandes d'accès spectateurs
         {pending.length > 0 && (
           <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(234,179,8,0.3)]">
@@ -45,7 +45,7 @@ export function AdminSpectatorsPage() {
       {isLoading ? (
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !spectators?.length ? (
-        <div className="card glass-morphism text-center py-12 border border-white/10">
+        <div className="card glass-morphism text-center py-12 border border-surface-border">
           <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Aucune demande d'accès.</p>
         </div>
       ) : (
@@ -63,7 +63,7 @@ export function AdminSpectatorsPage() {
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-lg text-white font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-lg text-text-primary font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
                           <p className="text-xs font-medium text-slate-400 truncate">{profile.email}</p>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">
                             Reçue le {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(s.requested_at))}
@@ -102,13 +102,13 @@ export function AdminSpectatorsPage() {
                 {reviewed.map(s => {
                   const profile = s.profiles
                   return (
-                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-white/5 flex items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
+                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-surface-border flex items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-slate-300 text-lg font-black flex-shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        <div className="w-10 h-10 rounded-xl bg-surface/50 border border-surface-border flex items-center justify-center text-slate-500 text-lg font-black flex-shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-base text-white font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
+                          <p className="text-base text-text-primary font-black uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{profile.full_name ?? 'Inconnu'}</p>
                           <p className="text-xs text-slate-400 truncate">{profile.email}</p>
                         </div>
                       </div>
