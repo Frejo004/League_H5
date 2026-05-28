@@ -113,7 +113,13 @@ const ROLE_COLORS: Record<UserRole, { badgeBg: string; badgeText: string; avatar
   admin: { badgeBg: 'rgba(200,241,53,0.15)', badgeText: '#C8F135', avatarBg: 'rgba(200,241,53,0.2)', avatarText: '#C8F135', label: 'Admin' },
   captain: { badgeBg: 'rgba(99,153,255,0.15)', badgeText: '#6399FF', avatarBg: 'rgba(99,153,255,0.2)', avatarText: '#6399FF', label: 'Capitaine' },
   player: { badgeBg: 'rgba(255,180,50,0.15)', badgeText: '#FFB432', avatarBg: 'rgba(255,180,50,0.2)', avatarText: '#FFB432', label: 'Joueur' },
-  spectator: { badgeBg: 'rgba(160,160,160,0.15)', badgeText: 'rgba(255,255,255,0.5)', avatarBg: 'rgba(160,160,160,0.15)', avatarText: 'rgba(255,255,255,0.5)', label: 'Spectateur' },
+  spectator: { 
+    badgeBg: 'var(--color-surface-raised)', 
+    badgeText: 'var(--color-text-muted)', 
+    avatarBg: 'var(--color-surface-raised)', 
+    avatarText: 'var(--color-text-muted)', 
+    label: 'Spectateur' 
+  },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

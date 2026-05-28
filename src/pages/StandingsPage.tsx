@@ -169,9 +169,9 @@ function FormChart({
             return (
               <g key={pct}>
                 <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
-                  stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  stroke="var(--color-surface-border)" strokeWidth="1" />
                 <text x={PAD.left - 4} y={y + 4} textAnchor="end"
-                  fill="rgba(255,255,255,0.25)" fontSize="9" fontFamily="monospace">
+                  fill="var(--color-text-muted)" fontSize="9" fontFamily="monospace">
                   {pts}
                 </text>
               </g>
@@ -184,7 +184,7 @@ function FormChart({
             const label = i === 0 ? 'Dép.' : `J${matchdays[i - 1]}`
             return (
               <text key={i} x={x} y={H - 6} textAnchor="middle"
-                fill="rgba(255,255,255,0.25)" fontSize="9" fontFamily="monospace">
+                fill="var(--color-text-muted)" fontSize="9" fontFamily="monospace">
                 {label}
               </text>
             )
@@ -254,7 +254,7 @@ function FormChart({
           </button>
         ))}
         {standings.length > 5 && (
-          <span className="text-[10px] text-slate-700 font-bold self-center">
+          <span className="text-[10px] text-text-muted font-bold self-center">
             +{standings.length - 5} équipes masquées
           </span>
         )}
@@ -370,10 +370,10 @@ export function StandingsPage() {
           )}
 
           {/* Table card */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/6 bg-slate-50 dark:bg-[#161c2d]">
+          <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
 
             {/* Filter tabs */}
-            <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 dark:border-white/6">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-surface-border">
               <div className="flex items-center gap-1">
                 {(['all', 'home', 'away'] as FilterType[]).map(f => (
                   <button
@@ -418,7 +418,7 @@ export function StandingsPage() {
             </div>
 
             {/* Table header — desktop uniquement */}
-            <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_6.5rem_3rem] gap-1 px-4 py-2 border-b border-white/4">
+            <div className="hidden lg:grid grid-cols-[2.5rem_1fr_2rem_repeat(3,2rem)_3rem_3rem_6.5rem_3rem] gap-1 px-4 py-2 border-b border-surface-border bg-surface-raised/30">
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
@@ -431,7 +431,7 @@ export function StandingsPage() {
               <span className="section-title text-right">Pts</span>
             </div>
             {/* Mobile header */}
-            <div className="grid grid-cols-[2rem_1fr_2rem_4rem_3rem] gap-1 px-3 py-2 border-b border-white/4 lg:hidden">
+            <div className="grid grid-cols-[2rem_1fr_2rem_4rem_3rem] gap-1 px-3 py-2 border-b border-surface-border bg-surface-raised/30 lg:hidden">
               <span className="section-title text-center">#</span>
               <span className="section-title">Équipe</span>
               <span className="section-title text-center">J</span>
@@ -443,7 +443,6 @@ export function StandingsPage() {
             <div className="stagger-fast">
               {(filteredStandings ?? []).map((row: StandingRow, i: number) => {
                 const isFirst  = i === 0
-                const isLast   = i === (filteredStandings?.length ?? 0) - 1
                 const isMyTeam = row.team_id === myTeamId
 
                 return (
@@ -451,10 +450,10 @@ export function StandingsPage() {
                     key={row.team_id}
                     to={`/teams/${teams?.find(t => t.id === row.team_id)?.slug || row.team_id}`}
                     className={clsx(
-                      'border-b border-white/4 last:border-b-0 transition-colors duration-150',
-                      'hover:bg-white/3 group',
-                      isFirst && 'bg-yellow-500/3',
-                      isMyTeam && 'bg-primary-600/5 border-l-2 border-l-primary-500/50'
+                      'border-b border-surface-border last:border-b-0 transition-colors duration-150',
+                      'hover:bg-surface-raised/50 group',
+                      isFirst && 'bg-yellow-500/[0.03]',
+                      isMyTeam && 'bg-primary-500/[0.05] border-l-2 border-l-primary-500'
                     )}
                   >
                     {/* Desktop row */}
@@ -484,7 +483,7 @@ export function StandingsPage() {
                             {row.team_name}
                           </span>
                           {isMyTeam && (
-                            <span className="text-[9px] font-bold text-primary-400 uppercase tracking-widest mt-0.5">
+                            <span className="text-[9px] font-bold text-primary-500 dark:text-primary-400 uppercase tracking-widest mt-0.5">
                               Mon équipe
                             </span>
                           )}
@@ -494,7 +493,7 @@ export function StandingsPage() {
                       <span className="text-center text-xs font-black text-win tabular-nums bg-win/10 rounded py-0.5">{row.won}</span>
                       <span className="text-center text-xs font-bold text-text-muted tabular-nums">{row.drawn}</span>
                       <span className="text-center text-xs font-black text-loss tabular-nums bg-loss/10 rounded py-0.5">{row.lost}</span>
-                      <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-win' : row.goal_diff < 0 ? 'text-loss' : 'text-slate-500')}
+                      <span className={clsx('text-center text-sm font-black tabular-nums', row.goal_diff > 0 ? 'text-win' : row.goal_diff < 0 ? 'text-loss' : 'text-text-muted')}
                             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                         {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                       </span>
@@ -522,9 +521,9 @@ export function StandingsPage() {
                         <span className={clsx(
                           'w-6 h-6 flex items-center justify-center text-[12px] font-black',
                           isFirst ? 'bg-[#FFDF73] text-black rounded shadow-[0_0_10px_rgba(255,223,115,0.5)]' :
-                          i === 1 ? 'bg-slate-300 text-black rounded' :
+                          i === 1 ? 'bg-surface-raised text-text-primary rounded border border-surface-border' :
                           i === 2 ? 'bg-amber-600 text-white rounded' :
-                          'text-slate-500 tabular-nums'
+                          'text-text-muted tabular-nums'
                         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {i + 1}
                         </span>
@@ -538,26 +537,26 @@ export function StandingsPage() {
                           }
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className={clsx('text-[13px] font-black uppercase tracking-wide truncate', isFirst ? 'text-white' : 'text-slate-200')}
+                          <span className={clsx('text-[13px] font-black uppercase tracking-wide truncate', isFirst ? 'text-text-primary' : 'text-text-secondary')}
                                 style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {row.team_name}
                           </span>
                           {isMyTeam && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0 mt-0.5 shadow-[0_0_5px_rgba(56,189,248,0.8)]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0 mt-0.5 shadow-[0_0_5px_rgba(37,99,235,0.8)]" />
                           )}
                         </div>
                       </div>
-                      <span className="text-center text-[11px] font-bold text-slate-400 tabular-nums relative z-10">{row.played}</span>
+                      <span className="text-center text-[11px] font-bold text-text-muted tabular-nums relative z-10">{row.played}</span>
                       <div className="flex items-center gap-0.5 justify-center relative z-10">
                         {row.form.length === 0
-                          ? <span className="text-[10px] text-slate-700">—</span>
+                          ? <span className="text-[10px] text-text-muted">—</span>
                           : row.form.slice(-3).map((r, idx) => <FormBadge key={idx} result={r} />)
                         }
                       </div>
                       <div className="text-right flex justify-end relative z-10">
                         <span className={clsx(
                           'text-xl font-black tabular-nums',
-                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-500' : 'text-white'
+                          isFirst ? 'text-[#FFDF73]' : i === 1 ? 'text-text-primary' : i === 2 ? 'text-amber-500' : 'text-text-primary'
                         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {row.points}
                         </span>
@@ -569,11 +568,11 @@ export function StandingsPage() {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 px-4 py-3 border-t border-white/4">
+            <div className="flex items-center gap-4 px-4 py-3 border-t border-surface-border">
               {(['W', 'D', 'L'] as const).map(r => (
                 <div key={r} className="flex items-center gap-1.5">
                   <FormBadge result={r} />
-                  <span className="text-xs text-slate-700">
+                  <span className="text-xs text-text-muted">
                     {r === 'W' ? 'Victoire' : r === 'D' ? 'Nul' : 'Défaite'}
                   </span>
                 </div>

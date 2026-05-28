@@ -101,7 +101,10 @@ export function ScorersPage() {
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0 relative z-10">
                   <div
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white text-sm sm:text-base font-black shrink-0 border-2 shadow-lg"
-                    style={{ backgroundColor: row.team_color, borderColor: i === 0 ? '#FFDF73' : 'rgba(255,255,255,0.1)' }}
+                    style={{ 
+                      backgroundColor: row.team_color, 
+                      borderColor: i === 0 ? '#FFDF73' : 'var(--color-surface-border)' 
+                    }}
                   >
                     {row.first_name[0]}{row.last_name[0]}
                   </div>

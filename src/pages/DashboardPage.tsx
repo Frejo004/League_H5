@@ -197,10 +197,10 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
       </div>
 
       {/* Value */}
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-slate-900 dark:text-white drop-shadow-sm">
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary drop-shadow-sm">
         {animatedValue}
       </p>
-      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-400 transition-colors">
+      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-text-muted group-hover:text-text-secondary transition-colors">
         {label}
       </p>
 
@@ -229,7 +229,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
       <div className="absolute inset-0 bg-linear-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
       
       {/* Conteneur principal biseauté */}
-      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card/80 border border-slate-200/50 dark:border-white/5">
+      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card border border-surface-border">
         
         {/* Ligne d'accentuation (si c'est mon équipe) */}
         {isMyMatch && (
@@ -251,8 +251,8 @@ function MiniMatchCard({ match, variant, myTeamId }: {
               }
             </div>
             <span className={clsx(
-              'text-sm uppercase tracking-wide truncate',
-              variant === 'result' ? (homeWon ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-slate-400') : 'font-bold text-slate-700 dark:text-slate-200'
+              'text-sm uppercase tracking-wide truncate transition-colors',
+              variant === 'result' ? (homeWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_team.name}
             </span>
@@ -262,7 +262,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
           {variant === 'result' && (
             <span className={clsx(
               'text-3xl font-black tabular-nums leading-none ml-3 z-10',
-              homeWon ? 'text-slate-900 dark:text-white text-glow-sm' : 'text-slate-500'
+              homeWon ? 'text-text-primary text-glow-sm' : 'text-text-muted'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score}
             </span>
@@ -270,21 +270,21 @@ function MiniMatchCard({ match, variant, myTeamId }: {
         </div>
 
         {/* CENTRE (SÉPARATEUR OU HEURE) */}
-        <div className="w-12 shrink-0 flex flex-col items-center justify-center relative bg-black/40 z-20"
+        <div className="w-12 shrink-0 flex flex-col items-center justify-center relative bg-black/20 z-20"
              style={{ clipPath: 'polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0% 100%)' }}>
           {variant === 'result' ? (
             <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FT</span>
+              <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">FT</span>
               <div className="w-0.5 h-4 bg-surface-border mt-1" />
             </div>
           ) : match.scheduled_at ? (
             <div className="flex flex-col items-center">
-              <span className="text-[11px] font-black text-primary-400 tracking-wider">
+              <span className="text-[11px] font-black text-primary-500 dark:text-primary-400 tracking-wider">
                 {formatTime(match.scheduled_at)}
               </span>
             </div>
           ) : (
-            <span className="text-[10px] font-bold text-slate-500 uppercase">VS</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase">VS</span>
           )}
         </div>
 
@@ -303,8 +303,8 @@ function MiniMatchCard({ match, variant, myTeamId }: {
               }
             </div>
             <span className={clsx(
-              'text-sm uppercase tracking-wide truncate text-right',
-              variant === 'result' ? (awayWon ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-slate-400') : 'font-bold text-slate-700 dark:text-slate-200'
+              'text-sm uppercase tracking-wide truncate text-right transition-colors',
+              variant === 'result' ? (awayWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_team.name}
             </span>
@@ -314,7 +314,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
           {variant === 'result' && (
             <span className={clsx(
               'text-3xl font-black tabular-nums leading-none mr-3 z-10',
-              awayWon ? 'text-slate-900 dark:text-white text-glow-sm' : 'text-slate-500'
+              awayWon ? 'text-text-primary text-glow-sm' : 'text-text-muted'
             )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_score}
             </span>
@@ -324,8 +324,8 @@ function MiniMatchCard({ match, variant, myTeamId }: {
       
       {/* Ligne date/journée (si à venir) */}
       {variant === 'upcoming' && match.scheduled_at && (
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-card border border-white/10 px-3 py-0.5 rounded-full z-30 shadow-md">
-          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-card border border-surface-border px-3 py-0.5 rounded-full z-30 shadow-md">
+          <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
             {formatDay(match.scheduled_at)}
           </span>
         </div>
@@ -349,13 +349,13 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 // ── Top scorer card premium ───────────────────────────────────────────────────
 function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 bg-white dark:bg-[#161c2d] border-slate-200 dark:border-white/8">
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
 
       <div className="flex items-center gap-1 mb-3">
-        <Flame size={11} className="text-orange-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Meilleur buteur</span>
+        <Flame size={11} className="text-orange-500 dark:text-orange-400" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Meilleur buteur</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -364,22 +364,22 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
             style={{ backgroundColor: scorer.team_color }}>
             {scorer.first_name[0]}{scorer.last_name[0]}
           </div>
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-white dark:border-[#111827]">
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-surface-card">
             <Target size={9} className="text-white" />
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--color-text-primary)' }}>
+          <p className="font-bold text-sm truncate leading-tight text-text-primary">
             {scorer.first_name} {scorer.last_name}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: scorer.team_color }} />
-            <span className="text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>{scorer.team_name}</span>
+            <span className="text-xs truncate text-text-muted">{scorer.team_name}</span>
           </div>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-3xl font-black text-orange-400 tabular-nums leading-none">{scorer.goals}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>buts</p>
+          <p className="text-3xl font-black text-orange-500 dark:text-orange-400 tabular-nums leading-none">{scorer.goals}</p>
+          <p className="text-[10px] mt-0.5 text-text-muted">buts</p>
         </div>
       </div>
     </div>
@@ -389,14 +389,13 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
 // ── Leader card premium ───────────────────────────────────────────────────────
 function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 bg-white dark:bg-[#161c2d]"
-      style={{ borderColor: `${team.team_color}30` }}>
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${team.team_color}10 0%, transparent 70%)` }} />
 
       <div className="flex items-center gap-1 mb-3">
-        <Trophy size={11} className="text-yellow-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Leader</span>
+        <Trophy size={11} className="text-yellow-500 dark:text-yellow-400" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Leader</span>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -408,16 +407,16 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
           }
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--color-text-primary)' }}>{team.team_name}</p>
+          <p className="font-bold text-sm truncate leading-tight text-text-primary">{team.team_name}</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">{team.won}V</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface-raised, rgba(255,255,255,0.05))' }}>{team.drawn}N</span>
-            <span className="text-[10px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">{team.lost}D</span>
+            <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">{team.won}V</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-raised text-text-muted">{team.drawn}N</span>
+            <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">{team.lost}D</span>
           </div>
         </div>
         <div className="text-right shrink-0">
           <p className="text-3xl font-black tabular-nums leading-none" style={{ color: team.team_color }}>{team.points}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>pts</p>
+          <p className="text-[10px] mt-0.5 text-text-muted">pts</p>
         </div>
       </div>
     </div>
@@ -439,7 +438,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
   return (
     <Link
       to={`/matches/${match.slug || match.id}`}
-      className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/50 dark:bg-white/4 hover:bg-slate-200/50 dark:hover:bg-white/8 border border-red-500/20 transition-all group"
+      className="flex items-center gap-3 p-3 rounded-xl bg-surface-raised/50 hover:bg-surface-raised border border-red-500/20 transition-all group"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
@@ -448,14 +447,14 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
             ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
             : match.home_team.name[0]}
         </div>
-        <span className="text-sm font-semibold text-slate-800 dark:text-white truncate">{match.home_team.name}</span>
+        <span className="text-sm font-semibold text-text-primary truncate">{match.home_team.name}</span>
       </div>
 
       <div className="flex flex-col items-center gap-1 px-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
-          <span className="text-slate-600 font-bold">–</span>
-          <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums drop-shadow-md">{match.away_score ?? 0}</span>
+          <span className="text-2xl font-black text-text-primary tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
+          <span className="text-text-muted font-bold">–</span>
+          <span className="text-2xl font-black text-text-primary tabular-nums drop-shadow-md">{match.away_score ?? 0}</span>
         </div>
         <span className="text-[10px] font-black text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse border border-red-400/20">
           {clock.label}
@@ -463,7 +462,7 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
       </div>
 
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <span className="text-sm font-semibold text-slate-800 dark:text-white truncate text-right">{match.away_team.name}</span>
+        <span className="text-sm font-semibold text-text-primary truncate text-right">{match.away_team.name}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.away_team.color }}>
           {match.away_team.logo_url
