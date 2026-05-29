@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Save } from 'lucide-react'
+import { Save, Calendar } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings, useUpsertSettings } from '@/hooks/useSettings'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -119,6 +120,21 @@ function SettingsForm({ settings, seasonId, seasonName }: {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Info Delegation */}
+        <div className="p-6 rounded-2xl bg-primary-500/5 border border-primary-500/20 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
+              <Calendar size={18} />
+            </div>
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              Délégation des accès Live
+            </h3>
+          </div>
+          <p className="text-[11px] text-text-muted font-medium leading-relaxed">
+            Pour accorder les droits de saisie (événements ou vidéo) à un joueur, rendez-vous dans l'onglet <strong>Calendrier</strong> de l'administration et modifiez le match concerné.
+          </p>
         </div>
 
         <button type="submit" disabled={upsert.isPending} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto text-sm font-bold uppercase tracking-wider py-3 px-8 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)]">

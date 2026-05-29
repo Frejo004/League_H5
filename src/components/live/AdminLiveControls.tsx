@@ -5,7 +5,7 @@
 import { useState, useMemo } from 'react'
 import * as FramerMotion from 'framer-motion'
 const { motion, AnimatePresence } = FramerMotion
-import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Camera, Mic, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Camera, Mic, TrendingUp, CheckCircle2, Search, User, ShieldCheck, Video, X as XIcon, Zap } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
@@ -111,21 +111,32 @@ interface AdminLiveControlsProps {
   homeScore: number
   awayScore: number
   events: MatchEvent[]
-  homePlayers: Array<{ id: string; first_name: string; last_name: string }>
-  awayPlayers: Array<{ id: string; first_name: string; last_name: string }>
+  homePlayers: Array<{ id: string; first_name: string; last_name: string; user_id?: string | null; team_id?: string }>
+  awayPlayers: Array<{ id: string; first_name: string; last_name: string; user_id?: string | null; team_id?: string }>
   seasonId: string
+  isEventsReporter?: boolean
+  isVideoReporter?: boolean
+  eventsReporterId?: string | null
+  videoReporterId?: string | null
 }
 
 export function AdminLiveControls({
   matchId, status, liveStartedAt, halftimeAt, livePeriod,
   isPaused, pausedAt, totalPausedSeconds,
   homeTeam, awayTeam, homeScore, awayScore,
-  events, homePlayers, awayPlayers, seasonId
+  events, homePlayers, awayPlayers, seasonId,
+  isEventsReporter = false,
+  isVideoReporter = false,
+  eventsReporterId = null,
+  videoReporterId = null,
 }: AdminLiveControlsProps) {
-  const { user } = useAuth()
-  const { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent } = useAdminMatchLive(matchId)
+  const { user, isAdmin } = useAuth()
+  const { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters } = useAdminMatchLive(matchId)
   const clock = useLiveClock(liveStartedAt, livePeriod, status, halftimeAt, isPaused, pausedAt, totalPausedSeconds)
   const { toast, toasts, dismiss } = useAppToast()
+
+  const canManageEvents = isAdmin || isEventsReporter
+  const canManageVideo = isAdmin || isVideoReporter
 
   const [showEventForm, setShowEventForm] = useState(false)
   const [eventType, setEventType] = useState<MatchEventType>('goal')
@@ -137,6 +148,9 @@ export function AdminLiveControls({
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [pauseReason, setPauseReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<MatchEvent | null>(null)
+  const [showDelegation, setShowDelegation] = useState(false)
+  const [selectingType, setSelectingType] = useState<'events' | 'video' | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // ── Sélection caméra / micro ──────────────────────────────────────────────
   const [showDevicePanel, setShowDevicePanel] = useState(false)
@@ -161,6 +175,21 @@ export function AdminLiveControls({
     videoDeviceId: selectedVideoDeviceId,
     audioDeviceId: selectedAudioDeviceId,
   })
+
+  // Liste de tous les joueurs ayant un compte (user_id) pour la délégation
+  const selectablePlayers = useMemo(() => {
+    return [...homePlayers, ...awayPlayers]
+      .filter(p => p.user_id)
+      .sort((a, b) => a.last_name.localeCompare(b.last_name))
+  }, [homePlayers, awayPlayers])
+
+  const filteredPlayers = useMemo(() => {
+    return searchQuery 
+      ? selectablePlayers.filter(p => 
+          `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : selectablePlayers
+  }, [selectablePlayers, searchQuery])
 
   // ── Référence vidéo pour la prévisualisation caméra de l'admin ─────────────────────
   // Note : la preview est maintenant gérée par BroadcastOverlay (plein écran / PiP)
@@ -344,7 +373,7 @@ export function AdminLiveControls({
           </div>
 
           <div className="flex items-center gap-2">
-            {isLive && clock.phase !== 2 && (
+            {isLive && clock.phase !== 2 && canManageEvents && (
               <button
                 onClick={() => togglePause.mutate(pauseReason)}
                 className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20"
@@ -352,102 +381,184 @@ export function AdminLiveControls({
                 {isPaused ? <Play size={16} /> : <Pause size={16} />}
               </button>
             )}
+            
+            {isAdmin && (
+              <button
+                onClick={() => setShowDelegation(!showDelegation)}
+                className={clsx(
+                  "p-2 rounded-xl border transition-all",
+                  showDelegation ? "bg-primary-500/20 border-primary-500/40 text-primary-500" : "bg-white/5 border-white/10 text-text-muted"
+                )}
+                title="Déléguer les accès"
+              >
+                <Plus size={16} className={clsx("transition-transform", showDelegation && "rotate-45")} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── QUICK GOAL BUTTONS (ONLY ON MOBILE) ── */}
-      <div className="grid grid-cols-2 gap-3 sm:hidden">
-        <button
-          onClick={() => { setEventType('goal'); setEventTeam(homeTeam.id); setShowEventForm(true); }}
-          className="flex flex-col items-center justify-center py-4 rounded-2xl bg-blue-600 text-white shadow-lg active:scale-95 transition-transform"
+      {/* ── DELEGATION PANEL (ADMIN ONLY) ── */}
+      {isAdmin && showDelegation && (
+        <motion.div 
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          className="card p-5 border-primary-500/30 bg-primary-500/5 space-y-4 overflow-hidden"
         >
-          <Plus size={20} className="mb-1" />
-          <span className="text-[10px] font-black uppercase tracking-widest">But {homeTeam.name.split(' ')[0]}</span>
-        </button>
-        <button
-          onClick={() => { setEventType('goal'); setEventTeam(awayTeam.id); setShowEventForm(true); }}
-          className="flex flex-col items-center justify-center py-4 rounded-2xl bg-red-600 text-white shadow-lg active:scale-95 transition-transform"
-        >
-          <Plus size={20} className="mb-1" />
-          <span className="text-[10px] font-black uppercase tracking-widest">But {awayTeam.name.split(' ')[0]}</span>
-        </button>
-      </div>
-
-      {/* ── QUICK ACTIONS (STATS) ── */}
-      <div className="card p-5 sm:p-6 space-y-5 sm:space-y-6 relative overflow-hidden bg-[var(--card-bg)] border-[var(--color-surface-border)] transition-colors">
-        <div className="absolute top-0 right-0 p-8 bg-white/2 rounded-full -mr-4 -mt-4 blur-3xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between relative z-10 border-b border-[var(--color-surface-border)] pb-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <TrendingUp size={16} />
-            </div>
-            <h2 className="text-[11px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Actions Rapides (Stats)</h2>
+          <div className="flex items-center gap-2 border-b border-primary-500/20 pb-3">
+            <ShieldCheck size={16} className="text-primary-500" />
+            <h3 className="text-[11px] font-black text-primary-500 uppercase tracking-widest">Délégation des accès Live</h3>
           </div>
           
-          {isLive && (
-            <button 
-              onClick={() => setConfirmEnd(true)}
-              className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/20 transition-colors"
-            >
-              Terminer
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-6 relative z-10">
-          {/* Home Stats Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: homeTeam.color, color: homeTeam.color }} />
-              <span className="text-[11px] font-black text-[var(--color-text-primary)] uppercase tracking-wider truncate">{homeTeam.name}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-text-muted uppercase tracking-widest ml-1 block">Rapporteur d'événements</label>
+              <button
+                type="button"
+                onClick={() => setSelectingType('events')}
+                className={clsx(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all text-left",
+                  eventsReporterId 
+                    ? "bg-primary-500/10 border-primary-500/30 text-[var(--color-text-primary)]" 
+                    : "bg-[var(--color-surface-card)] border-[var(--color-surface-border)] text-[var(--color-text-muted)]"
+                )}
+              >
+                <span className="text-[11px] font-bold truncate uppercase tracking-wider">
+                  {selectablePlayers.find(p => p.user_id === eventsReporterId) 
+                    ? `${selectablePlayers.find(p => p.user_id === eventsReporterId)?.first_name} ${selectablePlayers.find(p => p.user_id === eventsReporterId)?.last_name}`
+                    : "Non assigné"}
+                </span>
+                {eventsReporterId ? (
+                  <XIcon size={14} className="shrink-0 hover:text-red-500 transition-colors" onClick={(e) => { e.stopPropagation(); updateReporters.mutate({ eventsReporterId: null }) }} />
+                ) : <Plus size={14} className="shrink-0 opacity-40" />}
+              </button>
             </div>
-            <div className="grid grid-cols-1 gap-2">
-              {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
-                <button
-                  key={type}
-                  disabled={isPaused || addEvent.isPending}
-                  onClick={() => addEvent.mutate({ type, team_id: homeTeam.id, minute: clock.minute, period: livePeriod as 1|2 })}
-                  className="group relative flex items-center justify-between px-4 py-4 rounded-2xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] hover:bg-[var(--color-surface-raised)] active:scale-95 disabled:opacity-30 transition-all shadow-lg"
-                >
-                  <span className="text-[12px] font-black text-[var(--color-text-primary)] uppercase tracking-widest">
-                    {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
-                  </span>
-                  <div className="w-6 h-6 rounded-lg bg-[var(--color-surface-raised)] flex items-center justify-center group-hover:bg-amber-500/10 transition-colors">
-                    <Plus size={14} className="text-[var(--color-text-muted)]" />
-                  </div>
-                </button>
-              ))}
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-text-muted uppercase tracking-widest ml-1 block">Rapporteur Vidéo</label>
+              <button
+                type="button"
+                onClick={() => setSelectingType('video')}
+                className={clsx(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all text-left",
+                  videoReporterId 
+                    ? "bg-blue-500/10 border-blue-500/30 text-[var(--color-text-primary)]" 
+                    : "bg-[var(--color-surface-card)] border-[var(--color-surface-border)] text-[var(--color-text-muted)]"
+                )}
+              >
+                <span className="text-[11px] font-bold truncate uppercase tracking-wider">
+                  {selectablePlayers.find(p => p.user_id === videoReporterId) 
+                    ? `${selectablePlayers.find(p => p.user_id === videoReporterId)?.first_name} ${selectablePlayers.find(p => p.user_id === videoReporterId)?.last_name}`
+                    : "Non assigné"}
+                </span>
+                {videoReporterId ? (
+                  <XIcon size={14} className="shrink-0 hover:text-red-500 transition-colors" onClick={(e) => { e.stopPropagation(); updateReporters.mutate({ videoReporterId: null }) }} />
+                ) : <Plus size={14} className="shrink-0 opacity-40" />}
+              </button>
             </div>
           </div>
+          <p className="text-[9px] text-text-muted/60 font-medium italic leading-relaxed">
+            Les joueurs sélectionnés auront accès au panneau de contrôle avec les permissions accordées pendant le match et 10 minutes après la fin.
+          </p>
+        </motion.div>
+      )}
 
-          {/* Away Stats Column */}
-          <div className="space-y-4 text-right">
-            <div className="flex items-center gap-2 mb-1 justify-end">
-              <span className="text-[11px] font-black text-[var(--color-text-primary)] uppercase tracking-wider truncate">{awayTeam.name}</span>
-              <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: awayTeam.color, color: awayTeam.color }} />
+      {/* ── QUICK GOAL BUTTONS (ONLY ON MOBILE) ── */}
+      {canManageEvents && (
+        <div className="grid grid-cols-2 gap-3 sm:hidden">
+          <button
+            onClick={() => { setEventType('goal'); setEventTeam(homeTeam.id); setShowEventForm(true); }}
+            className="flex flex-col items-center justify-center py-4 rounded-2xl bg-blue-600 text-white shadow-lg active:scale-95 transition-transform"
+          >
+            <Plus size={20} className="mb-1" />
+            <span className="text-[10px] font-black uppercase tracking-widest">But {homeTeam.name.split(' ')[0]}</span>
+          </button>
+          <button
+            onClick={() => { setEventType('goal'); setEventTeam(awayTeam.id); setShowEventForm(true); }}
+            className="flex flex-col items-center justify-center py-4 rounded-2xl bg-red-600 text-white shadow-lg active:scale-95 transition-transform"
+          >
+            <Plus size={20} className="mb-1" />
+            <span className="text-[10px] font-black uppercase tracking-widest">But {awayTeam.name.split(' ')[0]}</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── QUICK ACTIONS (STATS) ── */}
+      {canManageEvents && (
+        <div className="card p-5 sm:p-6 space-y-5 sm:space-y-6 relative overflow-hidden bg-[var(--card-bg)] border-[var(--color-surface-border)] transition-colors">
+          <div className="absolute top-0 right-0 p-8 bg-white/2 rounded-full -mr-4 -mt-4 blur-3xl pointer-events-none" />
+          
+          <div className="flex items-center justify-between relative z-10 border-b border-[var(--color-surface-border)] pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <TrendingUp size={16} />
+              </div>
+              <h2 className="text-[11px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Actions Rapides (Stats)</h2>
             </div>
-            <div className="grid grid-cols-1 gap-2">
-              {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
-                <button
-                  key={type}
-                  disabled={isPaused || addEvent.isPending}
-                  onClick={() => addEvent.mutate({ type, team_id: awayTeam.id, minute: clock.minute, period: livePeriod as 1|2 })}
-                  className="group relative flex items-center justify-between px-4 py-4 rounded-2xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] hover:bg-[var(--color-surface-raised)] active:scale-95 disabled:opacity-30 transition-all shadow-lg"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-[var(--color-surface-raised)] flex items-center justify-center group-hover:bg-amber-500/10 transition-colors">
-                    <Plus size={14} className="text-[var(--color-text-muted)]" />
-                  </div>
-                  <span className="text-[12px] font-black text-[var(--color-text-primary)] uppercase tracking-widest">
-                    {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
-                  </span>
-                </button>
-              ))}
+            
+            {isLive && (
+              <button 
+                onClick={() => setConfirmEnd(true)}
+                className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/20 transition-colors"
+              >
+                Terminer
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 relative z-10">
+            {/* Home Stats Column */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: homeTeam.color, color: homeTeam.color }} />
+                <span className="text-[11px] font-black text-[var(--color-text-primary)] uppercase tracking-wider truncate">{homeTeam.name}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
+                  <button
+                    key={type}
+                    disabled={isPaused || addEvent.isPending}
+                    onClick={() => addEvent.mutate({ type, team_id: homeTeam.id, minute: clock.minute, period: livePeriod as 1|2 })}
+                    className="group relative flex items-center justify-between px-4 py-4 rounded-2xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] hover:bg-[var(--color-surface-raised)] active:scale-95 disabled:opacity-30 transition-all shadow-lg"
+                  >
+                    <span className="text-[12px] font-black text-[var(--color-text-primary)] uppercase tracking-widest">
+                      {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
+                    </span>
+                    <div className="w-6 h-6 rounded-lg bg-[var(--color-surface-raised)] flex items-center justify-center group-hover:bg-amber-500/10 transition-colors">
+                      <Plus size={14} className="text-[var(--color-text-muted)]" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Away Stats Column */}
+            <div className="space-y-4 text-right">
+              <div className="flex items-center gap-2 mb-1 justify-end">
+                <span className="text-[11px] font-black text-[var(--color-text-primary)] uppercase tracking-wider truncate">{awayTeam.name}</span>
+                <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: awayTeam.color, color: awayTeam.color }} />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {(['shot', 'shot_on_target', 'foul', 'corner'] as const).map(type => (
+                  <button
+                    key={type}
+                    disabled={isPaused || addEvent.isPending}
+                    onClick={() => addEvent.mutate({ type, team_id: awayTeam.id, minute: clock.minute, period: livePeriod as 1|2 })}
+                    className="group relative flex items-center justify-between px-4 py-4 rounded-2xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] hover:bg-[var(--color-surface-raised)] active:scale-95 disabled:opacity-30 transition-all shadow-lg"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-[var(--color-surface-raised)] flex items-center justify-center group-hover:bg-amber-500/10 transition-colors">
+                      <Plus size={14} className="text-[var(--color-text-muted)]" />
+                    </div>
+                    <span className="text-[12px] font-black text-[var(--color-text-primary)] uppercase tracking-widest">
+                      {type === 'shot' ? 'Tir' : type === 'shot_on_target' ? 'Cadré' : type === 'foul' ? 'Faute' : 'Corner'}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Contrôles Principaux */}
@@ -463,12 +574,20 @@ export function AdminLiveControls({
               )}>
                 {isPaused ? <Pause size={16} /> : <Play size={16} />}
               </div>
-              <h2 className="text-[11px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Flux & Match</h2>
+              <div>
+                <h2 className="text-[11px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">
+                  {isAdmin ? 'ADMINISTRATEUR' : 'RAPPORTEUR'}
+                </h2>
+                <div className="flex gap-1 mt-0.5">
+                  {isEventsReporter && <Zap size={10} className="text-primary-500" />}
+                  {isVideoReporter && <Video size={10} className="text-blue-500" />}
+                </div>
+              </div>
             </div>
           </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
-          {isScheduled && (
+          {isScheduled && (canManageEvents || canManageVideo) && (
             <button
               onClick={() => startLive.mutate()}
               disabled={startLive.isPending}
@@ -479,8 +598,38 @@ export function AdminLiveControls({
             </button>
           )}
 
+          {/* Bouton Filmer Match (accessible même si scheduled pour préparer) */}
+          {(isLive || isScheduled) && canManageVideo && (
+            <div className="flex gap-2 col-span-full sm:col-span-1">
+              <button
+                onClick={isBroadcasting ? stopBroadcast : startBroadcast}
+                className={clsx(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border shadow-sm active:scale-95",
+                  isBroadcasting
+                    ? (stream
+                        ? "bg-red-500 text-white border-red-500/50 shadow-[0_10px_20px_rgba(239,68,68,0.3)]"
+                        : "bg-amber-500 text-white border-amber-500/50 animate-pulse")
+                    : "bg-[#C8F135]/10 border-[#C8F135]/30 text-[#C8F135] hover:bg-[#C8F135]/20"
+                )}
+              >
+                {isBroadcasting ? (stream ? <Square size={14} /> : <LoadingSpinner size="sm" />) : <Play size={16} />}
+                {isBroadcasting ? (stream ? 'Arrêter' : 'Démarrage...') : 'Filmer Match'}
+              </button>
+
+              {!isBroadcasting && (
+                <button
+                  onClick={() => { refreshDevices(); setShowDevicePanel(v => !v) }} 
+                  className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-all shadow-sm active:scale-95"
+                  title="Choisir caméra / micro"
+                >
+                  <Camera size={18} />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Bouton Pause/Reprendre */}
-          {isLive && clock.phase !== 2 && (
+          {isLive && clock.phase !== 2 && canManageEvents && (
             <div className="flex flex-col sm:flex-row items-stretch gap-2 bg-amber-500/5 border border-amber-500/20 p-2 rounded-2xl col-span-full">
               {!isPaused && (
                 <input
@@ -508,7 +657,7 @@ export function AdminLiveControls({
           )}
 
           {/* Bouton Mi-temps */}
-          {isLive && livePeriod === 1 && !halftimeAt && (
+          {isLive && livePeriod === 1 && !halftimeAt && canManageEvents && (
             <button
               onClick={() => signalHalftime.mutate()}
               disabled={signalHalftime.isPending}
@@ -520,7 +669,7 @@ export function AdminLiveControls({
           )}
 
           {/* Décompte mi-temps + bouton lancer 2ème MT */}
-          {isLive && livePeriod === 1 && halftimeAt && (
+          {isLive && livePeriod === 1 && halftimeAt && canManageEvents && (
             <div className="flex flex-col sm:flex-row items-center gap-3 bg-blue-500/10 px-4 py-3 rounded-xl border border-blue-500/30 col-span-full">
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
@@ -544,43 +693,18 @@ export function AdminLiveControls({
 
           {isLive && (
             <>
-              <button
-                onClick={() => setShowEventForm(v => !v)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
-              >
-                <Plus size={16} />
-                + Événement
-              </button>
-
-              <div className="flex gap-2">
+              {canManageEvents && (
                 <button
-                  onClick={isBroadcasting ? stopBroadcast : startBroadcast}
-                  className={clsx(
-                    "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border shadow-sm active:scale-95",
-                    isBroadcasting
-                      ? (stream
-                          ? "bg-red-500 text-white border-red-500/50 shadow-[0_10px_20px_rgba(239,68,68,0.3)]"
-                          : "bg-amber-500 text-white border-amber-500/50 animate-pulse")
-                      : "bg-[#C8F135]/10 border-[#C8F135]/30 text-[#C8F135] hover:bg-[#C8F135]/20"
-                  )}
+                  onClick={() => setShowEventForm(v => !v)}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
                 >
-                  {isBroadcasting ? (stream ? <Square size={14} /> : <LoadingSpinner size="sm" />) : <Play size={16} />}
-                  {isBroadcasting ? (stream ? 'Arrêter' : 'Démarrage...') : 'Filmer Match'}
+                  <Plus size={16} />
+                  + Événement
                 </button>
-
-                {!isBroadcasting && (
-                  <button
-                    onClick={() => { refreshDevices(); setShowDevicePanel(v => !v) }} 
-                    className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-all shadow-sm active:scale-95"
-                    title="Choisir caméra / micro"
-                  >
-                    <Camera size={18} />
-                  </button>
-                )}
-              </div>
+              )}
 
               {/* Panneau sélection caméra / micro */}
-              {showDevicePanel && !isBroadcasting && (
+              {canManageVideo && showDevicePanel && !isBroadcasting && (
                 <div className="w-full rounded-2xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-5 space-y-4 animate-in slide-in-from-top-2 duration-200 col-span-full shadow-inner">
                   <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Camera size={12} /> Configuration média
@@ -623,325 +747,327 @@ export function AdminLiveControls({
               )}
 
               {/* Terminer Match */}
-              <div className="col-span-full pt-2">
-                {!confirmEnd ? (
-                  <button
-                    onClick={() => setConfirmEnd(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-500/70 hover:bg-red-500/10 hover:text-red-500 text-[11px] font-black uppercase tracking-[0.2em] transition-all"
-                  >
-                    <Square size={14} />
-                    Terminer le match
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {/* Alerte Cartons Jaunes */}
-                    {(() => {
-                      const suspendedPlayers = [...homePlayers, ...awayPlayers].filter(p => {
-                        const pStats = stats?.players.find(s => s.player_id === p.id)
-                        const matchYellows = events?.filter(e => e.player_id === p.id && e.type === 'yellow_card').length || 0
-                        const totalYellows = (pStats?.yellow_cards || 0) + matchYellows
-                        return totalYellows >= 3
-                      })
+              {canManageEvents && (
+                <div className="col-span-full pt-2">
+                  {!confirmEnd ? (
+                    <button
+                      onClick={() => setConfirmEnd(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-500/70 hover:bg-red-500/10 hover:text-red-500 text-[11px] font-black uppercase tracking-[0.2em] transition-all"
+                    >
+                      <Square size={14} />
+                      Terminer le match
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {/* Alerte Cartons Jaunes */}
+                      {(() => {
+                        const suspendedPlayers = [...homePlayers, ...awayPlayers].filter(p => {
+                          const pStats = stats?.players.find(s => s.player_id === p.id)
+                          const matchYellows = events?.filter(e => e.player_id === p.id && e.type === 'yellow_card').length || 0
+                          const totalYellows = (pStats?.yellow_cards || 0) + matchYellows
+                          return totalYellows >= 3
+                        })
 
-                      if (suspendedPlayers.length > 0) {
-                        return (
-                          <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl">
-                            <p className="text-[10px] font-black text-amber-500 uppercase leading-tight flex items-center gap-2">
-                              <AlertTriangle size={12} />
-                              Attention : {suspendedPlayers.length} joueur{suspendedPlayers.length > 1 ? 's' : ''} suspendu{suspendedPlayers.length > 1 ? 's' : ''} (3 jaunes).
-                            </p>
-                          </div>
-                        )
-                      }
-                      return null
-                    })()}
+                        if (suspendedPlayers.length > 0) {
+                          return (
+                            <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl">
+                              <p className="text-[10px] font-black text-amber-500 uppercase leading-tight flex items-center gap-2">
+                                <AlertTriangle size={12} />
+                                Attention : {suspendedPlayers.length} joueur{suspendedPlayers.length > 1 ? 's' : ''} suspendu{suspendedPlayers.length > 1 ? 's' : ''} (3 jaunes).
+                              </p>
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-red-500/10 p-2 rounded-2xl border border-red-500/20 animate-in fade-in zoom-in-95 duration-200">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-red-500/80 px-3 py-1">Confirmer score : {homeScoreVal}-{awayScoreVal} ?</span>
-                      <div className="flex gap-2 flex-1">
-                        <button
-                          onClick={() => {
-                            stopBroadcast()
-                            endMatch.mutate({ homeScore: homeScoreVal, awayScore: awayScoreVal })
-                            setConfirmEnd(false)
-                          }}
-                          disabled={endMatch.isPending}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
-                        >
-                          {endMatch.isPending ? <LoadingSpinner size="sm" /> : <CheckCircle2 size={14} />}
-                          OUI, TERMINER
-                        </button>
-                        <button 
-                          onClick={() => setConfirmEnd(false)} 
-                          className="px-6 py-3 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                        >
-                          NON
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-red-500/10 p-2 rounded-2xl border border-red-500/20 animate-in fade-in zoom-in-95 duration-200">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-red-500/80 px-3 py-1">Confirmer score : {homeScoreVal}-{awayScoreVal} ?</span>
+                        <div className="flex gap-2 flex-1">
+                          <button
+                            onClick={() => {
+                              stopBroadcast()
+                              endMatch.mutate({ homeScore: homeScoreVal, awayScore: awayScoreVal })
+                              setConfirmEnd(false)
+                            }}
+                            disabled={endMatch.isPending}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
+                          >
+                            {endMatch.isPending ? <LoadingSpinner size="sm" /> : <CheckCircle2 size={14} />}
+                            OUI, TERMINER
+                          </button>
+                          <button 
+                            onClick={() => setConfirmEnd(false)} 
+                            className="px-6 py-3 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                          >
+                            NON
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-
-        {/* Suggestions de commentaires auto */}
-        {isLive && (
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pt-2 relative z-10">
-            {(() => {
-              const homeShots = events?.filter(e => e.team_id === homeTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
-              const awayShots = events?.filter(e => e.team_id === awayTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
-              const fouls = events?.filter(e => e.type === 'foul').length || 0
-
-              const suggestions = []
-              if (homeShots > 5 && homeShots > awayShots + 3) suggestions.push(`Domination totale de ${homeTeam.name} (${homeShots} tirs) !`)
-              if (awayShots > 5 && awayShots > homeShots + 3) suggestions.push(`Le siège continue devant le but de ${homeTeam.name} !`)
-              if (fouls > 6) suggestions.push(`Match très engagé physiquement (${fouls} fautes) !`)
-              if (homeScoreVal > 3 || awayScoreVal > 3) suggestions.push(`Quel festival offensif aujourd'hui !`)
-
-              return suggestions.map((text, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setEventType('comment')
-                    setEventComment(text)
-                    setShowEventForm(true)
-                  }}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-[9px] font-bold text-primary-400 uppercase tracking-wider hover:bg-primary-500/20 transition-all"
-                >
-                  💡 {text}
-                </button>
-              ))
-            })()}
-          </div>
-        )}
-
-        {/* Modal Formulaire d'événement */}
-        {showEventForm && isLive && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
-              onClick={() => setShowEventForm(false)}
-            />
-            
-            {/* Modal Content */}
-            <div className="relative w-full max-w-lg rounded-[2rem] p-6 space-y-6 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] shadow-2xl animate-in zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-[var(--color-surface-border)] pb-4">
-                <p className="text-sm font-black text-[var(--color-text-primary)] uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_currentColor]"></span>
-                  Nouvel événement
-                </p>
-                <button 
-                  onClick={() => setShowEventForm(false)}
-                  className="p-2 rounded-full hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition-colors"
-                >
-                  <Square size={16} className="rotate-45" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Type */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Type d'action</label>
-                  <select
-                    value={eventType} 
-                    onChange={e => setEventType(e.target.value as MatchEventType)}
-                    className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none appearance-none"
-                  >
-                    <option value="goal">⚽ But</option>
-                    <option value="own_goal">⚽ But CSC</option>
-                    <option value="yellow_card">🟨 Carton jaune</option>
-                    <option value="red_card">🟥 Carton rouge</option>
-                    <option value="substitution">🔄 Remplacement</option>
-                    <option value="comment">💬 Commentaire</option>
-                  </select>
-                </div>
-
-                {/* Minute */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Minute</label>
-                  <input
-                    type="number" 
-                    value={eventMinute}
-                    onChange={e => setEventMinute(e.target.value)}
-                    min={0} max={120}
-                    className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-lg font-black tabular-nums text-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
-                    placeholder={String(clock.minute)}
-                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-                  />
-                </div>
-              </div>
-
-              {/* Équipe */}
-              {!['comment'].includes(eventType) && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Équipe concernée</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[homeTeam, awayTeam].map(team => ( 
-                      <button
-                        key={team.id}
-                        onClick={() => { setEventTeam(team.id); setEventPlayer(''); setEventPlayer2('') }}
-                        className={clsx(
-                          'flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300',
-                          eventTeam === team.id
-                            ? 'border-primary-500/50 bg-primary-500/10 shadow-[0_0_15px_rgba(200,241,53,0.1)]'
-                            : 'border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] grayscale opacity-60 hover:grayscale-0 hover:opacity-100',
-                        )}
-                      >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg" style={{ backgroundColor: team.color }}>
-                          {team.logo_url ? <img src={team.logo_url} className="w-5 h-5 object-contain" /> : <span className="text-white font-black text-xs">{team.name[0]}</span>}
-                        </div>
-                        <span className={clsx("text-[10px] font-black uppercase tracking-wider truncate w-full text-center", eventTeam === team.id ? 'text-primary-500' : 'text-[var(--color-text-muted)]')}>
-                          {team.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Joueurs */}
-              <div className="space-y-4">
-                {!['kickoff', 'halftime', 'fulltime', 'comment'].includes(eventType) && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">
-                      {eventType === 'substitution' ? 'Joueur sortant' : 'Joueur principal'}
-                    </label> 
-                    <select
-                      value={eventPlayer}
-                      onChange={e => setEventPlayer(e.target.value)}
-                      className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
-                    >
-                      <option value="">— Sélectionner le joueur —</option>
-                      {(eventType === 'substitution'
-                      ? substitutionPlayers.starters
-                      : teamLineupPlayers)
-                      .filter(p => p.id !== eventPlayer2)
-                      .map(p => (
-                        <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {(eventType === 'goal' || eventType === 'substitution') && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">
-                      {eventType === 'substitution' ? 'Joueur entrant' : 'Passeur décisif (optionnel)'}
-                    </label> 
-                    <select
-                      value={eventPlayer2}
-                      onChange={e => setEventPlayer2(e.target.value)}
-                      className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
-                    >
-                      <option value="">— {eventType === 'substitution' ? 'Sélectionner le joueur' : 'Aucun passeur'} —</option>
-                      {(eventType === 'substitution' ? substitutionPlayers.subs : teamLineupPlayers)
-                        .filter(p => p.id !== eventPlayer)
-                        .map(p => (
-                          <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>
-                        ))}
-                    </select>
-                  </div>
-                )}
-
-                {eventType === 'comment' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Commentaire en direct</label>
-                    <textarea
-                      value={eventComment} 
-                      onChange={e => setEventComment(e.target.value)}
-                      rows={3}
-                      className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none resize-none"
-                      placeholder="Décrivez l'action en quelques mots..."
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-[var(--color-surface-border)]">
-                <button
-                  onClick={handleAddEvent}
-                  disabled={addEvent.isPending}
-                  className="flex-1 btn-primary text-xs font-black uppercase tracking-[0.15em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-primary-500/20 active:scale-[0.98] transition-all"
-                >
-                  {addEvent.isPending ? <LoadingSpinner size="sm" /> : <Plus size={16} />}
-                  Enregistrer l'action
-                </button>
-                <button 
-                  onClick={() => setShowEventForm(false)} 
-                  className="px-6 py-4 rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] text-[var(--color-text-muted)] text-xs font-black uppercase tracking-widest hover:text-[var(--color-text-primary)] transition-all"
-                >
-                  Fermer
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Gestion des derniers événements (Correction) */}
-        {isLive && events && events.length > 0 && (
-          <div className="pt-6 border-t border-[var(--color-surface-border)] space-y-4">
-            <div className="flex items-center justify-between px-1"> 
-              <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Dernières Actions (Correction)</p>
-              <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Supprimer pour annuler</span>
-            </div>
-
-            <div className="space-y-2">
-              {[...events].reverse().slice(0, 5).map((ev) => (
-                <div key={ev.id} className="flex items-center justify-between bg-[var(--color-surface-card)] p-3 rounded-xl border border-[var(--color-surface-border)] group hover:border-red-500/30 transition-all">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-[var(--color-text-muted)] tabular-nums w-6 shrink-0">{ev.minute !== null ? `${ev.minute}'` : '—'}</span>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-[var(--color-text-primary)] uppercase tracking-wider">
-                          {ev.type === 'goal' ? '⚽ But' :
-                            ev.type === 'own_goal' ? '⚽ CSC (Contre son camp)' :
-                              ev.type === 'yellow_card' ? '🟨 Carton Jaune' :
-                                ev.type === 'red_card' ? '🟥 Carton Rouge' :
-                                  ev.type === 'substitution' ? '🔄 Remplacement' :
-                                    ev.type === 'shot' ? '🎯 Tir' :
-                                      ev.type === 'shot_on_target' ? '🎯 Tir Cadré' :
-                                        ev.type === 'foul' ? '⚠️ Faute' :
-                                          ev.type === 'corner' ? '🚩 Corner' :
-                                            ev.type === 'kickoff' ? '🏁 Début du match' :
-                                              ev.type === 'halftime' ? '⏸️ Mi-temps' :
-                                                ev.type === 'fulltime' ? '🏆 Fin du match' :
-                                                  ev.type === 'pause' ? '⏸️ Pause' :
-                                                    ev.type === 'resume' ? '▶️ Reprise' :
-                                                      ev.type === 'comment' ? `💬 Commentaire` : ev.type}
-                        </span> 
-                        {ev.team && (
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
-                        )}
-                      </div>
-                      <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase truncate max-w-[200px]">
-                        {ev.type === 'substitution'
-                          ? `${ev.player?.first_name} → ${ev.player2?.first_name}`
-                          : ev.type === 'comment' 
-                            ? ev.description
-                            : ev.player
-                              ? `${ev.player.first_name} ${ev.player.last_name}`
-                              : ev.team?.name || 'Match'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setDeleteTarget(ev)}
-                    disabled={deleteEvent.isPending}
-                    className="p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>
+  </div>
+
+    {/* Suggestions de commentaires auto */}
+    {isLive && canManageEvents && (
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pt-2 relative z-10">
+        {(() => {
+          const homeShots = events?.filter(e => e.team_id === homeTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
+          const awayShots = events?.filter(e => e.team_id === awayTeam.id && (e.type === 'shot' || e.type === 'shot_on_target')).length || 0
+          const fouls = events?.filter(e => e.type === 'foul').length || 0
+
+          const suggestions = []
+          if (homeShots > 5 && homeShots > awayShots + 3) suggestions.push(`Domination totale de ${homeTeam.name} (${homeShots} tirs) !`)
+          if (awayShots > 5 && awayShots > homeShots + 3) suggestions.push(`Le siège continue devant le but de ${homeTeam.name} !`)
+          if (fouls > 6) suggestions.push(`Match très engagé physiquement (${fouls} fautes) !`)
+          if (homeScoreVal > 3 || awayScoreVal > 3) suggestions.push(`Quel festival offensif aujourd'hui !`)
+
+          return suggestions.map((text, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setEventType('comment')
+                setEventComment(text)
+                setShowEventForm(true)
+              }}
+              className="shrink-0 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-[9px] font-bold text-primary-400 uppercase tracking-wider hover:bg-primary-500/20 transition-all"
+            >
+              💡 {text}
+            </button>
+          ))
+        })()}
+      </div>
+    )}
+
+    {/* Modal Formulaire d'événement */}
+    {showEventForm && isLive && canManageEvents && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setShowEventForm(false)}
+        />
+        
+        {/* Modal Content */}
+        <div className="relative w-full max-w-lg rounded-[2rem] p-6 space-y-6 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] shadow-2xl animate-in zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between border-b border-[var(--color-surface-border)] pb-4">
+            <p className="text-sm font-black text-[var(--color-text-primary)] uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_currentColor]"></span>
+              Nouvel événement
+            </p>
+            <button 
+              onClick={() => setShowEventForm(false)}
+              className="p-2 rounded-full hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition-colors"
+            >
+              <Square size={16} className="rotate-45" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Type */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Type d'action</label>
+              <select
+                value={eventType} 
+                onChange={e => setEventType(e.target.value as MatchEventType)}
+                className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none appearance-none"
+              >
+                <option value="goal">⚽ But</option>
+                <option value="own_goal">⚽ But CSC</option>
+                <option value="yellow_card">🟨 Carton jaune</option>
+                <option value="red_card">🟥 Carton rouge</option>
+                <option value="substitution">🔄 Remplacement</option>
+                <option value="comment">💬 Commentaire</option>
+              </select>
+            </div>
+
+            {/* Minute */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Minute</label>
+              <input
+                type="number" 
+                value={eventMinute}
+                onChange={e => setEventMinute(e.target.value)}
+                min={0} max={120}
+                className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-lg font-black tabular-nums text-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
+                placeholder={String(clock.minute)}
+                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+              />
+            </div>
+          </div>
+
+          {/* Équipe */}
+          {!['comment'].includes(eventType) && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Équipe concernée</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[homeTeam, awayTeam].map(team => ( 
+                  <button
+                    key={team.id}
+                    onClick={() => { setEventTeam(team.id); setEventPlayer(''); setEventPlayer2('') }}
+                    className={clsx(
+                      'flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300',
+                      eventTeam === team.id
+                        ? 'border-primary-500/50 bg-primary-500/10 shadow-[0_0_15px_rgba(200,241,53,0.1)]'
+                        : 'border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] grayscale opacity-60 hover:grayscale-0 hover:opacity-100',
+                    )}
+                  >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg" style={{ backgroundColor: team.color }}>
+                      {team.logo_url ? <img src={team.logo_url} className="w-5 h-5 object-contain" /> : <span className="text-white font-black text-xs">{team.name[0]}</span>}
+                    </div>
+                    <span className={clsx("text-[10px] font-black uppercase tracking-wider truncate w-full text-center", eventTeam === team.id ? 'text-primary-500' : 'text-[var(--color-text-muted)]')}>
+                      {team.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Joueurs */}
+          <div className="space-y-4">
+            {!['kickoff', 'halftime', 'fulltime', 'comment'].includes(eventType) && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">
+                  {eventType === 'substitution' ? 'Joueur sortant' : 'Joueur principal'}
+                </label> 
+                <select
+                  value={eventPlayer}
+                  onChange={e => setEventPlayer(e.target.value)}
+                  className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
+                >
+                  <option value="">— Sélectionner le joueur —</option>
+                  {(eventType === 'substitution'
+                  ? substitutionPlayers.starters
+                  : teamLineupPlayers)
+                  .filter(p => p.id !== eventPlayer2)
+                  .map(p => (
+                    <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {(eventType === 'goal' || eventType === 'substitution') && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">
+                  {eventType === 'substitution' ? 'Joueur entrant' : 'Passeur décisif (optionnel)'}
+                </label> 
+                <select
+                  value={eventPlayer2}
+                  onChange={e => setEventPlayer2(e.target.value)}
+                  className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
+                >
+                  <option value="">— {eventType === 'substitution' ? 'Sélectionner le joueur' : 'Aucun passeur'} —</option>
+                  {(eventType === 'substitution' ? substitutionPlayers.subs : teamLineupPlayers)
+                    .filter(p => p.id !== eventPlayer)
+                    .map(p => (
+                      <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {eventType === 'comment' && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] block ml-1">Commentaire en direct</label>
+                <textarea
+                  value={eventComment} 
+                  onChange={e => setEventComment(e.target.value)}
+                  rows={3}
+                  className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:outline-none resize-none"
+                  placeholder="Décrivez l'action en quelques mots..."
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-[var(--color-surface-border)]">
+            <button
+              onClick={handleAddEvent}
+              disabled={addEvent.isPending}
+              className="flex-1 btn-primary text-xs font-black uppercase tracking-[0.15em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-primary-500/20 active:scale-[0.98] transition-all"
+            >
+              {addEvent.isPending ? <LoadingSpinner size="sm" /> : <Plus size={16} />}
+              Enregistrer l'action
+            </button>
+            <button 
+              onClick={() => setShowEventForm(false)} 
+              className="px-6 py-4 rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] text-[var(--color-text-muted)] text-xs font-black uppercase tracking-widest hover:text-[var(--color-text-primary)] transition-all"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Gestion des derniers événements (Correction) */}
+    {isLive && canManageEvents && events && events.length > 0 && (
+      <div className="pt-6 border-t border-[var(--color-surface-border)] space-y-4">
+        <div className="flex items-center justify-between px-1"> 
+          <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Dernières Actions (Correction)</p>
+          <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Supprimer pour annuler</span>
+        </div>
+
+        <div className="space-y-2">
+          {[...events].reverse().slice(0, 5).map((ev) => (
+            <div key={ev.id} className="flex items-center justify-between bg-[var(--color-surface-card)] p-3 rounded-xl border border-[var(--color-surface-border)] group hover:border-red-500/30 transition-all">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black text-[var(--color-text-muted)] tabular-nums w-6 shrink-0">{ev.minute !== null ? `${ev.minute}'` : '—'}</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-[var(--color-text-primary)] uppercase tracking-wider">
+                      {ev.type === 'goal' ? '⚽ But' :
+                        ev.type === 'own_goal' ? '⚽ CSC (Contre son camp)' :
+                          ev.type === 'yellow_card' ? '🟨 Carton Jaune' :
+                            ev.type === 'red_card' ? '🟥 Carton Rouge' :
+                              ev.type === 'substitution' ? '🔄 Remplacement' :
+                                ev.type === 'shot' ? '🎯 Tir' :
+                                  ev.type === 'shot_on_target' ? '🎯 Tir Cadré' :
+                                    ev.type === 'foul' ? '⚠️ Faute' :
+                                      ev.type === 'corner' ? '🚩 Corner' :
+                                        ev.type === 'kickoff' ? '🏁 Début du match' :
+                                          ev.type === 'halftime' ? '⏸️ Mi-temps' :
+                                            ev.type === 'fulltime' ? '🏆 Fin du match' :
+                                              ev.type === 'pause' ? '⏸️ Pause' :
+                                                ev.type === 'resume' ? '▶️ Reprise' :
+                                                  ev.type === 'comment' ? `💬 Commentaire` : ev.type}
+                    </span> 
+                    {ev.team && (
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
+                    )}
+                  </div>
+                  <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase truncate max-w-[200px]">
+                    {ev.type === 'substitution'
+                      ? `${ev.player?.first_name} → ${ev.player2?.first_name}`
+                      : ev.type === 'comment' 
+                        ? ev.description
+                        : ev.player
+                          ? `${ev.player.first_name} ${ev.player.last_name}`
+                          : ev.team?.name || 'Match'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setDeleteTarget(ev)}
+                disabled={deleteEvent.isPending}
+                className="p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Modal de confirmation suppression */}
     {deleteTarget && (
@@ -1026,6 +1152,127 @@ export function AdminLiveControls({
         </div>
       ) : undefined}
     />
+
+    {/* Modal de Sélection de Joueur pour la Délégation */}
+    <AnimatePresence>
+      {selectingType && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            onClick={() => setSelectingType(null)}
+          />
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md bg-[var(--color-surface-card)] border border-[var(--color-surface-border)] rounded-[2.5rem] flex flex-col max-h-[80vh] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-[var(--color-surface-border)]/50">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={clsx(
+                    "p-2.5 rounded-2xl",
+                    selectingType === 'events' ? "bg-primary-500/10 text-primary-500" : "bg-blue-500/10 text-blue-500"
+                  )}>
+                    {selectingType === 'events' ? <Zap size={20} /> : <Video size={20} />}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-[var(--color-text-primary)] uppercase tracking-tight leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      Déléguer l'accès
+                    </h3>
+                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-1">
+                      {selectingType === 'events' ? "Rapporteur Événements" : "Rapporteur Vidéo"}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectingType(null)} className="p-2 rounded-full hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition-colors">
+                  <XIcon size={20} />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="relative group">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] group-focus-within:text-primary-500 transition-colors" />
+                <input 
+                  autoFocus
+                  type="text"
+                  placeholder="Rechercher un joueur..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-[var(--color-surface-raised)] border border-[var(--color-surface-border)] rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  onClick={() => {
+                    if (selectingType === 'events') updateReporters.mutate({ eventsReporterId: null });
+                    else updateReporters.mutate({ videoReporterId: null });
+                    setSelectingType(null);
+                  }}
+                  className={clsx(
+                    "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
+                    ((selectingType === 'events' && !eventsReporterId) || (selectingType === 'video' && !videoReporterId))
+                      ? "bg-slate-500/10 border-slate-500/30 text-[var(--color-text-primary)]"
+                      : "bg-transparent border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-full bg-slate-500/10 flex items-center justify-center">
+                    <User size={18} className="opacity-40" />
+                  </div>
+                  <p className="text-xs font-black uppercase tracking-widest flex-1">Aucun (Admin uniquement)</p>
+                  {((selectingType === 'events' && !eventsReporterId) || (selectingType === 'video' && !videoReporterId)) && <CheckCircle2 size={18} className="text-primary-500" />}
+                </button>
+
+                {filteredPlayers.map(player => {
+                  const isSelected = selectingType === 'events' ? eventsReporterId === player.user_id : videoReporterId === player.user_id;
+                  return (
+                    <button
+                      key={player.id}
+                      onClick={() => {
+                        if (selectingType === 'events') updateReporters.mutate({ eventsReporterId: player.user_id! });
+                        else updateReporters.mutate({ videoReporterId: player.user_id! });
+                        setSelectingType(null);
+                        setSearchQuery('');
+                      }}
+                      className={clsx(
+                        "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
+                        isSelected
+                          ? "bg-primary-500/10 border-primary-500/30 text-[var(--color-text-primary)]"
+                          : "bg-transparent border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+                      )}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[var(--color-surface-muted)] flex items-center justify-center overflow-hidden border border-[var(--color-surface-border)]">
+                        {player.user_id ? (
+                           <span className="text-xs font-black uppercase">{player.first_name[0]}{player.last_name[0]}</span>
+                        ) : (
+                          <User size={18} className="opacity-40" />
+                        )}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className="text-xs font-black uppercase tracking-widest truncate">{player.first_name} {player.last_name}</p>
+                        <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] mt-0.5">
+                          {player.team_id === homeTeam.id ? homeTeam.name : awayTeam.name}
+                        </p>
+                      </div>
+                      {isSelected && <CheckCircle2 size={18} className="text-primary-500" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   </div>
   )
 }

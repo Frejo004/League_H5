@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play } from 'lucide-react'
+import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play, ShieldCheck } from 'lucide-react'
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -220,6 +220,41 @@ export function MatchDetailPage() {
   const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
   const { user, isAdmin, isCaptain, isLoading: authLoading } = useAuth()
+
+  // Permissions déléguées avec expiration automatique (10 min après la fin)
+  const isEventsReporter = useMemo(() => {
+    if (!user?.id || !match?.events_reporter_id) return false
+    
+    // Comparaison robuste (trim + minuscule pour les IDs si nécessaire)
+    const isReporter = user.id.toLowerCase() === match.events_reporter_id.toLowerCase()
+    if (!isReporter) return false
+    
+    // Si le match est terminé, vérifier si on est dans la fenêtre des 10 minutes
+    if (match.status === 'completed' && match.finished_at) {
+      const finishedAt = new Date(match.finished_at).getTime()
+      const tenMinutesInMs = 10 * 60 * 1000
+      return Date.now() - finishedAt < tenMinutesInMs
+    }
+    
+    return true
+  }, [user?.id, match?.events_reporter_id, match?.status, match?.finished_at])
+
+  const isVideoReporter = useMemo(() => {
+    if (!user?.id || !match?.video_reporter_id) return false
+    
+    const isReporter = user.id.toLowerCase() === match.video_reporter_id.toLowerCase()
+    if (!isReporter) return false
+    
+    // Si le match est terminé, vérifier si on est dans la fenêtre des 10 minutes
+    if (match.status === 'completed' && match.finished_at) {
+      const finishedAt = new Date(match.finished_at).getTime()
+      const tenMinutesInMs = 10 * 60 * 1000
+      return Date.now() - finishedAt < tenMinutesInMs
+    }
+    
+    return true
+  }, [user?.id, match?.video_reporter_id, match?.status, match?.finished_at])
+
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
   const voteMvp = useVoteMvp()
@@ -383,6 +418,29 @@ export function MatchDetailPage() {
   // Droit de vote : tout le monde si actions clés, sinon uniquement les capitaines/admins
   const canVoteMvp = hasKeyActions || isCaptain
 
+  // Liste des buts synchronisée (priorité aux events en direct pour éviter les lags de la DB)
+  const displayGoals = useMemo(() => {
+    const isLive = match?.status === 'live'
+    const goals = (match?.goals as GoalWithPlayer[]) || []
+    if (!isLive) return goals
+    const goalEvents = liveEvents.filter(ev => ev.type === 'goal' || ev.type === 'own_goal')
+    if (goalEvents.length === 0) return []
+    
+    return goalEvents.map(ev => ({
+      id: ev.id,
+      match_id: ev.match_id,
+      team_id: ev.team_id!,
+      player_id: ev.player_id!,
+      minute: ev.minute,
+      is_own_goal: ev.type === 'own_goal',
+      players: ev.player ? {
+        id: ev.player.id,
+        first_name: ev.player.first_name,
+        last_name: ev.player.last_name
+      } : null
+    })) as GoalWithPlayer[]
+  }, [match?.status, match?.goals, liveEvents])
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -409,27 +467,6 @@ export function MatchDetailPage() {
   const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
-
-  // Liste des buts synchronisée (priorité aux events en direct pour éviter les lags de la DB)
-  const displayGoals = useMemo(() => {
-    if (!isLive) return goals
-    const goalEvents = liveEvents.filter(ev => ev.type === 'goal' || ev.type === 'own_goal')
-    if (goalEvents.length === 0) return []
-    
-    return goalEvents.map(ev => ({
-      id: ev.id,
-      match_id: ev.match_id,
-      team_id: ev.team_id!,
-      player_id: ev.player_id!,
-      minute: ev.minute,
-      is_own_goal: ev.type === 'own_goal',
-      players: ev.player ? {
-        id: ev.player.id,
-        first_name: ev.player.first_name,
-        last_name: ev.player.last_name
-      } : null
-    })) as GoalWithPlayer[]
-  }, [isLive, goals, liveEvents])
 
   const assistMap = new Map(
     assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
@@ -487,8 +524,17 @@ export function MatchDetailPage() {
     return (
       <div className="space-y-6 pb-20 px-1 animate-fade-in">
         {/* Admin Controls */}
-        {isAdmin && (
+        {(isAdmin || isEventsReporter || isVideoReporter) && (
           <div className="mx-1">
+            {/* Petit indicateur de rôle pour débugger/confirmer */}
+            {!isAdmin && (isEventsReporter || isVideoReporter) && (
+              <div className="mb-2 px-4 py-2 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
+                <ShieldCheck size={14} className="text-primary-500" />
+                <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
+                  Accès Rapporteur Activé {isEventsReporter && '• Événements'} {isVideoReporter && '• Vidéo'}
+                </span>
+              </div>
+            )}
             <AdminLiveControls
               matchId={match.id}
               status={match.status}
@@ -506,6 +552,10 @@ export function MatchDetailPage() {
               homePlayers={homePlayers || []}
               awayPlayers={awayPlayers || []}
               seasonId={match.season_id}
+              isEventsReporter={isEventsReporter}
+              isVideoReporter={isVideoReporter}
+              eventsReporterId={match.events_reporter_id}
+              videoReporterId={match.video_reporter_id}
             />
           </div>
         )}
@@ -624,8 +674,16 @@ export function MatchDetailPage() {
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
       {/* Admin Controls en Direct */}
-      {isAdmin && isLive && (
+      {(isAdmin || isEventsReporter || isVideoReporter) && isLive && (
         <div className="mx-1 mb-6">
+          {!isAdmin && (isEventsReporter || isVideoReporter) && (
+            <div className="mb-2 px-4 py-2 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
+              <ShieldCheck size={14} className="text-primary-500" />
+              <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
+                Accès Rapporteur Activé {isEventsReporter && '• Événements'} {isVideoReporter && '• Vidéo'}
+              </span>
+            </div>
+          )}
           <AdminLiveControls
             matchId={match.id}
             status={match.status}
@@ -643,12 +701,16 @@ export function MatchDetailPage() {
             homePlayers={homePlayers || []}
             awayPlayers={awayPlayers || []}
             seasonId={match.season_id}
+            isEventsReporter={isEventsReporter}
+            isVideoReporter={isVideoReporter}
+            eventsReporterId={match.events_reporter_id}
+            videoReporterId={match.video_reporter_id}
           />
         </div>
       )}
 
-      {/* Alerte de but broadcast — masquée pour l'admin et pendant le direct vidéo */}
-      {activeTab !== 'live-video' && !isAdmin && (
+      {/* Alerte de but broadcast — masquée pour l'admin/reporters et pendant le direct vidéo */}
+      {activeTab !== 'live-video' && !(isAdmin || isEventsReporter) && (
         <GoalAlert
           matchId={id!}
           homeTeam={match.home_team}
@@ -1363,8 +1425,8 @@ export function MatchDetailPage() {
 
       </AnimatePresence>
 
-      {/* Animation de but — masquée pour l'admin et pendant le direct vidéo */}
-      {activeTab !== 'live-video' && !isAdmin && (
+      {/* Animation de but — masquée pour l'admin/reporters et pendant le direct vidéo */}
+      {activeTab !== 'live-video' && !(isAdmin || isEventsReporter) && (
         <GoalCelebration
           key={celebration.key}
           teamName={celebration.teamName}

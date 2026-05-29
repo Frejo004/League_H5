@@ -454,5 +454,20 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent }
+  const updateReporters = useMutation({
+    mutationFn: async ({ eventsReporterId, videoReporterId }: { eventsReporterId?: string | null; videoReporterId?: string | null }) => {
+      const updates: any = {}
+      if (eventsReporterId !== undefined) updates.events_reporter_id = eventsReporterId
+      if (videoReporterId !== undefined) updates.video_reporter_id = videoReporterId
+      
+      const { error } = await supabase.from('matches').update(updates).eq('id', matchId!)
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors de la mise à jour des rapporteurs:', error)
+        throw error
+      }
+    },
+    onSuccess: invalidate,
+  })
+
+  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters }
 }

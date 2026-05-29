@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Zap, Pencil, Check, X, Calendar } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Zap, Pencil, Check, X, Calendar, Search, User, ShieldCheck, Video } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { useMatches, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
+import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Match, MatchStatus } from '@/types/database'
@@ -218,7 +219,35 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const [homeScore, setHomeScore] = useState(String(match.home_score ?? ''))
   const [awayScore, setAwayScore] = useState(String(match.away_score ?? ''))
   const [status, setStatus] = useState<MatchStatus>(match.status)
+  const [eventsReporterId, setEventsReporterId] = useState<string | null>(match.events_reporter_id ?? null)
+  const [videoReporterId, setVideoReporterId] = useState<string | null>(match.video_reporter_id ?? null)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [selectingType, setSelectingType] = useState<'events' | 'video' | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Charger les joueurs des deux équipes pour la délégation
+  const { data: homePlayers } = usePlayersByTeam(match.home_team_id)
+  const { data: awayPlayers } = usePlayersByTeam(match.away_team_id)
+
+  const selectablePlayers = useMemo(() => {
+    return [
+      ...(homePlayers ?? []),
+      ...(awayPlayers ?? [])
+    ].filter(p => p.user_id) // Uniquement les joueurs avec un compte
+     .sort((a, b) => a.last_name.localeCompare(b.last_name))
+  }, [homePlayers, awayPlayers])
+
+  const filteredPlayers = useMemo(() => {
+    return searchQuery 
+      ? selectablePlayers.filter(p => 
+          `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : selectablePlayers
+  }, [selectablePlayers, searchQuery])
+
+  const currentReporter = selectingType === 'events' 
+    ? selectablePlayers.find(p => p.user_id === eventsReporterId)
+    : selectablePlayers.find(p => p.user_id === videoReporterId)
 
   const home = match.home_team as { name: string; color: string }
   const away = match.away_team as { name: string; color: string }
@@ -228,12 +257,15 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     setHomeScore(String(match.home_score ?? ''))
     setAwayScore(String(match.away_score ?? ''))
     setStatus(match.status)
+    setEventsReporterId(match.events_reporter_id ?? null)
+    setVideoReporterId(match.video_reporter_id ?? null)
     setShowCancelModal(false)
   }
 
   async function handleSave() {
-    // Si on passe en annulé et que ce n'était pas déjà le cas, on demande confirmation
-    if (status === 'cancelled' && match.status !== 'cancelled') {
+    // On propose le modal de confirmation dès que le statut est "Annulé"
+    // pour permettre à l'admin de choisir s'il veut supprimer les données ou non.
+    if (status === 'cancelled') {
       setShowCancelModal(true)
       return
     }
@@ -265,6 +297,8 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         away_score: null,
         scheduled_at: null,
         played_at: null,
+        events_reporter_id: null,
+        video_reporter_id: null,
       })
     } else {
       await updateMatch.mutateAsync({
@@ -274,6 +308,8 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         away_score: awayScore !== '' ? parseInt(awayScore) : null,
         status,
         played_at: status === 'completed' ? (match.played_at ?? new Date().toISOString()) : match.played_at,
+        events_reporter_id: eventsReporterId,
+        video_reporter_id: videoReporterId,
       })
     }
 
@@ -337,6 +373,20 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
           <span className="text-sm font-black text-text-primary uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
         </div>
 
+        {/* Delegation Badges */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2">
+          {match.events_reporter_id && (
+            <div className="w-5 h-5 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center text-primary-500" title="Rapporteur événements assigné">
+              <Zap size={10} />
+            </div>
+          )}
+          {match.video_reporter_id && (
+            <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-500" title="Rapporteur vidéo assigné">
+              <Calendar size={10} />
+            </div>
+          )}
+        </div>
+
         {/* Edit button */}
         <button
           onClick={() => setEditing(!editing)}
@@ -349,53 +399,6 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
       {/* Edit panel */}
       {editing && (
         <div className="px-5 pb-5 pt-2 space-y-4 bg-surface-raised/30 border-t border-surface-border shadow-inner relative overflow-hidden">
-          {/* Modal Annulation — Overlay plein écran pour une visibilité totale */}
-          {showCancelModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-              {/* Backdrop */}
-              <div 
-                className="absolute inset-0 bg-surface/80 backdrop-blur-md animate-in fade-in duration-300"
-                onClick={() => setShowCancelModal(false)}
-              />
-              
-              {/* Modal Content */}
-              <div className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300">
-                <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto mb-6 text-red-500">
-                  <X size={32} />
-                </div>
-                
-                <h3 className="text-2xl font-black text-text-primary uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  Annuler le match ?
-                </h3>
-                
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 text-center leading-relaxed">
-                  Voulez-vous conserver les statistiques (buts, cartons) ou tout supprimer définitivement ?
-                </p>
-                
-                <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={() => performUpdate(false)}
-                    className="w-full py-3.5 rounded-2xl bg-surface-raised border border-surface-border text-text-primary text-[11px] font-black uppercase tracking-widest hover:bg-surface-raised/80 transition-all active:scale-95"
-                  >
-                    Conserver les infos
-                  </button>
-                  <button 
-                    onClick={() => performUpdate(true)}
-                    className="w-full py-3.5 rounded-2xl bg-red-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-red-500 transition-all shadow-[0_15px_30px_-5px_rgba(220,38,38,0.4)] active:scale-95"
-                  >
-                    Tout supprimer
-                  </button>
-                  <button 
-                    onClick={() => setShowCancelModal(false)}
-                    className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
-                  >
-                    Retour à l'édition
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Date & heure</label>
@@ -424,6 +427,93 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
               </select>
             </div>
           </div>
+
+          {/* Délégation Section */}
+          <div className="pt-4 border-t border-surface-border/50">
+            <h4 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <ShieldCheck size={12} className="text-primary-500" />
+              Délégation des accès Live
+            </h4>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Bouton Rapporteur Événements */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Rapporteur Événements</label>
+                <button
+                  type="button"
+                  onClick={() => setSelectingType('events')}
+                  className={clsx(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left",
+                    eventsReporterId 
+                      ? "bg-primary-500/5 border-primary-500/30 text-text-primary" 
+                      : "bg-surface/50 border-surface-border text-text-muted hover:border-slate-500"
+                  )}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <div className={clsx("p-1.5 rounded-lg", eventsReporterId ? "bg-primary-500/20 text-primary-500" : "bg-slate-500/10")}>
+                      <Zap size={14} />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-[11px] font-black uppercase tracking-wider truncate">
+                        {selectablePlayers.find(p => p.user_id === eventsReporterId) 
+                          ? `${selectablePlayers.find(p => p.user_id === eventsReporterId)?.first_name} ${selectablePlayers.find(p => p.user_id === eventsReporterId)?.last_name}`
+                          : "Non assigné"}
+                      </p>
+                      {eventsReporterId && (
+                        <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest">Cliquez pour modifier</p>
+                      )}
+                    </div>
+                  </div>
+                  {eventsReporterId && (
+                    <X 
+                      size={14} 
+                      className="text-text-muted hover:text-red-500 transition-colors" 
+                      onClick={(e) => { e.stopPropagation(); setEventsReporterId(null); }}
+                    />
+                  )}
+                </button>
+              </div>
+
+              {/* Bouton Rapporteur Vidéo */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Rapporteur Vidéo</label>
+                <button
+                  type="button"
+                  onClick={() => setSelectingType('video')}
+                  className={clsx(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left",
+                    videoReporterId 
+                      ? "bg-blue-500/5 border-blue-500/30 text-text-primary" 
+                      : "bg-surface/50 border-surface-border text-text-muted hover:border-slate-500"
+                  )}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <div className={clsx("p-1.5 rounded-lg", videoReporterId ? "bg-blue-500/20 text-blue-500" : "bg-slate-500/10")}>
+                      <Video size={14} />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-[11px] font-black uppercase tracking-wider truncate">
+                        {selectablePlayers.find(p => p.user_id === videoReporterId) 
+                          ? `${selectablePlayers.find(p => p.user_id === videoReporterId)?.first_name} ${selectablePlayers.find(p => p.user_id === videoReporterId)?.last_name}`
+                          : "Non assigné"}
+                      </p>
+                      {videoReporterId && (
+                        <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest">Cliquez pour modifier</p>
+                      )}
+                    </div>
+                  </div>
+                  {videoReporterId && (
+                    <X 
+                      size={14} 
+                      className="text-text-muted hover:text-red-500 transition-colors" 
+                      onClick={(e) => { e.stopPropagation(); setVideoReporterId(null); }}
+                    />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={updateMatch.isPending}
               className="btn-primary text-xs font-bold uppercase tracking-wider py-2 px-4 flex items-center gap-1.5">
@@ -433,6 +523,216 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
             <button onClick={() => { setEditing(false); resetFormToMatch() }} className="btn-secondary py-2 px-3 bg-surface-raised border border-surface-border hover:bg-surface-raised/80">
               <X size={14} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modals — Déplacés à la racine du composant pour éviter les problèmes de clipping et z-index */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+            onClick={() => setShowCancelModal(false)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-sm bg-surface-card border border-surface-border rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in duration-300">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto mb-6 text-red-500">
+              <X size={32} />
+            </div>
+            
+            <h3 className="text-2xl font-black text-text-primary uppercase tracking-widest mb-3 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              Annuler le match ?
+            </h3>
+            
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 text-center leading-relaxed">
+              Voulez-vous conserver les statistiques (buts, cartons) ou tout supprimer définitivement ?
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => performUpdate(false)}
+                className="w-full py-3.5 rounded-2xl bg-surface-raised border border-surface-border text-text-primary text-[11px] font-black uppercase tracking-widest hover:bg-surface-raised/80 transition-all active:scale-95"
+              >
+                Conserver les infos
+              </button>
+              <button 
+                onClick={() => performUpdate(true)}
+                className="w-full py-3.5 rounded-2xl bg-red-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-red-500 transition-all shadow-[0_15px_30px_-5px_rgba(220,38,38,0.4)] active:scale-95"
+              >
+                Tout supprimer
+              </button>
+              <button 
+                onClick={() => setShowCancelModal(false)}
+                className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Retour à l'édition
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectingType && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+            onClick={() => setSelectingType(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-md bg-surface border border-surface-border rounded-[2.5rem] flex flex-col max-h-[80vh] shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-300 overflow-hidden">
+            {/* Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-surface-border/30 bg-surface-raised/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={clsx(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm",
+                    selectingType === 'events' ? "bg-primary-500/10 text-primary-500" : "bg-blue-500/10 text-blue-500"
+                  )}>
+                    {selectingType === 'events' ? <Zap size={22} /> : <Video size={22} />}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-text-primary uppercase tracking-tight leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      Choisir un rapporteur
+                    </h3>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1 opacity-70">
+                      {selectingType === 'events' ? "Événements du match" : "Direct Vidéo"}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectingType(null)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-raised text-text-muted transition-all active:scale-90"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary-500 transition-colors pointer-events-none">
+                  <Search size={18} />
+                </div>
+                <input 
+                  autoFocus
+                  type="text"
+                  placeholder="Rechercher un joueur..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-surface-raised/50 border border-surface-border rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-text-primary focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 outline-none transition-all placeholder:text-text-muted/40"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-surface">
+              <div className="grid grid-cols-1 gap-2">
+                {/* Option: Aucun */}
+                <button
+                  onClick={() => {
+                    if (selectingType === 'events') setEventsReporterId(null);
+                    else setVideoReporterId(null);
+                    setSelectingType(null);
+                  }}
+                  className={clsx(
+                    "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group",
+                    ((selectingType === 'events' && !eventsReporterId) || (selectingType === 'video' && !videoReporterId))
+                      ? "bg-primary-500/5 border-primary-500/30 text-text-primary"
+                      : "bg-surface-raised/30 border-transparent text-text-muted hover:bg-surface-raised/60 hover:border-surface-border"
+                  )}
+                >
+                  <div className={clsx(
+                    "w-11 h-11 rounded-full flex items-center justify-center transition-all",
+                    ((selectingType === 'events' && !eventsReporterId) || (selectingType === 'video' && !videoReporterId))
+                      ? "bg-primary-500/20 text-primary-500"
+                      : "bg-surface-muted/50 text-text-muted/40"
+                  )}>
+                    <User size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[11px] font-black uppercase tracking-widest leading-none">Aucun</p>
+                    <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1 opacity-60">Admin uniquement</p>
+                  </div>
+                  {((selectingType === 'events' && !eventsReporterId) || (selectingType === 'video' && !videoReporterId)) && (
+                    <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                      <Check size={14} strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+
+                <div className="h-px bg-surface-border/30 my-2 mx-4" />
+
+                {/* Players */}
+                {filteredPlayers.length > 0 ? (
+                  filteredPlayers.map(player => {
+                    const isSelected = selectingType === 'events' 
+                      ? eventsReporterId === player.user_id 
+                      : videoReporterId === player.user_id;
+                    
+                    return (
+                      <button
+                        key={player.id}
+                        onClick={() => {
+                          if (selectingType === 'events') setEventsReporterId(player.user_id!);
+                          else setVideoReporterId(player.user_id!);
+                          setSelectingType(null);
+                          setSearchQuery('');
+                        }}
+                        className={clsx(
+                          "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group",
+                          isSelected
+                            ? "bg-primary-500/5 border-primary-500/30 text-text-primary shadow-sm"
+                            : "bg-transparent border-transparent text-text-muted hover:bg-surface-raised/50"
+                        )}
+                      >
+                        <div className="relative shrink-0">
+                          <div className={clsx(
+                            "w-11 h-11 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all",
+                            isSelected ? "border-primary-500" : "border-surface-border group-hover:border-surface-border/80"
+                          )}>
+                            {player.avatar_url ? (
+                              <img src={player.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-surface-muted flex items-center justify-center">
+                                <span className="text-[13px] font-black uppercase tracking-tighter">{player.first_name[0]}{player.last_name[0]}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div 
+                            className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-[3px] border-surface"
+                            style={{ backgroundColor: player.team_id === match.home_team_id ? match.home_team.color : match.away_team.color }}
+                          />
+                        </div>
+                        <div className="flex-1 truncate">
+                          <p className={clsx(
+                            "text-[12px] font-black uppercase tracking-tight leading-none truncate",
+                            isSelected ? "text-primary-500" : "text-text-primary"
+                          )}>
+                            {player.first_name} {player.last_name}
+                          </p>
+                          <p className="text-[9px] font-bold text-text-muted uppercase tracking-[0.15em] mt-1.5 opacity-70">
+                            {player.team_id === match.home_team_id ? match.home_team.name : match.away_team.name}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                            <Check size={14} strokeWidth={3} />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="py-16 text-center opacity-40">
+                    <Search size={40} className="mx-auto mb-4" strokeWidth={1.5} />
+                    <p className="text-[11px] font-black text-text-muted uppercase tracking-widest">Aucun joueur trouvé</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

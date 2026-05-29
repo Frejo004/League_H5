@@ -723,12 +723,13 @@ export default function Header() {
         style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <nav
-          className="pointer-events-auto mx-auto max-w-sm rounded-2xl glass-morphism shadow-2xl flex items-stretch overflow-hidden border border-white/10"
+          className="pointer-events-auto mx-auto max-w-sm rounded-2xl shadow-2xl flex items-stretch overflow-hidden border border-[var(--header-border)]"
           style={{
-            height: 56,
-            background: 'rgba(13, 17, 23, 0.9)',
+            height: 60,
+            background: 'var(--header-bg)',
             backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)'
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
           }}
           aria-label="Navigation bas"
         >
@@ -759,13 +760,13 @@ export default function Header() {
                     "relative z-10 transition-transform duration-300 ease-out",
                     isActive ? "-translate-y-1" : "group-hover:-translate-y-0.5"
                   )}>
-                    <Icon size={isActive ? 22 : 20} strokeWidth={isActive ? 2.5 : 1.8} />
+                    <Icon size={isActive ? 20 : 18} strokeWidth={isActive ? 2.5 : 2} />
                   </div>
 
                   {/* Label dot animation */}
                   <span
                     className={clsx(
-                      "relative z-10 text-[9px] font-bold uppercase tracking-widest transition-all duration-300",
+                      "relative z-10 text-[8px] font-bold uppercase tracking-widest transition-all duration-300",
                       isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 absolute bottom-2"
                     )}
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
@@ -798,11 +799,11 @@ export default function Header() {
                     "relative z-10 transition-transform duration-300 ease-out",
                     isActive ? "-translate-y-1" : "group-hover:-translate-y-0.5"
                   )}>
-                    <MessageCircle size={isActive ? 22 : 20} strokeWidth={isActive ? 2.5 : 1.8} />
+                    <MessageCircle size={isActive ? 20 : 18} strokeWidth={isActive ? 2.5 : 2} />
                     {totalChatUnread > 0 && (
                       <span
-                        className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full
-                                   flex items-center justify-center text-[9px] font-black shadow-lg"
+                        className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-1 rounded-full
+                                   flex items-center justify-center text-[8px] font-black shadow-lg"
                         style={{ backgroundColor: '#ef4444', color: '#fff' }}
                       >
                         {totalChatUnread > 9 ? '9+' : totalChatUnread}
@@ -812,12 +813,12 @@ export default function Header() {
 
                   <span
                     className={clsx(
-                      "relative z-10 text-[9px] font-bold uppercase tracking-widest transition-all duration-300",
+                      "relative z-10 text-[8px] font-bold uppercase tracking-widest transition-all duration-300",
                       isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 absolute bottom-2"
                     )}
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                   >
-                    Chat
+                    Messages
                   </span>
                 </>
               )}

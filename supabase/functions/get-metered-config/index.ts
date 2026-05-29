@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,58 @@ serve(async (req) => {
     const { matchId } = await req.json()
     if (!matchId) throw new Error('matchId is required')
 
+    // 1. Authentification de l'utilisateur via le token Supabase
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('No authorization header')
+
     const denoEnv = (globalThis as any).Deno?.env
+    const supabaseUrl = denoEnv?.get('SUPABASE_URL')
+    const supabaseServiceRoleKey = denoEnv?.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error('Supabase environment variables not configured')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+
+    if (userError || !user) throw new Error('Utilisateur non authentifié')
+
+    // 2. Vérifier les permissions : Admin ou video_reporter_id délégué
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const { data: match } = await supabase
+      .from('matches')
+      .select('video_reporter_id, finished_at')
+      .eq('id', matchId)
+      .single()
+
+    const isAdmin = profile?.role === 'admin'
+    
+    // Vérifier si le reporter vidéo est autorisé et si on est dans la fenêtre de 10 min après la fin
+    let isVideoReporter = false
+    if (match?.video_reporter_id === user.id) {
+      const finishedAt = match.finished_at ? new Date(match.finished_at).getTime() : null
+      const tenMinutesInMs = 10 * 60 * 1000
+      const isWithinTenMinutes = !finishedAt || (Date.now() - finishedAt < tenMinutesInMs)
+      
+      if (isWithinTenMinutes) {
+        isVideoReporter = true
+      }
+    }
+
+    if (!isAdmin && !isVideoReporter) {
+      return new Response(
+        JSON.stringify({ error: 'Permission refusée pour diffuser ce match' }),
+        { status: 403, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const secretKey = denoEnv?.get('METERED_SECRET_KEY')
     // Nettoyer le domaine : enlever https:// ou http:// s'il est présent dans le secret
     const rawDomain = denoEnv?.get('METERED_DOMAIN') ?? 'league-h5.metered.live'

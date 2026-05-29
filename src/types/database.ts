@@ -158,6 +158,9 @@ export interface Database {
           paused_at: string | null
           total_paused_seconds: number
           last_pause_reason: string | null
+          events_reporter_id: string | null
+          video_reporter_id: string | null
+          finished_at: string | null
           created_at: string
           updated_at: string
         }
@@ -181,6 +184,9 @@ export interface Database {
           is_paused?: boolean
           paused_at?: string | null
           total_paused_seconds?: number
+          events_reporter_id?: string | null
+          video_reporter_id?: string | null
+          finished_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -204,6 +210,9 @@ export interface Database {
           is_paused?: boolean
           paused_at?: string | null
           total_paused_seconds?: number
+          events_reporter_id?: string | null
+          video_reporter_id?: string | null
+          finished_at?: string | null
           updated_at?: string
         }
         Relationships: []
