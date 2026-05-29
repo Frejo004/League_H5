@@ -332,37 +332,21 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startLive = useMutation({
     mutationFn: async () => {
-      // Réinitialiser les états live pour éviter des valeurs résiduelles de tests précédents
-      await supabase.from('matches').update({
-        is_paused: false,
-        paused_at: null,
-        total_paused_seconds: 0,
-        halftime_at: null
-      }).eq('id', matchId!)
-
       const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! });
       if (error) {
         console.error('[useAdminMatchLive] Erreur au démarrage du match en direct:', error);
         throw error;
       }
-      if (error) throw error
     },
     onSuccess: invalidate,
   })
 
   const signalHalftime = useMutation({
     mutationFn: async () => {
-      const now = new Date().toISOString()
-      await supabase.from('matches').update({ halftime_at: now }).eq('id', matchId!)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('match_events').insert({
-          match_id: matchId!,
-          type: 'halftime',
-          minute: HALF_DURATION,
-          period: 1,
-          created_by: user.id
-        })
+      const { error } = await supabase.rpc('match_halftime', { p_match_id: matchId! });
+      if (error) {
+        console.error('[useAdminMatchLive] Erreur lors du signalement de la mi-temps:', error);
+        throw error;
       }
     },
     onSuccess: invalidate,
@@ -370,14 +354,7 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('matches').update({
-        live_started_at: new Date().toISOString(),
-        live_period: 2,
-        halftime_at: null,
-        is_paused: false,
-        paused_at: null,
-        total_paused_seconds: 0
-      }).eq('id', matchId!);
+      const { error } = await supabase.rpc('start_second_half' as any, { p_match_id: matchId! });
       if (error) {
         console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error);
         throw error;

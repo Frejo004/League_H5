@@ -205,3 +205,164 @@ BEGIN
     );
 END;
 $$;
+
+-- 5. Mettre à jour add_match_event_v2
+CREATE OR REPLACE FUNCTION public.add_match_event_v2(
+    p_match_id UUID,
+    p_type TEXT,
+    p_minute INTEGER,
+    p_period INTEGER,
+    p_team_id UUID DEFAULT NULL,
+    p_player_id UUID DEFAULT NULL,
+    p_player2_id UUID DEFAULT NULL,
+    p_description TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_event_id UUID;
+    v_user_id UUID := auth.uid();
+BEGIN
+    -- Vérification admin ou rapporteur d'événements
+    -- Note: On n'autorise pas le vidéaste ici car il ne doit pas enregistrer les événements
+    IF NOT EXISTS (
+        SELECT 1 FROM profiles WHERE id = v_user_id AND role = 'admin'
+        OR
+        EXISTS (
+            SELECT 1 FROM matches 
+            WHERE id = p_match_id 
+            AND events_reporter_id = v_user_id
+            AND (finished_at IS NULL OR finished_at > now() - interval '10 minutes')
+        )
+    ) THEN
+        RAISE EXCEPTION 'Accès refusé: rôle admin ou rapporteur d''événements requis';
+    END IF;
+
+    -- 1. Insérer l'événement
+    INSERT INTO public.match_events (
+        match_id, type, minute, period, team_id, player_id, player2_id, description, created_by
+    ) VALUES (
+        p_match_id, p_type, p_minute, p_period, p_team_id, p_player_id, p_player2_id, p_description, v_user_id
+    ) RETURNING id INTO v_event_id;
+
+    -- 2. Logique spécifique aux buts
+    IF p_type IN ('goal', 'own_goal') THEN
+        -- Ajouter dans la table goals
+        INSERT INTO public.goals (match_id, team_id, player_id, minute, is_own_goal, match_event_id)
+        VALUES (p_match_id, p_team_id, p_player_id, p_minute, (p_type = 'own_goal'), v_event_id);
+
+        -- Ajouter le passeur si présent
+        IF p_player2_id IS NOT NULL AND p_type = 'goal' THEN
+            INSERT INTO public.assists (match_id, goal_id, player_id)
+            SELECT p_match_id, g.id, p_player2_id
+            FROM public.goals g WHERE g.match_event_id = v_event_id;
+        END IF;
+
+        -- 3. Mise à jour atomique du score dans matches
+        IF p_type = 'goal' THEN
+            -- But classique pour l'équipe p_team_id
+            UPDATE public.matches 
+            SET home_score = CASE WHEN home_team_id = p_team_id THEN COALESCE(home_score, 0) + 1 ELSE home_score END,
+                away_score = CASE WHEN away_team_id = p_team_id THEN COALESCE(away_score, 0) + 1 ELSE away_score END
+            WHERE id = p_match_id;
+        ELSIF p_type = 'own_goal' THEN
+            -- CSC : l'autre équipe marque
+            UPDATE public.matches 
+            SET home_score = CASE WHEN home_team_id != p_team_id THEN COALESCE(home_score, 0) + 1 ELSE home_score END,
+                away_score = CASE WHEN away_team_id != p_team_id THEN COALESCE(away_score, 0) + 1 ELSE away_score END
+            WHERE id = p_match_id;
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object('success', true, 'event_id', v_event_id);
+END;
+$$;
+
+-- 6. Mettre à jour delete_match_event_v2
+CREATE OR REPLACE FUNCTION public.delete_match_event_v2(p_event_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_match_id UUID;
+    v_type TEXT;
+    v_team_id UUID;
+    v_user_id UUID := auth.uid();
+BEGIN
+    SELECT match_id, type, team_id INTO v_match_id, v_type, v_team_id
+    FROM public.match_events WHERE id = p_event_id;
+
+    -- Vérification admin ou rapporteur d'événements
+    IF NOT EXISTS (
+        SELECT 1 FROM profiles WHERE id = v_user_id AND role = 'admin'
+        OR
+        EXISTS (
+            SELECT 1 FROM matches 
+            WHERE id = v_match_id 
+            AND events_reporter_id = v_user_id
+            AND (finished_at IS NULL OR finished_at > now() - interval '10 minutes')
+        )
+    ) THEN
+        RAISE EXCEPTION 'Accès refusé: rôle admin ou rapporteur d''événements requis';
+    END IF;
+
+    -- Si c'est un but, on décrémente le score AVANT de supprimer (cascade gérera goals/assists)
+    IF v_type IN ('goal', 'own_goal') THEN
+        IF v_type = 'goal' THEN
+            UPDATE public.matches 
+            SET home_score = CASE WHEN home_team_id = v_team_id THEN GREATEST(0, COALESCE(home_score, 0) - 1) ELSE home_score END,
+                away_score = CASE WHEN away_team_id = v_team_id THEN GREATEST(0, COALESCE(away_score, 0) - 1) ELSE away_score END
+            WHERE id = v_match_id;
+        ELSE -- own_goal
+            UPDATE public.matches 
+            SET home_score = CASE WHEN home_team_id != v_team_id THEN GREATEST(0, COALESCE(home_score, 0) - 1) ELSE home_score END,
+                away_score = CASE WHEN away_team_id != v_team_id THEN GREATEST(0, COALESCE(away_score, 0) - 1) ELSE away_score END
+            WHERE id = v_match_id;
+        END IF;
+    END IF;
+
+    DELETE FROM public.match_events WHERE id = p_event_id;
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+-- 7. Créer start_second_half
+CREATE OR REPLACE FUNCTION public.start_second_half(p_match_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
+    OR
+    EXISTS (
+      SELECT 1 FROM matches 
+      WHERE id = p_match_id 
+      AND (events_reporter_id = auth.uid() OR video_reporter_id = auth.uid())
+      AND (finished_at IS NULL OR finished_at > now() - interval '10 minutes')
+    )
+  ) THEN
+    RAISE EXCEPTION 'Permission refusée';
+  END IF;
+
+  UPDATE matches SET
+    live_started_at      = now(),
+    live_period          = 2,
+    halftime_at          = NULL,
+    is_paused            = false,
+    paused_at            = NULL,
+    total_paused_seconds = 0
+  WHERE id = p_match_id AND status = 'live';
+
+  INSERT INTO match_events (match_id, type, minute, period, created_by)
+  VALUES (p_match_id, 'resume', 20, 2, auth.uid());
+END;
+$$;
