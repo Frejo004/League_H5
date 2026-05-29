@@ -576,8 +576,8 @@ function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
 }
 
 // ── Raccourcis admin ──────────────────────────────────────────────────────────
-function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingSpectatorsCount }: {
-  completedCount: number; teamsCount: number; upcomingCount: number; pendingSpectatorsCount: number
+function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingSpectatorsCount, onTestNotif }: {
+  completedCount: number; teamsCount: number; upcomingCount: number; pendingSpectatorsCount: number; onTestNotif: () => void
 }) {
   const actions = [
     { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
@@ -587,9 +587,17 @@ function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingS
   ]
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Settings size={13} className="text-amber-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Administration</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Settings size={13} className="text-amber-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Administration</span>
+        </div>
+        <button
+          onClick={onTestNotif}
+          className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-amber-400/10 text-amber-400 hover:bg-amber-400/20 transition-colors border border-amber-400/20"
+        >
+          Tester Notif
+        </button>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {actions.map(({ label, sub, icon: Icon, to, color, alert }) => (
@@ -616,6 +624,8 @@ function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingS
 }
 
 // ── Page principale ───────────────────────────────────────────────────────────
+import { useNotificationSW } from '@/hooks/useNotificationSW'
+
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
@@ -624,6 +634,15 @@ export function DashboardPage() {
   const { data: standings } = useStandings(season?.id)
   const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
   const { isCaptain, isAdmin, profile, role } = useAuth()
+  const { sendNotification } = useNotificationSW(profile?.id)
+
+  const handleTestNotification = () => {
+    sendNotification(
+      'Test League H5 🏆',
+      'Ceci est une notification de test pour vérifier que tout fonctionne !',
+      { url: '/dashboard', force: true }
+    )
+  }
   const { data: spectators } = useSpectators(isAdmin ? undefined : season?.id)
 
   const pendingSpectatorsCount = useMemo(() => {
@@ -779,6 +798,7 @@ export function DashboardPage() {
           teamsCount={teams?.length ?? 0}
           upcomingCount={upcomingMatches.length}
           pendingSpectatorsCount={pendingSpectatorsCount}
+          onTestNotif={handleTestNotification}
         />
       )}
 

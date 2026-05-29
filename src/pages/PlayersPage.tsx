@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, Search, ChevronDown, Crown, GitCompare } from 'lucide-react'
+import { User, Search, ChevronDown, Crown, GitCompare, ChevronRight, ChevronLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
@@ -27,7 +27,7 @@ const POSITION_COLORS: Record<PlayerPosition, string> = {
 }
 
 type SortKey = 'name' | 'jersey' | 'position'
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CompareModal — comparaison côte à côte de 2 joueurs
@@ -240,9 +240,9 @@ export function PlayersPage() {
       return `${a.last_name}${a.first_name}`.localeCompare(`${b.last_name}${b.first_name}`)
     })
 
-  const paginated = filtered.slice(0, page * PAGE_SIZE)
-  const hasMore = paginated.length < filtered.length
-  const hasFilters = !!search || !!filterTeam || !!filterPos
+    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+    const hasFilters = !!search || !!filterTeam || !!filterPos
 
   return (
     <div className="space-y-3 pb-20">
@@ -518,27 +518,77 @@ export function PlayersPage() {
             })}
           </div>
 
-          {/* Bouton charger plus */}
-          {hasMore && (
-            <div className="flex items-center justify-center py-4 border-t border-surface-border/30 bg-surface-muted/5">
-              <button
-                onClick={() => setPage(p => p + 1)}
-                className="btn-secondary text-xs flex items-center gap-2 px-6 py-2 rounded-xl"
-              >
-                Charger plus
-                <span className="text-text-muted opacity-60">
-                  ({filtered.length - paginated.length} restants)
-                </span>
-              </button>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-surface-border/30 bg-surface-muted/5">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-text-muted">
+                  Page <span className="text-text-primary font-bold">{page}</span> sur <span className="text-text-primary font-bold">{totalPages}</span>
+                </p>
+                <span className="text-text-muted/30 text-xs">·</span>
+                <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-60">
+                  {filtered.length} joueurs total
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={clsx(
+                    "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                    page === 1 
+                      ? "text-text-muted/40 cursor-not-allowed bg-surface-muted/10 border border-surface-border/20" 
+                      : "text-text-primary hover:bg-surface-muted/50 border border-surface-border active:scale-95"
+                  )}
+                >
+                  <ChevronLeft size={14} />
+                  Précédent
+                </button>
+
+                <div className="flex items-center gap-1 mx-1">
+                  {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                    // Logique simple pour afficher les pages autour de la page courante
+                    let pageNum = i + 1;
+                    if (totalPages > 5) {
+                      if (page > 3) pageNum = page - 2 + i;
+                      if (page > totalPages - 2) pageNum = totalPages - 4 + i;
+                    }
+                    if (pageNum > totalPages) return null;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={clsx(
+                          "w-8 h-8 rounded-lg text-xs font-black transition-all",
+                          page === pageNum 
+                            ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" 
+                            : "text-text-muted hover:text-text-primary hover:bg-surface-muted/50"
+                        )}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className={clsx(
+                    "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                    page === totalPages 
+                      ? "text-text-muted/40 cursor-not-allowed bg-surface-muted/10 border border-surface-border/20" 
+                      : "text-text-primary hover:bg-surface-muted/50 border border-surface-border active:scale-95"
+                  )}
+                >
+                  Suivant
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
           )}
-
-          {/* Compteur total */}
-          <div className="px-4 py-2 border-t border-surface-border/20 text-center bg-surface-muted/5">
-            <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-40">
-              {paginated.length} / {filtered.length} JOUEURS
-            </p>
-          </div>
         </div>
       )}
     </div>

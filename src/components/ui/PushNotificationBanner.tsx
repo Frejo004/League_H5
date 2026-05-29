@@ -11,9 +11,8 @@ const LS_KEY = 'lh5_push_asked'
 
 export function PushNotificationBanner() {
   const { user } = useAuth()
-  const { permission, isSupported, requestPermission } = useNotificationSW()
+  const { permission, isSupported, requestPermission, isSubscribing } = useNotificationSW(user?.id)
   const [show, setShow] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
@@ -31,9 +30,7 @@ export function PushNotificationBanner() {
   }
 
   const handleSubscribe = async () => {
-    setLoading(true)
     const granted = await requestPermission()
-    setLoading(false)
     if (granted) {
       setSuccess(true)
       setTimeout(dismiss, 1500)
@@ -88,10 +85,10 @@ export function PushNotificationBanner() {
           <div className="flex gap-2 mt-3">
             <button
               onClick={handleSubscribe}
-              disabled={loading}
+              disabled={isSubscribing}
               className="flex-1 py-2 rounded-xl text-sm font-bold text-white bg-primary-600 hover:bg-primary-500 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Activation…' : 'Activer'}
+              {isSubscribing ? 'Activation…' : 'Activer'}
             </button>
             <button
               onClick={dismiss}

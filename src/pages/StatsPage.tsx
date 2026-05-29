@@ -85,8 +85,8 @@ export function StatsPage() {
                     <Icon size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{value}</p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">{label}</p>
+                <p className="text-2xl font-black text-text-primary tracking-tight leading-none">{value}</p>
+                <p className="text-xs text-text-muted mt-1 font-medium">{label}</p>
               </div>
             ))}
           </div>
@@ -100,8 +100,8 @@ export function StatsPage() {
                     <Shield size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{discipline.totalYellow}</p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">Cartons jaunes</p>
+                <p className="text-2xl font-black text-text-primary tracking-tight leading-none">{discipline.totalYellow}</p>
+                <p className="text-xs text-text-muted mt-1 font-medium">Cartons jaunes</p>
               </div>
               <div className="stat-card animate-fade-in-up bg-linear-to-br from-red-500/15 to-red-600/5 border border-red-500/20">
                 <div className="flex items-start justify-between mb-3">
@@ -109,8 +109,8 @@ export function StatsPage() {
                     <Shield size={17} />
                   </div>
                 </div>
-                <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{discipline.totalRed}</p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">Cartons rouges</p>
+                <p className="text-2xl font-black text-text-primary tracking-tight leading-none">{discipline.totalRed}</p>
+                <p className="text-xs text-text-muted mt-1 font-medium">Cartons rouges</p>
               </div>
             </div>
           )}
@@ -126,13 +126,13 @@ export function StatsPage() {
 
               {topScorers.length === 0 ? (
                 <div className="empty-state py-6">
-                  <p className="text-slate-500 text-sm">Aucun but enregistré.</p>
+                  <p className="text-text-muted text-sm">Aucun but enregistré.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {topScorers.map((s, i) => (
                     <div key={s.player_id} className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
+                      <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">{i + 1}</span>
                       <PlayerAvatar
                         firstName={s.first_name}
                         lastName={s.last_name}
@@ -141,10 +141,10 @@ export function StatsPage() {
                         size={32}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
-                          <span className="text-xs text-slate-500 truncate">{s.team_name}</span>
+                          <span className="text-xs text-text-muted truncate">{s.team_name}</span>
                         </div>
                       </div>
                       {/* Bar */}
@@ -155,7 +155,7 @@ export function StatsPage() {
                             style={{ width: `${(s.goals / (topScorers[0]?.goals || 1)) * 100}%` }}
                           />
                         </div>
-                        <span className="text-slate-800 dark:text-white font-black text-sm w-4 text-right">{s.goals}</span>
+                        <span className="text-text-primary font-black text-sm w-4 text-right">{s.goals}</span>
                       </div>
                     </div>
                   ))}
@@ -172,13 +172,13 @@ export function StatsPage() {
 
               {topAssisters.length === 0 ? (
                 <div className="empty-state py-6">
-                  <p className="text-slate-500 text-sm">Aucune passe décisive enregistrée.</p>
+                  <p className="text-text-muted text-sm">Aucune passe décisive enregistrée.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {topAssisters.map((s, i) => (
                     <div key={s.player_id} className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
+                      <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">{i + 1}</span>
                       <PlayerAvatar
                         firstName={s.first_name}
                         lastName={s.last_name}
@@ -187,10 +187,10 @@ export function StatsPage() {
                         size={32}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
-                          <span className="text-xs text-slate-500 truncate">{s.team_name}</span>
+                          <span className="text-xs text-text-muted truncate">{s.team_name}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -200,7 +200,7 @@ export function StatsPage() {
                             style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }}
                           />
                         </div>
-                        <span className="text-slate-800 dark:text-white font-black text-sm w-4 text-right">{s.assists}</span>
+                        <span className="text-text-primary font-black text-sm w-4 text-right">{s.assists}</span>
                       </div>
                     </div>
                   ))}
@@ -217,13 +217,13 @@ export function StatsPage() {
 
               {mvpLoading ? (
                 <div className="empty-state py-6">
-                  <p className="text-slate-500 text-sm">Chargement…</p>
+                  <p className="text-text-muted text-sm">Chargement…</p>
                 </div>
               ) : !mvpRanking?.length ? (
                 <div className="empty-state py-6">
                   <div className="empty-state-icon"><Star size={18} /></div>
-                  <p className="text-slate-400 font-medium">Aucun homme du match</p>
-                  <p className="text-slate-600 text-xs mt-1">
+                  <p className="text-text-muted font-medium">Aucun homme du match</p>
+                  <p className="text-text-muted/60 text-xs mt-1">
                     Votez sur les pages de matchs terminés.
                   </p>
                 </div>
@@ -231,7 +231,7 @@ export function StatsPage() {
                 <div className="space-y-2">
                   {mvpRanking.slice(0, 5).map((m, i) => (
                     <div key={m.player_id} className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">
+                      <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">
                         {i === 0 ? '🏆' : i + 1}
                       </span>
                       <PlayerAvatar
@@ -242,10 +242,10 @@ export function StatsPage() {
                         size={32}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{m.first_name} {m.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate">{m.first_name} {m.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.team_color }} />
-                          <span className="text-xs text-slate-500 truncate">{m.team_name}</span>
+                          <span className="text-xs text-text-muted truncate">{m.team_name}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -257,7 +257,7 @@ export function StatsPage() {
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-amber-400 font-black text-sm block leading-none">{m.mvp_titles} MVP</span>
-                          <span className="text-[9px] text-slate-500 font-bold block mt-0.5">{m.votes} vote{m.votes > 1 ? 's' : ''}</span>
+                          <span className="text-[9px] text-text-muted font-bold block mt-0.5">{m.votes} vote{m.votes > 1 ? 's' : ''}</span>
                         </div>
                       </div>
                     </div>
@@ -275,7 +275,7 @@ export function StatsPage() {
 
               {!standings?.length ? (
                 <div className="empty-state py-6">
-                  <p className="text-slate-500 text-sm">Aucune donnée disponible.</p>
+                  <p className="text-text-muted text-sm">Aucune donnée disponible.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -285,10 +285,10 @@ export function StatsPage() {
                         <Target size={14} className="text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Meilleure attaque</p>
+                        <p className="text-xs text-text-muted font-semibold uppercase tracking-wider">Meilleure attaque</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: bestAttack.team_color }} />
-                          <p className="text-slate-800 dark:text-white font-bold text-sm truncate">{bestAttack.team_name}</p>
+                          <p className="text-text-primary font-bold text-sm truncate">{bestAttack.team_name}</p>
                         </div>
                       </div>
                       <span className="text-orange-400 font-black text-xl shrink-0">{bestAttack.goals_for}</span>
@@ -301,10 +301,10 @@ export function StatsPage() {
                         <Shield size={14} className="text-blue-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Meilleure défense</p>
+                        <p className="text-xs text-text-muted font-semibold uppercase tracking-wider">Meilleure défense</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: bestDefense.team_color }} />
-                          <p className="text-slate-800 dark:text-white font-bold text-sm truncate">{bestDefense.team_name}</p>
+                          <p className="text-text-primary font-bold text-sm truncate">{bestDefense.team_name}</p>
                         </div>
                       </div>
                       <span className="text-blue-400 font-black text-xl shrink-0">{bestDefense.goals_against}</span>
@@ -313,13 +313,13 @@ export function StatsPage() {
 
                   {/* Goals per team bar chart */}
                   <div className="space-y-2 pt-1">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Buts marqués par équipe</p>
+                    <p className="text-xs text-text-muted font-semibold uppercase tracking-wider">Buts marqués par équipe</p>
                     {[...standings]
                       .sort((a, b) => b.goals_for - a.goals_for)
                       .map(s => (
                         <div key={s.team_id} className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
-                          <span className="text-xs text-slate-400 w-24 truncate shrink-0">{s.team_name}</span>
+                          <span className="text-xs text-text-muted w-24 truncate shrink-0">{s.team_name}</span>
                           <div className="flex-1 h-1.5 bg-surface-border rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-700"
@@ -329,7 +329,7 @@ export function StatsPage() {
                               }}
                             />
                           </div>
-                          <span className="text-xs text-slate-800 dark:text-white font-bold w-4 text-right shrink-0">{s.goals_for}</span>
+                          <span className="text-xs text-text-primary font-bold w-4 text-right shrink-0">{s.goals_for}</span>
                         </div>
                       ))
                     }
@@ -350,24 +350,24 @@ export function StatsPage() {
                   Cartons — Joueurs
                 </h2>
                 {discipline.players.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
+                  <p className="text-text-muted text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
                 ) : (
                   <div className="space-y-2">
                     {discipline.players.slice(0, 8).map((p, i) => (
                       <div key={p.player_id} className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-slate-600 w-5 text-right shrink-0">{i + 1}</span>
+                        <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">{i + 1}</span>
                         <PlayerAvatar
                           firstName={p.first_name}
                           lastName={p.last_name}
                           avatarUrl={p.avatar_url}
                           teamColor={p.team_color}
-                          size={32}
+                          size={32} // Fixed PlayerAvatar size in disciplinary section too
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
+                          <p className="text-text-primary text-sm font-semibold truncate">{p.first_name} {p.last_name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.team_color }} />
-                            <span className="text-xs text-slate-500 truncate">{p.team_name}</span>
+                            <span className="text-xs text-text-muted truncate">{p.team_name}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -394,9 +394,9 @@ export function StatsPage() {
                   <Shield size={12} className="text-green-400" />
                   Fair-play — Équipes
                 </h2>
-                <p className="text-[10px] text-slate-600">Score : 🟨 = 1pt · 🟥 = 3pts · Moins c'est mieux</p>
+                <p className="text-[10px] text-text-muted">Score : 🟨 = 1pt · 🟥 = 3pts · Moins c'est mieux</p>
                 {discipline.teams.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
+                  <p className="text-text-muted text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
                 ) : (
                   <div className="space-y-2">
                     {[...discipline.teams]
@@ -405,7 +405,7 @@ export function StatsPage() {
                         <div key={t.team_id} className="flex items-center gap-3">
                           <span className={clsx(
                             'text-sm font-bold w-5 text-right shrink-0',
-                            i === 0 ? 'text-green-400' : 'text-slate-600'
+                            i === 0 ? 'text-green-400' : 'text-text-muted'
                           )}>
                             {i === 0 ? '🏆' : i + 1}
                           </span>
@@ -416,7 +416,7 @@ export function StatsPage() {
                             {t.team_name[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-slate-800 dark:text-white text-sm font-semibold truncate">{t.team_name}</p>
+                            <p className="text-text-primary text-sm font-semibold truncate">{t.team_name}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {t.yellow_cards > 0 && (
                                 <span className="text-[10px] text-yellow-400">🟨 {t.yellow_cards}</span>
@@ -438,7 +438,7 @@ export function StatsPage() {
                             </div>
                             <span className={clsx(
                               'font-black text-sm w-4 text-right',
-                              i === 0 ? 'text-green-400' : 'text-slate-400'
+                              i === 0 ? 'text-green-400' : 'text-text-muted/60'
                             )}>
                               {t.fairplay_score}
                             </span>
