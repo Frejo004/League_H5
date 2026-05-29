@@ -1,5 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame, Radio, Clock, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
+import {
+  Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame,
+  Radio, Clock, CheckCircle2, AlertCircle, ChevronRight,
+  Crown, Settings, Zap, Star, BarChart2, Shield,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
@@ -11,6 +15,8 @@ import { useMyTeam } from '@/hooks/useMyTeam'
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
+import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -33,24 +39,16 @@ function formatDay(dateStr: string) {
 }
 
 // ── Statut composition pour un match ─────────────────────────────────────────
-function LineupStatusBadge({
-  matchId,
-  teamId,
-  isCaptain,
-}: {
-  matchId: string
-  teamId: string
-  isCaptain: boolean
+function LineupStatusBadge({ matchId, teamId, isCaptain }: {
+  matchId: string; teamId: string; isCaptain: boolean
 }) {
   const { data: lineups, isLoading } = useMatchLineups(matchId)
-
   const hasLineup = useMemo(() => {
     if (!lineups) return false
     return lineups.some(l => l.team_id === teamId && l.is_starter)
   }, [lineups, teamId])
 
   if (isLoading) return null
-
   if (hasLineup) {
     return (
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20">
@@ -59,7 +57,6 @@ function LineupStatusBadge({
       </div>
     )
   }
-
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -67,11 +64,8 @@ function LineupStatusBadge({
         <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Compo manquante</span>
       </div>
       {isCaptain && (
-        <Link
-          to="/captain"
-          onClick={e => e.stopPropagation()}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-500/15 border border-primary-500/30 text-[10px] font-black text-primary-400 hover:bg-primary-500/25 transition-colors uppercase tracking-wider"
-        >
+        <Link to="/captain" onClick={e => e.stopPropagation()}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-500/15 border border-primary-500/30 text-[10px] font-black text-primary-400 hover:bg-primary-500/25 transition-colors uppercase tracking-wider">
           Soumettre <ChevronRight size={10} />
         </Link>
       )}
@@ -79,7 +73,7 @@ function LineupStatusBadge({
   )
 }
 
-// ── Compte à rebours prochain match ──────────────────────────────────────────
+// ── Compte à rebours ──────────────────────────────────────────────────────────
 function useCountdown(targetDate: string | null) {
   const [diff, setDiff] = useState<number | null>(null)
   useEffect(() => {
@@ -93,101 +87,61 @@ function useCountdown(targetDate: string | null) {
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
   const s = Math.floor((diff % 60_000) / 1_000)
-  if (h > 48) return null // trop loin, pas utile
-  return { h, m, s, totalMs: diff }
+  if (h > 48) return null
+  return { h, m, s }
 }
 
 function NextMatchCountdown({ match, teamId, isCaptain }: {
-  match: MatchWithTeams
-  teamId?: string | null
-  isCaptain?: boolean
+  match: MatchWithTeams; teamId?: string | null; isCaptain?: boolean
 }) {
   const countdown = useCountdown(match.scheduled_at)
   const isImminent = countdown ? countdown.h === 0 && countdown.m < 30 : false
-
   return (
-    <div className={clsx(
-      'mx-4 mb-3 rounded-xl border overflow-hidden',
-      isImminent ? 'border-red-500/30' : 'border-primary-500/20',
-    )}>
-      {/* Compte à rebours */}
+    <div className={clsx('mx-4 mb-3 rounded-xl border overflow-hidden',
+      isImminent ? 'border-red-500/30' : 'border-primary-500/20')}>
       {countdown && (
-        <div className={clsx(
-          'flex items-center justify-center gap-3 px-4 py-2.5',
-          isImminent ? 'bg-red-500/8' : 'bg-primary-500/5',
-        )}>
+        <div className={clsx('flex items-center justify-center gap-3 px-4 py-2.5',
+          isImminent ? 'bg-red-500/8' : 'bg-primary-500/5')}>
           <Clock size={13} className={isImminent ? 'text-red-400' : 'text-primary-400'} />
-          <span className={clsx(
-            'text-[10px] font-black uppercase tracking-widest',
-            isImminent ? 'text-red-300' : 'text-primary-300'
-          )}>
+          <span className={clsx('text-[10px] font-black uppercase tracking-widest',
+            isImminent ? 'text-red-300' : 'text-primary-300')}>
             Prochain match dans
           </span>
-          <div className={clsx(
-            'flex items-center gap-1 font-black tabular-nums',
-            isImminent && 'animate-pulse'
-          )}>
-            {countdown.h > 0 && (
-              <>
-                <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
-                  {String(countdown.h).padStart(2, '0')}
-                </span>
-                <span className="text-slate-600 text-sm">h</span>
-              </>
-            )}
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
-              {String(countdown.m).padStart(2, '0')}
-            </span>
+          <div className={clsx('flex items-center gap-1 font-black tabular-nums', isImminent && 'animate-pulse')}>
+            {countdown.h > 0 && (<>
+              <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.h).padStart(2, '0')}</span>
+              <span className="text-slate-600 text-sm">h</span>
+            </>)}
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.m).padStart(2, '0')}</span>
             <span className="text-slate-600 text-sm">m</span>
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>
-              {String(countdown.s).padStart(2, '0')}
-            </span>
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.s).padStart(2, '0')}</span>
             <span className="text-slate-600 text-sm">s</span>
           </div>
         </div>
       )}
-
-      {/* Statut compo — uniquement si on connaît l'équipe */}
       {teamId && (
-        <div className={clsx(
-          'flex items-center justify-between gap-2 px-4 py-2',
-          'border-t',
-          isImminent ? 'border-red-500/15 bg-red-500/4' : 'border-primary-500/10 bg-black/20',
-        )}>
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-            Composition
-          </span>
-          <LineupStatusBadge
-            matchId={match.id}
-            teamId={teamId}
-            isCaptain={!!isCaptain}
-          />
+        <div className={clsx('flex items-center justify-between gap-2 px-4 py-2 border-t',
+          isImminent ? 'border-red-500/15 bg-red-500/4' : 'border-primary-500/10 bg-black/20')}>
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Composition</span>
+          <LineupStatusBadge matchId={match.id} teamId={teamId} isCaptain={!!isCaptain} />
         </div>
       )}
     </div>
   )
 }
 
-// ── KPI Card premium ──────────────────────────────────────────────────────────
+// ── KPI Card ──────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, icon: Icon, color, trend }: {
-  label: string
-  value: number
-  icon: typeof Calendar
-  color: string
-  trend?: string
+  label: string; value: number; icon: typeof Calendar; color: string; trend?: string
 }) {
   const animatedValue = useCountUp(value)
-
   return (
     <div className="relative overflow-hidden rounded-2xl p-4 group transition-all duration-500 hover:-translate-y-1.5 glass-morphism">
-      {/* Decorative gradient blob */}
       <div className="absolute -top-10 -right-10 w-24 h-24 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
         style={{ backgroundColor: color }} />
-
-      {/* Top row */}
       <div className="flex items-start justify-between mb-4">
-        <div className="p-2.5 rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" 
-             style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
+        <div className="p-2.5 rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
           <Icon size={16} style={{ color }} />
         </div>
         {trend && (
@@ -196,139 +150,91 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
           </span>
         )}
       </div>
-
-      {/* Value */}
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary drop-shadow-sm">
-        {animatedValue}
-      </p>
-      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-text-muted group-hover:text-text-secondary transition-colors">
-        {label}
-      </p>
-
-      {/* Interactive border glow */}
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary drop-shadow-sm">{animatedValue}</p>
+      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-text-muted group-hover:text-text-secondary transition-colors">{label}</p>
       <div className="absolute inset-0 border border-transparent group-hover:border-black/5 dark:group-hover:border-white/10 rounded-2xl transition-all duration-500" />
     </div>
   )
 }
 
-// ── Mini match card premium ───────────────────────────────────────────────────
-function MiniMatchCard({ match, variant, myTeamId }: { 
-  match: MatchWithTeams
-  variant: 'upcoming' | 'result'
-  myTeamId?: string | null
+// ── Mini match card ───────────────────────────────────────────────────────────
+function MiniMatchCard({ match, variant, myTeamId }: {
+  match: MatchWithTeams; variant: 'upcoming' | 'result'; myTeamId?: string | null
 }) {
   const homeWon = match.home_score! > match.away_score!
   const awayWon = match.away_score! > match.home_score!
   const isMyMatch = myTeamId && (match.home_team_id === myTeamId || match.away_team_id === myTeamId)
 
   return (
-    <Link
-      to={`/matches/${match.slug || match.id}`}
-      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-    >
-      {/* Lueur arrière-plan */}
+    <Link to={`/matches/${match.slug || match.id}`}
+      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
       <div className="absolute inset-0 bg-linear-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-      
-      {/* Conteneur principal biseauté */}
       <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card border border-surface-border">
-        
-        {/* Ligne d'accentuation (si c'est mon équipe) */}
-        {isMyMatch && (
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)]" />
-        )}
-
-        {/* DOMICILE (HOME) */}
+        {isMyMatch && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)]" />}
+        {/* Home */}
         <div className="flex-1 flex items-center justify-between p-3 pl-4 relative overflow-hidden">
-          {/* Dégradé couleur équipe */}
           <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
-               style={{ background: `linear-gradient(to right, ${match.home_team.color}, transparent)` }} />
-          
+            style={{ background: `linear-gradient(to right, ${match.home_team.color}, transparent)` }} />
           <div className="flex items-center gap-3 relative z-10 min-w-0">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
               style={{ borderLeft: `3px solid ${match.home_team.color}` }}>
-              {match.home_team.logo_url
-                ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain" />
-                : match.home_team.name[0]
-              }
+              {match.home_team.logo_url ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.home_team.name[0]}
             </div>
-            <span className={clsx(
-              'text-sm uppercase tracking-wide truncate transition-colors',
-              variant === 'result' ? (homeWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary'
-            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className={clsx('text-sm uppercase tracking-wide truncate transition-colors',
+              variant === 'result' ? (homeWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_team.name}
             </span>
           </div>
-
-          {/* Score Domicile (seulement si résultat) */}
           {variant === 'result' && (
-            <span className={clsx(
-              'text-3xl font-black tabular-nums leading-none ml-3 z-10',
-              homeWon ? 'text-text-primary text-glow-sm' : 'text-text-muted'
-            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className={clsx('text-3xl font-black tabular-nums leading-none ml-3 z-10',
+              homeWon ? 'text-text-primary text-glow-sm' : 'text-text-muted')}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score}
             </span>
           )}
         </div>
-
-        {/* CENTRE (SÉPARATEUR OU HEURE) */}
+        {/* Centre */}
         <div className="w-12 shrink-0 flex flex-col items-center justify-center relative bg-black/20 z-20"
-             style={{ clipPath: 'polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0% 100%)' }}>
+          style={{ clipPath: 'polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0% 100%)' }}>
           {variant === 'result' ? (
             <div className="flex flex-col items-center">
               <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">FT</span>
               <div className="w-0.5 h-4 bg-surface-border mt-1" />
             </div>
           ) : match.scheduled_at ? (
-            <div className="flex flex-col items-center">
-              <span className="text-[11px] font-black text-primary-500 dark:text-primary-400 tracking-wider">
-                {formatTime(match.scheduled_at)}
-              </span>
-            </div>
+            <span className="text-[11px] font-black text-primary-500 dark:text-primary-400 tracking-wider">{formatTime(match.scheduled_at)}</span>
           ) : (
             <span className="text-[10px] font-bold text-text-muted uppercase">VS</span>
           )}
         </div>
-
-        {/* EXTÉRIEUR (AWAY) */}
+        {/* Away */}
         <div className="flex-1 flex items-center justify-between p-3 pr-4 relative overflow-hidden flex-row-reverse">
-          {/* Dégradé couleur équipe */}
           <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
-               style={{ background: `linear-gradient(to left, ${match.away_team.color}, transparent)` }} />
-          
+            style={{ background: `linear-gradient(to left, ${match.away_team.color}, transparent)` }} />
           <div className="flex items-center gap-3 relative z-10 min-w-0 flex-row-reverse">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
               style={{ borderRight: `3px solid ${match.away_team.color}` }}>
-              {match.away_team.logo_url
-                ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain" />
-                : match.away_team.name[0]
-              }
+              {match.away_team.logo_url ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.away_team.name[0]}
             </div>
-            <span className={clsx(
-              'text-sm uppercase tracking-wide truncate text-right transition-colors',
-              variant === 'result' ? (awayWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary'
-            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className={clsx('text-sm uppercase tracking-wide truncate text-right transition-colors',
+              variant === 'result' ? (awayWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_team.name}
             </span>
           </div>
-
-          {/* Score Extérieur (seulement si résultat) */}
           {variant === 'result' && (
-            <span className={clsx(
-              'text-3xl font-black tabular-nums leading-none mr-3 z-10',
-              awayWon ? 'text-text-primary text-glow-sm' : 'text-text-muted'
-            )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className={clsx('text-3xl font-black tabular-nums leading-none mr-3 z-10',
+              awayWon ? 'text-text-primary text-glow-sm' : 'text-text-muted')}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_score}
             </span>
           )}
         </div>
       </div>
-      
-      {/* Ligne date/journée (si à venir) */}
       {variant === 'upcoming' && match.scheduled_at && (
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-card border border-surface-border px-3 py-0.5 rounded-full z-30 shadow-md">
-          <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
-            {formatDay(match.scheduled_at)}
-          </span>
+          <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">{formatDay(match.scheduled_at)}</span>
         </div>
       )}
     </Link>
@@ -347,36 +253,26 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
   )
 }
 
-// ── Top scorer card premium ───────────────────────────────────────────────────
+// ── Top scorer card ───────────────────────────────────────────────────────────
 function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
-
       <div className="flex items-center gap-1 mb-3">
         <Flame size={11} className="text-orange-500 dark:text-orange-400" />
         <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Meilleur buteur</span>
       </div>
-
       <div className="flex items-center gap-3 relative">
         <div className="relative shrink-0">
-          <PlayerAvatar
-            firstName={scorer.first_name}
-            lastName={scorer.last_name}
-            avatarUrl={scorer.avatar_url}
-            teamColor={scorer.team_color}
-            size={44}
-            shape="lg"
-          />
+          <PlayerAvatar firstName={scorer.first_name} lastName={scorer.last_name}
+            avatarUrl={scorer.avatar_url} teamColor={scorer.team_color} size={44} shape="lg" />
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center border-2 border-surface-card">
             <Target size={9} className="text-white" />
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-sm truncate leading-tight text-text-primary">
-            {scorer.first_name} {scorer.last_name}
-          </p>
+          <p className="font-bold text-sm truncate leading-tight text-text-primary">{scorer.first_name} {scorer.last_name}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: scorer.team_color }} />
             <span className="text-xs truncate text-text-muted">{scorer.team_name}</span>
@@ -391,25 +287,20 @@ function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useSc
   )
 }
 
-// ── Leader card premium ───────────────────────────────────────────────────────
+// ── Leader card ───────────────────────────────────────────────────────────────
 function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings>['data']>[0] }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${team.team_color}10 0%, transparent 70%)` }} />
-
       <div className="flex items-center gap-1 mb-3">
         <Trophy size={11} className="text-yellow-500 dark:text-yellow-400" />
         <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Leader</span>
       </div>
-
       <div className="flex items-center gap-3 relative">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-lg shrink-0"
           style={{ backgroundColor: team.team_color }}>
-          {team.team_logo
-            ? <img src={team.team_logo} alt="" className="w-9 h-9 object-contain rounded-lg" />
-            : team.team_name[0]
-          }
+          {team.team_logo ? <img src={team.team_logo} alt="" className="w-9 h-9 object-contain rounded-lg" /> : team.team_name[0]}
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-sm truncate leading-tight text-text-primary">{team.team_name}</p>
@@ -428,33 +319,22 @@ function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings
   )
 }
 
-// ── Live Match Banner Item (with clock) ──────────────────────────────────────
+// ── Live match banner ─────────────────────────────────────────────────────────
 function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
   const clock = useLiveClock(
-    match.live_started_at,
-    match.live_period as 1 | 2,
-    match.status,
-    match.halftime_at,
-    match.is_paused ?? false,
-    match.paused_at ?? null,
-    match.total_paused_seconds ?? 0
+    match.live_started_at, match.live_period as 1 | 2, match.status,
+    match.halftime_at, match.is_paused ?? false, match.paused_at ?? null, match.total_paused_seconds ?? 0
   )
-
   return (
-    <Link
-      to={`/matches/${match.slug || match.id}`}
-      className="flex items-center gap-3 p-3 rounded-xl bg-surface-raised/50 hover:bg-surface-raised border border-red-500/20 transition-all group"
-    >
+    <Link to={`/matches/${match.slug || match.id}`}
+      className="flex items-center gap-3 p-3 rounded-xl bg-surface-raised/50 hover:bg-surface-raised border border-red-500/20 transition-all group">
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.home_team.color }}>
-          {match.home_team.logo_url
-            ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
-            : match.home_team.name[0]}
+          {match.home_team.logo_url ? <img src={match.home_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" /> : match.home_team.name[0]}
         </div>
         <span className="text-sm font-semibold text-text-primary truncate">{match.home_team.name}</span>
       </div>
-
       <div className="flex flex-col items-center gap-1 px-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl font-black text-text-primary tabular-nums drop-shadow-md">{match.home_score ?? 0}</span>
@@ -465,29 +345,213 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
           {clock.label}
         </span>
       </div>
-
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
         <span className="text-sm font-semibold text-text-primary truncate text-right">{match.away_team.name}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg"
           style={{ backgroundColor: match.away_team.color }}>
-          {match.away_team.logo_url
-            ? <img src={match.away_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" />
-            : match.away_team.name[0]}
+          {match.away_team.logo_url ? <img src={match.away_team.logo_url} alt="" className="w-6 h-6 object-contain rounded-md" /> : match.away_team.name[0]}
         </div>
       </div>
     </Link>
   )
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Carte de salutation personnalisée ────────────────────────────────────────
+function WelcomeCard({ profile, myPlayer, myTeam, role }: {
+  profile: NonNullable<ReturnType<typeof useAuth>['profile']>
+  myPlayer: ReturnType<typeof useMyTeam>['myPlayer']
+  myTeam: ReturnType<typeof useMyTeam>['myTeam']
+  role: string
+}) {
+  const displayName = myPlayer
+    ? `${myPlayer.first_name} ${myPlayer.last_name}`
+    : profile.full_name ?? profile.email.split('@')[0]
+
+  const roleLabel = role === 'admin' ? 'Administrateur' : role === 'captain' ? 'Capitaine' : role === 'player' ? 'Joueur' : 'Spectateur'
+  const roleColor = role === 'admin' ? '#f59e0b' : role === 'captain' ? '#8b5cf6' : role === 'player' ? '#22c55e' : '#64748b'
+  const roleIcon = role === 'admin' ? <Settings size={11} /> : role === 'captain' ? <Crown size={11} /> : role === 'player' ? <Zap size={11} /> : <Users size={11} />
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface-card p-4 flex items-center gap-4">
+      {/* Glow de fond */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 60% 100% at 0% 50%, ${roleColor}10 0%, transparent 70%)` }} />
+
+      {/* Avatar */}
+      <div className="relative shrink-0">
+        <PlayerAvatar
+          firstName={myPlayer?.first_name ?? (profile.full_name?.split(' ')[0] ?? 'U')}
+          lastName={myPlayer?.last_name ?? (profile.full_name?.split(' ')[1] ?? '')}
+          avatarUrl={profile.avatar_url}
+          teamColor={myTeam?.color ?? roleColor}
+          size={52}
+          shape="lg"
+        />
+        {/* Badge rôle */}
+        <div className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full border-2 border-surface-card"
+          style={{ backgroundColor: roleColor }}>
+          <span style={{ color: '#fff', display: 'flex' }}>{roleIcon}</span>
+        </div>
+      </div>
+
+      {/* Infos */}
+      <div className="flex-1 min-w-0 relative">
+        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Bienvenue</p>
+        <p className="text-base font-black text-text-primary truncate">{displayName}</p>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+            style={{ color: roleColor, backgroundColor: `${roleColor}15`, borderColor: `${roleColor}30` }}>
+            {roleLabel}
+          </span>
+          {myTeam && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: myTeam.color }} />
+              <span className="text-[10px] text-text-muted font-semibold truncate">{myTeam.name}</span>
+            </div>
+          )}
+          {myPlayer?.jersey_number && (
+            <span className="text-[10px] text-text-muted font-bold">#{myPlayer.jersey_number}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Raccourci profil */}
+      <Link to="/profile"
+        className="shrink-0 p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors border border-surface-border"
+        title="Mon profil">
+        <ChevronRight size={16} />
+      </Link>
+    </div>
+  )
+}
+
+// ── Mes stats perso (joueur / capitaine) ──────────────────────────────────────
+function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: string }) {
+  const { data: profile, isLoading } = usePlayerProfile(playerId)
+  const { data: mvpData } = usePlayerMvp(playerId, seasonId)
+
+  if (isLoading) return (
+    <div className="rounded-2xl border border-surface-border bg-surface-card p-4 animate-pulse">
+      <div className="h-3 w-24 bg-surface-raised rounded mb-4" />
+      <div className="grid grid-cols-4 gap-2">
+        {[1,2,3,4].map(i => <div key={i} className="h-14 bg-surface-raised rounded-xl" />)}
+      </div>
+    </div>
+  )
+
+  if (!profile) return null
+
+  const stats = [
+    { label: 'Matchs', value: profile.matches_played, icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400', bg: 'bg-violet-400/10' },
+    { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  ]
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface-card p-4">
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${profile.team.color}10 0%, transparent 60%)` }} />
+      <div className="flex items-center justify-between mb-3 relative">
+        <div className="flex items-center gap-1.5">
+          <BarChart2 size={12} className="text-text-muted" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Mes stats · Saison</span>
+        </div>
+        <Link to={`/players/${profile.slug || profile.id}`}
+          className="text-[10px] font-bold text-primary-400 hover:text-primary-300 flex items-center gap-0.5 transition-colors">
+          Profil complet <ChevronRight size={10} />
+        </Link>
+      </div>
+      <div className="grid grid-cols-4 gap-2 relative">
+        {stats.map(({ label, value, icon: Icon, color, bg }) => (
+          <div key={label} className={clsx('rounded-xl p-2.5 text-center', bg)}>
+            <Icon size={13} className={clsx('mx-auto mb-1', color)} />
+            <p className="text-xl font-black text-text-primary tabular-nums leading-none">{value}</p>
+            <p className="text-[9px] text-text-muted uppercase tracking-wider mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Raccourcis capitaine ──────────────────────────────────────────────────────
+function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
+  myTeam: ReturnType<typeof useMyTeam>['myTeam']
+  nextMatch?: MatchWithTeams
+  myTeamId: string | null
+}) {
+  return (
+    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Crown size={13} className="text-purple-400" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">Espace Capitaine</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Link to="/captain"
+          className="flex items-center gap-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-colors group">
+          <Users size={14} className="text-purple-400 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-text-primary truncate">Mon équipe</p>
+            {myTeam && <p className="text-[10px] text-text-muted truncate">{myTeam.name}</p>}
+          </div>
+        </Link>
+        {nextMatch && myTeamId && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-surface-raised/50 border border-surface-border">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">Compo J{nextMatch.matchday}</p>
+              <LineupStatusBadge matchId={nextMatch.id} teamId={myTeamId} isCaptain />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Raccourcis admin ──────────────────────────────────────────────────────────
+function AdminQuickActions({ completedCount, teamsCount, upcomingCount }: {
+  completedCount: number; teamsCount: number; upcomingCount: number
+}) {
+  const actions = [
+    { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
+    { label: 'Équipes', sub: `${teamsCount} équipes`, icon: Shield, to: '/admin/teams', color: '#8b5cf6' },
+    { label: 'Saisons', sub: 'Gérer', icon: Trophy, to: '/admin/seasons', color: '#f59e0b' },
+    { label: 'Paramètres', sub: 'Config', icon: Settings, to: '/admin/settings', color: '#64748b' },
+  ]
+  return (
+    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Settings size={13} className="text-amber-400" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Administration</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {actions.map(({ label, sub, icon: Icon, to, color }) => (
+          <Link key={to} to={to}
+            className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-raised/50 border border-surface-border hover:bg-surface-raised transition-colors group">
+            <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${color}20` }}>
+              <Icon size={13} style={{ color }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-text-primary truncate">{label}</p>
+              <p className="text-[10px] text-text-muted truncate">{sub}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
   const { data: teams }   = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
-  const { myTeamId } = useMyTeam(season?.id)
-  const { isCaptain } = useAuth()
+  const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
+  const { isCaptain, isAdmin, profile, role } = useAuth()
 
   useRealtimeTeams(season?.id)
   useRealtimeMatches(season?.id)
@@ -501,7 +565,7 @@ export function DashboardPage() {
   const isLoading = seasonLoading && !timedOut && !isFetched
 
   const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
-  const liveMatches = (matches ?? []).filter(m => m.status === 'live')
+  const liveMatches      = (matches ?? []).filter(m => m.status === 'live')
   const upcomingMatches  = (matches ?? [])
     .filter(m => m.status === 'scheduled')
     .sort((a, b) => {
@@ -516,8 +580,20 @@ export function DashboardPage() {
     .sort((a, b) => new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime())
     .slice(0, 5)
 
+  // Prochain match de mon équipe (capitaine / joueur)
+  const myNextMatch = useMemo(() => {
+    if (!myTeamId) return upcomingMatches[0] ?? null
+    return upcomingMatches.find(m => m.home_team_id === myTeamId || m.away_team_id === myTeamId)
+      ?? upcomingMatches[0]
+      ?? null
+  }, [upcomingMatches, myTeamId])
+
   const topScorer = scorers?.[0]
   const topTeam   = standings?.[0]
+
+  // Rôle effectif
+  const isPlayer   = role === 'player' || role === 'captain' || role === 'admin'
+  const hasTeam    = !!myTeamId && !!myPlayer
 
   if (isLoading) {
     return (
@@ -551,7 +627,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-4">
 
-      {/* ── Widget matchs en cours ── */}
+      {/* ── Matchs en direct ── */}
       {liveMatches.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
           <div className="absolute inset-0 pointer-events-none dark:block hidden"
@@ -563,14 +639,22 @@ export function DashboardPage() {
             <LiveBadge size="sm" />
           </div>
           <div className="space-y-2">
-            {liveMatches.map(match => (
-              <LiveMatchBannerItem key={match.id} match={match} />
-            ))}
+            {liveMatches.map(match => <LiveMatchBannerItem key={match.id} match={match} />)}
           </div>
         </div>
       )}
 
-      {/* Hero */}
+      {/* ── Carte de bienvenue personnalisée ── */}
+      {profile && (
+        <WelcomeCard
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role ?? 'spectator'}
+        />
+      )}
+
+      {/* ── Hero saison ── */}
       <PageHero
         imageUrl="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80&auto=format&fit=crop"
         pattern="pitch"
@@ -579,22 +663,42 @@ export function DashboardPage() {
         subtitle="Tableau de bord · Saison en cours"
         icon={<Trophy size={20} className="text-white" />}
         badge={
-          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400
-                           bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
             <span className="live-dot" />
             En cours
           </span>
         }
+        compact
       />
 
-      {/* KPI row */}
+      {/* ── KPIs globaux ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Matchs joués" value={completedMatches.length}                       icon={Calendar} color="#3b82f6" />
-        <KpiCard label="Équipes"      value={teams?.length ?? 0}                            icon={Users}    color="#8b5cf6" />
-        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0} icon={Target}   color="#f97316" />
-        <KpiCard label="À venir"      value={upcomingMatches.length}                        icon={Calendar} color="#2563eb" />
+        <KpiCard label="Matchs joués" value={completedMatches.length}                        icon={Calendar} color="#3b82f6" />
+        <KpiCard label="Équipes"      value={teams?.length ?? 0}                             icon={Users}    color="#8b5cf6" />
+        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0}  icon={Target}   color="#f97316" />
+        <KpiCard label="À venir"      value={upcomingMatches.length}                         icon={Calendar} color="#2563eb" />
       </div>
 
+      {/* ── Mes stats perso (joueur / capitaine) ── */}
+      {hasTeam && myPlayer && season && (
+        <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
+      )}
+
+      {/* ── Raccourcis capitaine ── */}
+      {isCaptain && !isAdmin && myTeam && (
+        <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
+      )}
+
+      {/* ── Raccourcis admin ── */}
+      {isAdmin && (
+        <AdminQuickActions
+          completedCount={completedMatches.length}
+          teamsCount={teams?.length ?? 0}
+          upcomingCount={upcomingMatches.length}
+        />
+      )}
+
+      {/* ── Grille principale ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Prochains matchs */}
@@ -607,13 +711,9 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="stagger-fast">
-              {/* Compte à rebours + statut compo pour le prochain match */}
-              {upcomingMatches[0]?.scheduled_at && (
-                <NextMatchCountdown
-                  match={upcomingMatches[0]}
-                  teamId={myTeamId}
-                  isCaptain={isCaptain}
-                />
+              {/* Compte à rebours uniquement pour les joueurs/capitaines avec une équipe */}
+              {myNextMatch?.scheduled_at && isPlayer && (
+                <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
               )}
               {upcomingMatches.slice(0, 4).map(match => (
                 <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
@@ -622,19 +722,19 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Top scorer + leader */}
+        {/* Sidebar : meilleur buteur + leader */}
         <div className="space-y-3">
           {topScorer && <TopScorerCard scorer={topScorer} />}
           {topTeam   && <LeaderCard   team={topTeam} />}
         </div>
       </div>
 
-      {/* Derniers résultats */}
+      {/* ── Derniers résultats ── */}
       {recentMatches.length > 0 && (
         <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
           <SectionHeader title="Derniers résultats" href="/matches" />
           <div className="stagger-fast">
-            {recentMatches.map(match => ( /* Corrected: Removed unused 'isDraw' variable */
+            {recentMatches.map(match => (
               <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
             ))}
           </div>
