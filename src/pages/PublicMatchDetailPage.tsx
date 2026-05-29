@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Calendar, Play, Share2, Zap, Trophy,
   Clock, Users, ExternalLink,
+  TrendingUp,
 } from 'lucide-react'
 
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
@@ -116,7 +117,14 @@ function MatchHero({
               <span className="text-[10px] font-black text-[#C8F135] uppercase tracking-widest bg-[#C8F135]/15 px-2 py-0.5 rounded mt-1 inline-block">Vainqueur</span>
             )}
           </div>
-          <span className="text-3xl font-black tabular-nums text-[var(--t1)]">{match.home_score ?? 0}</span>
+          <motion.span 
+            key={match.home_score}
+            initial={isLive ? { scale: 1.5, color: '#C8F135' } : {}}
+            animate={{ scale: 1, color: 'inherit' }}
+            className="text-3xl font-black tabular-nums text-[var(--t1)]"
+          >
+            {match.home_score ?? 0}
+          </motion.span>
         </div>
 
         {/* Separator / Live Status */}
@@ -174,7 +182,14 @@ function MatchHero({
               <span className="text-[10px] font-black text-[#C8F135] uppercase tracking-widest bg-[#C8F135]/15 px-2 py-0.5 rounded mt-1 inline-block">Vainqueur</span>
             )}
           </div>
-          <span className="text-3xl font-black tabular-nums text-[var(--t1)]">{match.away_score ?? 0}</span>
+          <motion.span 
+            key={match.away_score}
+            initial={isLive ? { scale: 1.5, color: '#C8F135' } : {}}
+            animate={{ scale: 1, color: 'inherit' }}
+            className="text-3xl font-black tabular-nums text-[var(--t1)]"
+          >
+            {match.away_score ?? 0}
+          </motion.span>
         </div>
       </div>
 
@@ -260,7 +275,8 @@ function ScorersList({ sortedGoals, home, away, match }: {
         {sortedGoals.map((g: any) => {
           const isHome = g.team_id === home.id
           const player = g.players
-          const playerName = player ? `${player.first_name} ${player.last_name}` : '—'
+          const isCSC = g.is_own_goal
+          const playerName = player ? `${player.first_name} ${player.last_name}${isCSC ? ' (CSC)' : ''}` : '—'
           const teamColor = isHome ? home.color : away.color
           const assistRec = (match.assists ?? []).find((a: any) => a.goal_id === g.id)
           const assistPlayer = assistRec?.players
@@ -406,12 +422,143 @@ function InfoSection({ match, season }: { match: any; season: any }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GOAL OVERLAY
+// ─────────────────────────────────────────────────────────────────────────────
+function GoalOverlay({ teamName, teamColor, score }: { teamName: string; teamColor: string; score: string }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <motion.div
+        initial={{ scale: 0.5, y: 100 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 1.5, opacity: 0 }}
+        className="relative z-10 flex flex-col items-center"
+      >
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [-5, 5, -5, 5, 0]
+          }}
+          transition={{ duration: 0.5, repeat: 5 }}
+          className="text-8xl sm:text-[12rem] font-black italic text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.5)] font-['Barlow_Condensed'] uppercase"
+        >
+          BUT !
+        </motion.div>
+        
+        <div 
+          className="px-8 py-4 rounded-2xl border-4 shadow-2xl flex flex-col items-center gap-2 mt-[-20px]"
+          style={{ backgroundColor: teamColor, borderColor: 'white' }}
+        >
+          <span className="text-xl sm:text-3xl font-black text-white uppercase tracking-tighter">
+            {teamName}
+          </span>
+          <span className="text-4xl sm:text-6xl font-black text-white tabular-nums">
+            {score}
+          </span>
+        </div>
+        
+        <div className="mt-8 flex gap-4">
+          {[1,2,3,4,5].map(i => (
+            <motion.span
+              key={i}
+              initial={{ y: 0 }}
+              animate={{ y: [-20, 0] }}
+              transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.1 }}
+              className="text-4xl"
+            >
+              ⚽
+            </motion.span>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ── MATCH MOMENTUM (MOBILE OPTIMIZED) ──
+function MatchMomentum({ events, homeId, awayId }: { events: any[]; homeId: string; awayId: string }) {
+  const momentum = useMemo(() => {
+    const recentEvents = events
+      .filter(e => ['shot', 'shot_on_target', 'corner', 'foul', 'goal'].includes(e.type))
+      .slice(-10)
+    
+    if (recentEvents.length === 0) return 50
+    
+    let homeScore = 0
+    let awayScore = 0
+    
+    recentEvents.forEach(e => {
+      const weight = e.type === 'goal' ? 5 : e.type === 'shot_on_target' ? 3 : e.type === 'shot' ? 2 : 1
+      if (e.team_id === homeId) homeScore += weight
+      else awayScore += weight
+    })
+    
+    return (homeScore / (homeScore + awayScore)) * 100
+  }, [events, homeId, awayId])
+
+  return (
+    <div className="card p-3 sm:p-4 space-y-2 sm:space-y-3">
+      <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--t2)]">
+        <span className="flex items-center gap-1.5">
+          <TrendingUp size={12} className="text-primary-500" />
+          Pression
+        </span>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span className="hidden sm:inline">Domicile</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <span className="hidden sm:inline">Extérieur</span>
+          </div>
+        </div>
+      </div>
+      <div className="relative h-2 sm:h-3 bg-surface-raised rounded-full overflow-hidden border border-[var(--bd)]">
+        <motion.div 
+          animate={{ width: `${momentum}%` }}
+          className="absolute left-0 top-0 h-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+        />
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/20 z-10" />
+      </div>
+    </div>
+  )
+}
+
+// ── LAST EVENT TICKER ──
+function LiveTicker({ event }: { event?: any }) {
+  if (!event) return null
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400"
+    >
+      <span className="text-[10px] font-black tabular-nums">{event.minute}'</span>
+      <div className="w-px h-3 bg-primary-500/20" />
+      <span className="text-[10px] font-bold uppercase tracking-wide truncate max-w-[150px]">
+        {event.type === 'goal' ? '⚽ BUT !' : event.type === 'shot_on_target' ? '🎯 Tir Cadré' : event.type === 'shot' ? '🥅 Tir' : event.type === 'foul' ? '⚠️ Faute' : '🚩 Corner'}
+      </span>
+    </motion.div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PAGE COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export function PublicMatchDetailPage() {
   const navigate = useNavigate()
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
   const { data: season } = useActiveSeason()
+
+  const [showGoalOverlay, setShowGoalOverlay] = useState<{ teamName: string; teamColor: string; score: string } | null>(null)
+  const prevScoreRef = useRef<{ home: number; away: number } | null>(null)
 
   const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
 
@@ -423,6 +570,30 @@ export function PublicMatchDetailPage() {
   const match = paramType === 'id' ? matchById : matchBySlug
   const isLoading = paramType === 'id' ? loadingById : loadingBySlug
   const id = match?.id
+
+  // ── Effet pour détecter un nouveau but ─────────────────────────────────────
+  useEffect(() => {
+    if (!match || match.status !== 'live') return
+    
+    const currentScore = { home: match.home_score ?? 0, away: match.away_score ?? 0 }
+    
+    if (prevScoreRef.current) {
+      const homeGoal = currentScore.home > prevScoreRef.current.home
+      const awayGoal = currentScore.away > prevScoreRef.current.away
+      
+      if (homeGoal || awayGoal) {
+        const team = homeGoal ? match.home_team : match.away_team
+        setShowGoalOverlay({
+          teamName: team?.name ?? 'Équipe',
+          teamColor: team?.color ?? '#C8F135',
+          score: `${currentScore.home}-${currentScore.away}`
+        })
+        setTimeout(() => setShowGoalOverlay(null), 5000)
+      }
+    }
+    
+    prevScoreRef.current = currentScore
+  }, [match])
 
   const [activeTab, setActiveTab] = useState<LiveTab>(() => {
     // Si l'URL contient ?tab=lineups, on ouvre directement l'onglet compositions
@@ -534,7 +705,58 @@ export function PublicMatchDetailPage() {
 
   return (
     <PublicLayout hideFooter>
-      <div className="flex-1 flex flex-col lg:overflow-hidden pt-4 pb-6 px-4 max-w-7xl mx-auto w-full gap-4 min-h-0">
+      <AnimatePresence>
+        {showGoalOverlay && (
+          <GoalOverlay 
+            teamName={showGoalOverlay.teamName}
+            teamColor={showGoalOverlay.teamColor}
+            score={showGoalOverlay.score}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── STICKY MINI SCOREBOARD (MOBILE ONLY) ── */}
+      {isLive && (
+        <div className="sticky top-0 z-[40] sm:hidden bg-[var(--bg-surface)]/95 backdrop-blur-md border-b border-[var(--bd)] py-2 px-4 shadow-lg animate-fade-in-down">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <span className="text-[10px] font-black text-[var(--t1)] tabular-nums">{clock.label}'</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-black text-[var(--t1)] uppercase tracking-tighter truncate max-w-[60px]">{home.name.split(' ')[0]}</span>
+                  <span className="text-lg font-black text-[var(--t1)] tabular-nums">{match.home_score ?? 0}</span>
+                </div>
+                <span className="text-[var(--tm)] font-bold text-xs">-</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-black text-[var(--t1)] tabular-nums">{match.away_score ?? 0}</span>
+                  <span className="text-xs font-black text-[var(--t1)] uppercase tracking-tighter truncate max-w-[60px]">{away.name.split(' ')[0]}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 text-[10px] text-[var(--t2)] font-bold">
+                <Users size={12} />
+                <span>{viewerCount ?? 0}</span>
+              </div>
+            </div>
+            
+            {/* Mini Ticker in Sticky Header */}
+            {liveEvents.length > 0 && (
+              <div className="flex justify-center pb-1">
+                <LiveTicker event={liveEvents[liveEvents.length - 1]} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col lg:overflow-hidden pt-4 pb-4 px-4 max-w-7xl mx-auto w-full gap-4 min-h-0">
 
         {/* Back link */}
         <div className="flex-shrink-0">
@@ -550,8 +772,8 @@ export function PublicMatchDetailPage() {
 
         {/* Main Grid Workspace */}
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 lg:overflow-hidden">
-          {/* LEFT SIDEBAR: Match Hero Card */}
-          <div className="lg:w-[420px] shrink-0 flex flex-col min-h-0 lg:h-full">
+          {/* LEFT SIDEBAR: Match Hero Card + Momentum */}
+          <div className="lg:w-[420px] shrink-0 flex flex-col min-h-0 lg:h-full gap-5">
             <MatchHero
               match={match}
               home={home}
@@ -562,6 +784,26 @@ export function PublicMatchDetailPage() {
               sortedGoals={sortedGoals}
               dark={dark}
             />
+
+            {isLive && (
+              <div className="space-y-5">
+                <MatchMomentum events={liveEvents} homeId={home.id} awayId={away.id} />
+                
+                <div className="rounded-2xl border border-[var(--bd)] bg-red-500/[0.02] p-5 shadow-[var(--sh-card)]">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500/80 mb-4 flex items-center gap-2">
+                    <Zap size={14} /> Flux Live (Derniers faits)
+                  </h3>
+                  <div className="max-h-[300px] overflow-y-auto pr-2 ns">
+                    <LiveEventFeed
+                      events={liveEvents.slice(-5)}
+                      homeTeamId={home.id}
+                      homeColor={home.color}
+                      awayColor={away.color}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT PANEL: Tab Bar + Tab Content */}

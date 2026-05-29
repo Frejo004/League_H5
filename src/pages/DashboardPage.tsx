@@ -111,13 +111,13 @@ function NextMatchCountdown({ match, teamId, isCaptain }: {
           </span>
           <div className={clsx('flex items-center gap-1 font-black tabular-nums', isImminent && 'animate-pulse')}>
             {countdown.h > 0 && (<>
-              <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.h).padStart(2, '0')}</span>
-              <span className="text-slate-600 text-sm">h</span>
+              <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.h).padStart(2, '0')}</span>
+              <span className="text-text-muted text-sm">h</span>
             </>)}
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.m).padStart(2, '0')}</span>
-            <span className="text-slate-600 text-sm">m</span>
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-white')}>{String(countdown.s).padStart(2, '0')}</span>
-            <span className="text-slate-600 text-sm">s</span>
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.m).padStart(2, '0')}</span>
+            <span className="text-text-muted text-sm">m</span>
+            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.s).padStart(2, '0')}</span>
+            <span className="text-text-muted text-sm">s</span>
           </div>
         </div>
       )}

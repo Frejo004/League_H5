@@ -186,7 +186,7 @@ export function LiveEventFeed({
                   </span>
                 )}
                 <span className="text-sm font-black text-[var(--t1)] uppercase tracking-tight leading-none">
-                  {playerName || EVENT_LABELS[event.type]}
+                  {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
                 </span>
                 <span className="text-[11px] font-bold text-[var(--tm)] tabular-nums">{displayMinute}'</span>
               </div>
@@ -210,9 +210,9 @@ export function LiveEventFeed({
         <div className={clsx(
           "z-10 w-10 h-10 rounded-2xl border flex items-center justify-center shadow-2xl overflow-hidden ring-8 transition-all duration-500 group-hover:scale-110",
           "ring-surface", // Dynamic background ring
-          event.type === 'goal' ? "bg-blue-600 border-blue-400/50 rotate-12 text-white" : "bg-surface-raised border-surface-border text-text-primary"
+          (event.type === 'goal' || event.type === 'own_goal') ? "bg-blue-600 border-blue-400/50 rotate-12 text-white" : "bg-surface-raised border-surface-border text-text-primary"
         )}>
-          {event.type === 'goal' ? (
+          {(event.type === 'goal' || event.type === 'own_goal') ? (
             <span className="text-lg drop-shadow-md">⚽</span>
           ) : event.type === 'yellow_card' ? (
             <div className="w-3 h-4.5 bg-yellow-400 rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.6)] rotate-12" />
@@ -234,7 +234,7 @@ export function LiveEventFeed({
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-bold text-text-muted tabular-nums">{displayMinute}'</span>
                 <span className="text-sm font-black text-text-primary uppercase tracking-tight leading-none">
-                  {playerName || EVENT_LABELS[event.type]}
+                  {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
                 </span>
                 {(event.type === 'goal' || event.type === 'own_goal') && (
                   <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">

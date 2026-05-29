@@ -28,7 +28,7 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
   color: string
 }) {
   return (
-    <div className="group relative p-6 rounded-[2rem] bg-white/[0.02] border border-white/[0.05] overflow-hidden transition-all duration-500 hover:bg-white/[0.04] hover:-translate-y-2">
+    <div className="group relative p-6 rounded-[2rem] bg-surface-card/50 border border-surface-border overflow-hidden transition-all duration-500 hover:bg-surface-raised/50 hover:-translate-y-2">
       {/* Effet de Halo au survol */}
       <div
         className="absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
@@ -42,10 +42,10 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
         >
           <Icon size={22} style={{ color }} />
         </div>
-        <h3 className="text-base font-black text-white mb-2 uppercase tracking-tight font-['Barlow_Condensed']">
+        <h3 className="text-base font-black text-text-primary mb-2 uppercase tracking-tight font-['Barlow_Condensed']">
           {title}
         </h3>
-        <p className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-300 transition-colors">
+        <p className="text-xs text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">
           {desc}
         </p>
       </div>
@@ -59,12 +59,12 @@ function StatPill({ value, label, isLoading }: { value: string | number; label: 
   const displayValue = typeof value === 'string' && value.includes('+') ? `${animatedValue}+` : (isNaN(numericValue) ? value : animatedValue)
 
   return (
-    <div className="relative overflow-hidden p-6 rounded-[2rem] bg-[#161B22]/50 border border-white/[0.05] group hover:border-[#C8F135]/30 transition-all duration-500">
+    <div className="relative overflow-hidden p-6 rounded-[2rem] bg-surface-card/50 border border-surface-border group hover:border-[#C8F135]/30 transition-all duration-500">
       <div className="relative z-10 flex flex-col items-center">
         {isLoading ? (
-          <div className="h-10 w-16 bg-white/5 rounded-lg animate-pulse" />
+          <div className="h-10 w-16 bg-surface-raised/50 rounded-lg animate-pulse" />
         ) : (
-          <span className="text-4xl font-black text-white font-['Barlow_Condensed'] tracking-tighter group-hover:scale-110 transition-transform duration-500 italic">
+          <span className="text-4xl font-black text-text-primary font-['Barlow_Condensed'] tracking-tighter group-hover:scale-110 transition-transform duration-500 italic">
             {displayValue}
           </span>
         )}
@@ -166,26 +166,26 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-slate-200 selection:bg-[#C8F135] selection:text-[#0D1117]">
+    <div className="min-h-screen bg-surface text-text-primary selection:bg-[#C8F135] selection:text-surface">
 
       {/* ── Navigation ── */}
-      {/* <header className="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-[#0D1117]/60 border-b border-white/[0.05]">
+      {/* <header className="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-surface/60 border-b border-surface-border">
         <div className="flex items-center gap-3 group cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-[#C8F135] flex items-center justify-center transition-transform group-hover:rotate-12">
-            <Trophy size={20} className="text-[#0D1117]" strokeWidth={2.5} />
+            <Trophy size={20} className="text-surface" strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-black text-white tracking-tighter font-['Barlow_Condensed']">
+          <span className="text-xl font-black text-text-primary tracking-tighter font-['Barlow_Condensed']">
             LEAGUE <span style={{ color: ACCENT }}>H5</span>
           </span>
         </div>
 
         <div className="flex items-center gap-6">
-          <Link to="/rules-public" className="hidden md:block text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-[#C8F135] transition-colors">
+          <Link to="/rules-public" className="hidden md:block text-xs font-bold uppercase tracking-widest text-text-muted hover:text-[#C8F135] transition-colors">
             Règlement
           </Link>
           <Link
             to="/auth/login"
-            className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-[#C8F135] hover:text-[#0D1117] transition-all duration-300"
+            className="px-5 py-2.5 rounded-full bg-surface-raised border border-surface-border text-xs font-bold uppercase tracking-widest hover:bg-[#C8F135] hover:text-surface transition-all duration-300"
           >
             Connexion
           </Link>
@@ -197,8 +197,8 @@ export function LandingPage() {
         {/* Background avec overlay dynamique */}
         <div className="absolute inset-0 z-0">
           <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0D1117] via-transparent to-[#0D1117]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0D1117] via-transparent to-[#0D1117]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface" />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface via-transparent to-surface" />
         </div>
 
         {/* 🔴 LIVE / UPCOMING FEATURED BANNER */}
@@ -241,18 +241,18 @@ export function LandingPage() {
                 {/* Home Team */}
                 <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-white/5 border border-white/10 transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
                     style={{ borderBottom: `4px solid ${featuredMatch.home_team?.color || '#C8F135'}` }}
                   >
                     {featuredMatch.home_team?.logo_url ? (
                       <img src={featuredMatch.home_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-white">
+                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-text-primary">
                         {featuredMatch.home_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs md:text-sm font-black text-white uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
+                  <span className="text-xs md:text-sm font-black text-text-primary uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
                     {featuredMatch.home_team?.name}
                   </span>
                 </div>
@@ -262,11 +262,11 @@ export function LandingPage() {
                   {isFeaturedLive ? (
                     <>
                       <div className="flex items-center gap-3">
-                        <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                        <span className="text-3xl md:text-4xl font-black italic text-text-primary tracking-tighter font-['Barlow_Condensed']">
                           {featuredMatch.home_score ?? 0}
                         </span>
-                        <span className="text-slate-600 font-black text-lg">:</span>
-                        <span className="text-3xl md:text-4xl font-black italic text-white tracking-tighter font-['Barlow_Condensed']">
+                        <span className="text-text-muted font-black text-lg">:</span>
+                        <span className="text-3xl md:text-4xl font-black italic text-text-primary tracking-tighter font-['Barlow_Condensed']">
                           {featuredMatch.away_score ?? 0}
                         </span>
                       </div>
@@ -287,15 +287,15 @@ export function LandingPage() {
                   ) : (
                     <>
                       <div className="flex flex-col items-center">
-                        <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 font-['Barlow_Condensed']">
+                        <span className="text-[11px] font-black uppercase tracking-[0.25em] text-text-muted font-['Barlow_Condensed']">
                           {new Date(featuredMatch.scheduled_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {new Date(featuredMatch.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <span className="text-2xl font-black italic text-slate-300 tracking-tighter font-['Barlow_Condensed'] uppercase">
+                        <span className="text-2xl font-black italic text-text-secondary tracking-tighter font-['Barlow_Condensed'] uppercase">
                           VS
                         </span>
                       </div>
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-black">
+                        <span className="text-[9px] text-text-muted uppercase tracking-widest font-black">
                           Coup d'envoi dans
                         </span>
                         <KickoffCountdown scheduledAt={featuredMatch.scheduled_at} />
@@ -307,18 +307,18 @@ export function LandingPage() {
                 {/* Away Team */}
                 <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-white/5 border border-white/10 transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
                     style={{ borderBottom: `4px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
                   >
                     {featuredMatch.away_team?.logo_url ? (
                       <img src={featuredMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-white">
+                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-text-primary">
                         {featuredMatch.away_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs md:text-sm font-black text-white uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
+                  <span className="text-xs md:text-sm font-black text-text-primary uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
                     {featuredMatch.away_team?.name}
                   </span>
                 </div>
@@ -346,21 +346,20 @@ export function LandingPage() {
         <div className="relative z-10 text-center px-4 max-w-5xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 mb-8 backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-[#C8F135] animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted/80">
               {isLoading ? 'SYNC...' : `${stats?.seasonName ?? 'Saison'} LIVE`}
             </span>
           </div>
 
           <h1 
-            className="text-7xl md:text-[120px] font-black leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8"
-            style={{ color: '#ffffff' }}
+            className="text-7xl md:text-[120px] font-black leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8 text-text-primary"
           >
             HIGH FIVE <br />
             <span className="text-transparent" style={{ WebkitTextStroke: '2px #C8F135' }}>LIGUE</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-            L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-white font-bold">stats en direct</span>,
+          <p className="text-lg md:text-xl text-text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
+            L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-text-primary font-bold">stats en direct</span>,
             messagerie intégrée et gestion de club simplifiée.
           </p>
 
