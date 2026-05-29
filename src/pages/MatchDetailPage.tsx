@@ -127,9 +127,9 @@ function GoalEvent({
         <span className="text-xs text-text-muted font-mono w-8 text-right shrink-0">
           {minute ? `${minute}'` : ''}
         </span>
-        <span className="text-base">⚽</span>
-        <span className="text-xs text-text-secondary italic">
-          CSC — {playerName}
+        <span className="text-sm">⚽</span>
+        <span className="text-xs text-text-primary font-bold">
+          {playerName} (CSC)
         </span>
       </div>
     )
@@ -410,12 +410,33 @@ export function MatchDetailPage() {
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
 
+  // Liste des buts synchronisée (priorité aux events en direct pour éviter les lags de la DB)
+  const displayGoals = useMemo(() => {
+    if (!isLive) return goals
+    const goalEvents = liveEvents.filter(ev => ev.type === 'goal' || ev.type === 'own_goal')
+    if (goalEvents.length === 0) return []
+    
+    return goalEvents.map(ev => ({
+      id: ev.id,
+      match_id: ev.match_id,
+      team_id: ev.team_id!,
+      player_id: ev.player_id!,
+      minute: ev.minute,
+      is_own_goal: ev.type === 'own_goal',
+      players: ev.player ? {
+        id: ev.player.id,
+        first_name: ev.player.first_name,
+        last_name: ev.player.last_name
+      } : null
+    })) as GoalWithPlayer[]
+  }, [isLive, goals, liveEvents])
+
   const assistMap = new Map(
     assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
   )
 
   // Sort goals by minute
-  const sortedGoals = [...goals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+  const sortedGoals = [...displayGoals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
 
   // MVP
   const voteMap = new Map<string, number>()
@@ -451,7 +472,7 @@ export function MatchDetailPage() {
   const liveScore = liveEvents.reduce((acc, event: MatchEvent) => {
     if (event.type === 'goal' || event.type === 'own_goal') {
       const isHomeGoal = event.type === 'own_goal'
-        ? event.team_id !== match.home_team_id
+        ? event.team_id === match.away_team_id
         : event.team_id === match.home_team_id
       if (isHomeGoal) acc.home++
       else acc.away++
@@ -626,8 +647,8 @@ export function MatchDetailPage() {
         </div>
       )}
 
-      {/* Alerte de but broadcast — masquée pendant le direct vidéo et pour l'admin */}
-      {activeTab !== 'live-video' && !(isAdmin && isLive) && (
+      {/* Alerte de but broadcast — masquée pour l'admin et pendant le direct vidéo */}
+      {activeTab !== 'live-video' && !isAdmin && (
         <GoalAlert
           matchId={id!}
           homeTeam={match.home_team}
@@ -856,14 +877,17 @@ export function MatchDetailPage() {
             </div>
 
             {/* Scorers List — Professional Format */}
-            {(isLive || isCompleted) && (goals.length > 0) && (
+            {(isLive || isCompleted) && (displayGoals.length > 0) && (
               <div className="flex w-full max-w-2xl mt-4 px-6 items-start">
                 {/* Home Scorers */}
                 <div className="flex-1 flex flex-col items-end text-right space-y-1">
-                  {goals.filter(g => g.team_id === home.id).map(g => (
+                  {displayGoals.filter(g => {
+                    const isHomeTeam = g.team_id === home.id
+                    return g.is_own_goal ? !isHomeTeam : isHomeTeam
+                  }).map(g => (
                     <div key={g.id} className="group cursor-default">
                       <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
-                        {g.players?.last_name} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
+                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}
@@ -878,10 +902,13 @@ export function MatchDetailPage() {
 
                 {/* Away Scorers */}
                 <div className="flex-1 flex flex-col items-start text-left space-y-1">
-                  {goals.filter(g => g.team_id === away.id).map(g => (
+                  {displayGoals.filter(g => {
+                    const isHomeTeam = g.team_id === home.id
+                    return g.is_own_goal ? isHomeTeam : !isHomeTeam
+                  }).map(g => (
                     <div key={g.id} className="group cursor-default">
                       <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
-                        {g.players?.last_name} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
+                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}
@@ -1028,7 +1055,7 @@ export function MatchDetailPage() {
                     </div>
                   </div>
                 </div>
-                {goals.length === 0 ? (
+                {displayGoals.length === 0 ? (
                   <div className="py-8 text-center">
                     <p className="text-sm text-slate-600">Aucun buteur enregistré</p>
                   </div>
@@ -1336,8 +1363,8 @@ export function MatchDetailPage() {
 
       </AnimatePresence>
 
-      {/* Animation de but — masquée pendant le direct vidéo et pour l'admin */}
-      {activeTab !== 'live-video' && !(isAdmin && isLive) && (
+      {/* Animation de but — masquée pour l'admin et pendant le direct vidéo */}
+      {activeTab !== 'live-video' && !isAdmin && (
         <GoalCelebration
           key={celebration.key}
           teamName={celebration.teamName}
@@ -1345,7 +1372,6 @@ export function MatchDetailPage() {
           playerName={celebration.playerName}
         />
       )}
-      <LiveTicker />
     </div>
   )
 }
