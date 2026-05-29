@@ -557,11 +557,11 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
               </div>
               <div className={clsx(
                 "px-3 py-1 rounded-full border shadow-xl backdrop-blur-md",
-                isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-surface-card/80 border-surface-border"
+                isSuspended ? "bg-red-500/25 border-red-500/30" : "bg-slate-950/75 border-white/10"
               )}>
                 <p className={clsx(
                   "text-[8px] sm:text-[10px] font-black uppercase tracking-tight whitespace-nowrap",
-                  isSuspended ? "text-red-400" : "text-text-primary"
+                  isSuspended ? "text-red-400" : "text-slate-100"
                 )}>
                   {l.player?.last_name}
                 </p>
@@ -648,11 +648,11 @@ function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [
             </div>
             <div className={clsx(
               "px-2 py-0.5 rounded-full border shadow-lg backdrop-blur-md",
-              isSuspended ? "bg-red-500/20 border-red-500/30" : "bg-surface-card/80 border-surface-border"
+              isSuspended ? "bg-red-500/25 border-red-500/30" : "bg-slate-950/75 border-white/10"
             )}>
               <p className={clsx(
                 "text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap",
-                isSuspended ? "text-red-400" : "text-text-primary"
+                isSuspended ? "text-red-400" : "text-slate-100"
               )}>
                 {l.player?.last_name}
               </p>
