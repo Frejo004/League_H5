@@ -6,9 +6,168 @@ import {
 } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
+import { useStandings, type StandingRow } from '@/hooks/useStandings'
 import { useRealtimeTeams, useRealtimeMatches } from '@/hooks/useRealtime'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PublicLayout } from '@/components/layout/PublicLayout'
+
+// ─── standings sidebar widget ─────────────────────────────────────────────────
+function StandingsWidget({ standings, dark }: { standings: StandingRow[]; dark: boolean }) {
+  const cardBg = dark
+    ? 'rgba(15, 20, 32, 0.85)'
+    : 'rgba(255, 255, 255, 0.95)'
+  const borderColor = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)'
+  const headerBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const rowHoverBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
+
+  return (
+    <div style={{
+      borderRadius: 18, overflow: 'hidden',
+      border: `1px solid ${borderColor}`,
+      background: cardBg,
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      boxShadow: dark
+        ? '0 8px 32px rgba(0,0,0,0.35)'
+        : '0 4px 24px rgba(0,0,0,0.08)',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '14px 16px 12px',
+        borderBottom: `1px solid ${borderColor}`,
+        background: headerBg,
+      }}>
+        <Trophy size={14} style={{ color: '#FFDF73', flexShrink: 0 }} />
+        <span style={{
+          fontSize: '.68rem', fontWeight: 900, textTransform: 'uppercase',
+          letterSpacing: '.18em', color: 'var(--t1)', fontFamily: "'DM Sans', sans-serif",
+        }}>Classement</span>
+      </div>
+
+      {/* Column headers */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.6rem 1fr 1.8rem 1.8rem',
+        gap: 4,
+        padding: '6px 14px',
+        borderBottom: `1px solid ${borderColor}`,
+        background: headerBg,
+      }}>
+        {['#', 'Équipe', 'J', 'Pts'].map((h, i) => (
+          <span key={h} style={{
+            fontSize: '.58rem', fontWeight: 800, textTransform: 'uppercase',
+            letterSpacing: '.15em', color: 'var(--tm)',
+            textAlign: i === 0 || i >= 2 ? 'center' : 'left',
+            fontFamily: "'DM Sans', sans-serif",
+          }}>{h}</span>
+        ))}
+      </div>
+
+      {/* Rows */}
+      <div>
+        {standings.map((row, i) => {
+          const isFirst = i === 0
+          const rankColor = isFirst ? '#FFDF73' : i === 1 ? '#94a3b8' : i === 2 ? '#d97706' : 'var(--tm)'
+          const rankBg = isFirst
+            ? 'rgba(255,223,115,0.15)'
+            : i === 1
+              ? 'rgba(148,163,184,0.1)'
+              : i === 2
+                ? 'rgba(217,119,6,0.1)'
+                : 'transparent'
+
+          return (
+            <div
+              key={row.team_id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1.6rem 1fr 1.8rem 1.8rem',
+                gap: 4,
+                alignItems: 'center',
+                padding: '7px 14px',
+                borderBottom: `1px solid ${borderColor}`,
+                background: isFirst ? (dark ? 'rgba(255,223,115,0.04)' : 'rgba(255,223,115,0.06)') : 'transparent',
+                transition: 'background .15s',
+                cursor: 'default',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = rowHoverBg }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = isFirst
+                  ? (dark ? 'rgba(255,223,115,0.04)' : 'rgba(255,223,115,0.06)')
+                  : 'transparent'
+              }}
+            >
+              {/* Rank */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <span style={{
+                  fontSize: '.72rem', fontWeight: 900, color: rankColor,
+                  background: rankBg,
+                  width: 20, height: 20, borderRadius: 6,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                }}>{i + 1}</span>
+              </div>
+
+              {/* Team */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: row.team_color,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                }}>
+                  {row.team_logo
+                    ? <img src={row.team_logo} alt="" style={{ width: '75%', height: '75%', objectFit: 'contain', borderRadius: 4 }} />
+                    : <span style={{ fontSize: '.6rem', fontWeight: 900, color: '#fff' }}>{row.team_name[0]}</span>
+                  }
+                </div>
+                <span style={{
+                  fontSize: '.75rem', fontWeight: 700, color: 'var(--t1)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>{row.team_name}</span>
+              </div>
+
+              {/* Played */}
+              <span style={{
+                fontSize: '.72rem', fontWeight: 700, color: 'var(--tm)',
+                textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+                fontFamily: "'Barlow Condensed', sans-serif",
+              }}>{row.played}</span>
+
+              {/* Points */}
+              <span style={{
+                fontSize: '.85rem', fontWeight: 900,
+                color: isFirst ? '#FFDF73' : i === 1 ? 'var(--t1)' : i === 2 ? '#d97706' : 'var(--t1)',
+                textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+                fontFamily: "'Barlow Condensed', sans-serif",
+              }}>{row.points}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer link */}
+      <Link to="/public/standings" style={{ display: 'block', textDecoration: 'none' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          padding: '10px 16px',
+          fontSize: '.65rem', fontWeight: 800, textTransform: 'uppercase',
+          letterSpacing: '.15em', color: 'var(--tm)',
+          fontFamily: "'DM Sans', sans-serif",
+          transition: 'color .15s',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--t1)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tm)' }}
+        >
+          Voir tout le classement
+          <ChevronRight size={11} />
+        </div>
+      </Link>
+    </div>
+  )
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function fHour(s: string | null) {
@@ -350,6 +509,7 @@ const PER_PAGE = 6
 export function PublicMatchesPage() {
   const { data: season, isLoading: sl } = useActiveSeason()
   const { data: matches, isLoading: ml } = useMatches(season?.id)
+  const { data: standings = [] } = useStandings(season?.id)
 
   useRealtimeTeams(season?.id)
   useRealtimeMatches(season?.id)
@@ -409,7 +569,7 @@ export function PublicMatchesPage() {
       <div className={`mr${dark ? ' dark' : ''} flex-1 flex justify-center overflow-hidden w-full`} style={{
         background: 'var(--bg)', transition: 'background .35s ease'
       }}>
-        <div className="flex flex-col h-full w-full max-w-5xl box-border p-4 md:p-6 gap-4 md:gap-6">
+        <div className="flex flex-col h-full w-full max-w-7xl box-border p-4 md:p-6 gap-4 md:gap-6">
 
           {/* ── HEADER ────────────────────────────────────────────────── */}
           <div style={{
@@ -431,8 +591,6 @@ export function PublicMatchesPage() {
             }} />
 
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4 sm:gap-6">
-
-              {/* left */}
               <div style={{ minWidth: 0 }}>
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -467,7 +625,6 @@ export function PublicMatchesPage() {
                 </p>
               </div>
 
-              {/* right */}
               <div className="flex flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
                 {!isLoading && allMatches.length > 0 && (
                   <div className="flex gap-2.5 w-full sm:w-auto">
@@ -487,72 +644,82 @@ export function PublicMatchesPage() {
             </div>
           )}
 
-          {/* ── LIST ──────────────────────────────────────────────────── */}
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            {isLoading ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : !season ? (
-              <Empty icon={Calendar} message="Aucune saison active" />
-            ) : allMatches.length === 0 ? (
-              <Empty icon={Calendar} message="Aucun match programmé" />
-            ) : visible.length === 0 ? (
-              <Empty icon={Radio} message="Pas de match dans cette catégorie" />
-            ) : (
-              <>
-                <div className="ns grid gap-3 align-start flex-1 min-h-0 overflow-y-auto" style={{
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))'
-                }}>
-                  {paginated.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
+          {/* ── BODY: matches list + standings sidebar ─────────────────── */}
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 md:gap-6">
+
+            {/* matches list */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              {isLoading ? (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LoadingSpinner size="lg" />
                 </div>
-
-                {totalPages > 1 && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    paddingTop: 8, flexShrink: 0
+              ) : !season ? (
+                <Empty icon={Calendar} message="Aucune saison active" />
+              ) : allMatches.length === 0 ? (
+                <Empty icon={Calendar} message="Aucun match programmé" />
+              ) : visible.length === 0 ? (
+                <Empty icon={Radio} message="Pas de match dans cette catégorie" />
+              ) : (
+                <>
+                  <div className="ns grid gap-3 align-start flex-1 min-h-0 overflow-y-auto" style={{
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))'
                   }}>
-
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={safePage === 1} style={{
-                        display: 'flex', alignItems: 'center', gap: 4, padding: '5px 11px', borderRadius: 9,
-                        background: 'var(--bg-pill)', border: '1px solid var(--bd)',
-                        color: 'var(--t2)', fontSize: '.62rem', fontWeight: 700,
-                        cursor: safePage === 1 ? 'not-allowed' : 'pointer', opacity: safePage === 1 ? .3 : 1,
-                        transition: 'all .18s', fontFamily: "'DM Sans',sans-serif"
-                      }}>
-                      <ChevronLeft size={12} /> Préc.
-                    </button>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {Array.from({ length: totalPages }, (_, i) => (
-                        <button key={i} onClick={() => setPage(i + 1)} style={{
-                          height: 7, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0,
-                          background: safePage === i + 1 ? 'var(--accent)' : 'var(--bd)',
-                          width: safePage === i + 1 ? 22 : 7,
-                          transition: 'all .22s ease'
-                        }} />
-                      ))}
-                    </div>
-
-                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={safePage === totalPages} style={{
-                        display: 'flex', alignItems: 'center', gap: 4, padding: '5px 11px', borderRadius: 9,
-                        background: 'var(--bg-pill)', border: '1px solid var(--bd)',
-                        color: 'var(--t2)', fontSize: '.62rem', fontWeight: 700,
-                        cursor: safePage === totalPages ? 'not-allowed' : 'pointer',
-                        opacity: safePage === totalPages ? .3 : 1,
-                        transition: 'all .18s', fontFamily: "'DM Sans',sans-serif"
-                      }}>
-                      Suiv. <ChevronRight size={12} />
-                    </button>
+                    {paginated.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
                   </div>
-                )}
-              </>
+
+                  {totalPages > 1 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      paddingTop: 8, flexShrink: 0
+                    }}>
+                      <button onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={safePage === 1} style={{
+                          display: 'flex', alignItems: 'center', gap: 4, padding: '5px 11px', borderRadius: 9,
+                          background: 'var(--bg-pill)', border: '1px solid var(--bd)',
+                          color: 'var(--t2)', fontSize: '.62rem', fontWeight: 700,
+                          cursor: safePage === 1 ? 'not-allowed' : 'pointer', opacity: safePage === 1 ? .3 : 1,
+                          transition: 'all .18s', fontFamily: "'DM Sans',sans-serif"
+                        }}>
+                        <ChevronLeft size={12} /> Préc.
+                      </button>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <button key={i} onClick={() => setPage(i + 1)} style={{
+                            height: 7, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0,
+                            background: safePage === i + 1 ? 'var(--accent)' : 'var(--bd)',
+                            width: safePage === i + 1 ? 22 : 7,
+                            transition: 'all .22s ease'
+                          }} />
+                        ))}
+                      </div>
+
+                      <button onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages} style={{
+                          display: 'flex', alignItems: 'center', gap: 4, padding: '5px 11px', borderRadius: 9,
+                          background: 'var(--bg-pill)', border: '1px solid var(--bd)',
+                          color: 'var(--t2)', fontSize: '.62rem', fontWeight: 700,
+                          cursor: safePage === totalPages ? 'not-allowed' : 'pointer',
+                          opacity: safePage === totalPages ? .3 : 1,
+                          transition: 'all .18s', fontFamily: "'DM Sans',sans-serif"
+                        }}>
+                        Suiv. <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* standings sidebar */}
+            {standings.length > 0 && (
+              <div className="w-full lg:w-[270px] shrink-0">
+                <StandingsWidget standings={standings} dark={dark} />
+              </div>
             )}
           </div>
         </div>
       </div>
     </PublicLayout>
   )
-}
+}
