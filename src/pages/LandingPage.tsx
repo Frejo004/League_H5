@@ -91,12 +91,14 @@ function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
         return
       }
 
-      const h = Math.floor(diff / (1000 * 60 * 60))
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
       const s = Math.floor((diff % (1000 * 60)) / 1000)
 
       const parts = []
-      if (h > 0) parts.push(`${h}h`)
+      if (d > 0) parts.push(`${d}j`)
+      if (h > 0 || d > 0) parts.push(`${h}h`)
       parts.push(`${m}m`)
       parts.push(`${s}s`)
 
@@ -109,7 +111,7 @@ function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
   }, [scheduledAt])
 
   return (
-    <span className="font-mono font-bold text-[#C8F135] text-[13px] md:text-sm tracking-wider animate-pulse">
+    <span className="font-mono font-bold text-[#C8F135] text-[13px] md:text-sm tracking-wider animate-pulse whitespace-nowrap">
       {timeLeft}
     </span>
   )
@@ -152,16 +154,14 @@ export function LandingPage() {
   let featuredMatch = matches.find(m => m.status === 'live')
   let isFeaturedLive = true
 
-  // B. Si aucun match live, trouver le premier match scheduled qui débute dans moins d'une heure
+  // B. Si aucun match live, trouver le premier match scheduled à venir (sans limite de temps)
   if (!featuredMatch) {
-    const upcoming = matches.filter(m => m.status === 'scheduled' && m.scheduled_at)
-    const now = new Date()
+    const upcoming = matches
+      .filter(m => m.status === 'scheduled' && m.scheduled_at)
+      .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
     
-    featuredMatch = upcoming.find(m => {
-      const scheduledTime = new Date(m.scheduled_at)
-      const diffMins = (scheduledTime.getTime() - now.getTime()) / (1000 * 60)
-      return diffMins > 0 && diffMins <= 60
-    })
+    const now = new Date()
+    featuredMatch = upcoming.find(m => new Date(m.scheduled_at) > now)
     isFeaturedLive = false
   }
 
@@ -203,9 +203,9 @@ export function LandingPage() {
 
         {/* 🔴 LIVE / UPCOMING FEATURED BANNER */}
         {featuredMatch && (
-          <div className="relative z-10 w-full max-w-4xl mx-auto px-4 mb-10">
+          <div className="relative z-10 w-full max-w-6xl mx-auto px-4 mb-10">
             <div className={clsx(
-              "relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border backdrop-blur-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500",
+              "relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border backdrop-blur-xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-10 transition-all duration-500",
               isFeaturedLive 
                 ? "border-red-500/30 shadow-[0_0_50px_rgba(239,68,68,0.2)] hover:border-red-500/50" 
                 : "border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)] hover:border-amber-500/50"
@@ -239,20 +239,20 @@ export function LandingPage() {
               {/* Scoreboard center */}
               <div className="flex-1 flex items-center justify-center gap-4 md:gap-10">
                 {/* Home Team */}
-                <div className="flex flex-col items-center text-center w-24 md:w-32">
+                <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
-                    style={{ borderLeft: `3px solid ${featuredMatch.home_team?.color || '#C8F135'}` }}
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-white/5 border border-white/10 transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    style={{ borderBottom: `4px solid ${featuredMatch.home_team?.color || '#C8F135'}` }}
                   >
                     {featuredMatch.home_team?.logo_url ? (
                       <img src={featuredMatch.home_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
+                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-white">
                         {featuredMatch.home_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
+                  <span className="text-xs md:text-sm font-black text-white uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
                     {featuredMatch.home_team?.name}
                   </span>
                 </div>
@@ -288,7 +288,7 @@ export function LandingPage() {
                     <>
                       <div className="flex flex-col items-center">
                         <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 font-['Barlow_Condensed']">
-                          {new Date(featuredMatch.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(featuredMatch.scheduled_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {new Date(featuredMatch.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <span className="text-2xl font-black italic text-slate-300 tracking-tighter font-['Barlow_Condensed'] uppercase">
                           VS
@@ -305,38 +305,38 @@ export function LandingPage() {
                 </div>
 
                 {/* Away Team */}
-                <div className="flex flex-col items-center text-center w-24 md:w-32">
+                <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center p-2.5 bg-slate-900/50 border border-white/5 transition-transform hover:scale-105"
-                    style={{ borderLeft: `3px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-white/5 border border-white/10 transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    style={{ borderBottom: `4px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
                   >
                     {featuredMatch.away_team?.logo_url ? (
                       <img src={featuredMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-lg font-bold font-['Barlow_Condensed'] text-white">
+                      <span className="text-2xl font-black font-['Barlow_Condensed'] text-white">
                         {featuredMatch.away_team?.name?.slice(0,2).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] md:text-xs font-bold text-white uppercase tracking-tight mt-2 truncate max-w-full">
+                  <span className="text-xs md:text-sm font-black text-white uppercase tracking-tighter mt-3 truncate max-w-full font-['Barlow_Condensed'] italic">
                     {featuredMatch.away_team?.name}
                   </span>
                 </div>
               </div>
 
               {/* Action right */}
-              <div className="shrink-0 w-full md:w-auto flex justify-center">
+              <div className="shrink-0 w-full md:w-auto flex justify-center md:pl-4">
                 <Link
                   to={`/public/matches/${featuredMatch.slug || featuredMatch.id}`}
                   className={clsx(
-                    "group relative flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all w-full md:w-auto text-xs",
+                    "group relative flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all w-full md:w-auto text-[11px] font-['Barlow_Condensed']",
                     isFeaturedLive 
-                      ? "bg-red-600 hover:bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]" 
-                      : "bg-amber-600 hover:bg-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)]"
+                      ? "bg-red-600 hover:bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)]" 
+                      : "bg-[#C8F135] !text-[#0D1117] hover:bg-[#d9ff4d] shadow-[0_0_30px_rgba(200,241,53,0.3)]"
                   )}
                 >
                   {isFeaturedLive ? "Regarder le Live" : "Fiche du Match"}
-                  <ChevronRight className="transition-transform group-hover:translate-x-0.5" size={14} />
+                  <ChevronRight className="transition-transform group-hover:translate-x-1" size={16} />
                 </Link>
               </div>
             </div>
