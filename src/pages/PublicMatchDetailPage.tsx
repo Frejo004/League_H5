@@ -249,8 +249,8 @@ function CardSection({ children, label, icon: Icon }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // SCORERS LIST
 // ─────────────────────────────────────────────────────────────────────────────
-function ScorersList({ sortedGoals, home, match }: {
-  sortedGoals: any[]; home: TeamRef; match: any
+function ScorersList({ sortedGoals, home, away, match }: {
+  sortedGoals: any[]; home: TeamRef; away: TeamRef; match: any
 }) {
   if (sortedGoals.length === 0) return null
 
@@ -572,7 +572,7 @@ export function PublicMatchDetailPage() {
                 {activeTab === 'resume' && (
                   <motion.div key="resume" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="space-y-4 pt-1">
                     {(isLive || isCompleted) && sortedGoals.length > 0 && (
-                      <ScorersList sortedGoals={sortedGoals} home={home} match={match} />
+                      <ScorersList sortedGoals={sortedGoals} home={home} away={away} match={match} />
                     )}
                     <InfoSection match={match} season={season} />
                   </motion.div>
