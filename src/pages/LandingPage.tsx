@@ -327,7 +327,7 @@ export function LandingPage() {
               {/* Action right */}
               <div className="shrink-0 w-full md:w-auto flex justify-center md:pl-4">
                 <Link
-                  to={`/public/matches/${featuredMatch.slug || featuredMatch.id}`}
+                  to={`/public/matches/${featuredMatch.slug || featuredMatch.id}?tab=lineups`}
                   className={clsx(
                     "group relative flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all w-full md:w-auto text-[11px] font-['Barlow_Condensed']",
                     isFeaturedLive 

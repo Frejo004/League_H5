@@ -424,7 +424,13 @@ export function PublicMatchDetailPage() {
   const isLoading = paramType === 'id' ? loadingById : loadingBySlug
   const id = match?.id
 
-  const [activeTab, setActiveTab] = useState<LiveTab>('resume')
+  const [activeTab, setActiveTab] = useState<LiveTab>(() => {
+    // Si l'URL contient ?tab=lineups, on ouvre directement l'onglet compositions
+    const params = new URLSearchParams(window.location.search)
+    const requestedTab = params.get('tab') as LiveTab
+    if (requestedTab === 'lineups') return 'lineups'
+    return 'resume'
+  })
 
   // Theme support
   const [dark, setDark] = useState<boolean>(() => {
