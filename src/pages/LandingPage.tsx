@@ -205,7 +205,7 @@ export function LandingPage() {
         {featuredMatch && (
           <div className="relative z-10 w-full max-w-6xl mx-auto px-4 mb-10">
             <div className={clsx(
-              "relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border backdrop-blur-xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-10 transition-all duration-500",
+              "relative overflow-hidden rounded-[2.5rem] bg-[#161B22]/70 border backdrop-blur-xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10 transition-all duration-500",
               isFeaturedLive 
                 ? "border-red-500/30 shadow-[0_0_50px_rgba(239,68,68,0.2)] hover:border-red-500/50" 
                 : "border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)] hover:border-amber-500/50"

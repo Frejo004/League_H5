@@ -17,6 +17,8 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
+import { usePlayerDiscipline } from '@/hooks/useDisciplinaryStats'
+import { useSpectators } from '@/hooks/useSpectators'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -429,6 +431,7 @@ function WelcomeCard({ profile, myPlayer, myTeam, role }: {
 function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: string }) {
   const { data: profile, isLoading } = usePlayerProfile(playerId)
   const { data: mvpData } = usePlayerMvp(playerId, seasonId)
+  const { data: discipline } = usePlayerDiscipline(playerId, seasonId)
 
   if (isLoading) return (
     <div className="rounded-2xl border border-surface-border bg-surface-card p-4 animate-pulse">
@@ -446,6 +449,7 @@ function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: strin
     { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400', bg: 'bg-orange-400/10' },
     { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400', bg: 'bg-violet-400/10' },
     { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+    { label: 'Cartons', value: (discipline?.yellow_cards ?? 0) + (discipline?.red_cards ?? 0), icon: Shield, color: 'text-red-400', bg: 'bg-red-400/10', sub: `${discipline?.yellow_cards ?? 0}J / ${discipline?.red_cards ?? 0}R` },
   ]
 
   return (
@@ -462,14 +466,76 @@ function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: strin
           Profil complet <ChevronRight size={10} />
         </Link>
       </div>
-      <div className="grid grid-cols-4 gap-2 relative">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className={clsx('rounded-xl p-2.5 text-center', bg)}>
-            <Icon size={13} className={clsx('mx-auto mb-1', color)} />
-            <p className="text-xl font-black text-text-primary tabular-nums leading-none">{value}</p>
-            <p className="text-[9px] text-text-muted uppercase tracking-wider mt-0.5">{label}</p>
+      <div className="grid grid-cols-5 gap-1.5 relative">
+        {stats.map(({ label, value, icon: Icon, color, bg, sub }) => (
+          <div key={label} className={clsx('rounded-xl p-2 text-center flex flex-col items-center justify-center min-w-0', bg)}>
+            <Icon size={12} className={clsx('mb-1', color)} />
+            <p className="text-lg font-black text-text-primary tabular-nums leading-none">{value}</p>
+            <p className="text-[8px] text-text-muted uppercase tracking-wider mt-0.5 truncate w-full">{label}</p>
+            {sub && <p className="text-[7px] text-text-muted mt-0.5 font-bold truncate w-full">{sub}</p>}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Carte Mon Équipe (Joueur / Capitaine) ─────────────────────────────────────
+function MyTeamCard({ teamId, seasonId }: { teamId: string; seasonId: string }) {
+  const { data: standings } = useStandings(seasonId)
+  const myStanding = useMemo(() => standings?.find(s => s.team_id === teamId), [standings, teamId])
+  const rank = useMemo(() => {
+    if (!standings) return null
+    return standings.findIndex(s => s.team_id === teamId) + 1
+  }, [standings, teamId])
+
+  if (!myStanding) return null
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface-card p-4">
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${myStanding.team_color}10 0%, transparent 70%)` }} />
+      <div className="flex items-center justify-between mb-3 relative">
+        <div className="flex items-center gap-1.5">
+          <Shield size={12} className="text-text-muted" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Mon équipe</span>
+        </div>
+        <Link to={`/teams/${myStanding.team_id}`}
+          className="text-[10px] font-bold text-primary-400 hover:text-primary-300 flex items-center gap-0.5 transition-colors">
+          Page d'équipe <ChevronRight size={10} />
+        </Link>
+      </div>
+      
+      <div className="flex items-center gap-4 relative">
+        <div className="relative">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg"
+            style={{ backgroundColor: myStanding.team_color }}>
+            {myStanding.team_logo ? <img src={myStanding.team_logo} alt="" className="w-10 h-10 object-contain rounded-lg" /> : myStanding.team_name[0]}
+          </div>
+          <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-[10px] font-black border-2 border-surface-card">
+            {rank}
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base text-text-primary truncate leading-tight mb-1">{myStanding.team_name}</p>
+          <div className="flex items-center gap-1.5">
+            {myStanding.form.slice(-3).map((res, i) => (
+              <span key={i} className={clsx(
+                "w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black",
+                res === 'W' ? "bg-green-500/20 text-green-400" : res === 'D' ? "bg-slate-500/20 text-slate-400" : "bg-red-500/20 text-red-400"
+              )}>
+                {res}
+              </span>
+            ))}
+            <span className="text-[10px] text-text-muted font-bold ml-1 uppercase tracking-wider">Forme</span>
+          </div>
+        </div>
+
+        <div className="text-right shrink-0">
+          <p className="text-2xl font-black text-text-primary tabular-nums leading-none">{myStanding.points}</p>
+          <p className="text-[10px] mt-0.5 text-text-muted uppercase font-bold">Points</p>
+        </div>
       </div>
     </div>
   )
@@ -510,14 +576,14 @@ function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
 }
 
 // ── Raccourcis admin ──────────────────────────────────────────────────────────
-function AdminQuickActions({ completedCount, teamsCount, upcomingCount }: {
-  completedCount: number; teamsCount: number; upcomingCount: number
+function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingSpectatorsCount }: {
+  completedCount: number; teamsCount: number; upcomingCount: number; pendingSpectatorsCount: number
 }) {
   const actions = [
     { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
     { label: 'Équipes', sub: `${teamsCount} équipes`, icon: Shield, to: '/admin/teams', color: '#8b5cf6' },
+    { label: 'Spectateurs', sub: `${pendingSpectatorsCount} en attente`, icon: Users, to: '/admin/spectators', color: '#10b981', alert: pendingSpectatorsCount > 0 },
     { label: 'Saisons', sub: 'Gérer', icon: Trophy, to: '/admin/seasons', color: '#f59e0b' },
-    { label: 'Paramètres', sub: 'Config', icon: Settings, to: '/admin/settings', color: '#64748b' },
   ]
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
@@ -526,9 +592,15 @@ function AdminQuickActions({ completedCount, teamsCount, upcomingCount }: {
         <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Administration</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {actions.map(({ label, sub, icon: Icon, to, color }) => (
+        {actions.map(({ label, sub, icon: Icon, to, color, alert }) => (
           <Link key={to} to={to}
-            className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-raised/50 border border-surface-border hover:bg-surface-raised transition-colors group">
+            className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-raised/50 border border-surface-border hover:bg-surface-raised transition-colors group relative">
+            {alert && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            )}
             <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${color}20` }}>
               <Icon size={13} style={{ color }} />
             </div>
@@ -552,6 +624,12 @@ export function DashboardPage() {
   const { data: standings } = useStandings(season?.id)
   const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
   const { isCaptain, isAdmin, profile, role } = useAuth()
+  const { data: spectators } = useSpectators(isAdmin ? undefined : season?.id)
+
+  const pendingSpectatorsCount = useMemo(() => {
+    if (!isAdmin || !spectators) return 0
+    return spectators.filter(s => s.status === 'pending').length
+  }, [isAdmin, spectators])
 
   useRealtimeTeams(season?.id)
   useRealtimeMatches(season?.id)
@@ -680,9 +758,14 @@ export function DashboardPage() {
       </div>
 
       {/* ── Mes stats perso (joueur / capitaine) ── */}
-      {hasTeam && myPlayer && season && (
-        <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {hasTeam && myPlayer && season && (
+          <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
+        )}
+        {hasTeam && myTeamId && season && (
+          <MyTeamCard teamId={myTeamId} seasonId={season.id} />
+        )}
+      </div>
 
       {/* ── Raccourcis capitaine ── */}
       {isCaptain && !isAdmin && myTeam && (
@@ -695,6 +778,7 @@ export function DashboardPage() {
           completedCount={completedMatches.length}
           teamsCount={teams?.length ?? 0}
           upcomingCount={upcomingMatches.length}
+          pendingSpectatorsCount={pendingSpectatorsCount}
         />
       )}
 
