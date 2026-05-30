@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Trophy, Home, LogIn, Sun, Moon } from 'lucide-react'
+import { BookOpen, Trophy, Home, LogIn, Sun, Moon, BarChart2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -124,6 +124,7 @@ export function PublicLayout({ children, hideFooter = false }: PublicLayoutProps
   const navItems = [
     { to: '/', label: 'Accueil', icon: Home },
     { to: '/public/matches', label: 'Matchs', icon: Trophy },
+    { to: '/public/standings', label: 'Classement', icon: BarChart2 },
   ]
 
   return (

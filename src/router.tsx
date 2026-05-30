@@ -41,6 +41,7 @@ const MatchesPage         = lazyPage(() => import('@/pages/MatchesPage'), 'Match
 const MatchDetailPage     = lazyPage(() => import('@/pages/MatchDetailPage'), 'MatchDetailPage')
 const PublicMatchesPage       = lazyPage(() => import('@/pages/PublicMatchesPage'), 'PublicMatchesPage')
 const PublicMatchDetailPage   = lazyPage(() => import('@/pages/PublicMatchDetailPage'), 'PublicMatchDetailPage')
+const PublicStandingsPage     = lazyPage(() => import('@/pages/PublicStandingsPage'), 'PublicStandingsPage')
 const ScorersPage         = lazyPage(() => import('@/pages/ScorersPage'), 'ScorersPage')
 const TeamsPage           = lazyPage(() => import('@/pages/TeamsPage'), 'TeamsPage')
 const TeamDetailPage       = lazyPage(() => import('@/pages/TeamDetailPage'), 'TeamDetailPage')
@@ -76,6 +77,7 @@ export const router = createBrowserRouter(
         { path: '/',              element: <LandingPage /> },
         { path: '/public/matches',       element: <PublicMatchesPage /> },
         { path: '/public/matches/:idOrSlug', element: <PublicMatchDetailPage /> },
+        { path: '/public/standings',     element: <PublicStandingsPage /> },
         { path: '/auth/login',           element: <LoginPage /> },
         { path: '/auth/signup',          element: <SignupPage /> },
         { path: '/auth/reset-password',  element: <ResetPasswordPage /> },

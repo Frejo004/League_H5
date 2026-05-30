@@ -149,7 +149,7 @@ function StandingsWidget({ standings, dark }: { standings: StandingRow[]; dark: 
       </div>
 
       {/* Footer link */}
-      <Link to="/standings" style={{ display: 'block', textDecoration: 'none' }}>
+      <Link to="/public/standings" style={{ display: 'block', textDecoration: 'none' }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           padding: '10px 16px',
