@@ -166,7 +166,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface text-text-primary selection:bg-[#C8F135] selection:text-surface">
+    <div className="min-h-screen bg-[#0f1420] text-slate-50 selection:bg-[#C8F135] selection:text-[#0f1420] dark [--color-surface:#0f1420] [--color-surface-card:#161c2d] [--color-surface-raised:#1e2640] [--color-surface-border:#252f4a] [--color-surface-muted:#2d3a5a] [--color-text-primary:#f8fafc] [--color-text-secondary:#94a3b8] [--color-text-muted:#64748b]">
 
       {/* ── Navigation ── */}
       {/* <header className="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-surface/60 border-b border-surface-border">
