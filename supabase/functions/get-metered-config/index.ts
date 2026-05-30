@@ -19,7 +19,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('No authorization header')
 
-    const denoEnv = (globalThis as any).Deno?.env
+    const denoEnv = (globalThis as unknown as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno?.env
     const supabaseUrl = denoEnv?.get('SUPABASE_URL')
     const supabaseServiceRoleKey = denoEnv?.get('SUPABASE_SERVICE_ROLE_KEY')
     

@@ -110,9 +110,6 @@ function FormChart({
     for (const day of matchdays) {
       const dayMatches = completedMatches.filter(m => m.matchday === day)
 
-      // Copier les points actuels avant la journée
-      const snapshot = new Map(teamCumulative)
-
       for (const m of dayMatches) {
         const hs = m.home_score!
         const as_ = m.away_score!

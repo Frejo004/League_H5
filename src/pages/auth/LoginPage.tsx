@@ -115,7 +115,7 @@ export function LoginPage() {
           Accès spectateur ? Inscrivez-vous et attendez l'approbation de l'admin.
         </p>
         <p className="text-center text-xs text-slate-700 mt-2">
-          <Link to="/landing" className="hover:text-slate-500 transition-colors">
+          <Link to="/" className="hover:text-slate-500 transition-colors">
             ← Retour à l'accueil
           </Link>
         </p>

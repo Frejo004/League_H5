@@ -481,7 +481,7 @@ function GoalOverlay({ teamName, teamColor, score }: { teamName: string; teamCol
 }
 
 // ── MATCH MOMENTUM (MOBILE OPTIMIZED) ──
-function MatchMomentum({ events, homeId, awayId }: { events: any[]; homeId: string; awayId: string }) {
+function MatchMomentum({ events, homeId }: { events: any[]; homeId: string }) {
   const momentum = useMemo(() => {
     const recentEvents = events
       .filter(e => ['shot', 'shot_on_target', 'corner', 'foul', 'goal'].includes(e.type))
@@ -499,7 +499,7 @@ function MatchMomentum({ events, homeId, awayId }: { events: any[]; homeId: stri
     })
     
     return (homeScore / (homeScore + awayScore)) * 100
-  }, [events, homeId, awayId])
+  }, [events, homeId])
 
   return (
     <div className="card p-3 sm:p-4 space-y-2 sm:space-y-3">
@@ -787,7 +787,7 @@ export function PublicMatchDetailPage() {
 
             {isLive && (
               <div className="space-y-5">
-                <MatchMomentum events={liveEvents} homeId={home.id} awayId={away.id} />
+                <MatchMomentum events={liveEvents} homeId={home.id} />
                 
                 <div className="rounded-2xl border border-[var(--bd)] bg-red-500/[0.02] p-5 shadow-[var(--sh-card)]">
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500/80 mb-4 flex items-center gap-2">

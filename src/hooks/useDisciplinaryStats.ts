@@ -152,7 +152,7 @@ export function useDisciplinaryStats(seasonId?: string) {
 
       for (const ev of events) {
         const team = ev.team as { id: string; name: string; color: string } | null
-        const player = ev.player as { id: string; first_name: string; last_name: string } | null
+        const player = ev.player as EventRow['player']
 
         if (!team) continue
 

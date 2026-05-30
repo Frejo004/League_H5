@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 
@@ -10,7 +10,6 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 export function PlayerOrCaptainGuard() {
   const { session, profile, role, isLoading, isProfileLoading } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
 
   // Use a ref to avoid calling navigate twice on re-renders
   const redirected = useRef(false)

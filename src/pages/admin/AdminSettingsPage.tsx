@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Save, Calendar } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings, useUpsertSettings } from '@/hooks/useSettings'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'

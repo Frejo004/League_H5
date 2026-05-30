@@ -1,12 +1,3 @@
-﻿/**
- * ChatPage � Messagerie compl�te
- *
- * Sidebar 3 sections :
- *   1. Canaux globaux  (G�n�ral, Capitaines & Admins)
- *   2. Groupes �quipes (TeamChat existant)
- *   3. Messages directs (DMs entre joueurs)
- */
-
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ArrowLeft, Plus, Search, X, MessageCircle } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -59,10 +50,6 @@ function getInitials(name: string | null): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-// -----------------------------------------------------------------------------
-// Types de s�lection
-// -----------------------------------------------------------------------------
-
 type SelectedItem =
   | { type: 'channel'; channel: GlobalChannel }
   | { type: 'team'; team: TeamUnread }
@@ -91,7 +78,7 @@ function NewDmModal({
   )
 
   // Reset index quand la liste change
-  useEffect(() => { setActiveIdx(0) }, [query])
+  useEffect(() => { setActiveIdx(0) }, [query]) // eslint-disable-line react-hooks/set-state-in-effect
 
   // Fermeture sur Escape
   useEffect(() => {
@@ -130,14 +117,14 @@ function NewDmModal({
         className="w-full max-w-sm mx-4 bg-chat-panel border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/6">
           <Search size={15} className="text-slate-500 shrink-0" />
           <input
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Rechercher un joueur�"
+            placeholder="Rechercher un joueur…"
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
             aria-label="Rechercher un joueur"
             role="combobox"
@@ -170,8 +157,8 @@ function NewDmModal({
                 onClick={() => onSelect(p.id)}
                 onMouseEnter={() => setActiveIdx(idx)}
                 className={clsx(
-                  'w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/[0.04] last:border-0',
-                  idx === activeIdx ? 'bg-white/[0.07]' : 'hover:bg-white/[0.04]',
+                  'w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/4 last:border-0',
+                  idx === activeIdx ? 'bg-white/[0.07]' : 'hover:bg-white/4',
                 )}
               >
                 {p.avatar_url ? (
@@ -235,7 +222,7 @@ function ConvAvatar({
       {isOnline !== undefined && (
         <span
           className={clsx(
-            'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-(--color-chat-bg)',
+            'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-chat-bg',
             isOnline ? 'bg-emerald-500' : 'bg-slate-600',
           )}
         />
@@ -259,8 +246,6 @@ function Sidebar({
   selected,
   onSelect,
   onNewDm,
-  isAdmin,
-  isCaptain,
 }: {
   channels: GlobalChannel[]
   teams: TeamUnread[]
@@ -268,8 +253,6 @@ function Sidebar({
   selected: SelectedItem | null
   onSelect: (item: SelectedItem) => void
   onNewDm: () => void
-  isAdmin: boolean
-  isCaptain: boolean
 }) {
   const [filter, setFilter] = useState<SidebarFilter>('all')
   const [search, setSearch] = useState('')
@@ -380,7 +363,7 @@ function Sidebar({
 
         {/* Barre de recherche */}
         <div
-          className="flex items-center gap-2.5 bg-white/[0.06] rounded-2xl px-3.5 py-2.5 cursor-text"
+          className="flex items-center gap-2.5 bg-white/6 rounded-2xl px-3.5 py-2.5 cursor-text"
           onClick={() => searchRef.current?.focus()}
         >
           <Search size={15} className="text-slate-500 shrink-0" />
@@ -410,7 +393,7 @@ function Sidebar({
                 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all whitespace-nowrap',
                 filter === f.id
                   ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/30'
-                  : 'bg-white/[0.07] text-slate-400 hover:bg-white/[0.12] hover:text-white',
+                  : 'bg-white/[0.07] text-slate-400 hover:bg-white/12 hover:text-white',
               )}
             >
               {f.label}
@@ -453,7 +436,7 @@ function Sidebar({
                 onClick={() => handleSelect(item)}
                 className={clsx(
                   'w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors',
-                  sel ? 'bg-primary-600/15' : 'hover:bg-white/[0.04]',
+                  sel ? 'bg-primary-600/15' : 'hover:bg-white/4',
                 )}
               >
                 {/* Avatar */}
@@ -670,15 +653,18 @@ export function ChatPage() {
   const getOrCreateDm = useGetOrCreateDm()
 
   const isLoading = teamsLoading || channelsLoading || dmsLoading
+  const hasInitialized = useRef(false)
 
-  // S�lection auto desktop uniquement (ne pas ouvrir le chat sur mobile)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (selected) return
+    if (hasInitialized.current || selected) return
     if (channels.length > 0) {
-      setSelected({ type: 'channel', channel: channels[0] })
-      // Ne pas setMobileShowChat(true) ici � l'user doit choisir explicitement sur mobile
+      // Schedule state update to prevent cascading renders during effect execution
+      queueMicrotask(() => setSelected({ type: 'channel', channel: channels[0] }))
+      hasInitialized.current = true
     } else if (teams.length > 0) {
-      setSelected({ type: 'team', team: teams[0] })
+      queueMicrotask(() => setSelected({ type: 'team', team: teams[0] }))
+      hasInitialized.current = true
     }
   }, [channels, teams, selected])
 
@@ -716,7 +702,7 @@ export function ChatPage() {
     } catch (e) {
       console.error('Erreur creation DM', e)
     }
-  }, [user?.id, getOrCreateDm, dmConvs, handleSelect])
+  }, [user, getOrCreateDm, dmConvs, handleSelect])
 
   if (isLoading) {
     return (
@@ -733,7 +719,7 @@ export function ChatPage() {
           <div className="w-16 h-16 rounded-2xl bg-primary-600/10 border border-primary-600/20 flex items-center justify-center">
             <MessageCircle size={28} className="text-primary-400" />
           </div>
-          <p className="text-white font-bold text-base">Selectionnez une conversation</p>
+          <p className="text-white font-bold text-base">Sélectionnez une conversation</p>
           <p className="text-slate-500 text-sm">Choisissez un canal ou un groupe dans la liste.</p>
         </div>
       )
@@ -772,9 +758,7 @@ export function ChatPage() {
         />
       )}
 
-      {/* MOBILE � slide horizontal entre sidebar et chat */}
       <div className="lg:hidden h-[calc(100vh-8rem)] relative overflow-hidden">
-        {/* Sidebar � slide out � gauche quand chat ouvert */}
         <div
           className="absolute inset-0 card p-0 overflow-hidden transition-transform duration-300 ease-in-out"
           style={{ transform: mobileShowChat ? 'translateX(-100%)' : 'translateX(0)' }}
@@ -786,12 +770,9 @@ export function ChatPage() {
             selected={selected}
             onSelect={handleSelect}
             onNewDm={() => setShowNewDm(true)}
-            isAdmin={isAdmin}
-            isCaptain={isCaptain}
           />
         </div>
 
-        {/* Chat � slide in depuis la droite */}
         <div
           className="absolute inset-0 card p-0 overflow-hidden flex flex-col transition-transform duration-300 ease-in-out"
           style={{ transform: mobileShowChat ? 'translateX(0)' : 'translateX(100%)' }}
@@ -822,8 +803,6 @@ export function ChatPage() {
             selected={selected}
             onSelect={handleSelect}
             onNewDm={() => setShowNewDm(true)}
-            isAdmin={isAdmin}
-            isCaptain={isCaptain}
           />
         </div>
         <div className="flex-1 overflow-hidden flex flex-col">

@@ -163,7 +163,7 @@ function useMyNextLineup(userId?: string, matchId?: string) {
         .eq('player_id', p.id)
         .maybeSingle()
       if (error) throw error
-      return data as MyNextLineupData | null
+      return data as unknown as MyNextLineupData | null
     },
   })
 }

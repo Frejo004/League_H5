@@ -128,8 +128,8 @@ function useGeneratePlayoffs(seasonId?: string) {
         const matchesInRound = n / Math.pow(2, r + 1)
         const roundMatches = Array.from({ length: matchesInRound }, () => ({
           season_id: seasonId,
-          home_team_id: null as any,
-          away_team_id: null as any,
+          home_team_id: null,
+          away_team_id: null,
           matchday: PLAYOFF_MATCHDAY_START + r,
           status: 'scheduled' as MatchStatus,
           home_score: null,
@@ -240,7 +240,6 @@ function PlayoffMatchCard({
         score={isCompleted || isLive ? match.home_score : null}
         isWinner={homeWon}
         isTBD={isTBD}
-        side="home"
       />
 
       {/* Séparateur */}
@@ -252,7 +251,6 @@ function PlayoffMatchCard({
         score={isCompleted || isLive ? match.away_score : null}
         isWinner={awayWon}
         isTBD={isTBD}
-        side="away"
       />
 
       {/* Footer */}
@@ -291,13 +289,12 @@ function PlayoffMatchCard({
 }
 
 function TeamRow({
-  team, score, isWinner, isTBD, side,
+  team, score, isWinner, isTBD,
 }: {
   team: { id: string; name: string; color: string; logo_url: string | null } | null
   score: number | null | undefined
   isWinner: boolean
   isTBD: boolean
-  side: 'home' | 'away'
 }) {
   return (
     <div className={clsx(
@@ -371,7 +368,6 @@ export function PlayoffsPage() {
   }))
 
   const hasPlayoffs = playoffMatches.length > 0
-  const allLeagueMatchesPlayed = standings.length > 0 && standings.every(s => s.played > 0)
 
   if (!playoffEnabled) {
     return (
@@ -513,7 +509,7 @@ export function PlayoffsPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {rounds.map((round, roundIdx) => {
+          {rounds.map((round) => {
             const nextRoundMatchday = round.matchday + 1
             const hasNextRound = matchdays.includes(nextRoundMatchday)
 

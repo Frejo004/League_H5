@@ -27,6 +27,36 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
   const { data: mvpData } = usePlayerMvp(playerId, seasonId)
   const { data: scorers } = useScorers(seasonId)
 
+  // Rang dans les buteurs globaux
+  const scorerRank = scorers?.findIndex(s => s.player_id === playerId)
+  const rankDisplay = scorerRank !== undefined && scorerRank >= 0 && (scorers?.[scorerRank]?.goals ?? 0) > 0
+    ? scorerRank + 1
+    : null
+
+  const positionLabel = profile?.position
+    ? POSITION_LABELS[profile.position as keyof typeof POSITION_LABELS] ?? profile.position
+    : undefined
+
+  // Évolution cumulative buts+passes (ordre chronologique)
+  const evolution = useMemo(() => {
+    const chronoMatches = profile?.recent_matches ? [...profile.recent_matches].reverse() : []
+    return chronoMatches.reduce<{
+      cumGoals: number
+      cumAssists: number
+      out: Array<{ matchday: number; goals: number; assists: number; result: 'W' | 'D' | 'L' }>
+    }>((acc, m) => {
+      const nextGoals = acc.cumGoals + m.goals_in_match
+      const nextAssists = acc.cumAssists + m.assists_in_match
+      return {
+        cumGoals: nextGoals,
+        cumAssists: nextAssists,
+        out: [...acc.out, { matchday: m.matchday, goals: nextGoals, assists: nextAssists, result: m.result }],
+      }
+    }, { cumGoals: 0, cumAssists: 0, out: [] }).out
+  }, [profile])
+
+  const maxVal = useMemo(() => Math.max(...evolution.map(e => e.goals), 1), [evolution])
+
   if (isLoading) return <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
   if (!profile) return (
     <div className="card">
@@ -37,30 +67,6 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
       </div>
     </div>
   )
-
-  // Rang dans les buteurs globaux
-  const scorerRank = scorers?.findIndex(s => s.player_id === playerId)
-  const rankDisplay = scorerRank !== undefined && scorerRank >= 0 && (scorers?.[scorerRank]?.goals ?? 0) > 0
-    ? scorerRank + 1
-    : null
-
-  const positionLabel = profile.position
-    ? POSITION_LABELS[profile.position as keyof typeof POSITION_LABELS] ?? profile.position
-    : undefined
-
-  // Évolution cumulative buts+passes (ordre chronologique)
-  const evolution = useMemo(() => {
-    const chronoMatches = [...profile.recent_matches].reverse()
-    let cumGoals = 0
-    let cumAssists = 0
-    return chronoMatches.map(m => {
-      cumGoals += m.goals_in_match
-      cumAssists += m.assists_in_match
-      return { matchday: m.matchday, goals: cumGoals, assists: cumAssists, result: m.result }
-    })
-  }, [profile.recent_matches])
-
-  const maxVal = useMemo(() => Math.max(...evolution.map(e => e.goals), 1), [evolution])
 
   return (
     <div className="space-y-4">
@@ -285,7 +291,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
           {mvpData!.mvp_matches.map((m, i) => (
             <Link
               key={m.match_id}
-              to={`/matches/${(m as any).match_slug || m.match_id}`}
+              to={`/matches/${((m as unknown as { match_slug?: string | null }).match_slug) || m.match_id}`}
               className={clsx(
                 'flex items-center gap-3 px-4 py-3 hover:bg-amber-500/5 transition-colors',
                 i < mvpData!.mvp_matches.length - 1 && 'border-b border-amber-500/10'

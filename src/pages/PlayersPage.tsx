@@ -19,26 +19,12 @@ const POSITION_LABELS: Record<PlayerPosition, string> = {
   forward: 'Attaquant',
 }
 
-const POSITION_COLORS: Record<PlayerPosition, string> = {
-  goalkeeper: 'text-yellow-400 bg-yellow-400/10',
-  defender: 'text-blue-400 bg-blue-400/10',
-  midfielder: 'text-green-400 bg-green-400/10',
-  forward: 'text-orange-400 bg-orange-400/10',
-}
-
 type SortKey = 'name' | 'jersey' | 'position'
 const PAGE_SIZE = 10
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CompareModal — comparaison côte à côte de 2 joueurs
 // ─────────────────────────────────────────────────────────────────────────────
-
-const POSITION_LABELS_COMPARE: Record<PlayerPosition, string> = {
-  goalkeeper: 'Gardien',
-  defender: 'Défenseur',
-  midfielder: 'Milieu',
-  forward: 'Attaquant',
-}
 
 function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
   playerAId: string
@@ -177,30 +163,6 @@ function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
   )
 }
 
-function PlayerHeader({ player, side = 'left' }: {
-  player: { first_name: string; last_name: string; avatar_url: string | null; team: { color: string; name: string } }
-  side?: 'left' | 'right'
-}) {
-  return (
-    <div className={clsx('flex flex-col items-center gap-2 text-center', side === 'right' && 'items-center')}>
-      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-black overflow-hidden ring-2 ring-white/10"
-        style={{ backgroundColor: player.team.color }}>
-        {player.avatar_url
-          ? <img src={player.avatar_url} alt="" className="w-full h-full object-cover" />
-          : `${player.first_name[0]}${player.last_name[0]}`
-        }
-      </div>
-      <div>
-        <p className="text-xs font-black text-white leading-tight">{player.first_name} {player.last_name}</p>
-        <div className="flex items-center justify-center gap-1 mt-0.5">
-          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: player.team.color }} />
-          <p className="text-[10px] text-slate-500">{player.team.name}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function PlayersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: players, isLoading: playersLoading } = usePlayers(season?.id)
@@ -214,6 +176,29 @@ export function PlayersPage() {
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
+  const handleFilterTeamChange = (value: string) => {
+    setFilterTeam(value)
+    setPage(1)
+  }
+  const handleFilterPosChange = (value: PlayerPosition | '') => {
+    setFilterPos(value)
+    setPage(1)
+  }
+  const handleSortKeyChange = (value: SortKey) => {
+    setSortKey(value)
+    setPage(1)
+  }
+  const resetFilters = () => {
+    setSearch('')
+    setFilterTeam('')
+    setFilterPos('')
+    setPage(1)
+  }
+
   const toggleCompare = (id: string) => {
     setCompareIds(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id)
@@ -221,9 +206,6 @@ export function PlayersPage() {
       return [...prev, id]
     })
   }
-
-  // Reset page quand les filtres changent
-  useEffect(() => { setPage(1) }, [search, filterTeam, filterPos, sortKey])
 
   const isLoading = seasonLoading || playersLoading
 
@@ -312,7 +294,7 @@ export function PlayersPage() {
               type="text"
               placeholder="Rechercher un joueur…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="input input-icon-l py-2 text-sm bg-surface-card border-surface-border/50 focus:border-primary-500/50"
             />
           </div>
@@ -321,7 +303,7 @@ export function PlayersPage() {
           <div className="relative">
             <select
               value={filterTeam}
-              onChange={e => setFilterTeam(e.target.value)}
+              onChange={e => handleFilterTeamChange(e.target.value)}
               className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 140 }}
             >
@@ -335,7 +317,7 @@ export function PlayersPage() {
           <div className="relative">
             <select
               value={filterPos}
-              onChange={e => setFilterPos(e.target.value as PlayerPosition | '')}
+              onChange={e => handleFilterPosChange(e.target.value as PlayerPosition | '')}
               className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 130 }}
             >
@@ -351,7 +333,7 @@ export function PlayersPage() {
           <div className="relative">
             <select
               value={sortKey}
-              onChange={e => setSortKey(e.target.value as SortKey)}
+              onChange={e => handleSortKeyChange(e.target.value as SortKey)}
               className="input py-2 text-sm pr-8 appearance-none cursor-pointer bg-surface-card border-surface-border/50 focus:border-primary-500/50"
               style={{ minWidth: 120 }}
             >
@@ -365,7 +347,7 @@ export function PlayersPage() {
           {/* Reset */}
           {hasFilters && (
             <button
-              onClick={() => { setSearch(''); setFilterTeam(''); setFilterPos('') }}
+              onClick={resetFilters}
               className="btn-secondary py-2 text-xs px-4 rounded-xl border-surface-border/50"
             >
               Réinitialiser
@@ -407,7 +389,7 @@ export function PlayersPage() {
             </p>
             {hasFilters && (
               <button
-                onClick={() => { setSearch(''); setFilterTeam(''); setFilterPos('') }}
+                onClick={resetFilters}
                 className="btn-secondary text-xs mt-2"
               >
                 Effacer les filtres

@@ -9,7 +9,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import { useMemo, useState } from 'react'
-import { getRouteParamType, getMatchUrl } from '@/lib/routeHelpers'
+import { getRouteParamType } from '@/lib/routeHelpers'
 
 
 function formatDate(dateStr: string | null) {
@@ -20,14 +20,13 @@ function formatDate(dateStr: string | null) {
 }
 
 // ── Graphique buts + passes par journée ──────────────────────────────────────
-function PlayerFormChart({ matches, teamColor }: {
+function PlayerFormChart({ matches }: {
   matches: Array<{
     matchday: number
     goals_in_match: number
     assists_in_match: number
     result: 'W' | 'D' | 'L'
   }>
-  teamColor?: string
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
@@ -421,7 +420,7 @@ export function PlayerProfilePage() {
 
       {/* ── Graphique contributions ── */}
       {player.recent_matches.length >= 1 && (
-        <PlayerFormChart matches={player.recent_matches} teamColor={player.team.color} />
+        <PlayerFormChart matches={player.recent_matches} />
       )}
 
       {/* ── Derniers matchs ── */}
@@ -525,7 +524,7 @@ export function PlayerProfilePage() {
           {mvpData!.mvp_matches.map((m, i) => (
             <Link
               key={m.match_id}
-              to={`/matches/${(m as any).match_slug || m.match_id}`}
+              to={`/matches/${((m as unknown as { match_slug?: string | null }).match_slug) || m.match_id}`}
               className={clsx(
                 'flex items-center gap-3 px-4 py-3 hover:bg-surface-raised transition-colors',
                 i < mvpData!.mvp_matches.length - 1 && 'border-b border-surface-border/30'

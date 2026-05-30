@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trophy, Target, Zap, Calendar, ChevronDown, ChevronUp, Star } from 'lucide-react'
+import { Trophy, Target, Zap, Calendar, ChevronDown, Star } from 'lucide-react'
 import { useSeasons } from '@/hooks/useSeasons'
 import { usePalmaresData } from '@/hooks/usePalmaresData'
 import { PageHero } from '@/components/ui/PageHero'

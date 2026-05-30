@@ -149,7 +149,7 @@ function StandingsWidget({ standings, dark }: { standings: StandingRow[]; dark: 
       </div>
 
       {/* Footer link */}
-      <Link to="/public/standings" style={{ display: 'block', textDecoration: 'none' }}>
+      <Link to="/standings" style={{ display: 'block', textDecoration: 'none' }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           padding: '10px 16px',
@@ -188,7 +188,7 @@ function fDay(s: string | null) {
 function AnimCounter({ target, live }: { target: number; live?: boolean }) {
   const [v, setV] = useState(0)
   useEffect(() => {
-    if (!target) { setV(0); return }
+    if (target <= 0) return
     let cur = 0
     const step = Math.max(1, Math.ceil(target / 20))
     const id = setInterval(() => {
@@ -204,7 +204,7 @@ function AnimCounter({ target, live }: { target: number; live?: boolean }) {
       letterSpacing: '-.04em', fontFamily: "'Barlow Condensed',sans-serif",
       color: live && target > 0 ? '#ef4444' : 'var(--t1)', transition: 'color .3s'
     }}>
-      {v}{live && target > 0 && <span style={{ fontSize: '.6rem', marginLeft: 2 }}>🔴</span>}
+      {target > 0 ? v : 0}{live && target > 0 && <span style={{ fontSize: '.6rem', marginLeft: 2 }}>🔴</span>}
     </span>
   )
 }
@@ -722,4 +722,4 @@ export function PublicMatchesPage() {
       </div>
     </PublicLayout>
   )
-}
+}

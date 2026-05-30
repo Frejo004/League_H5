@@ -16,14 +16,14 @@ declare global {
 
   class MeteredMeeting {
     constructor()
-    join(options: MeetingJoinOptions): Promise<any>
+    join(options: MeetingJoinOptions): Promise<unknown>
     leaveMeeting(): Promise<void>
     startVideo(): Promise<void>
     stopVideo(): Promise<void>
     unmuteLocalAudio(): Promise<void>
     muteLocalAudio(): Promise<void>
-    on(event: string, callback: (...args: any[]) => void): void
-    off(event: string, callback: (...args: any[]) => void): void
+    on(event: string, callback: (...args: unknown[]) => void): void
+    off(event: string, callback: (...args: unknown[]) => void): void
     getParticipants(): Promise<MeteredParticipant[]>
     chooseAudioInputDevice(deviceId: string): Promise<void>
     chooseVideoInputDevice(deviceId: string): Promise<void>

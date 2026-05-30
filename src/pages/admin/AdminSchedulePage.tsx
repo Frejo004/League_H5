@@ -245,10 +245,6 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
       : selectablePlayers
   }, [selectablePlayers, searchQuery])
 
-  const currentReporter = selectingType === 'events' 
-    ? selectablePlayers.find(p => p.user_id === eventsReporterId)
-    : selectablePlayers.find(p => p.user_id === videoReporterId)
-
   const home = match.home_team as { name: string; color: string }
   const away = match.away_team as { name: string; color: string }
 

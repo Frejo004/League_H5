@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const denoEnv = (globalThis as any).Deno?.env
+    const denoEnv = (globalThis as unknown as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno?.env
     const secretKey = denoEnv?.get('METERED_SECRET_KEY')
     const meteredDomain = denoEnv?.get('METERED_DOMAIN') ?? 'league-h5.metered.live'
 

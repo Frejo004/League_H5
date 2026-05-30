@@ -576,8 +576,8 @@ function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
 }
 
 // ── Raccourcis admin ──────────────────────────────────────────────────────────
-function AdminQuickActions({ completedCount, teamsCount, upcomingCount, pendingSpectatorsCount, onTestNotif }: {
-  completedCount: number; teamsCount: number; upcomingCount: number; pendingSpectatorsCount: number; onTestNotif: () => void
+function AdminQuickActions({ completedCount, teamsCount, pendingSpectatorsCount, onTestNotif }: {
+  completedCount: number; teamsCount: number; pendingSpectatorsCount: number; onTestNotif: () => void
 }) {
   const actions = [
     { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
@@ -796,7 +796,6 @@ export function DashboardPage() {
         <AdminQuickActions
           completedCount={completedMatches.length}
           teamsCount={teams?.length ?? 0}
-          upcomingCount={upcomingMatches.length}
           pendingSpectatorsCount={pendingSpectatorsCount}
           onTestNotif={handleTestNotification}
         />

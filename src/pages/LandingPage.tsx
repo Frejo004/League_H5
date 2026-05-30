@@ -1,8 +1,8 @@
 import { Link, Navigate } from 'react-router-dom'
 import {
-  Trophy, Calendar, Target, Users, BarChart2,
-  MessageCircle, Radio, Star, ArrowRight, Zap,
-  Shield, BookOpen, ChevronRight
+  Trophy, Calendar, BarChart2,
+  MessageCircle, Radio, Star, Zap,
+  Shield, ChevronRight
 } from 'lucide-react'
 import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
@@ -22,7 +22,7 @@ const ACCENT = '#C8F135'
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FeatureCard({ icon: Icon, title, desc, color }: {
-  icon: any
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>
   title: string
   desc: string
   color: string
@@ -139,7 +139,7 @@ export function LandingPage() {
         .in('status', ['live', 'scheduled'])
         .order('scheduled_at', { ascending: true })
       if (error) throw error
-      return data as any[]
+      return data as any[] // eslint-disable-line @typescript-eslint/no-explicit-any
     },
     refetchInterval: 5000,
   })

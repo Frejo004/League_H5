@@ -22,7 +22,7 @@ import { GoalCelebration } from '@/components/live/GoalCelebration'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
-import { LiveTicker } from '@/components/live/LiveTicker'
+
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
@@ -221,6 +221,12 @@ export function MatchDetailPage() {
 
   const { user, isAdmin, isCaptain, isLoading: authLoading } = useAuth()
 
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(intervalId)
+  }, [])
+
   // Permissions déléguées avec expiration automatique (10 min après la fin)
   const isEventsReporter = useMemo(() => {
     if (!user?.id || !match?.events_reporter_id) return false
@@ -233,11 +239,11 @@ export function MatchDetailPage() {
     if (match.status === 'completed' && match.finished_at) {
       const finishedAt = new Date(match.finished_at).getTime()
       const tenMinutesInMs = 10 * 60 * 1000
-      return Date.now() - finishedAt < tenMinutesInMs
+      return now - finishedAt < tenMinutesInMs
     }
     
     return true
-  }, [user?.id, match?.events_reporter_id, match?.status, match?.finished_at])
+  }, [user, match, now])
 
   const isVideoReporter = useMemo(() => {
     if (!user?.id || !match?.video_reporter_id) return false
@@ -249,11 +255,11 @@ export function MatchDetailPage() {
     if (match.status === 'completed' && match.finished_at) {
       const finishedAt = new Date(match.finished_at).getTime()
       const tenMinutesInMs = 10 * 60 * 1000
-      return Date.now() - finishedAt < tenMinutesInMs
+      return now - finishedAt < tenMinutesInMs
     }
     
     return true
-  }, [user?.id, match?.video_reporter_id, match?.status, match?.finished_at])
+  }, [user, match, now])
 
   const { data: votes } = useMvpVotes(id)
   const { data: myVote } = useMyMvpVote(id, user?.id)
@@ -275,7 +281,7 @@ export function MatchDetailPage() {
     match?.live_started_at ?? null,
     match?.live_period as 1 | 2 | null,
     match?.status ?? 'scheduled',
-    (match as any)?.halftime_at,
+    (match as unknown as { halftime_at?: string | null })?.halftime_at ?? null,
     match?.is_paused ?? false,
     match?.paused_at ?? null,
     match?.total_paused_seconds ?? 0
@@ -463,7 +469,6 @@ export function MatchDetailPage() {
 
   const home = match.home_team as TeamRef
   const away = match.away_team as TeamRef
-  const goals = match.goals as GoalWithPlayer[]
   const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
@@ -538,9 +543,9 @@ export function MatchDetailPage() {
             <AdminLiveControls
               matchId={match.id}
               status={match.status}
-            liveStartedAt={match.live_started_at ?? undefined}
-              halftimeAt={(match as unknown as { halftime_at: string }).halftime_at}
-            livePeriod={match.live_period as 1 | 2 | null}
+              liveStartedAt={match.live_started_at ?? undefined}
+              halftimeAt={(match as unknown as { halftime_at?: string | null }).halftime_at ?? null}
+              livePeriod={match.live_period as 1 | 2 | null}
               homeTeam={home}
               awayTeam={away}
               homeScore={displayHomeScore}
@@ -688,8 +693,8 @@ export function MatchDetailPage() {
             matchId={match.id}
             status={match.status}
             liveStartedAt={match.live_started_at}
-            halftimeAt={(match as any).halftime_at}
-            livePeriod={match.live_period as any}
+            halftimeAt={(match as unknown as { halftime_at?: string | null }).halftime_at ?? null}
+            livePeriod={match.live_period as 1 | 2 | null}
             homeTeam={home}
             awayTeam={away}
             homeScore={displayHomeScore}
@@ -775,7 +780,7 @@ export function MatchDetailPage() {
                           : `Match en direct : ${home.name} vs ${away.name} · League H5`,
                         url: window.location.href,
                       })
-                    } catch { }
+                    } catch { return }
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
                             text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
@@ -886,7 +891,7 @@ export function MatchDetailPage() {
                       <LiveClock
                         liveStartedAt={match.live_started_at}
                         livePeriod={match.live_period as 1 | 2 | null}
-                        halftimeAt={(match as any).halftime_at}
+                        halftimeAt={(match as unknown as { halftime_at?: string | null })?.halftime_at}
                         isPaused={match.is_paused ?? false}
                         pausedAt={match.paused_at ?? null}
                         totalPausedSeconds={match.total_paused_seconds ?? 0}
