@@ -79,6 +79,7 @@ export function useRealtimeMatch(matchId?: string) {
         filter: `id=eq.${matchId}` 
       }, async (payload) => {
         console.log('🔄 Realtime: Match update', payload)
+        // Invalidate ALL match-related queries, including detail, lists, slugs, etc.
         qc.invalidateQueries({ queryKey: ['matches'] })
         
         const newMatch = payload.new as { status?: string; home_score?: number; away_score?: number }
@@ -105,7 +106,7 @@ export function useRealtimeMatch(matchId?: string) {
         table: 'goals', 
         filter: `match_id=eq.${matchId}` 
       }, () => {
-        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        qc.invalidateQueries({ queryKey: ['matches'] })
         qc.invalidateQueries({ queryKey: ['match-events', matchId] })
         qc.invalidateQueries({ queryKey: ['scorers'] })
       })
@@ -116,7 +117,7 @@ export function useRealtimeMatch(matchId?: string) {
         table: 'match_events', 
         filter: `match_id=eq.${matchId}` 
       }, () => {
-        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+        qc.invalidateQueries({ queryKey: ['matches'] })
         qc.invalidateQueries({ queryKey: ['match-events', matchId] })
       })
       // 4. Assists
@@ -125,7 +126,7 @@ export function useRealtimeMatch(matchId?: string) {
         schema: 'public', 
         table: 'assists', 
         filter: `match_id=eq.${matchId}` 
-      }, () => qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] }))
+      }, () => qc.invalidateQueries({ queryKey: ['matches'] }))
       // 5. MVP Votes
       .on('postgres_changes', { 
         event: '*', 

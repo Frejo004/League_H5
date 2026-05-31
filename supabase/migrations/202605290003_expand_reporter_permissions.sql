@@ -60,8 +60,6 @@ BEGIN
   END IF;
 
   UPDATE matches SET
-    live_period  = 2,
-    live_minute  = 0,
     halftime_at  = now()
   WHERE id = p_match_id AND status = 'live';
 
