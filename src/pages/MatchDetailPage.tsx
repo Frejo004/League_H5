@@ -783,8 +783,8 @@ export function MatchDetailPage() {
                     } catch { return }
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                            text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
-                            hover:bg-surface-muted/20 transition-all backdrop-blur-md"
+                             text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
+                             hover:bg-surface-muted/20 transition-all backdrop-blur-md"
                 >
                   <Share2 size={12} />
                   <span className="hidden sm:inline">Partager</span>

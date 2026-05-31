@@ -57,6 +57,7 @@ const RulesPage           = lazyPage(() => import('@/pages/RulesPage'), 'RulesPa
 const LandingPage         = lazyPage(() => import('@/pages/LandingPage'), 'LandingPage')
 const ChatPage            = lazyPage(() => import('@/pages/ChatPage'), 'ChatPage')
 const PlayoffsPage        = lazyPage(() => import('@/pages/PlayoffsPage'), 'PlayoffsPage')
+const MatchFeedbackPage   = lazyPage(() => import('@/pages/MatchFeedbackPage'), 'MatchFeedbackPage')
 const NotFoundPage        = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
 
 export const router = createBrowserRouter(
@@ -93,6 +94,7 @@ export const router = createBrowserRouter(
                 { path: '/standings',     element: <StandingsPage /> },
                 { path: '/matches',       element: <MatchesPage /> },
                 { path: '/matches/:idOrSlug',   element: <MatchDetailPage /> },
+                { path: '/feedback',      element: <MatchFeedbackPage /> },
                 { path: '/scorers',       element: <ScorersPage /> },
                 { path: '/teams',         element: <TeamsPage /> },
                 { path: '/teams/:idOrSlug',     element: <TeamDetailPage /> },

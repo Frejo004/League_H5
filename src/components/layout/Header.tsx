@@ -3,13 +3,12 @@ import { NavLink, useLocation, Link, useSearchParams } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen, Swords,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
-import { useTheme, type ResolvedTheme } from '@/hooks/useTheme'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -47,6 +46,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/admin', label: 'Admin', icon: Settings },
   ],
   captain: [
@@ -59,6 +59,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
     { to: '/captain', label: 'Mon Équipe', icon: Crown },
   ],
@@ -72,6 +73,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
     { to: '/my-team', label: 'Mon Équipe', icon: Users },
   ],
@@ -84,6 +86,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
   ],
 }
 
@@ -216,7 +219,6 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
-  const chatRef = useRef<HTMLDivElement>(null)
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
@@ -245,7 +247,6 @@ export default function Header() {
         item.to === '/palmares' ? [item, playoffItem] : [item]
       )
     : NAV_BY_ROLE[effectiveRole]
-  const roleColors = ROLE_COLORS[effectiveRole]
 
   const isAdminPage = location.pathname.startsWith('/admin')
 
@@ -276,6 +277,7 @@ export default function Header() {
     '/rules':      'Règlement',
     '/chat':       'Messages',
     '/playoffs':   'Phase Finale',
+    '/feedback':   'Avis sur les matchs',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/dashboard')

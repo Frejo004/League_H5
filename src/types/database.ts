@@ -878,6 +878,66 @@ export interface Database {
         }
         Relationships: []
       }
+      match_feedback: {
+        Row: {
+          id: string
+          match_id: string
+          player_id: string
+          team_id: string
+          overall_experience: string | null
+          referee_performance: string | null
+          player_behavior: string | null
+          other_comments: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          player_id: string
+          team_id: string
+          overall_experience?: string | null
+          referee_performance?: string | null
+          player_behavior?: string | null
+          other_comments?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          player_id?: string
+          team_id?: string
+          overall_experience?: string | null
+          referee_performance?: string | null
+          player_behavior?: string | null
+          other_comments?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_feedback_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_feedback_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_feedback_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           id: string
@@ -1174,6 +1234,7 @@ export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
 export type MatchEventRow = Database['public']['Tables']['match_events']['Row']
 export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Row']
 export type MatchLineupRow = Database['public']['Tables']['match_lineups']['Row']
+export type MatchFeedback = Database['public']['Tables']['match_feedback']['Row']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
@@ -1220,6 +1281,11 @@ export type TeamWithCaptain = Team & {
 /** Joueur avec équipe imbriquée — retourné par usePlayers */
 export type PlayerWithTeam = Player & {
   teams: TeamRef | null
+}
+
+/** Feedback de match avec joueur imbriqué — retourné par useMatchFeedback */
+export type MatchFeedbackWithPlayer = MatchFeedback & {
+  players: PlayerWithTeam
 }
 
 export type TeamMessage = Database['public']['Tables']['team_messages']['Row']
