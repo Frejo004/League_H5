@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame,
   Radio, Clock, CheckCircle2, AlertCircle, ChevronRight,
@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
-import { useScorers } from '@/hooks/useScorers'
-import { useStandings } from '@/hooks/useStandings'
+import { useScorers, type ScorerRow } from '@/hooks/useScorers'
+import { useStandings, type StandingRow } from '@/hooks/useStandings'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { useMatchLineups } from '@/hooks/useLineups'
@@ -576,8 +576,8 @@ function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
 }
 
 // ── Raccourcis admin ──────────────────────────────────────────────────────────
-function AdminQuickActions({ completedCount, teamsCount, pendingSpectatorsCount, onTestNotif }: {
-  completedCount: number; teamsCount: number; pendingSpectatorsCount: number; onTestNotif: () => void
+function AdminQuickActions({ completedCount, teamsCount, pendingSpectatorsCount }: {
+  completedCount: number; teamsCount: number; pendingSpectatorsCount: number
 }) {
   const actions = [
     { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
@@ -587,18 +587,6 @@ function AdminQuickActions({ completedCount, teamsCount, pendingSpectatorsCount,
   ]
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings size={13} className="text-amber-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Administration</span>
-        </div>
-        <button
-          onClick={onTestNotif}
-          className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-amber-400/10 text-amber-400 hover:bg-amber-400/20 transition-colors border border-amber-400/20"
-        >
-          Tester Notif
-        </button>
-      </div>
       <div className="grid grid-cols-2 gap-2">
         {actions.map(({ label, sub, icon: Icon, to, color, alert }) => (
           <Link key={to} to={to}
@@ -661,21 +649,66 @@ export function DashboardPage() {
 
   const isLoading = seasonLoading && !timedOut && !isFetched
 
-  const completedMatches = (matches ?? []).filter(m => m.status === 'completed')
-  const liveMatches      = (matches ?? []).filter(m => m.status === 'live')
-  const upcomingMatches  = (matches ?? [])
-    .filter(m => m.status === 'scheduled')
-    .sort((a, b) => {
-      if (a.scheduled_at && b.scheduled_at)
-        return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
-      if (a.scheduled_at) return -1
-      if (b.scheduled_at) return 1
-      return a.matchday - b.matchday
-    })
-  const recentMatches = [...completedMatches]
-    .filter(m => m.played_at)
-    .sort((a, b) => new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime())
-    .slice(0, 5)
+  // Fonction pour vérifier si un match concerne l'équipe de l'utilisateur
+  const isMyTeamMatch = useCallback((match: MatchWithTeams, teamId: string | null) => {
+    if (!teamId) return false
+    return match.home_team_id === teamId || match.away_team_id === teamId
+  }, [])
+
+  // Calculer tous les tableaux avec useMemo pour éviter les mutations
+  const completedMatches = useMemo(() => 
+    (matches ?? []).filter(m => m.status === 'completed'),
+    [matches]
+  )
+  const liveMatches = useMemo(() => 
+    (matches ?? []).filter(m => m.status === 'live'),
+    [matches]
+  )
+  const upcomingMatches = useMemo(() => 
+    (matches ?? [])
+      .filter(m => m.status === 'scheduled')
+      .sort((a, b) => {
+        // Prioriser les matchs de mon équipe
+        const aIsMine = isMyTeamMatch(a, myTeamId)
+        const bIsMine = isMyTeamMatch(b, myTeamId)
+        if (aIsMine && !bIsMine) return -1
+        if (!aIsMine && bIsMine) return 1
+        
+        // Puis trier par date
+        if (a.scheduled_at && b.scheduled_at)
+          return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+        if (a.scheduled_at) return -1
+        if (b.scheduled_at) return 1
+        return a.matchday - b.matchday
+      }),
+    [matches, myTeamId, isMyTeamMatch]
+  )
+  const recentMatches = useMemo(() => 
+    [...completedMatches]
+      .filter(m => m.played_at)
+      .sort((a, b) => {
+        // Prioriser les matchs de mon équipe
+        const aIsMine = isMyTeamMatch(a, myTeamId)
+        const bIsMine = isMyTeamMatch(b, myTeamId)
+        if (aIsMine && !bIsMine) return -1
+        if (!aIsMine && bIsMine) return 1
+        
+        // Puis trier par date
+        return new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime()
+      })
+      .slice(0, 5),
+    [completedMatches, myTeamId, isMyTeamMatch]
+  )
+
+  // Mes matchs (uniquement ceux de mon équipe)
+  const myUpcomingMatches = useMemo(() => 
+    upcomingMatches.filter(m => isMyTeamMatch(m, myTeamId)),
+    [upcomingMatches, myTeamId, isMyTeamMatch]
+  )
+  const myRecentMatches = useMemo(() => 
+    recentMatches.filter(m => isMyTeamMatch(m, myTeamId)),
+    [recentMatches, myTeamId, isMyTeamMatch]
+  )
 
   // Prochain match de mon équipe (capitaine / joueur)
   const myNextMatch = useMemo(() => {
@@ -689,7 +722,6 @@ export function DashboardPage() {
   const topTeam   = standings?.[0]
 
   // Rôle effectif
-  const isPlayer   = role === 'player' || role === 'captain' || role === 'admin'
   const hasTeam    = !!myTeamId && !!myPlayer
 
   if (isLoading) {
@@ -721,10 +753,222 @@ export function DashboardPage() {
     )
   }
 
+  // Rendu du tableau de bord en fonction du rôle
   return (
     <div className="space-y-4">
+      {isAdmin ? (
+        <AdminDashboardContent
+          liveMatches={liveMatches}
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role}
+          completedMatches={completedMatches}
+          teams={teams}
+          upcomingMatches={upcomingMatches}
+          spectators={spectators}
+          topScorer={topScorer}
+          topTeam={topTeam}
+          recentMatches={recentMatches}
+          season={season}
+          pendingSpectatorsCount={pendingSpectatorsCount}
+          handleTestNotification={handleTestNotification}
+          myTeamId={myTeamId}
+        />
+      ) : isCaptain ? (
+        <CaptainDashboardContent
+          liveMatches={liveMatches}
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role}
+          myTeamId={myTeamId}
+          hasTeam={hasTeam}
+          myUpcomingMatches={myUpcomingMatches}
+          myRecentMatches={myRecentMatches}
+          myNextMatch={myNextMatch}
+          isCaptain={isCaptain}
+          season={season}
+          upcomingMatches={upcomingMatches}
+          topScorer={topScorer}
+          topTeam={topTeam}
+        />
+      ) : (
+        <PlayerDashboardContent
+          liveMatches={liveMatches}
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role}
+          myTeamId={myTeamId}
+          hasTeam={hasTeam}
+          myUpcomingMatches={myUpcomingMatches}
+          myRecentMatches={myRecentMatches}
+          myNextMatch={myNextMatch}
+          isCaptain={isCaptain}
+          season={season}
+          upcomingMatches={upcomingMatches}
+          topScorer={topScorer}
+          topTeam={topTeam}
+          recentMatches={recentMatches}
+        />
+      )}
+    </div>
+  );
+}
 
-      {/* ── Matchs en direct ── */}
+// Interfaces pour les props des tableaux de bord spécifiques
+interface BaseDashboardProps {
+  liveMatches: MatchWithTeams[];
+  profile: ReturnType<typeof useAuth>['profile'];
+  myPlayer: ReturnType<typeof useMyTeam>['myPlayer'];
+  myTeam: ReturnType<typeof useMyTeam>['myTeam'];
+  role: ReturnType<typeof useAuth>['role'];
+  myTeamId: ReturnType<typeof useMyTeam>['myTeamId'];
+}
+
+interface AdminDashboardProps extends BaseDashboardProps {
+  completedMatches: MatchWithTeams[];
+  teams: ReturnType<typeof useTeams>['data'];
+  upcomingMatches: MatchWithTeams[];
+  spectators: ReturnType<typeof useSpectators>['data'];
+  topScorer: ScorerRow | undefined;
+  topTeam: StandingRow | undefined;
+  recentMatches: MatchWithTeams[];
+  season: NonNullable<ReturnType<typeof useActiveSeason>['data']>;
+  pendingSpectatorsCount: number;
+  handleTestNotification: () => void;
+}
+
+interface CaptainDashboardProps extends BaseDashboardProps {
+  hasTeam: boolean;
+  myUpcomingMatches: MatchWithTeams[];
+  myRecentMatches: MatchWithTeams[];
+  myNextMatch: MatchWithTeams | null;
+  isCaptain: boolean;
+  season: NonNullable<ReturnType<typeof useActiveSeason>['data']>;
+  upcomingMatches: MatchWithTeams[];
+  topScorer: ScorerRow | undefined;
+  topTeam: StandingRow | undefined;
+}
+
+interface PlayerDashboardProps extends CaptainDashboardProps {
+  recentMatches: MatchWithTeams[];
+}
+
+// Tableau de bord ADMIN (déplacé en dehors)
+function AdminDashboardContent({
+  liveMatches, profile, myPlayer, myTeam, role, completedMatches, teams, upcomingMatches, spectators, topScorer, topTeam, recentMatches, season, pendingSpectatorsCount, myTeamId
+}: AdminDashboardProps) {
+  return (
+    <div className="space-y-4">
+      {/* Matchs en direct (priorité haute pour admin) */}
+      {liveMatches.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
+          <div className="absolute inset-0 pointer-events-none dark:block hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
+          <div className="flex items-center gap-2 mb-3">
+            <Radio size={14} className="text-red-400 animate-pulse" />
+            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Matchs en direct</span>
+            <LiveBadge size="sm" />
+          </div>
+          <div className="space-y-2">
+            {liveMatches.map(match => <LiveMatchBannerItem key={match.id} match={match} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Carte de bienvenue Admin */}
+      {profile && (
+        <WelcomeCard
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role ?? 'spectator'}
+        />
+      )}
+
+      {/* Raccourcis Admin (priorité haute) */}
+      <AdminQuickActions
+        completedCount={completedMatches.length}
+        teamsCount={teams?.length ?? 0}
+        pendingSpectatorsCount={pendingSpectatorsCount}
+      />
+
+      {/* Hero saison */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80&auto=format&fit=crop"
+        pattern="pitch"
+        accentColor="#2563eb"
+        title={season.name}
+        subtitle="Gestion de la ligue · Saison en cours"
+        icon={<Trophy size={20} className="text-white" />}
+        badge={
+          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
+            <span className="live-dot" />
+            En cours
+          </span>
+        }
+        compact
+      />
+
+      {/* KPIs Admin */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+        <KpiCard label="Matchs joués" value={completedMatches.length}                        icon={Calendar} color="#3b82f6" />
+        <KpiCard label="Équipes"      value={teams?.length ?? 0}                             icon={Users}    color="#8b5cf6" />
+        <KpiCard label="À venir"      value={upcomingMatches.length}                         icon={Calendar} color="#2563eb" />
+        <KpiCard label="Spectateurs"  value={spectators?.length ?? 0}                        icon={Users}    color="#10b981" />
+      </div>
+
+      {/* Grille principale Admin */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Prochains matchs */}
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
+          <SectionHeader title="Tous les prochains matchs" href="/matches" />
+          {upcomingMatches.length === 0 ? (
+            <div className="empty-state py-8">
+              <div className="empty-state-icon"><Calendar size={18} /></div>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
+            </div>
+          ) : (
+            <div className="stagger-fast">
+              {upcomingMatches.slice(0, 5).map(match => (
+                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Admin */}
+        <div className="space-y-3">
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam   && <LeaderCard   team={topTeam} />}
+        </div>
+      </div>
+
+      {/* Derniers résultats */}
+      {recentMatches.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+          <SectionHeader title="Derniers résultats" href="/matches" />
+          <div className="stagger-fast">
+            {recentMatches.map(match => (
+              <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Tableau de bord CAPITAINE (déplacé en dehors)
+function CaptainDashboardContent({
+  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, upcomingMatches, topScorer, topTeam
+}: CaptainDashboardProps) {
+  return (
+    <div className="space-y-4">
+      {/* Matchs en direct */}
       {liveMatches.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
           <div className="absolute inset-0 pointer-events-none dark:block hidden"
@@ -741,7 +985,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* ── Carte de bienvenue personnalisée ── */}
+      {/* Carte de bienvenue Capitaine */}
       {profile && (
         <WelcomeCard
           profile={profile}
@@ -751,32 +995,65 @@ export function DashboardPage() {
         />
       )}
 
-      {/* ── Hero saison ── */}
-      <PageHero
-        imageUrl="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80&auto=format&fit=crop"
-        pattern="pitch"
-        accentColor="#2563eb"
-        title={season.name}
-        subtitle="Tableau de bord · Saison en cours"
-        icon={<Trophy size={20} className="text-white" />}
-        badge={
-          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
-            <span className="live-dot" />
-            En cours
-          </span>
-        }
-        compact
-      />
+      {/* Raccourcis Capitaine (priorité haute) */}
+      {myTeam && (
+        <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
+      )}
 
-      {/* ── KPIs globaux ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Matchs joués" value={completedMatches.length}                        icon={Calendar} color="#3b82f6" />
-        <KpiCard label="Équipes"      value={teams?.length ?? 0}                             icon={Users}    color="#8b5cf6" />
-        <KpiCard label="Buteurs"      value={scorers?.filter(s => s.goals > 0).length ?? 0}  icon={Target}   color="#f97316" />
-        <KpiCard label="À venir"      value={upcomingMatches.length}                         icon={Calendar} color="#2563eb" />
-      </div>
+      {/* Mes matchs (section dédiée - priorité haute) */}
+      {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
+            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Matchs de mon équipe</span>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Mes prochains matchs */}
+            {myUpcomingMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">À venir</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myNextMatch?.scheduled_at && (
+                    <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
+                  )}
+                  {myUpcomingMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* ── Mes stats perso (joueur / capitaine) ── */}
+            {/* Mes derniers résultats */}
+            {myRecentMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Derniers résultats</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myRecentMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stats Capitaine */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {hasTeam && myPlayer && season && (
           <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
@@ -786,27 +1063,11 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* ── Raccourcis capitaine ── */}
-      {isCaptain && !isAdmin && myTeam && (
-        <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
-      )}
-
-      {/* ── Raccourcis admin ── */}
-      {isAdmin && (
-        <AdminQuickActions
-          completedCount={completedMatches.length}
-          teamsCount={teams?.length ?? 0}
-          pendingSpectatorsCount={pendingSpectatorsCount}
-          onTestNotif={handleTestNotification}
-        />
-      )}
-
-      {/* ── Grille principale ── */}
+      {/* Grille principale Capitaine */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Prochains matchs */}
+        {/* Tous les prochains matchs */}
         <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
-          <SectionHeader title="Prochains matchs" href="/matches" />
+          <SectionHeader title="Tous les prochains matchs" href="/matches" />
           {upcomingMatches.length === 0 ? (
             <div className="empty-state py-8">
               <div className="empty-state-icon"><Calendar size={18} /></div>
@@ -814,10 +1075,6 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="stagger-fast">
-              {/* Compte à rebours uniquement pour les joueurs/capitaines avec une équipe */}
-              {myNextMatch?.scheduled_at && isPlayer && (
-                <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
-              )}
               {upcomingMatches.slice(0, 4).map(match => (
                 <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
               ))}
@@ -825,17 +1082,142 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Sidebar : meilleur buteur + leader */}
+        {/* Sidebar Capitaine */}
+        <div className="space-y-3">
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam   && <LeaderCard   team={topTeam} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Tableau de bord JOUEUR (déplacé en dehors)
+function PlayerDashboardContent({
+  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, upcomingMatches, topScorer, topTeam, recentMatches
+}: PlayerDashboardProps) {
+  return (
+    <div className="space-y-4">
+      {/* Matchs en direct */}
+      {liveMatches.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
+          <div className="absolute inset-0 pointer-events-none dark:block hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
+          <div className="flex items-center gap-2 mb-3">
+            <Radio size={14} className="text-red-400 animate-pulse" />
+            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">En direct</span>
+            <LiveBadge size="sm" />
+          </div>
+          <div className="space-y-2">
+            {liveMatches.map(match => <LiveMatchBannerItem key={match.id} match={match} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Carte de bienvenue Joueur */}
+      {profile && (
+        <WelcomeCard
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role ?? 'spectator'}
+        />
+      )}
+
+      {/* Mes matchs (section dédiée - priorité haute) */}
+      {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
+            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Mes matchs</span>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Mes prochains matchs */}
+            {myUpcomingMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">À venir</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myNextMatch?.scheduled_at && (
+                    <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
+                  )}
+                  {myUpcomingMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mes derniers résultats */}
+            {myRecentMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Derniers résultats</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myRecentMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mes stats personnelles (priorité haute) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {hasTeam && myPlayer && season && (
+          <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
+        )}
+        {hasTeam && myTeamId && season && (
+          <MyTeamCard teamId={myTeamId} seasonId={season.id} />
+        )}
+      </div>
+
+      {/* Grille principale Joueur */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Prochains matchs globaux */}
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
+          <SectionHeader title="Prochains matchs de la ligue" href="/matches" />
+          {upcomingMatches.length === 0 ? (
+            <div className="empty-state py-8">
+              <div className="empty-state-icon"><Calendar size={18} /></div>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
+            </div>
+          ) : (
+            <div className="stagger-fast">
+              {upcomingMatches.slice(0, 4).map(match => (
+                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Joueur */}
         <div className="space-y-3">
           {topScorer && <TopScorerCard scorer={topScorer} />}
           {topTeam   && <LeaderCard   team={topTeam} />}
         </div>
       </div>
 
-      {/* ── Derniers résultats ── */}
+      {/* Derniers résultats globaux */}
       {recentMatches.length > 0 && (
         <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
-          <SectionHeader title="Derniers résultats" href="/matches" />
+          <SectionHeader title="Derniers résultats de la ligue" href="/matches" />
           <div className="stagger-fast">
             {recentMatches.map(match => (
               <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
@@ -844,5 +1226,5 @@ export function DashboardPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
