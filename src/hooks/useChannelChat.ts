@@ -197,6 +197,7 @@ async function fetchChannelPage(channelId: string, beforeId?: string): Promise<C
 export function useChannelChat(channelId?: string, currentUserId?: string) {
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [olderCount, setOlderCount] = useState(0)
 
   // Page courante (les 50 derniers)
@@ -290,10 +291,14 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
     if (!channelId || !currentUserId) return
     if (lastMarkedRef.current === lastMsgId) return
     lastMarkedRef.current = lastMsgId
-    await supabase.from('channel_read_receipts').upsert({
-      user_id: currentUserId, channel_id: channelId,
-      last_read_at: lastMsgAt, last_read_msg: lastMsgId,
-    }, { onConflict: 'user_id,channel_id' })
+
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      await supabase.from('channel_read_receipts').upsert({
+        user_id: currentUserId, channel_id: channelId,
+        last_read_at: lastMsgAt, last_read_msg: lastMsgId,
+      }, { onConflict: 'user_id,channel_id' })
+    }, 2000);
   }, [channelId, currentUserId])
 
   const sendMessage = useMutation({
@@ -501,6 +506,7 @@ async function fetchDmPage(conversationId: string, beforeId?: string): Promise<D
 export function useDmChat(conversationId?: string, currentUserId?: string) {
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
+  const dmDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [olderPages, setOlderPages] = useState<DmMessage[][]>([])
   const [olderCount, setOlderCount] = useState(0)
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
@@ -568,17 +574,20 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
   }, [conversationId, qc])
 
   const markAsRead = useCallback(async (lastMsgId: string, lastMsgAt: string) => {
-    // TODO: Envisager de débouncer/limiter cette fonction pour réduire les écritures en base de données lors d'un défilement rapide.
     if (!conversationId || !currentUserId) return;
     if (lastMarkedRef.current === lastMsgId) return;
     lastMarkedRef.current = lastMsgId;
-    await supabase.from('dm_read_receipts').upsert(
-      {
-        user_id: currentUserId, conversation_id: conversationId,
-        last_read_at: lastMsgAt, last_read_msg: lastMsgId,
-      },
-      { onConflict: 'user_id,conversation_id' }
-    );
+
+    if (dmDebounceTimerRef.current) clearTimeout(dmDebounceTimerRef.current);
+    dmDebounceTimerRef.current = setTimeout(async () => {
+      await supabase.from('dm_read_receipts').upsert(
+        {
+          user_id: currentUserId, conversation_id: conversationId,
+          last_read_at: lastMsgAt, last_read_msg: lastMsgId,
+        },
+        { onConflict: 'user_id,conversation_id' }
+      );
+    }, 2000);
   }, [conversationId, currentUserId])
 
   const sendMessage = useMutation({

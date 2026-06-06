@@ -364,21 +364,26 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   })
 
   // ── Mark as read ──────────────────────────────────────────────────────────
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const markAsRead = useCallback(
-    // TODO: Envisager de débouncer/limiter cette fonction pour réduire les écritures en base de données lors d'un défilement rapide.
     async (lastMsgId: string, lastMsgAt: string) => {
       if (!teamId || !currentUserId) return;
       if (lastMarkedRef.current === lastMsgId) return;
       lastMarkedRef.current = lastMsgId;
 
-      await supabase
-        .from('chat_read_receipts')
-        .upsert({
-          user_id: currentUserId,
-          team_id: teamId,
-          last_read_at: lastMsgAt,
-          last_read_msg: lastMsgId,
-        }, { onConflict: 'user_id,team_id' });
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+      debounceTimerRef.current = setTimeout(async () => {
+        await supabase
+          .from('chat_read_receipts')
+          .upsert({
+            user_id: currentUserId,
+            team_id: teamId,
+            last_read_at: lastMsgAt,
+            last_read_msg: lastMsgId,
+          }, { onConflict: 'user_id,team_id' });
+      }, 2000);
     },
     [teamId, currentUserId]
   );

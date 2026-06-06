@@ -354,6 +354,7 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startSecondHalf = useMutation({
     mutationFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.rpc('start_second_half' as any, { p_match_id: matchId! });
       if (error) {
         console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error);
