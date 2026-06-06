@@ -434,7 +434,7 @@ export function useAdminMatchLive(matchId?: string) {
 
   const updateReporters = useMutation({
     mutationFn: async ({ eventsReporterId, videoReporterId }: { eventsReporterId?: string | null; videoReporterId?: string | null }) => {
-      const updates: any = {}
+      const updates: { events_reporter_id?: string | null; video_reporter_id?: string | null } = {}
       if (eventsReporterId !== undefined) updates.events_reporter_id = eventsReporterId
       if (videoReporterId !== undefined) updates.video_reporter_id = videoReporterId
       
@@ -447,5 +447,40 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters }
+  // Envoyer une annonce flash en temps réel aux spectateurs (Broadcast)
+  const sendFlashAnnouncement = useCallback(async (message: string) => {
+    if (!matchId) return
+    const channel = supabase.channel(`match-live-com-${matchId}`)
+    await channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.send({
+          type: 'broadcast',
+          event: 'announcement',
+          payload: { message, timestamp: new Date().toISOString() }
+        })
+        // Libérer le canal après l'envoi
+        setTimeout(() => supabase.removeChannel(channel), 1000)
+      }
+    })
+  }, [matchId])
+
+  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters, sendFlashAnnouncement }
+}
+
+// Hook pour écouter les messages directs et événements flash (Admin -> Spectateurs)
+export function useLiveAnnouncements(matchId?: string) {
+  const [announcement, setAnnouncement] = useState<{ message: string; timestamp: string } | null>(null)
+
+  useEffect(() => {
+    if (!matchId) return
+    const ch = supabase.channel(`match-live-com-${matchId}`)
+      .on('broadcast', { event: 'announcement' }, (payload) => {
+        setAnnouncement(payload.payload)
+        setTimeout(() => setAnnouncement(null), 8000) // Disparaît après 8s
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId])
+
+  return announcement
 }
