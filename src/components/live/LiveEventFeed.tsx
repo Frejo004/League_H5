@@ -51,7 +51,7 @@ interface LiveEventFeedProps {
 }
 
 export function LiveEventFeed({
-  events, homeTeamId, homeColor, awayColor, className,
+  events, homeTeamId, className,
 }: LiveEventFeedProps) {
   // Déterminer si le match est terminé pour adapter le filtre par défaut
   const isFinished = useMemo(() => events.some(e => e.type === 'fulltime'), [events])
@@ -143,7 +143,7 @@ export function LiveEventFeed({
     // Commentaire
     if (event.type === 'comment') {
       return (
-        <div key={event.id} className="relative flex items-center justify-center py-4 animate-in fade-in duration-700">
+        <div key={event.id} className="relative flex items-center justify-center py-4 animate-in fade-in duration-700 delay-200">
           <div className="max-w-xs px-5 py-3 rounded-2xl bg-surface-raised border border-surface-border shadow-xl text-center">
             <p className="text-xs font-semibold text-text-secondary italic leading-relaxed">
               💬 {event.description}
@@ -174,7 +174,7 @@ export function LiveEventFeed({
     }
 
     return (
-      <div key={event.id} className="relative flex items-center justify-center min-h-[64px] group animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div key={event.id} className="relative flex items-center justify-center min-h-16 group animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
         {/* Home Event Description */}
         <div className="flex-1 flex justify-end pr-8">
           {isHome && (
@@ -185,21 +185,21 @@ export function LiveEventFeed({
                     {scoreAt}
                   </span>
                 )}
-                <span className="text-sm font-black text-[var(--t1)] uppercase tracking-tight leading-none">
+                <span className="text-sm font-black text-(--t1) uppercase tracking-tight leading-none">
                   {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
                 </span>
-                <span className="text-[11px] font-bold text-[var(--tm)] tabular-nums">{displayMinute}'</span>
+                <span className="text-[11px] font-bold text-(--tm) tabular-nums">{displayMinute}'</span>
               </div>
               {event.type === 'substitution' && player2Name && (
                 <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  <span className="text-[10px] text-[var(--t2)] font-medium">
+                  <span className="text-[10px] text-(--t2) font-medium">
                     <span className="text-emerald-500 mr-1">↑</span> {player2Name}
                   </span>
                 </div>
               )}
               {event.type === 'goal' && player2Name && (
-                <span className="text-[10px] text-[var(--tm)] italic mt-1 font-medium bg-[var(--bg-pill)] px-2 py-0.5 rounded">
-                  Passe: <span className="text-[var(--t2)] font-semibold">{player2Name}</span>
+                <span className="text-[10px] text-(--tm) italic mt-1 font-medium bg-(--bg-pill) px-2 py-0.5 rounded">
+                  Passe: <span className="text-(--t2) font-semibold">{player2Name}</span>
                 </span>
               )}
             </div>
@@ -208,7 +208,7 @@ export function LiveEventFeed({
 
         {/* Central Icon */}
         <div className={clsx(
-          "z-10 w-10 h-10 rounded-2xl border flex items-center justify-center shadow-2xl overflow-hidden ring-8 transition-all duration-500 group-hover:scale-110",
+          "z-10 w-10 h-10 rounded-2xl border flex items-center justify-center shadow-2xl overflow-hidden ring-8 ring-offset-2 ring-offset-surface transition-all duration-500 group-hover:scale-110",
           "ring-surface", // Dynamic background ring
           (event.type === 'goal' || event.type === 'own_goal') ? "bg-blue-600 border-blue-400/50 rotate-12 text-white" : "bg-surface-raised border-surface-border text-text-primary"
         )}>
@@ -275,7 +275,7 @@ export function LiveEventFeed({
   return (
     <div className={clsx('relative py-2 max-w-2xl mx-auto', className)}>
       {/* Filters Bar */}
-      <div className="flex justify-center gap-2 mb-6 border-b border-[var(--bd)]/20 pb-4">
+      <div className="flex justify-center gap-2 mb-6 border-b border-(--bd)/20 pb-4">
         {[
           { id: 'essential', label: 'Essentiels', desc: 'Buts, Cartons, Remplacements' },
           { id: 'actions', label: 'Actions', desc: 'Tirs, Fautes, Corners' },
@@ -283,8 +283,8 @@ export function LiveEventFeed({
         ].map(opt => (
           <button
             key={opt.id}
-            onClick={() => setActiveFilter(opt.id as any)}
-            className={clsx(
+            onClick={() => setActiveFilter(opt.id as 'essential' | 'actions' | 'all')}
+            className={clsx("active:scale-95",
               "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border",
               activeFilter === opt.id
                 ? "bg-primary-500 text-white border-primary-500 shadow-sm font-black"
@@ -354,7 +354,7 @@ export function LiveEventFeed({
           {/* DÉBUT DU MATCH */}
           {activeFilter !== 'actions' && (
             <div className="relative pt-4 flex flex-col items-center justify-center">
-              <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 bg-surface z-10">
+              <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 z-10">
                 <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em]">COUP D'ENVOI</span>
               </div>
             </div>

@@ -328,19 +328,19 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     : 'À venir'
 
   return (
-    <div className="border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
+    <div className="border-b border-surface-border/40 last:border-b-0 hover:bg-surface-raised/30 transition-all duration-300 group/match">
       {/* Match row */}
       <div className="flex items-center gap-3 px-4 py-3 relative z-10">
         {/* Home */}
         <div className="flex items-center justify-end gap-2.5 flex-1 min-w-0">
-          <span className="text-sm font-black text-text-primary uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
-          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: home.color }} />
+          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="w-1.5 h-6 rounded-full shrink-0 shadow-sm opacity-80" style={{ backgroundColor: home.color }} />
         </div>
 
         {/* Score / date */}
-        <div className="shrink-0 text-center min-w-[90px] px-2">
+        <div className="shrink-0 text-center min-w-22.5 px-2">
           {match.status === 'completed' ? (
-            <span className="text-xl font-black tabular-nums text-text-primary" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="text-2xl font-black tabular-nums text-text-primary tracking-tighter" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_score} <span className="text-[#FFDF73] text-sm mx-0.5">-</span> {match.away_score}
             </span>
           ) : match.status === 'live' ? (
@@ -365,8 +365,8 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
         {/* Away */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
-          <span className="text-sm font-black text-text-primary uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
+          <span className="w-1.5 h-6 rounded-full shrink-0 shadow-sm opacity-80" style={{ backgroundColor: away.color }} />
+          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
         </div>
 
         {/* Delegation Badges */}
@@ -386,7 +386,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         {/* Edit button */}
         <button
           onClick={() => setEditing(!editing)}
-          className="text-slate-500 hover:text-text-primary bg-surface-raised/50 hover:bg-surface-raised p-2 rounded-lg shrink-0 transition-colors border border-surface-border"
+          className="text-slate-500 hover:text-text-primary bg-surface-raised/40 hover:bg-surface-raised p-2.5 rounded-xl shrink-0 transition-all border border-surface-border/50 hover:scale-105 active:scale-95"
         >
           <Pencil size={13} />
         </button>
@@ -394,7 +394,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
 
       {/* Edit panel */}
       {editing && (
-        <div className="px-5 pb-5 pt-2 space-y-4 bg-surface-raised/30 border-t border-surface-border shadow-inner relative overflow-hidden">
+        <div className="px-5 pb-6 pt-2 space-y-6 bg-surface-raised/20 border-t border-surface-border/30 relative overflow-hidden animate-in slide-in-from-top-2 duration-300">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Date & heure</label>
@@ -402,7 +402,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
-                className="input text-sm py-2 bg-surface/50 border-surface-border"
+                className="input text-sm py-2.5 bg-surface/40 border-surface-border/50 focus:border-primary-500/50"
               />
             </div>
             <div>
@@ -418,7 +418,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Statut</label>
               <select value={status} onChange={e => setStatus(e.target.value as MatchStatus)}
-                className="input text-sm py-2 bg-surface/50 border-surface-border">
+                className="input text-sm py-2.5 bg-surface/40 border-surface-border/50">
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -1000,14 +1000,14 @@ export function AdminSchedulePage() {
             const dayMatches = (matches ?? []).filter(m => m.matchday === day)
             const isRetour = day > (matchdays.length / 2)
             return (
-              <div key={day} className="card p-0 overflow-hidden glass-morphism border border-surface-border">
+              <div key={day} className="card p-0 overflow-hidden glass-morphism border border-surface-border/60 shadow-xl">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-surface-border bg-surface-raised/50">
-                  <span className="text-lg font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <span className="text-xl font-black text-text-primary uppercase tracking-tight" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Journée {day}
                   </span>
                   <span className={clsx(
-                    "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm",
-                    isRetour ? "bg-slate-300 text-black" : "bg-[#FFDF73] text-black"
+                    "text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm",
+                    isRetour ? "bg-slate-700 text-slate-300 border border-slate-600" : "bg-[#FFDF73] text-black"
                   )}>
                     {isRetour ? 'Retour' : 'Aller'}
                   </span>

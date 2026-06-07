@@ -187,7 +187,7 @@ html {
   --color-text-primary:    #f8fafc;
   --color-text-secondary:  #94a3b8;
   --color-text-muted:      #64748b;
-  
+
   --card-bg: linear-gradient(135deg, #161c2d 0%, #0f1420 100%);
 
   /* Status Colors */
@@ -205,9 +205,14 @@ html {
   --color-chat-action-bar: #1a2030;
   --color-chat-input-bg:   #0D1117;
   
-  --glass-bg: rgba(22, 28, 45, 0.4);
+  --glass-bg: rgba(15, 20, 32, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(12px);
+
+  /* Overlay tokens pour la vidéo (doivent rester lisibles sur flux live) */
+  --color-overlay-bg: rgba(15, 20, 32, 0.85);
+  --color-overlay-text: #ffffff;
+  --color-overlay-border: rgba(255, 255, 255, 0.1);
 
   /* Header */
   --header-bg: #0D1117;
@@ -221,7 +226,7 @@ html {
   --scrollbar-hover: #2e3a5c;
 }
 
-:root[data-theme='light'] {
+html[data-theme='light'] {
   color-scheme: light;
   --color-surface:         #f8fafc;
   --color-surface-card:    #ffffff;
@@ -229,7 +234,7 @@ html {
   --color-surface-border:  #e2e8f0;
   --color-surface-muted:   #cbd5e1;
   
-  --color-text-primary:    #0f172a;
+  --color-text-primary:    #020617;
   --color-text-secondary:  #475569;
   --color-text-muted:      #94a3b8;
   
@@ -243,9 +248,13 @@ html {
   --color-chat-input-bg:   #ffffff;
 
   /* Glassmorphism — light mode */
-  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(248, 250, 252, 0.7);
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-blur: blur(12px);
+
+  --color-overlay-bg: rgba(15, 23, 42, 0.9);
+  --color-overlay-text: #ffffff;
+  --color-overlay-border: rgba(255, 255, 255, 0.15);
 
   /* Header — light mode */
   --header-bg: #ffffff;
@@ -315,252 +324,6 @@ body {
   background: radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%);
   height: 1px;
   width: 100%;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   UTILITIES
-   ═══════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════
-   LIGHT MODE
-   ═══════════════════════════════════════════════════════════ */
-
-:root:not(.dark) {
-  /* Light theme colors */
-  --color-surface:         #f5f5f5;
-  --color-surface-card:    #ffffff;
-  --color-surface-raised:  #eaeaea;
-  --color-surface-border:  #dddddd;
-  --color-surface-muted:   #cccccc;
-  
-  --color-text-primary:    #1a1a1a;
-  --color-text-secondary:  #555555;
-  --color-text-muted:      #888888;
-
-  /* Card background for components using --card-bg */
-  --card-bg: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-
-  /* Chat — light mode */
-  --color-chat-bg:         #e2e8f0;
-  --color-chat-panel:      #ffffff;
-  --color-chat-bubble-in:  #eaeaea;
-  --color-chat-action-bar: #ffffff;
-  --color-chat-input-bg:   #ffffff;
-
-  /* Glassmorphism — light mode */
-  --glass-bg: rgba(255, 255, 255, 0.45);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --glass-blur: blur(12px);
-
-  /* Header — light mode */
-  --header-bg: #ffffff;
-  --header-sub: #f5f5f5;
-  --header-border: rgba(0,0,0,0.08);
-  --header-nav-off: rgba(0,0,0,0.5);
-  --header-nav-hov: rgba(0,0,0,0.85);
-  --header-text: #1a1a1a;
-
-  /* Status Colors */
-  --color-win:             #2e7d32;
-  --color-win-text:        #ffffff;
-  --color-draw:            #f9a825;
-  --color-draw-text:       #ffffff;
-  --color-loss:            #c62828;
-  --color-loss-text:       #ffffff;
-}
-
-/* Light mode styles for non-.dark elements */
-html:not(.dark),
-html:not(.dark) body {
-  background-color: #f5f5f5 !important;
-  color: #1a1a1a !important;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,102,204,0.03) 0%, transparent 60%);
-}
-
-/* Comprehensive light mode overrides for all components */
-:root:not(.dark) .page-title,
-:root:not(.dark) h1,
-:root:not(.dark) h2,
-:root:not(.dark) h3,
-:root:not(.dark) h4,
-:root:not(.dark) h5,
-:root:not(.dark) h6 {
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .card,
-:root:not(.dark) .card-hover,
-:root:not(.dark) .card-featured,
-:root:not(.dark) .stat-card,
-:root:not(.dark) .match-card,
-:root:not(.dark) .skeleton-card {
-  background-color: var(--color-surface-card);
-  border-color: var(--color-surface-border);
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .card-hover:hover {
-  background-color: var(--color-surface-raised);
-}
-
-:root:not(.dark) .stat-card:hover,
-:root:not(.dark) .match-card:hover {
-  background-color: var(--color-surface-raised);
-}
-
-:root:not(.dark) .glass-card {
-  background: rgba(248, 250, 252, 0.7);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .glass-card:hover {
-  background: rgba(248, 250, 252, 0.85);
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-:root:not(.dark) .glass-stat {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(34, 197, 94, 0.04) 100%);
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .input {
-  background-color: var(--color-surface);
-  border-color: var(--color-surface-border);
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .input::placeholder {
-  color: var(--color-text-muted);
-}
-
-:root:not(.dark) .input:hover {
-  border-color: var(--color-surface-muted);
-  background-color: var(--color-surface-card);
-}
-
-:root:not(.dark) .btn-secondary {
-  background-color: var(--color-surface-card);
-  color: var(--color-text-secondary);
-  border-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .btn-secondary:hover {
-  background-color: var(--color-surface-raised);
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .tooltip {
-  background: var(--color-surface-raised);
-  color: var(--color-text-primary);
-  border-color: var(--color-surface-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-:root:not(.dark) .empty-state-icon {
-  background-color: var(--color-surface-raised);
-  border-color: var(--color-surface-border);
-  color: var(--color-text-muted);
-}
-
-:root:not(.dark) .spinner {
-  border-color: var(--color-surface-border);
-  border-top-color: #2563eb;
-}
-
-:root:not(.dark) .skeleton,
-:root:not(.dark) .skeleton-text,
-:root:not(.dark) .skeleton-circle {
-  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 20%, #cbd5e1 40%, #e2e8f0 60%, #f1f5f9 100%);
-  background-size: 200% 100%;
-}
-
-:root:not(.dark) .mobile-nav {
-  background: linear-gradient(180deg, transparent, #f8fafc 10%);
-  border-top-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .sf-row {
-  border-bottom-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .sf-row:hover {
-  background-color: var(--color-surface-raised);
-}
-
-:root:not(.dark) .sf-tabs {
-  border-bottom-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .sf-tab {
-  color: var(--color-text-muted);
-}
-
-:root:not(.dark) .sf-tab:hover {
-  color: var(--color-text-secondary);
-}
-
-:root:not(.dark) .sf-tab.active {
-  color: #2563eb;
-}
-
-:root:not(.dark) .section-title {
-  color: var(--color-text-muted);
-}
-
-:root:not(.dark) .page-header {
-  color: var(--color-text-primary);
-}
-
-:root:not(.dark) .divider {
-  background-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .score-block {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-color: var(--color-surface-border);
-}
-
-:root:not(.dark) .empty-state {
-  color: var(--color-text-secondary);
-}
-
-:root:not(.dark) .badge-live {
-  background-color: rgba(220,38,38,0.1);
-  color: #dc2626;
-  border-color: rgba(220,38,38,0.3);
-}
-
-:root:not(.dark) .label {
-  color: var(--color-text-muted);
-}
-
-/* Override dark hex background classes for light mode */
-:root:not(.dark) .bg-\[\#161c2d\],
-:root:not(.dark) .bg-\[\#0f1420\],
-:root:not(.dark) .bg-\[\#111827\],
-:root:not(.dark) .bg-\[\#1e2640\] {
-  background-color: var(--color-surface-card) !important;
-}
-
-:root:not(.dark) .border-\[\#2d3a5a\],
-:root:not(.dark) .border-\[\#252f4a\] {
-  border-color: var(--color-surface-border) !important;
-}
-
-:root:not(.dark) .divide-white\/5 > * + *,
-:root:not(.dark) .divide-white\/8 > * + * {
-  border-color: var(--color-surface-border) !important;
-}
-
-:root:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-
-:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2465,6 +2228,7 @@ a {
   50% {
     transform: scale(1.05);
     box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0);
+    box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0); /* eslint-disable-line no-dupe-keys */
   }
 }
 

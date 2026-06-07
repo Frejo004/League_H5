@@ -7,10 +7,11 @@
  * - Durées : 1ère mi-temps 20min, repos 5min, 2ème mi-temps 20min
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { MatchEvent, LiveReaction, MatchEventType } from '@/types/database'
+import { useMatchLineups } from './useLineups'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes de durée (en minutes)
@@ -322,6 +323,17 @@ export function useLiveClock(
 export function useAdminMatchLive(matchId?: string) {
   const qc = useQueryClient()
 
+  // Canal pour les diffusions instantanées (Broadcast)
+  const broadcastChannel = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
+  useEffect(() => {
+    if (!matchId) return
+    const name = `match-live-com-${matchId}`
+    const ch = supabase.channel(name)
+    broadcastChannel.current = ch
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId])
+
   const invalidate = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
     qc.invalidateQueries({ queryKey: ['match-events', matchId] })
@@ -413,6 +425,12 @@ export function useAdminMatchLive(matchId?: string) {
         p_player2_id: event.player2_id || undefined,
         p_description: event.description || undefined,
       });
+
+      // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement
+      if (!error && event.type === 'goal') {
+        broadcastChannel.current?.send({ type: 'broadcast', event: 'goal_scored', payload: { teamId: event.team_id } })
+      }
+
       if (error) {
         console.error('[useAdminMatchLive] Erreur lors de l\'ajout d\'un événement de match:', error);
         throw error;
@@ -449,26 +467,29 @@ export function useAdminMatchLive(matchId?: string) {
 
   // Envoyer une annonce flash en temps réel aux spectateurs (Broadcast)
   const sendFlashAnnouncement = useCallback(async (message: string) => {
-    if (!matchId) return
-    const channel = supabase.channel(`match-live-com-${matchId}`)
-    await channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.send({
-          type: 'broadcast',
-          event: 'announcement',
-          payload: { message, timestamp: new Date().toISOString() }
-        })
-        // Libérer le canal après l'envoi
-        setTimeout(() => supabase.removeChannel(channel), 1000)
-      }
+    if (!broadcastChannel.current) return
+    await broadcastChannel.current.send({
+      type: 'broadcast',
+      event: 'announcement',
+      payload: { message, timestamp: new Date().toISOString() }
     })
-  }, [matchId])
+  }, [])
 
   return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters, sendFlashAnnouncement }
 }
 
+// Hook pour vérifier si l'utilisateur est un joueur participant au match
+export function useIsMatchParticipant(matchId?: string, userId?: string) {
+  const { data: lineups } = useMatchLineups(matchId)
+  return useMemo(() => {
+    if (!lineups || !userId) return false
+    return lineups.some(l => l.player?.user_id === userId)
+  }, [lineups, userId])
+}
+
 // Hook pour écouter les messages directs et événements flash (Admin -> Spectateurs)
 export function useLiveAnnouncements(matchId?: string) {
+  const qc = useQueryClient()
   const [announcement, setAnnouncement] = useState<{ message: string; timestamp: string } | null>(null)
 
   useEffect(() => {
@@ -478,9 +499,13 @@ export function useLiveAnnouncements(matchId?: string) {
         setAnnouncement(payload.payload)
         setTimeout(() => setAnnouncement(null), 8000) // Disparaît après 8s
       })
+      .on('broadcast', { event: 'goal_scored' }, () => {
+        // Rafraîchir les données de match immédiatement si un but est détecté via broadcast
+        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+      })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  }, [matchId])
+  }, [matchId, qc])
 
   return announcement
 }

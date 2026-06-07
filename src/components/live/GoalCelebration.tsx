@@ -4,7 +4,7 @@
  * Le parent doit changer la `key` prop pour déclencher une nouvelle célébration.
  */
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 
 const DISPLAY_DURATION = 10_000  // durée totale visible (ms)
 const FADE_OUT_START   = 7_000   // début du fondu sortant (ms)
@@ -16,25 +16,25 @@ interface GoalCelebrationProps {
 }
 
 export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebrationProps) {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(!!teamName)
   const [fadingOut, setFadingOut] = useState(false)
+  const [particles, setParticles] = useState<{ angle: number; dist: number; rotate: number }[]>([])
 
-  // Memoize random properties for confetti particles to keep rendering pure
-  const particles = useMemo(() => {
-    return Array.from({ length: 20 }, (_, i) => {
+  useEffect(() => {
+    if (!teamName) {
+      return
+    }
+
+    // Generate particles in an effect to keep rendering pure (avoid Math.random during render)
+    const newParticles = Array.from({ length: 20 }, (_, i) => {
       const angle = (i / 20) * 2 * Math.PI
       const dist = 300 + Math.random() * 200
       const rotate = Math.random() * 360
       return { angle, dist, rotate }
     })
-  }, [])
-
-  // Se déclenche au montage du composant (quand key change, React remont le composant)
-  useEffect(() => {
-    if (!teamName) return  // pas de célébration si pas d'équipe (état initial)
-
-    setIsVisible(true)
-    setFadingOut(false)
+    requestAnimationFrame(() => {
+      setParticles(newParticles)
+    })
 
     const fadeTimer = setTimeout(() => setFadingOut(true), FADE_OUT_START)
     const hideTimer = setTimeout(() => {
@@ -46,7 +46,7 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
       clearTimeout(fadeTimer)
       clearTimeout(hideTimer)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps — intentionnel : déclenche au montage uniquement
+  }, [teamName])
 
   return (
     <AnimatePresence>
@@ -55,7 +55,7 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
           initial={{ opacity: 0 }}
           animate={{ opacity: fadingOut ? 0 : 1 }}
           transition={{ duration: fadingOut ? 3 : 0.3 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden"
+          className="fixed inset-0 z-100 flex items-center justify-center pointer-events-none overflow-hidden"
         >
           {/* Background Flash — 3 éclairs puis s'arrête */}
           <motion.div
@@ -109,6 +109,7 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
 
             <div className="mt-4 p-4 bg-surface/60 backdrop-blur-xl border border-surface-border/20 rounded-2xl shadow-2xl">
               <p className="text-sm font-black text-text-primary uppercase tracking-[0.3em] mb-1">But pour</p>
+              <p className="text-sm font-black text-text-primary uppercase tracking-[0.3em] mb-1 drop-shadow">But pour</p>
               <h2
                 className="text-2xl font-black uppercase tracking-wider mb-2"
                 style={{ color: teamColor }}
@@ -127,7 +128,7 @@ export function GoalCelebration({ teamName, teamColor, playerName }: GoalCelebra
           <motion.div
             animate={{ x: [-2, 2, -2, 2, 0], y: [1, -1, 1, -1, 0] }}
             transition={{ duration: 0.1, repeat: 10 }}
-            className="absolute inset-0 border-[20px] border-white/10 pointer-events-none"
+            className="absolute inset-0 border-20 border-white/10 pointer-events-none"
           />
         </motion.div>
       )}

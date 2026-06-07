@@ -76,7 +76,7 @@ export function AdminSanctionsPage() {
 
       {/* ── Formulaire d'ajout ── */}
       {showAddForm && (
-        <div className="card border-red-500/30 bg-red-500/[0.03] space-y-4 animate-in slide-in-from-top-4 duration-300">
+        <div className="card border-red-500/30 bg-red-500/3 space-y-4 animate-in slide-in-from-top-4 duration-300 shadow-lg">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Ajouter une suspension manuelle</h3>
             <button onClick={() => setShowAddForm(false)} className="text-text-secondary hover:text-text-primary transition-colors">
@@ -168,7 +168,7 @@ export function AdminSanctionsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {activeSuspensions.map(s => (
-                <div key={s.id} className="card border-red-500/20 bg-gradient-to-r from-red-500/[0.05] to-transparent p-0 overflow-hidden group">
+                <div key={s.id} className="card border-red-500/20 bg-linear-to-r from-red-500/5 to-transparent p-0 overflow-hidden group">
                   <div className="p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 font-black shrink-0">
                       {s.player?.first_name[0]}{s.player?.last_name[0]}
@@ -298,7 +298,7 @@ export function AdminSanctionsPage() {
           </div>
 
           {/* Rappel Règlement */}
-          <div className="card border-blue-500/20 bg-blue-500/[0.02]">
+          <div className="card border-blue-500/20 bg-blue-500/2">
             <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Note Automatique</h3>
             <p className="text-[10px] text-slate-400 leading-relaxed">
               Le système crée automatiquement une suspension de 1 match pour chaque carton rouge direct inséré en live.

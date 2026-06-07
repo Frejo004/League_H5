@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { useLiveStandings } from '@/hooks/useLiveStandings'
 
 interface LiveTableWidgetProps {
@@ -52,7 +52,7 @@ export function LiveTableWidget({
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-border/50">
-            {displayRows.map((row, idx) => {
+            {displayRows.map((row) => {
               const pos = standings.indexOf(row) + 1
               const isMatchTeam = row.team_id === homeId || row.team_id === awayId
               
@@ -87,7 +87,7 @@ export function LiveTableWidget({
                         )}
                       </div>
                       <span className={clsx(
-                        'text-xs uppercase tracking-wide truncate max-w-[120px]',
+                        'text-xs uppercase tracking-wide truncate max-w-30',
                         isMatchTeam ? 'font-black text-text-primary' : 'font-bold text-text-secondary'
                       )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                         {row.team_name}
@@ -115,7 +115,7 @@ export function LiveTableWidget({
 
       {standings.length > displayRows.length && (
         <div className="px-4 py-2 bg-surface/20 text-center">
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-[0.1em]">
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
             ...
           </p>
         </div>

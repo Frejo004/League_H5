@@ -174,7 +174,7 @@ export function AdminSeasonsPage() {
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !seasons?.length ? (
         <div className="card glass-morphism text-center py-12 border border-surface-border">
-          <p className="text-slate-400">Aucune saison créée.</p>
+          <p className="text-slate-400 text-sm">Aucune saison créée.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -183,7 +183,7 @@ export function AdminSeasonsPage() {
 
               {/* Background accent si la saison est active */}
               {season.is_active && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#FFDF73]/5 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-r from-[#FFDF73]/5 to-transparent pointer-events-none" />
               )}
 
               {/* Mode édition */}
