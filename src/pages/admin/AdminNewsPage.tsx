@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useAuth } from '@/hooks/useAuth'
 import { 
   Newspaper, Plus, Trash2, Pin, 
-  Image as ImageIcon, X, Send, 
+  X, Send, 
   AlertCircle, 
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
 import { useNews } from '@/hooks/useNews'
+import { supabase } from '@/lib/supabase'
 
 export function AdminNewsPage() {
   const { user } = useAuth()
@@ -18,17 +19,48 @@ export function AdminNewsPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null) // New state for file
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null) // New state for preview
   const [isPinned, setIsPinned] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null) // Ref for file input
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      setImagePreviewUrl(URL.createObjectURL(file))
+    } else {
+      setImageFile(null)
+      setImagePreviewUrl(null)
+    }
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !content || !season || !user) return
 
+    let uploadedImageUrl: string | null = null
+    if (imageFile) {
+      const filePath = `${user.id}/${season.id}/${crypto.randomUUID()}-${imageFile.name}`
+      const { data, error } = await supabase.storage
+        .from('news-images') // Assuming a 'news-images' bucket
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (error) {
+        console.error('Error uploading image:', error)
+        // Optionally show a toast notification for the error
+        return
+      }
+      uploadedImageUrl = supabase.storage.from('news-images').getPublicUrl(data.path).data.publicUrl
+    }
+
     await createPost.mutateAsync({
       title,
       content,
-      image_url: imageUrl || null,
+      image_url: uploadedImageUrl, // Use uploaded URL
       is_pinned: isPinned,
       season_id: season.id,
       author_id: user.id
@@ -37,9 +69,11 @@ export function AdminNewsPage() {
     // Reset form
     setTitle('')
     setContent('')
-    setImageUrl('')
+    setImageFile(null)
+    setImagePreviewUrl(null)
     setIsPinned(false)
     setShowAddForm(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
@@ -86,16 +120,31 @@ export function AdminNewsPage() {
                 />
               </div>
               <div>
-                <label className="label">URL de l'image (optionnel)</label>
-                <div className="relative">
-                  <ImageIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <label className="label">Image de couverture (optionnel)</label>
+                <div className="flex items-center gap-3">
                   <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="input pl-9"
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="file-input flex-1"
                   />
+                  {imagePreviewUrl && (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                      <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null)
+                          setImagePreviewUrl(null)
+                          if (fileInputRef.current) fileInputRef.current.value = ''
+                        }}
+                        className="absolute top-0 right-0 p-1 bg-black/50 rounded-bl-lg text-white hover:bg-black/70"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-surface/50 border border-surface-border">
