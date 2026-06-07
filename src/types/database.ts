@@ -34,7 +34,29 @@ export interface Database {
           created_at: string
           updated_at: string
         }
-        // ... Insert and Update follow standard patterns
+        Insert: {
+          id?: string
+          season_id: string
+          author_id?: string | null
+          title: string
+          content: string
+          image_url?: string | null
+          is_pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          season_id?: string
+          author_id?: string | null
+          title?: string
+          content?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       seasons: {
         Row: {

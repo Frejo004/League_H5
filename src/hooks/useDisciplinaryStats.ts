@@ -3,10 +3,11 @@
  * Cartons jaunes, rouges et classement fair-play par équipe et par joueur
  * Basé sur la table match_events (type = 'yellow_card' | 'red_card')
  */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
+import { Database } from '@/types/database'
+import { supabase } from '@/lib/supabase'
+import { PostgrestError } from '@supabase/supabase-js'
 
 export interface Suspension {
   id: string
@@ -18,6 +19,7 @@ export interface Suspension {
   matches_served: number
   is_active: boolean
   is_auto_generated: boolean
+  source_event_ids?: string[] | null
   created_at: string
   player?: { 
     id: string;
@@ -63,8 +65,8 @@ export function usePlayerDiscipline(playerId?: string, seasonId?: string) {
       // Récupérer les matchs de la saison pour filtrer les événements
       const { data: matchData, error: matchErr } = await supabase
         .from('matches')
-        .select('id')
-        .eq('season_id', seasonId!)
+        .select('id') // Correction: Typage explicite de l'erreur
+        .eq('season_id', seasonId!) as { data: { id: string }[] | null, error: PostgrestError | null }
       if (matchErr) throw matchErr
 
       const matchIds = (matchData ?? []).map(m => m.id)
@@ -151,7 +153,7 @@ export function useDisciplinaryStats(seasonId?: string) {
       const playerMap = new Map<string, PlayerDiscipline>()
       const teamMap = new Map<string, TeamDiscipline>()
 
-      for (const ev of events) {
+      for (const ev of events) { // Correction: Suppression du cast 'as any[]'
         const team = ev.team as { id: string; name: string; color: string } | null
         const player = ev.player as EventRow['player']
 
@@ -248,7 +250,7 @@ export function useSuspensions(seasonId?: string) {
         matches_count: payload.matches_count ?? 0,
         matches_served: payload.matches_served ?? 0,
         is_active: payload.is_active ?? true,
-      }).select().single()
+      } as Database['public']['Tables']['suspensions']['Insert']).select().single() // Correction: Typage explicite
       if (error) throw error
       return data
     },
@@ -257,7 +259,7 @@ export function useSuspensions(seasonId?: string) {
 
   const toggleSuspension = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from('suspensions').update({ is_active }).eq('id', id)
+      const { error } = await supabase.from('suspensions').update({ is_active } as Database['public']['Tables']['suspensions']['Update']).eq('id', id) // Correction: Typage explicite
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
@@ -273,7 +275,7 @@ export function useSuspensions(seasonId?: string) {
 
   const updateServed = useMutation({
     mutationFn: async ({ id, matches_served }: { id: string; matches_served: number }) => {
-      const { error } = await supabase.from('suspensions').update({ matches_served }).eq('id', id)
+      const { error } = await supabase.from('suspensions').update({ matches_served } as Database['public']['Tables']['suspensions']['Update']).eq('id', id) // Correction: Typage explicite
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suspensions'] }),
