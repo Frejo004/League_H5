@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import {
-  ArrowRightLeft, Check, X, Plus, Users, User, Trash2,
+  ArrowRightLeft, Check, X, Plus, Trash2,
   AlertCircle, Calendar
 } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTransfers } from '@/hooks/useTransfers'
 import { useTeams } from '@/hooks/useTeams'
 import { usePlayers } from '@/hooks/usePlayers'
-import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
@@ -16,14 +15,20 @@ import type { TransferStatus } from '@/types/database'
 function StatusBadge({ status }: { status: TransferStatus }) {
   const styles = {
     pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    player_requested: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    home_captain_approved: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    admin_approved: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
     approved: 'bg-green-500/10 text-green-500 border-green-500/20',
     rejected: 'bg-red-500/10 text-red-500 border-red-500/20',
     cancelled: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
-    completed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    completed: 'bg-primary-500/10 text-primary-500 border-primary-500/20',
   }
 
   const labels = {
     pending: 'En attente',
+    player_requested: 'Demande envoyée',
+    home_captain_approved: 'Approuvé par capitaine',
+    admin_approved: 'Approuvé par admin',
     approved: 'Approuvé',
     rejected: 'Refusé',
     cancelled: 'Annulé',
@@ -33,19 +38,18 @@ function StatusBadge({ status }: { status: TransferStatus }) {
   return (
     <span className={clsx(
       'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border',
-      styles[status]
+      styles[status as keyof typeof styles]
     )}>
-      {labels[status]}
+      {labels[status as keyof typeof labels]}
     </span>
   )
 }
 
 export function AdminTransfersPage() {
   const { data: season } = useActiveSeason()
-  const { data: transfers, isLoading: transfersLoading, createTransfer, updateTransfer, deleteTransfer } = useTransfers()
+  const { data: transfers, isLoading: transfersLoading, createTransfer, approveAsAdmin, rejectTransfer, deleteTransfer } = useTransfers()
   const { data: teams } = useTeams(season?.id)
   const { data: players } = usePlayers(season?.id)
-  const { user } = useAuth()
 
   const [showForm, setShowForm] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState('')
@@ -70,11 +74,6 @@ export function AdminTransfersPage() {
     setSelectedToTeam('')
     setReason('')
   }
-
-  const availablePlayers = players?.filter(p =>
-    (selectedFromTeam ? p.team_id === selectedFromTeam : true) &&
-    (selectedToTeam ? p.team_id !== selectedToTeam : true)
-  )
 
   if (!season) {
     return (
@@ -256,17 +255,17 @@ export function AdminTransfersPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {transfer.status === 'pending' && (
+                  {transfer.status === 'home_captain_approved' && (
                     <>
                       <button
-                        onClick={() => updateTransfer.mutate({ id: transfer.id, status: 'approved' })}
-                        className="p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-colors"
+                        onClick={() => approveAsAdmin.mutate(transfer.id)}
+                        className="p-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition-colors"
                         title="Approuver"
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        onClick={() => updateTransfer.mutate({ id: transfer.id, status: 'rejected' })}
+                        onClick={() => rejectTransfer.mutate(transfer.id)}
                         className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
                         title="Refuser"
                       >
@@ -274,15 +273,7 @@ export function AdminTransfersPage() {
                       </button>
                     </>
                   )}
-                  {transfer.status === 'approved' && (
-                    <button
-                      onClick={() => updateTransfer.mutate({ id: transfer.id, status: 'completed' })}
-                      className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 transition-colors text-xs font-bold uppercase"
-                    >
-                      Terminer
-                    </button>
-                  )}
-                  {(transfer.status === 'pending' || transfer.status === 'cancelled') && (
+                  {(transfer.status === 'pending' || transfer.status === 'player_requested' || transfer.status === 'cancelled') && (
                     <button
                       onClick={() => {
                         if (confirm('Êtes-vous sûr de vouloir supprimer ce transfert ?')) {

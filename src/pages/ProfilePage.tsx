@@ -3,7 +3,7 @@ import {
   Camera, Check, Pencil, Mail,
   ShieldCheck, AlertCircle, Loader2,
   ArrowRight, Bell, Calendar, Trophy, Users, Shield, Zap,
-  Newspaper, Star,
+  Newspaper, Star, Send,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,6 +13,8 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences'
+import { useTransfers } from '@/hooks/useTransfers'
+import { useTeams } from '@/hooks/useTeams'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 
@@ -29,6 +31,24 @@ function StatusBadge({ role }: { role: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
       <ShieldCheck size={11} />
+      {cfg.label}
+    </span>
+  )
+}
+
+function TransferStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
+    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-400 border-primary-500/30' },
+    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+  }
+  const cfg = map[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
       {cfg.label}
     </span>
   )
@@ -281,6 +301,16 @@ export function ProfilePage() {
   const { profile, user, refreshProfile, signOut } = useAuth()
   const qc = useQueryClient()
   const { data: prefs, isLoading: prefsLoading, togglePreference } = useNotificationPreferences()
+  const { data: season } = useActiveSeason()
+  const { data: allPlayers } = usePlayers(season?.id)
+  const { data: teams } = useTeams(season?.id)
+  const { data: transfers, createTransfer } = useTransfers()
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [transferReason, setTransferReason] = useState('')
+
+  const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
+  const myTransfers = (transfers ?? []).filter(t => t.player_id === myPlayer?.id)
+  const hasPendingTransfer = myTransfers.some(t => ['player_requested', 'home_captain_approved', 'admin_approved'].includes(t.status))
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
@@ -580,6 +610,98 @@ export function ProfilePage() {
           <SubmitButton loading={pwdLoading} label="Changer le mot de passe" loadingLabel="Mise à jour…" />
         </form>
       </SectionCard>
+
+      {/* ── Transferts ── */}
+      {profile?.role === 'player' && myPlayer && (
+        <SectionCard icon={<Send size={14} />} title="Demande de transfert">
+          {myTransfers.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historique des demandes</h3>
+              {myTransfers.map(transfer => (
+                <div key={transfer.id} className="p-3 bg-slate-800/50 rounded-xl border border-surface-border">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm">
+                      <p className="text-text-primary font-medium">
+                        {transfer.from_team?.name || 'Sans équipe'} → {transfer.to_team?.name}
+                      </p>
+                      {transfer.reason && <p className="text-slate-500 text-xs mt-1">{transfer.reason}</p>}
+                    </div>
+                    <TransferStatusBadge status={transfer.status} />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {new Date(transfer.created_at).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hasPendingTransfer ? (
+            <div className="text-sm text-slate-400">
+              Vous avez déjà une demande de transfert en attente.
+            </div>
+          ) : (
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              if (!selectedTeamId || !myPlayer) return
+              createTransfer.mutate({
+                player_id: myPlayer.id,
+                from_team_id: myPlayer.team_id,
+                to_team_id: selectedTeamId,
+                reason: transferReason || undefined,
+              })
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Équipe de destination
+                </label>
+                <select
+                  value={selectedTeamId || ''}
+                  onChange={(e) => setSelectedTeamId(e.target.value || null)}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
+                             text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+                >
+                  <option value="">Sélectionner une équipe</option>
+                  {(teams || [])
+                    .filter(team => team.id !== myPlayer.team_id)
+                    .map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Raison (optionnel)
+                </label>
+                <textarea
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
+                             text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 resize-none"
+                  placeholder="Expliquez pourquoi vous voulez changer d'équipe..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!selectedTeamId || createTransfer.isPending}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-500
+                           text-white text-sm font-semibold rounded-xl transition-all
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createTransfer.isPending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Envoi…</>
+                ) : (
+                  <><Send size={14} /> Envoyer la demande</>
+                )}
+              </button>
+            </form>
+          )}
+        </SectionCard>
+      )}
 
       {/* ── Paramètres de notifications ── */}
       <SectionCard icon={<Bell size={14} />} title="Paramètres de notifications">

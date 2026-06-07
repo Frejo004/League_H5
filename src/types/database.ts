@@ -10,7 +10,7 @@ export type UserRole = 'admin' | 'captain' | 'player' | 'spectator'
 export type MatchStatus = 'scheduled' | 'live' | 'completed' | 'cancelled'
 export type SpectatorStatus = 'pending' | 'approved' | 'rejected'
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
-export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed'
+export type TransferStatus = 'pending' | 'player_requested' | 'home_captain_approved' | 'admin_approved' | 'approved' | 'rejected' | 'cancelled' | 'completed'
 export type PollStatus = 'draft' | 'active' | 'closed' | 'completed'
 export type MatchEventType =
   | 'goal' | 'own_goal'
@@ -1139,6 +1139,12 @@ export interface Database {
           requested_at: string
           decided_at: string | null
           decided_by: string | null
+          home_captain_approved_by: string | null
+          home_captain_approved_at: string | null
+          admin_approved_by: string | null
+          admin_approved_at: string | null
+          away_captain_approved_by: string | null
+          away_captain_approved_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1154,6 +1160,12 @@ export interface Database {
           requested_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          home_captain_approved_by?: string | null
+          home_captain_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_approved_at?: string | null
+          away_captain_approved_by?: string | null
+          away_captain_approved_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1169,6 +1181,12 @@ export interface Database {
           requested_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          home_captain_approved_by?: string | null
+          home_captain_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_approved_at?: string | null
+          away_captain_approved_by?: string | null
+          away_captain_approved_at?: string | null
           updated_at?: string
         }
         Relationships: [

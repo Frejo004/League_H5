@@ -1,13 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Poll, Prediction } from '@/types/database'
+import type { Poll, Prediction, Match, MatchWithTeams, Profile, Database } from '@/types/database'
 import { useActiveSeason } from './useSeasons'
 import { useAuth } from './useAuth'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PollInsert = Database['public']['Tables']['polls']['Insert']
+type PollUpdate = Database['public']['Tables']['polls']['Update']
+
 export interface PollWithRelations extends Poll {
-  match?: any
-  created_by_user?: any
+  match?: Match | MatchWithTeams
+  created_by_user?: Pick<Profile, 'full_name' | 'avatar_url'>
+}
+
+export interface PredictionWithUser extends Prediction {
+  user?: Pick<Profile, 'full_name' | 'avatar_url'>
 }
 
 export function usePolls() {
@@ -35,7 +41,7 @@ export function usePolls() {
   })
 
   const createPoll = useMutation({
-    mutationFn: async (pollData: Partial<Poll>) => {
+    mutationFn: async (pollData: Omit<PollInsert, 'season_id' | 'created_by' | 'id' | 'created_at' | 'updated_at'>) => {
       if (!season || !user) throw new Error('Missing data')
 
       const { data, error } = await supabase
@@ -44,8 +50,7 @@ export function usePolls() {
           ...pollData,
           season_id: season.id,
           created_by: user.id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        } as PollInsert)
         .select()
         .single()
 
@@ -58,11 +63,10 @@ export function usePolls() {
   })
 
   const updatePoll = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Poll>) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & PollUpdate) => {
       const { data, error } = await supabase
         .from('polls')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single()
@@ -118,15 +122,14 @@ export function usePoll(pollId: string) {
   const predictionsQuery = useQuery({
     queryKey: ['poll-predictions', pollId],
     enabled: !!pollId,
-    queryFn: async (): Promise<(Prediction & { user?: unknown })[]> => {
+    queryFn: async (): Promise<PredictionWithUser[]> => {
       const { data, error } = await supabase
         .from('predictions')
         .select('*, user:profiles(full_name, avatar_url)')
         .eq('poll_id', pollId)
 
       if (error) throw error
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return data as unknown as (Prediction & { user?: any })[]
+      return data as unknown as PredictionWithUser[]
     },
   })
 
