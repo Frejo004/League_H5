@@ -2,7 +2,8 @@ import { useState, useRef, useMemo, useEffect } from 'react'
 import {
   Camera, Check, Pencil, Mail,
   ShieldCheck, AlertCircle, Loader2,
-  ArrowRight,
+  ArrowRight, Bell, Calendar, Trophy, Users, Shield, Zap,
+  Newspaper, Star,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,6 +12,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 
@@ -106,6 +108,42 @@ function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; labe
       {loading && <Loader2 size={14} className="animate-spin" />}
       {loading ? loadingLabel : label}
     </button>
+  )
+}
+
+function NotificationToggle({
+  label, description, icon, value, onChange, disabled
+}: {
+  label: string; description?: string; icon: React.ReactNode; value: boolean;
+  onChange: (v: boolean) => void; disabled?: boolean
+}) {
+  return (
+    <div className={`flex items-start justify-between gap-4 py-4 border-b border-surface-border last:border-0 ${disabled ? 'opacity-50' : ''}`}>
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-primary-500/10 text-primary-400 shrink-0">
+          {icon}
+        </div>
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold text-text-primary">{label}</p>
+          {description && (
+            <p className="text-xs text-slate-500">{description}</p>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={() => onChange(!value)}
+        disabled={disabled}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+          value ? 'bg-primary-600' : 'bg-slate-700'
+        } ${disabled ? 'cursor-not-allowed' : ''}`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            value ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
   )
 }
 
@@ -242,6 +280,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
 export function ProfilePage() {
   const { profile, user, refreshProfile, signOut } = useAuth()
   const qc = useQueryClient()
+  const { data: prefs, isLoading: prefsLoading, togglePreference } = useNotificationPreferences()
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
@@ -540,6 +579,83 @@ export function ProfilePage() {
           </div>
           <SubmitButton loading={pwdLoading} label="Changer le mot de passe" loadingLabel="Mise à jour…" />
         </form>
+      </SectionCard>
+
+      {/* ── Paramètres de notifications ── */}
+      <SectionCard icon={<Bell size={14} />} title="Paramètres de notifications">
+        {prefsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={20} className="text-primary-400 animate-spin" />
+          </div>
+        ) : prefs ? (
+          <div className="-mx-2">
+            <NotificationToggle
+              label="Matchs à venir"
+              description="Être notifié avant le début des matchs"
+              icon={<Calendar size={16} />}
+              value={prefs.match_upcoming}
+              onChange={(v) => togglePreference.mutate({ key: 'match_upcoming', value: v })}
+            />
+            <NotificationToggle
+              label="Résultats de matchs"
+              description="Recevoir les résultats des matchs terminés"
+              icon={<Trophy size={16} />}
+              value={prefs.match_completed}
+              onChange={(v) => togglePreference.mutate({ key: 'match_completed', value: v })}
+            />
+            <NotificationToggle
+              label="Vote MVP ouvert"
+              description="Être notifié quand un vote MVP est disponible"
+              icon={<Star size={16} />}
+              value={prefs.mvp_vote_open}
+              onChange={(v) => togglePreference.mutate({ key: 'mvp_vote_open', value: v })}
+            />
+            <NotificationToggle
+              label="Invitations en attente"
+              description="Alerte pour les invitations à rejoindre une équipe"
+              icon={<Users size={16} />}
+              value={prefs.invite_pending}
+              onChange={(v) => togglePreference.mutate({ key: 'invite_pending', value: v })}
+            />
+            <NotificationToggle
+              label="Invitation expirante"
+              description="Alerte quand une invitation est sur le point d'expirer"
+              icon={<AlertCircle size={16} />}
+              value={prefs.invite_expiring}
+              onChange={(v) => togglePreference.mutate({ key: 'invite_expiring', value: v })}
+            />
+            <NotificationToggle
+              label="Sélection tactique"
+              description="Être notifié quand vous êtes sélectionné pour un match"
+              icon={<Zap size={16} />}
+              value={prefs.tactique_selected}
+              onChange={(v) => togglePreference.mutate({ key: 'tactique_selected', value: v })}
+            />
+            <NotificationToggle
+              label="Actualités de la ligue"
+              description="Recevoir les annonces et actualités de la ligue"
+              icon={<Newspaper size={16} />}
+              value={prefs.league_news}
+              onChange={(v) => togglePreference.mutate({ key: 'league_news', value: v })}
+            />
+            {profile?.role === 'admin' && (
+              <NotificationToggle
+                label="Demandes de spectateurs"
+                description="Être notifié quand un nouveau spectateur demande l'accès"
+                icon={<Shield size={16} />}
+                value={prefs.spectator_request}
+                onChange={(v) => togglePreference.mutate({ key: 'spectator_request', value: v })}
+              />
+            )}
+            <NotificationToggle
+              label="Approbation de spectateur"
+              description="Être notifié quand votre demande de spectateur est acceptée"
+              icon={<ShieldCheck size={16} />}
+              value={prefs.spectator_approved}
+              onChange={(v) => togglePreference.mutate({ key: 'spectator_approved', value: v })}
+            />
+          </div>
+        ) : null}
       </SectionCard>
 
       {/* ── Déconnexion ── */}
