@@ -185,7 +185,7 @@ function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
 export function RulesPage() {
   const { data: season } = useActiveSeason()
   const { data: teams = [], isLoading: teamsLoading } = useTeamsWithPlayers(season?.id)
-  const [activeTab, setActiveTab] = useState<'ligue' | 'arbitrage'>('ligue')
+  const [activeTab, setActiveTab] = useState<'ligue' | 'effectifs' | 'arbitrage'>('ligue')
 
   return (
     <div className="space-y-6 pb-12 max-w-5xl mx-auto">
@@ -237,6 +237,18 @@ export function RulesPage() {
         >
           <Trophy size={14} />
           Règlement Ligue
+        </button>
+        <button
+          onClick={() => setActiveTab('effectifs')}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-400",
+            activeTab === 'effectifs'
+              ? "bg-red-600 text-white shadow-[0_0_25px_rgba(220,38,38,0.3)] scale-[1.01]"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <Users size={14} />
+          Effectifs & Présence
         </button>
         <button
           onClick={() => setActiveTab('arbitrage')}
@@ -409,6 +421,118 @@ export function RulesPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'effectifs' ? (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {/* Carte 1: Effectif minimum - Large */}
+          <div className="card border-red-500/20 bg-red-500/[0.02]">
+            <SectionTitle icon={Users} title="1. Effectif minimum" color="#ef4444" />
+            <div className="space-y-3">
+              <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Chaque équipe doit se présenter avec <span className="text-red-400 font-bold">au minimum 4 joueurs</span> de son effectif.
+                </p>
+              </div>
+              
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <h4 className="text-xs font-bold text-white mb-2">Si 4 joueurs seulement :</h4>
+                <ul className="space-y-1.5">
+                  {[
+                    'Demander un mercenaire avec accord de l\'équipe adverse',
+                    'Droit de veto de l\'équipe adverse',
+                    'Un seul mercenaire par rencontre',
+                    'Accord mutuel pour jouer 4 contre 4'
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                      <span className="w-1 h-1 rounded-full bg-red-500/50 mt-1.5 shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Cartes 2&3: Retards et Forfait - Side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="card border-orange-500/20 bg-orange-500/[0.02]">
+              <SectionTitle icon={Clock} title="2. Retard des joueurs" color="#f97316" />
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                  <p className="text-xs text-slate-300 font-bold">
+                    ⏱️ Limite : <span className="text-orange-400">15 minutes</span>
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">Après coup d'envoi</p>
+                </div>
+                
+                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <h4 className="text-xs font-bold text-white mb-1.5">Exceptions :</h4>
+                  <ul className="space-y-1 text-xs">
+                    {[
+                      'Notification préalable capitaine',
+                      'Infériorité : arbitre autorise',
+                      'Carton jaune automatique'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-slate-300">
+                        <Check size={10} className="text-orange-400 mt-0.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="card border-red-600/20 bg-red-600/[0.02]">
+              <SectionTitle icon={X} title="3. Forfait automatique" color="#dc2626" />
+              <div className="p-3 rounded-xl bg-red-600/15 border border-red-600/30 text-center space-y-2">
+                <p className="text-xs text-slate-300">
+                  <span className="block text-red-400 font-bold mb-1">Moins de 4 joueurs</span>
+                  dans les 15 minutes du coup d'envoi
+                </p>
+                <p className="text-xs text-red-300 font-bold">↳ Perte du match</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Cartes 4&5: Capitaines et Horaires - Side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="card border-purple-500/20 bg-purple-500/[0.02]">
+              <SectionTitle icon={Crown} title="4. Rôle des capitaines" color="#a78bfa" />
+              <div className="space-y-2">
+                <p className="text-xs text-slate-300">
+                  Présence <span className="text-purple-400 font-bold">15 min avant</span> le match
+                </p>
+                <div className="space-y-1">
+                  {[
+                    'Valider la feuille',
+                    'Faciliter l\'organisation',
+                    'Assurer présence minimale'
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/5 border border-purple-500/15">
+                      <Check size={10} className="text-purple-400 shrink-0" />
+                      <p className="text-xs text-slate-300">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="card border-blue-500/20 bg-blue-500/[0.02]">
+              <SectionTitle icon={Clock} title="5. Respect des horaires" color="#3b82f6" />
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center space-y-2">
+                <p className="text-xs text-slate-300 font-bold">
+                  ⏰ Matchs à l'heure prévue
+                </p>
+                <p className="text-xs text-slate-400">
+                  Même si équipes incomplètes
+                </p>
+                <p className="text-xs text-blue-300 italic">
+                  Ponctualité = bon déroulement
+                </p>
               </div>
             </div>
           </div>

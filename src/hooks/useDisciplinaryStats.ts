@@ -17,6 +17,7 @@ export interface Suspension {
   matches_count: number
   matches_served: number
   is_active: boolean
+  is_auto_generated: boolean
   created_at: string
   player?: { 
     id: string;

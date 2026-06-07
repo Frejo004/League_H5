@@ -11,6 +11,7 @@ import {
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useDisciplinaryStats, useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { usePlayers } from '@/hooks/usePlayers'
+import { clsx } from 'clsx'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function AdminSanctionsPage() {
@@ -179,6 +180,14 @@ export function AdminSanctionsPage() {
                           {s.player?.first_name} {s.player?.last_name}
                         </span>
                         <span
+                          className={clsx(
+                            "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider",
+                            s.is_auto_generated ? "bg-blue-500/10 text-blue-500" : "bg-slate-500/10 text-slate-500"
+                          )}
+                        >
+                          {s.is_auto_generated ? 'Auto' : 'Manuelle'}
+                        </span>
+                        <span
                           className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
                           style={{ backgroundColor: s.player?.team?.color + '20', color: s.player?.team?.color }}
                         >
@@ -281,6 +290,17 @@ export function AdminSanctionsPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     {p.yellow_cards > 0 && (
                       <div className="flex items-center gap-1">
+                        {/* Indicateur d'accumulation de cartons jaunes */}
+                        {/* Ceci est un exemple, la logique pour calculer les "non-purgés" devrait venir de la DB */}
+                        {/* Pour l'instant, on affiche juste le total */}
+                        {p.yellow_cards > 0 && (
+                          <span className="text-[9px] font-bold text-yellow-400 uppercase tracking-wider">
+                            {p.yellow_cards % 3 > 0 && `${p.yellow_cards % 3}/3`}
+                          </span>
+                        )}
+
+
+
                         <div className="w-1.5 h-2 bg-yellow-400 rounded-sm" />
                         <span className="text-xs font-black text-yellow-400 tabular-nums">{p.yellow_cards}</span>
                       </div>

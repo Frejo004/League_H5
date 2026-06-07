@@ -22,6 +22,20 @@ export type MatchEventType =
 export interface Database {
   public: {
     Tables: {
+      news_posts: {
+        Row: {
+          id: string
+          season_id: string
+          author_id: string | null
+          title: string
+          content: string
+          image_url: string | null
+          is_pinned: boolean
+          created_at: string
+          updated_at: string
+        }
+        // ... Insert and Update follow standard patterns
+      }
       seasons: {
         Row: {
           id: string
@@ -805,6 +819,8 @@ export interface Database {
           matches_count: number
           matches_served: number
           is_active: boolean
+          is_auto_generated: boolean
+          source_event_ids: string[] | null
           created_at: string
           updated_at: string
         }
@@ -817,6 +833,8 @@ export interface Database {
           matches_count?: number
           matches_served?: number
           is_active?: boolean
+          is_auto_generated?: boolean
+          source_event_ids?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -829,6 +847,8 @@ export interface Database {
           matches_count?: number
           matches_served?: number
           is_active?: boolean
+          is_auto_generated?: boolean
+          source_event_ids?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -1235,6 +1255,7 @@ export type MatchEventRow = Database['public']['Tables']['match_events']['Row']
 export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Row']
 export type MatchLineupRow = Database['public']['Tables']['match_lineups']['Row']
 export type MatchFeedback = Database['public']['Tables']['match_feedback']['Row']
+export type Suspension = Database['public']['Tables']['suspensions']['Row']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
@@ -1286,6 +1307,11 @@ export type PlayerWithTeam = Player & {
 /** Feedback de match avec joueur imbriqué — retourné par useMatchFeedback */
 export type MatchFeedbackWithPlayer = MatchFeedback & {
   players: PlayerWithTeam
+}
+
+/** Suspension avec joueur imbriqué — retourné par useSuspensions */
+export type SuspensionWithPlayer = Suspension & {
+  player: (PlayerWithTeam) | null
 }
 
 export type TeamMessage = Database['public']['Tables']['team_messages']['Row']
