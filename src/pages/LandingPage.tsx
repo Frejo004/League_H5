@@ -11,10 +11,10 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { LiveClock } from '@/components/live/LiveClock'
-import { NewsFeed } from '@/hooks/NewsFeed'
+import { LiveClock } from '@/components/live/LiveClock' // Keep this import
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { NewsFeed } from '@/hooks/NewsFeed'
 
 const ACCENT = '#C8F135'
 
