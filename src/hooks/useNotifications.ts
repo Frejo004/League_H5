@@ -19,9 +19,10 @@ export type NotifType =
   | 'invite_pending'
   | 'invite_expiring'
   | 'spectator_request'
-  | 'spectator_approved' // Nouveau type pour l'approbation de spectateur
+  | 'spectator_approved'
   | 'tactique_selected'
   | 'mention'
+  | 'poll_resolved'
 
 export interface Notification {
   id: string
@@ -199,7 +200,45 @@ export function useNotifications() {
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
 
-  // Realtime : Détecter quand le joueur est ajouté à une compo
+  // Realtime : détecter quand un sondage lié à un match est résolu
+  useEffect(() => {
+    if (!user?.id) return
+    const ch = supabase.channel(`polls-resolved-${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'polls',
+      }, async (payload) => {
+        const updated = payload.new as { id: string; status: string; question: string; correct_option_index: number | null; options: string[]; match_id: string | null }
+        if (updated.status !== 'completed' || updated.correct_option_index == null) return
+
+        // Vérifier si l'utilisateur a voté sur ce sondage
+        const { data: prediction } = await supabase
+          .from('predictions')
+          .select('option_index, is_correct, points_earned')
+          .eq('poll_id', updated.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!prediction) return
+
+        const won = prediction.is_correct === true
+        pushLocal(
+          won ? '🎉 Bon pronostic !' : '❌ Pronostic raté',
+          won
+            ? `+${prediction.points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
+            : `Réponse correcte : ${updated.options[updated.correct_option_index]}`,
+          `poll-resolved-${updated.id}`,
+          updated.match_id ? `/matches/${updated.match_id}` : '/polls'
+        )
+
+        qc.invalidateQueries({ queryKey: ['polls'] })
+        qc.invalidateQueries({ queryKey: ['leaderboard'] })
+        qc.invalidateQueries({ queryKey: ['user-prediction'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user?.id, qc])
+
+  // Realtime : détecter quand le joueur est ajouté à une compo
   useEffect(() => {
     if (!user?.id) return
     const channel = supabase.channel(`player-tactics-${user.id}`)

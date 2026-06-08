@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
+import { usePolls } from '@/hooks/usePolls'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -217,6 +218,9 @@ export default function Header() {
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
+  // Badge pronostics actifs
+  const { data: allPolls } = usePolls()
+  const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
   // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
   const [prevPathname, setPrevPathname] = useState(location.pathname)
   if (location.pathname !== prevPathname) {
@@ -319,6 +323,14 @@ export default function Header() {
                 }}
               >
                 {label}
+                {to === '/polls' && activePollsCount > 0 && (
+                  <span
+                    className="ml-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black"
+                    style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
+                  >
+                    {activePollsCount}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Poll, Prediction, Match, MatchWithTeams, Profile, Database, PollType } from '@/types/database'
 import { useActiveSeason } from './useSeasons'
@@ -295,6 +296,7 @@ export function usePoll(pollId: string) {
     mutationFn: async ({ optionIndex }: { optionIndex: number }) => {
       if (!user) throw new Error('Not authenticated')
 
+      // Vérifier si l'utilisateur a déjà voté — vote définitif
       const { data: existing } = await supabase
         .from('predictions')
         .select('id')
@@ -303,23 +305,17 @@ export function usePoll(pollId: string) {
         .maybeSingle()
 
       if (existing) {
-        const { data, error } = await supabase
-          .from('predictions')
-          .update({ option_index: optionIndex })
-          .eq('id', existing.id)
-          .select()
-          .single()
-        if (error) throw error
-        return data
-      } else {
-        const { data, error } = await supabase
-          .from('predictions')
-          .insert({ poll_id: pollId, user_id: user.id, option_index: optionIndex })
-          .select()
-          .single()
-        if (error) throw error
-        return data
+        // Vote déjà enregistré — on ne modifie pas
+        throw new Error('ALREADY_VOTED')
       }
+
+      const { data, error } = await supabase
+        .from('predictions')
+        .insert({ poll_id: pollId, user_id: user.id, option_index: optionIndex })
+        .select()
+        .single()
+      if (error) throw error
+      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['poll-predictions', pollId] })
@@ -334,7 +330,9 @@ export function usePoll(pollId: string) {
 // Récupère les sondages liés à un match précis (pour la page détail du match)
 export function usePollsByMatch(matchId?: string) {
   const { user } = useAuth()
-  return useQuery({
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
     queryKey: ['polls-by-match', matchId],
     enabled: !!matchId,
     queryFn: async (): Promise<PollWithRelations[]> => {
@@ -347,8 +345,39 @@ export function usePollsByMatch(matchId?: string) {
       if (error) throw error
       return (data ?? []) as unknown as PollWithRelations[]
     },
-    refetchInterval: user ? 30_000 : false,
   })
+
+  // Realtime : rafraîchit instantanément quand un poll du match change (résolution auto)
+  useEffect(() => {
+    if (!matchId) return
+    const ch = supabase.channel(`polls-match-${matchId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'polls',
+        filter: `match_id=eq.${matchId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['polls-by-match', matchId] })
+        queryClient.invalidateQueries({ queryKey: ['poll-counts-public'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId, queryClient])
+
+  // Realtime sur predictions : met à jour les comptages quand quelqu'un vote
+  useEffect(() => {
+    if (!matchId || !user) return
+    const ch = supabase.channel(`predictions-match-${matchId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'predictions',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['poll-predictions'] })
+        queryClient.invalidateQueries({ queryKey: ['poll-counts-public'] })
+        queryClient.invalidateQueries({ queryKey: ['user-prediction'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId, user, queryClient])
+
+  return query
 }
 
 // ─── useLeaderboard ───────────────────────────────────────────────────────────

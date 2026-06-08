@@ -1,8 +1,26 @@
-import { BarChart2, Check, X, Star, Lock } from 'lucide-react'
+import { BarChart2, Check, X, Star, Lock, Clock } from 'lucide-react'
 import { usePollsByMatch, usePoll } from '@/hooks/usePolls'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useState } from 'react'
 import clsx from 'clsx'
+
+function Deadline({ endsAt }: { endsAt: string | null }) {
+  if (!endsAt) return null
+  const diff = new Date(endsAt).getTime() - Date.now()
+  if (diff <= 0) return null
+  const h = Math.floor(diff / 3_600_000)
+  const m = Math.floor((diff % 3_600_000) / 60_000)
+  const isUrgent = diff < 30 * 60_000
+  return (
+    <span className={clsx(
+      'flex items-center gap-1 text-[10px] font-bold',
+      isUrgent ? 'text-red-400' : 'text-text-muted'
+    )}>
+      <Clock size={9} />
+      {h > 0 ? `${h}h ${m}m` : `${m}m`} restantes
+    </span>
+  )
+}
 
 // ── PollItem inline (sans requête séparée par poll) ───────────────────────────
 function MatchPollItem({ pollId }: { pollId: string }) {
@@ -48,6 +66,7 @@ function MatchPollItem({ pollId }: { pollId: string }) {
               }
             </span>
           )}
+          {isActive && !userVote && <Deadline endsAt={p.ends_at} />}
           {!isActive && !isResolved && (
             <span className="flex items-center gap-1 text-[10px] text-yellow-500 font-bold uppercase">
               <Lock size={9} /> Fermé
@@ -70,7 +89,7 @@ function MatchPollItem({ pollId }: { pollId: string }) {
             <button
               key={idx}
               onClick={() => handleVote(idx)}
-              disabled={!isActive || voting}
+              disabled={!isActive || voting || !!userVote}
               className={clsx(
                 'relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl border transition-all overflow-hidden',
                 'text-center font-bold text-xs',
