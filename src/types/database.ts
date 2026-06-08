@@ -10,6 +10,26 @@ export type UserRole = 'admin' | 'captain' | 'player' | 'spectator'
 export type MatchStatus = 'scheduled' | 'live' | 'completed' | 'cancelled'
 export type SpectatorStatus = 'pending' | 'approved' | 'rejected'
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
+export type TransferStatus = 'pending' | 'player_requested' | 'home_captain_approved' | 'admin_approved' | 'approved' | 'rejected' | 'cancelled' | 'completed'
+export type PollStatus = 'draft' | 'active' | 'closed' | 'completed'
+export type PollType =
+  | 'custom'
+  | 'winner'
+  | 'btts'
+  | 'total_goals'
+  | 'goals_home'
+  | 'goals_away'
+  | 'goals_ht'
+  | 'goals_ht_home'
+  | 'goals_ht_away'
+  | 'cards_total'
+  | 'cards_home'
+  | 'cards_away'
+  | 'shots_total'
+  | 'shots_home'
+  | 'shots_away'
+  | 'corners'
+  | 'fouls'
 export type MatchEventType =
   | 'goal' | 'own_goal'
   | 'yellow_card' | 'red_card'
@@ -22,6 +42,42 @@ export type MatchEventType =
 export interface Database {
   public: {
     Tables: {
+      news_posts: {
+        Row: {
+          id: string
+          season_id: string
+          author_id: string | null
+          title: string
+          content: string
+          image_url: string | null
+          is_pinned: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          season_id: string
+          author_id?: string | null
+          title: string
+          content: string
+          image_url?: string | null
+          is_pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          season_id?: string
+          author_id?: string | null
+          title?: string
+          content?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           id: string
@@ -805,6 +861,8 @@ export interface Database {
           matches_count: number
           matches_served: number
           is_active: boolean
+          is_auto_generated: boolean
+          source_event_ids: string[] | null
           created_at: string
           updated_at: string
         }
@@ -817,6 +875,8 @@ export interface Database {
           matches_count?: number
           matches_served?: number
           is_active?: boolean
+          is_auto_generated?: boolean
+          source_event_ids?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -829,6 +889,8 @@ export interface Database {
           matches_count?: number
           matches_served?: number
           is_active?: boolean
+          is_auto_generated?: boolean
+          source_event_ids?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -877,6 +939,66 @@ export interface Database {
           emoji?: string
         }
         Relationships: []
+      }
+      match_feedback: {
+        Row: {
+          id: string
+          match_id: string
+          player_id: string
+          team_id: string
+          overall_experience: string | null
+          referee_performance: string | null
+          player_behavior: string | null
+          other_comments: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          player_id: string
+          team_id: string
+          overall_experience?: string | null
+          referee_performance?: string | null
+          player_behavior?: string | null
+          other_comments?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          player_id?: string
+          team_id?: string
+          overall_experience?: string | null
+          referee_performance?: string | null
+          player_behavior?: string | null
+          other_comments?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_feedback_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_feedback_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_feedback_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {
@@ -962,6 +1084,219 @@ export interface Database {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           }
+        ]
+      }
+      user_notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          match_upcoming: boolean
+          match_completed: boolean
+          mvp_vote_open: boolean
+          invite_pending: boolean
+          invite_expiring: boolean
+          spectator_request: boolean
+          spectator_approved: boolean
+          tactique_selected: boolean
+          mention: boolean
+          league_news: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          match_upcoming?: boolean
+          match_completed?: boolean
+          mvp_vote_open?: boolean
+          invite_pending?: boolean
+          invite_expiring?: boolean
+          spectator_request?: boolean
+          spectator_approved?: boolean
+          tactique_selected?: boolean
+          mention?: boolean
+          league_news?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          match_upcoming?: boolean
+          match_completed?: boolean
+          mvp_vote_open?: boolean
+          invite_pending?: boolean
+          invite_expiring?: boolean
+          spectator_request?: boolean
+          spectator_approved?: boolean
+          tactique_selected?: boolean
+          mention?: boolean
+          league_news?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      transfers: {
+        Row: {
+          id: string
+          player_id: string
+          from_team_id: string | null
+          to_team_id: string
+          season_id: string
+          requested_by: string
+          status: TransferStatus
+          reason: string | null
+          requested_at: string
+          decided_at: string | null
+          decided_by: string | null
+          home_captain_approved_by: string | null
+          home_captain_approved_at: string | null
+          admin_approved_by: string | null
+          admin_approved_at: string | null
+          away_captain_approved_by: string | null
+          away_captain_approved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          from_team_id?: string | null
+          to_team_id: string
+          season_id: string
+          requested_by: string
+          status?: TransferStatus
+          reason?: string | null
+          requested_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          home_captain_approved_by?: string | null
+          home_captain_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_approved_at?: string | null
+          away_captain_approved_by?: string | null
+          away_captain_approved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          from_team_id?: string | null
+          to_team_id?: string
+          season_id?: string
+          requested_by?: string
+          status?: TransferStatus
+          reason?: string | null
+          requested_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          home_captain_approved_by?: string | null
+          home_captain_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_approved_at?: string | null
+          away_captain_approved_by?: string | null
+          away_captain_approved_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "transfers_player_id_fkey", columns: ["player_id"], isOneToOne: false, referencedRelation: "players", referencedColumns: ["id"] },
+          { foreignKeyName: "transfers_from_team_id_fkey", columns: ["from_team_id"], isOneToOne: false, referencedRelation: "teams", referencedColumns: ["id"] },
+          { foreignKeyName: "transfers_to_team_id_fkey", columns: ["to_team_id"], isOneToOne: false, referencedRelation: "teams", referencedColumns: ["id"] },
+          { foreignKeyName: "transfers_season_id_fkey", columns: ["season_id"], isOneToOne: false, referencedRelation: "seasons", referencedColumns: ["id"] },
+          { foreignKeyName: "transfers_requested_by_fkey", columns: ["requested_by"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] },
+          { foreignKeyName: "transfers_decided_by_fkey", columns: ["decided_by"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }
+        ]
+      },
+      polls: {
+        Row: {
+          id: string
+          season_id: string
+          match_id: string | null
+          question: string
+          options: string[]
+          status: PollStatus
+          poll_type: PollType
+          correct_option_index: number | null
+          starts_at: string | null
+          ends_at: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          season_id: string
+          match_id?: string | null
+          question: string
+          options: string[]
+          status?: PollStatus
+          poll_type?: PollType
+          correct_option_index?: number | null
+          starts_at?: string | null
+          ends_at?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          season_id?: string
+          match_id?: string | null
+          question?: string
+          options?: string[]
+          status?: PollStatus
+          poll_type?: PollType
+          correct_option_index?: number | null
+          starts_at?: string | null
+          ends_at?: string | null
+          created_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "polls_season_id_fkey", columns: ["season_id"], isOneToOne: false, referencedRelation: "seasons", referencedColumns: ["id"] },
+          { foreignKeyName: "polls_match_id_fkey", columns: ["match_id"], isOneToOne: false, referencedRelation: "matches", referencedColumns: ["id"] },
+          { foreignKeyName: "polls_created_by_fkey", columns: ["created_by"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }
+        ]
+      },
+      predictions: {
+        Row: {
+          id: string
+          poll_id: string
+          user_id: string
+          option_index: number
+          is_correct: boolean | null
+          points_earned: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          poll_id: string
+          user_id: string
+          option_index: number
+          is_correct?: boolean | null
+          points_earned?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          poll_id?: string
+          user_id?: string
+          option_index?: number
+          is_correct?: boolean | null
+          points_earned?: number
+        }
+        Relationships: [
+          { foreignKeyName: "predictions_poll_id_fkey", columns: ["poll_id"], isOneToOne: false, referencedRelation: "polls", referencedColumns: ["id"] },
+          { foreignKeyName: "predictions_user_id_fkey", columns: ["user_id"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }
         ]
       }
     }
@@ -1174,6 +1509,13 @@ export type PlayerInvite = Database['public']['Tables']['player_invites']['Row']
 export type MatchEventRow = Database['public']['Tables']['match_events']['Row']
 export type LiveReactionRow = Database['public']['Tables']['live_reactions']['Row']
 export type MatchLineupRow = Database['public']['Tables']['match_lineups']['Row']
+export type MatchFeedback = Database['public']['Tables']['match_feedback']['Row']
+export type Suspension = Database['public']['Tables']['suspensions']['Row']
+export type UserNotificationPreferences = Database['public']['Tables']['user_notification_preferences']['Row']
+export type Transfer = Database['public']['Tables']['transfers']['Row']
+export type Poll = Database['public']['Tables']['polls']['Row']
+export type Prediction = Database['public']['Tables']['predictions']['Row']
+export type { PollType }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
@@ -1220,6 +1562,16 @@ export type TeamWithCaptain = Team & {
 /** Joueur avec équipe imbriquée — retourné par usePlayers */
 export type PlayerWithTeam = Player & {
   teams: TeamRef | null
+}
+
+/** Feedback de match avec joueur imbriqué — retourné par useMatchFeedback */
+export type MatchFeedbackWithPlayer = MatchFeedback & {
+  players: PlayerWithTeam
+}
+
+/** Suspension avec joueur imbriqué — retourné par useSuspensions */
+export type SuspensionWithPlayer = Suspension & {
+  player: (PlayerWithTeam) | null
 }
 
 export type TeamMessage = Database['public']['Tables']['team_messages']['Row']

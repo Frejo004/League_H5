@@ -11,9 +11,10 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { LiveClock } from '@/components/live/LiveClock'
+import { LiveClock } from '@/components/live/LiveClock' // Keep this import
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { NewsFeed } from '@/hooks/NewsFeed'
 
 const ACCENT = '#C8F135'
 
@@ -28,7 +29,7 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
   color: string
 }) {
   return (
-    <div className="group relative p-6 rounded-[2rem] bg-surface-card/50 border border-surface-border overflow-hidden transition-all duration-500 hover:bg-surface-raised/50 hover:-translate-y-2">
+    <div className="group relative p-6 rounded-4xl bg-surface-card/50 border border-surface-border overflow-hidden transition-all duration-500 hover:bg-surface-raised/50 hover:-translate-y-2">
       {/* Effet de Halo au survol */}
       <div
         className="absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
@@ -59,7 +60,7 @@ function StatPill({ value, label, isLoading }: { value: string | number; label: 
   const displayValue = typeof value === 'string' && value.includes('+') ? `${animatedValue}+` : (isNaN(numericValue) ? value : animatedValue)
 
   return (
-    <div className="relative overflow-hidden p-6 rounded-[2rem] bg-surface-card/50 border border-surface-border group hover:border-[#C8F135]/30 transition-all duration-500">
+    <div className="relative overflow-hidden p-6 rounded-4xl bg-surface-card/50 border border-surface-border group hover:border-[#C8F135]/30 transition-all duration-500">
       <div className="relative z-10 flex flex-col items-center">
         {isLoading ? (
           <div className="h-10 w-16 bg-surface-raised/50 rounded-lg animate-pulse" />
@@ -197,8 +198,8 @@ export function LandingPage() {
         {/* Background avec overlay dynamique */}
         <div className="absolute inset-0 z-0">
           <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface" />
-          <div className="absolute inset-0 bg-gradient-to-r from-surface via-transparent to-surface" />
+          <div className="absolute inset-0 bg-linear-to-b from-surface via-transparent to-surface" />
+          <div className="absolute inset-0 bg-linear-to-r from-surface via-transparent to-surface" />
         </div>
 
         {/* 🔴 LIVE / UPCOMING FEATURED BANNER */}
@@ -212,7 +213,7 @@ export function LandingPage() {
             )}>
               {/* Background spotlight overlay */}
               <div className={clsx(
-                "absolute -inset-px opacity-50 pointer-events-none bg-gradient-to-r via-transparent",
+                "absolute -inset-px opacity-50 pointer-events-none bg-linear-to-r via-transparent",
                 isFeaturedLive ? "from-red-500/10 to-red-500/10" : "from-amber-500/10 to-amber-500/10"
               )} />
               
@@ -241,7 +242,7 @@ export function LandingPage() {
                 {/* Home Team */}
                 <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-4xl flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
                     style={{ borderBottom: `4px solid ${featuredMatch.home_team?.color || '#C8F135'}` }}
                   >
                     {featuredMatch.home_team?.logo_url ? (
@@ -307,7 +308,7 @@ export function LandingPage() {
                 {/* Away Team */}
                 <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
-                    className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
+                    className="w-16 h-16 md:w-24 md:h-24 rounded-4xl flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
                     style={{ borderBottom: `4px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
                   >
                     {featuredMatch.away_team?.logo_url ? (
@@ -332,7 +333,7 @@ export function LandingPage() {
                     "group relative flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-white font-black uppercase italic tracking-tighter hover:scale-105 active:scale-95 transition-all w-full md:w-auto text-[11px] font-['Barlow_Condensed']",
                     isFeaturedLive 
                       ? "bg-red-600 hover:bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)]" 
-                      : "bg-[#C8F135] !text-[#0D1117] hover:bg-[#d9ff4d] shadow-[0_0_30px_rgba(200,241,53,0.3)]"
+                      : "bg-[#C8F135] text-[#0D1117]! hover:bg-[#d9ff4d] shadow-[0_0_30px_rgba(200,241,53,0.3)]"
                   )}
                 >
                   {isFeaturedLive ? "Regarder le Live" : "Fiche du Match"}
@@ -344,7 +345,7 @@ export function LandingPage() {
         )}
 
         <div className="relative z-10 text-center px-4 max-w-5xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 mb-8 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/3 border border-white/10 mb-8 backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-[#C8F135] animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted/80">
               {isLoading ? 'SYNC...' : `${stats?.seasonName ?? 'Saison'} LIVE`}
@@ -391,6 +392,21 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── News Feed Section ── */}
+      <section className="relative z-20 px-6 py-24">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
+                Dernières <span style={{ color: ACCENT }}>Actualités</span>
+              </h2>
+              <p className="text-slate-500 mt-2 font-medium">Restez informé de la vie de la ligue.</p>
+            </div>
+          </div>
+          <NewsFeed />
+        </div>
+      </section>
+
       {/* ── Features Grid ── */}
       <section className="px-6 py-24 relative overflow-hidden">
         <div className="max-w-6xl mx-auto">
@@ -401,7 +417,7 @@ export function LandingPage() {
               </h2>
               <p className="text-slate-500 mt-2 font-medium">Une infrastructure digitale complète pour vos tournois.</p>
             </div>
-            <div className="h-[2px] flex-1 bg-gradient-to-r from-[#C8F135]/50 to-transparent mx-8 hidden md:block mb-4" />
+            <div className="h-0.5 flex-1 bg-linear-to-r from-[#C8F135]/50 to-transparent mx-8 hidden md:block mb-4" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -418,7 +434,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Values Ticker ── */}
-      <section className="py-20 bg-gradient-to-b from-[#0D1117] to-[#161B22] border-y border-white/[0.05]">
+      <section className="py-20 bg-linear-to-b from-[#0D1117] to-[#161B22] border-y border-white/5">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-wrap justify-center gap-x-12 gap-y-8">
             {['Respect', 'Fair-play', 'Discipline', 'Passion'].map((v) => (
@@ -434,9 +450,9 @@ export function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="py-12 border-t border-white/[0.05] text-center bg-[#0D1117]">
+      <footer className="py-12 border-t border-white/5 text-center bg-[#0D1117]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="w-12 h-12 rounded-xl bg-white/[0.03] flex items-center justify-center mx-auto mb-6">
+          <div className="w-12 h-12 rounded-xl bg-white/3 flex items-center justify-center mx-auto mb-6">
             <Trophy size={24} className="text-slate-600" />
           </div>
           <p className="text-xs font-bold uppercase tracking-[0.4em] text-slate-500">

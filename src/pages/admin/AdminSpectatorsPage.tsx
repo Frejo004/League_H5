@@ -46,7 +46,7 @@ export function AdminSpectatorsPage() {
         <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : !spectators?.length ? (
         <div className="card glass-morphism text-center py-12 border border-surface-border">
-          <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Aucune demande d'accès.</p>
+          <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Aucune demande d'accès.</p> 
         </div>
       ) : (
         <div className="space-y-6">
@@ -57,9 +57,9 @@ export function AdminSpectatorsPage() {
                 {pending.map(s => {
                   const profile = s.profiles
                   return (
-                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-yellow-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-yellow-500/5 to-transparent">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 text-xl font-black flex-shrink-0 shadow-[0_0_15px_rgba(234,179,8,0.2)]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-yellow-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-linear-to-r from-yellow-500/5 to-transparent">
+                      <div className="flex items-center gap-4 min-w-0"> 
+                        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 text-xl font-black shrink-0 shadow-[0_0_15px_rgba(234,179,8,0.2)]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -70,9 +70,9 @@ export function AdminSpectatorsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                      <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                         <button
-                          onClick={() => handleUpdate(s.id, 'approved')}
+                          onClick={() => handleUpdate(s.id, 'approved')} 
                           disabled={updateStatus.isPending}
                           className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(200,241,53,0.3)] hover:shadow-[0_0_20px_rgba(200,241,53,0.5)]"
                         >
@@ -80,7 +80,7 @@ export function AdminSpectatorsPage() {
                           Approuver
                         </button>
                         <button
-                          onClick={() => handleUpdate(s.id, 'rejected')}
+                          onClick={() => handleUpdate(s.id, 'rejected')} 
                           disabled={updateStatus.isPending}
                           className="flex-1 sm:flex-none btn-danger flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)]"
                         >
@@ -104,7 +104,7 @@ export function AdminSpectatorsPage() {
                   return (
                     <div key={s.id} className="relative overflow-hidden p-4 rounded-xl glass-morphism border border-surface-border flex items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-surface/50 border border-surface-border flex items-center justify-center text-slate-500 text-lg font-black flex-shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        <div className="w-10 h-10 rounded-xl bg-surface/50 border border-surface-border flex items-center justify-center text-slate-500 text-lg font-black shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {(profile.full_name ?? profile.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">

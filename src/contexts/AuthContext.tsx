@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { Session } from '@supabase/supabase-js'
+import type { Session, RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile, UserRole } from '@/types/database'
 
@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true
+    let profileSubscription: RealtimeChannel | null = null
 
     // Filet de sécurité absolu : si tout échoue, on débloque après 5 s
     const safetyTimer = setTimeout(() => {
@@ -106,6 +107,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           initializedRef.current = true
           
           if (newSession?.user) {
+            // Écouter les changements sur le profil en temps réel (ex: approbation admin)
+            profileSubscription = supabase
+              .channel(`public:profiles:id=eq.${newSession.user.id}`)
+              .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'profiles', 
+                filter: `id=eq.${newSession.user.id}` 
+              }, (payload) => {
+                console.log('👤 Profile updated in realtime:', payload.new)
+                setProfile(payload.new as Profile)
+                // Invalider les queries si le rôle change pour débloquer les accès
+                if ((payload.old as Profile).role !== (payload.new as Profile).role) {
+                  queryClient.invalidateQueries()
+                }
+              })
+              .subscribe()
+
             await fetchProfile(newSession.user.id).catch(() => {})
           }
           
@@ -156,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null)
           setIsProfileLoading(false)
           // Réinitialiser isLoading lors de la déconnexion
+          if (profileSubscription) supabase.removeChannel(profileSubscription)
           if (event === 'SIGNED_OUT') {
             queryClient.clear()
             setIsLoading(false)
@@ -168,8 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false
       clearTimeout(safetyTimer)
       subscription.unsubscribe()
+      if (profileSubscription) supabase.removeChannel(profileSubscription)
     }
-  }, [fetchProfile])
+  }, [fetchProfile, queryClient])
 
   const refreshProfile = useCallback(async () => {
     if (session?.user?.id) await fetchProfile(session.user.id)

@@ -68,11 +68,11 @@ export function GoalAlert({ matchId, homeTeam, awayTeam }: GoalAlertProps) {
   if (!activeGoal) return null
 
   return (
-    <div className="fixed inset-x-0 top-20 z-[100] flex justify-center px-4 pointer-events-none overflow-hidden">
+    <div className="fixed inset-x-0 top-20 z-100 flex justify-center px-4 pointer-events-none overflow-hidden">
       <div className={clsx(
         "relative flex flex-col items-center animate-goal-banner",
         "bg-surface-card border-y-2 py-4 px-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
-        "before:absolute before:inset-0 before:opacity-20 before:bg-gradient-to-r before:from-transparent before:via-white before:to-transparent"
+        "before:absolute before:inset-0 before:opacity-20 before:bg-linear-to-r before:from-transparent before:via-white before:to-transparent"
       )}
       style={{ borderColor: activeGoal.teamColor }}>
         

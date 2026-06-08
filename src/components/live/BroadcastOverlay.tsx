@@ -10,12 +10,11 @@
  * IMPORTANT: Rendu via React Portal pour garantir le positionnement au-dessus de tout.
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import {
-  Minimize2, Maximize2, X, FlipHorizontal,
+  Minimize2, Maximize2, FlipHorizontal,
   Eye, Volume2, VolumeX, Square,
 } from 'lucide-react'
-import type { MatchEvent, TeamRef } from '@/types/database'
+import type { TeamRef } from '@/types/database'
 
 type OverlayMode = 'fullscreen' | 'pip' | 'hidden'
 
@@ -30,7 +29,7 @@ interface BroadcastOverlayProps {
   awayTeam: TeamRef
   homeScore: number
   awayScore: number
-  isPaused: boolean
+  isPaused?: boolean
   onSwitchCamera: () => void
   onStopBroadcast: () => void
   /** Slot pour les actions live (buts, cartons…) en mode plein écran */
@@ -46,12 +45,34 @@ const NETWORK_STYLES = {
 export function BroadcastOverlay({
   stream, isBroadcasting, viewerCount, networkQuality,
   facingMode, clockLabel, homeTeam, awayTeam,
-  homeScore, awayScore, isPaused,
+  homeScore, awayScore,
   onSwitchCamera, onStopBroadcast, actionsSlot,
 }: BroadcastOverlayProps) {
   const [mode, setMode] = useState<OverlayMode>('hidden')
+
+  // Sync mode with props during render to avoid cascading renders in effect
+  const [prevIsBroadcasting, setPrevIsBroadcasting] = useState(isBroadcasting)
+  if (isBroadcasting !== prevIsBroadcasting) {
+    setPrevIsBroadcasting(isBroadcasting)
+    if (isBroadcasting && stream) {
+      setMode('pip')
+    } else if (!isBroadcasting) {
+      setMode('hidden')
+    }
+  }
+
   const [isMuted, setIsMuted] = useState(true)
   const [showControls, setShowControls] = useState(true)
+
+  // Show controls when entering fullscreen mode
+  const [prevModeForControls, setPrevModeForControls] = useState(mode)
+  if (mode !== prevModeForControls) {
+    setPrevModeForControls(mode)
+    if (mode === 'fullscreen') {
+      setShowControls(true)
+    }
+  }
+
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Refs vidéo — un par mode pour éviter les conflits srcObject
@@ -62,15 +83,6 @@ export function BroadcastOverlay({
   const pipRef      = useRef<HTMLDivElement>(null)
   const dragRef     = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
   const [pipPos, setPipPos] = useState({ x: 16, y: 16 }) // distance depuis bas-droite
-
-// ── Passer en PiP dès que le broadcast démarre (les contrôles admin restent visibles) ───
-   useEffect(() => {
-     if (isBroadcasting && stream) {
-       setMode('pip') // Mode PiP par défaut pour garder contrôles admin visibles
-     } else if (!isBroadcasting) {
-       setMode('hidden')
-     }
-   }, [isBroadcasting, stream])
 
   // ── Attacher le stream au bon élément vidéo selon le mode ────────────────
   const attachStream = useCallback((videoEl: HTMLVideoElement | null) => {
@@ -101,9 +113,12 @@ export function BroadcastOverlay({
   }, [])
 
   useEffect(() => {
-    if (mode === 'fullscreen') resetControlsTimer()
+    if (mode === 'fullscreen') {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current)
+      controlsTimerRef.current = setTimeout(() => setShowControls(false), 4000)
+    }
     return () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current) }
-  }, [mode, resetControlsTimer])
+  }, [mode])
 
   // ── Drag PiP ──────────────────────────────────────────────────────────────
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -148,18 +163,18 @@ export function BroadcastOverlay({
   if (mode === 'fullscreen') {
     return (
       <div
-        className="fixed inset-0 z-[99999] bg-black flex flex-col no-select"
+        className="fixed inset-0 z-99999 bg-black flex flex-col no-select"
         onPointerMove={resetControlsTimer}
         onTouchStart={resetControlsTimer}
       >
         {/* Alerte Orientation */}
         {isPortrait && isBroadcasting && (
-          <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+          <div className="absolute inset-0 z-100 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
             <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/30"> 
               <FlipHorizontal size={32} className="text-amber-500 animate-bounce" /> 
             </div>
             <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Tournez votre appareil</h3>
-            <p className="text-sm text-slate-400 max-w-[240px]">Pour une meilleure qualité de diffusion, filmez en mode paysage.</p>
+            <p className="text-sm text-slate-400 max-w-60">Pour une meilleure qualité de diffusion, filmez en mode paysage.</p>
           </div>
         )}
 
@@ -171,9 +186,9 @@ export function BroadcastOverlay({
         />
 
         {/* Dégradé haut */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-surface/70 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-surface/70 to-transparent pointer-events-none" />
         {/* Dégradé bas */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-surface/80 to-transparent pointer-events-none" />
 
 {/* ── BARRE HAUTE ─────────────────────────────────────────────────── */}
          {/* Barre de statut supérieure avec Safe Area */} 
@@ -183,27 +198,33 @@ export function BroadcastOverlay({
          >
            {/* Score & Chrono & REC */}
            <div className="flex items-center gap-2">
-             {/* Score */}
-             <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-surface-border/10">
-               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: homeTeam.color }} />
-               <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                 {homeScore} — {awayScore}
-               </span>
-               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: awayTeam.color }} />
+             {/* Nouveau Scoreboard Type TV */}
+             <div className="flex items-center bg-black/80 backdrop-blur-xl rounded-lg border border-white/10 overflow-hidden shadow-2xl">
+               <div className="flex items-center gap-2 px-3 py-1.5 border-r border-white/5">
+                 <span className="w-1.5 h-4 rounded-full" style={{ backgroundColor: homeTeam.color }} />
+                 <span className="text-lg font-black text-white tabular-nums tracking-tighter" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                   {homeScore}
+                 </span>
+               </div>
+               <div className="flex items-center gap-2 px-3 py-1.5">
+                 <span className="text-lg font-black text-white tabular-nums tracking-tighter" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                   {awayScore}
+                 </span>
+                 <span className="w-1.5 h-4 rounded-full" style={{ backgroundColor: awayTeam.color }} />
+               </div>
              </div>
  
              {/* Chrono */}
-             <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-               <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-red-500 animate-pulse'}`} />
-               <span className="text-xs font-black text-white tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+             <div className="flex items-center gap-2 bg-[#C8F135] px-3 py-2 rounded-lg shadow-lg border border-white/20">
+               <span className="text-sm font-black text-black tabular-nums leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                  {clockLabel}
                </span>
              </div>
  
              {/* Badge de transmission premium (REC) */}
-             <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-red-500/30">
+             <div className="flex items-center gap-1.5 bg-red-600 px-2.5 py-2 rounded-lg border border-red-400/40 shadow-lg">
                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-               <span className="text-[9px] font-black text-red-400 uppercase tracking-widest font-['Barlow_Condensed']">
+               <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none font-['Barlow_Condensed']">
                  REC
                </span>
              </div>
@@ -293,7 +314,7 @@ export function BroadcastOverlay({
   return (
     <div
       ref={pipRef}
-      className="fixed z-[9999] rounded-2xl overflow-hidden border border-surface-border/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-surface cursor-grab active:cursor-grabbing select-none"
+      className="fixed z-9999 rounded-2xl overflow-hidden border border-surface-border/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-surface cursor-grab active:cursor-grabbing select-none"
       style={{
         width: 180,
         aspectRatio: '9/16',
@@ -334,7 +355,7 @@ export function BroadcastOverlay({
       </div>
 
       {/* Boutons bas */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-2 pb-2 pt-4 flex items-center justify-between">
+      <div className="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/80 to-transparent px-2 pb-2 pt-4 flex items-center justify-between">
         {/* Agrandir */}
         <button
           onClick={(e) => { e.stopPropagation(); setMode('fullscreen') }}

@@ -57,23 +57,13 @@ export function useCreateInvite() {
       playerId: string
       createdBy: string
     }) => {
-      // Supprimer l'invitation existante si elle existe
-      // NOTE: Cette opération n'est pas atomique. Si l'insertion échoue après cette suppression,
-      // le joueur sera temporairement sans invitation. Pour une atomicité complète,
-      // il est recommandé de déplacer cette logique vers une fonction Supabase (RPC).
-      await supabase
-        .from('player_invites')
-        .delete()
-        .eq('player_id', playerId)
-
-      // Créer une nouvelle invitation
-      const { data, error } = await supabase
-        .from('player_invites')
-        .insert({ player_id: playerId, created_by: createdBy })
-        .select('token')
-        .single()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await supabase.rpc('upsert_player_invite' as any, {
+        p_player_id: playerId,
+        p_created_by: createdBy
+      });
       if (error) throw error
-      return data.token as string
+      return data as string
     },
     onSuccess: (_token, { playerId }) => {
       qc.invalidateQueries({ queryKey: ['player_invites', playerId] })

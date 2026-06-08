@@ -19,9 +19,10 @@ export type NotifType =
   | 'invite_pending'
   | 'invite_expiring'
   | 'spectator_request'
-  | 'spectator_approved' // Nouveau type pour l'approbation de spectateur
+  | 'spectator_approved'
   | 'tactique_selected'
   | 'mention'
+  | 'poll_resolved'
 
 export interface Notification {
   id: string
@@ -174,6 +175,7 @@ function useMyNextLineup(userId?: string, matchId?: string) {
 
 export function useNotifications() {
   const { user, isAdmin, isCaptain } = useAuth()
+  const qc = useQueryClient()
   const { data: season } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
 
@@ -198,11 +200,87 @@ export function useNotifications() {
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
 
+  // Realtime : détecter quand un sondage lié à un match est résolu
+  useEffect(() => {
+    if (!user?.id) return
+    const ch = supabase.channel(`polls-resolved-${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'polls',
+      }, async (payload) => {
+        const updated = payload.new as { id: string; status: string; question: string; correct_option_index: number | null; options: string[]; match_id: string | null }
+        if (updated.status !== 'completed' || updated.correct_option_index == null) return
+
+        // Vérifier si l'utilisateur a voté sur ce sondage
+        const { data: prediction } = await supabase
+          .from('predictions')
+          .select('option_index, is_correct, points_earned')
+          .eq('poll_id', updated.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!prediction) return
+
+        const won = prediction.is_correct === true
+        pushLocal(
+          won ? '🎉 Bon pronostic !' : '❌ Pronostic raté',
+          won
+            ? `+${prediction.points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
+            : `Réponse correcte : ${updated.options[updated.correct_option_index]}`,
+          `poll-resolved-${updated.id}`,
+          updated.match_id ? `/matches/${updated.match_id}` : '/polls'
+        )
+
+        qc.invalidateQueries({ queryKey: ['polls'] })
+        qc.invalidateQueries({ queryKey: ['leaderboard'] })
+        qc.invalidateQueries({ queryKey: ['user-prediction'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user?.id, qc])
+
+  // Realtime : détecter quand le joueur est ajouté à une compo
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase.channel(`player-tactics-${user.id}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'match_lineups'
+      }, (payload) => {
+        const record = payload.new as { player_id: string; is_starter: boolean }
+        if (record.player_id === user.id && record.is_starter) {
+          qc.invalidateQueries({ queryKey: ['notifications_my_lineup'] })
+          pushLocal('📋 Nouvelle compo !', 'Tu as été sélectionné comme titulaire.', 'tactic-update', '/my-team?tab=tactique')
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, qc])
+
+  // Realtime : Détecter quand ma demande de spectateur est approuvée
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase.channel(`my-spectator-approval-${user.id}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'spectators',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        const updated = payload.new as { status: string }
+        if (updated.status === 'approved') {
+          qc.invalidateQueries({ queryKey: ['spectators', 'me', user.id] })
+          pushLocal('🎟️ Accès approuvé !', 'Ta demande a été acceptée, tu peux maintenant suivre la ligue.', 'spectator-approved', '/')
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, qc])
+
   // Sync readIds → localStorage à chaque changement
   useEffect(() => { saveReadIds(readIds) }, [readIds])
 
   // Realtime : Invalider les requêtes quand un nouveau spectateur demande l'accès
-  const qc = useQueryClient()
   useEffect(() => {
     if (!isAdmin) return
 

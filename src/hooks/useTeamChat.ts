@@ -12,6 +12,7 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from './useAuth'
 import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +91,6 @@ export async function saveMentions(
 const MESSAGES_KEY  = (teamId: string) => ['team-chat', 'messages', teamId]
 const RECEIPTS_KEY  = (teamId: string) => ['team-chat', 'receipts', teamId]
 const PINNED_KEY    = (teamId: string) => ['team-chat', 'pinned', teamId]
-const TYPING_KEY    = (teamId: string) => ['team-chat', 'typing', teamId]
 const PAGE_SIZE = 50
 
 type ReplyRow = { id: string; content: string; sender: { id: string; full_name: string | null } }
@@ -231,14 +231,11 @@ export type TypingUser = {
   profile: { id: string; full_name: string | null; avatar_url: string | null }
 }
 
-async function fetchTypingUsers(teamId: string): Promise<TypingUser[]> {
-  const { data, error } = await supabase
-    .from('chat_typing')
-    .select('user_id, profile:profiles!chat_typing_user_id_fkey(id, full_name, avatar_url)')
-    .eq('team_id', teamId)
-    .gt('started_at', new Date(Date.now() - 30000).toISOString()) // 30 secondes max
-  if (error) throw error
-  return (data ?? []) as unknown as TypingUser[]
+interface ChatPresence {
+  user_id: string
+  full_name: string | null
+  avatar_url: string | null
+  is_typing: boolean
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,8 +243,12 @@ async function fetchTypingUsers(teamId: string): Promise<TypingUser[]> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useTeamChat(teamId?: string, currentUserId?: string) {
+  const { profile } = useAuth()
   const qc = useQueryClient()
   const lastMarkedRef = useRef<string | null>(null)
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
+  const chatChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
   const [olderPagesState, setOlderPagesState] = useState<{ teamId?: string; pages: TeamMessageFull[][] }>({ pages: [] })
   const [olderCountState, setOlderCountState] = useState<{ teamId?: string; count: number }>({ count: 0 })
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
@@ -324,27 +325,35 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
 
     const channel = supabase
       .channel(channelName)
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<ChatPresence>()
+        const users: TypingUser[] = []
+        Object.values(state).flat().forEach((p) => {
+          if (p.is_typing && p.user_id !== currentUserId) {
+            users.push({
+              user_id: p.user_id,
+              profile: { id: p.user_id, full_name: p.full_name, avatar_url: p.avatar_url }
+            })
+          }
+        })
+        setTypingUsers(users)
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_messages', filter: `team_id=eq.${teamId}` },
         () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId) })
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_message_reactions' },
         () => qc.refetchQueries({ queryKey: MESSAGES_KEY(teamId) })
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_read_receipts', filter: `team_id=eq.${teamId}` },
-        () => qc.refetchQueries({ queryKey: RECEIPTS_KEY(teamId) })
-      )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_pinned_messages', filter: `team_id=eq.${teamId}` },
         () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId) })
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_typing', filter: `team_id=eq.${teamId}` },
-        () => qc.refetchQueries({ queryKey: TYPING_KEY(teamId) })
       )
       .subscribe((status) => {
         if (import.meta.env.DEV) console.log(`[TeamChat] ${status}`)
       })
 
-    return () => { supabase.removeChannel(channel) }
-  }, [teamId, qc])
+    chatChannelRef.current = channel
+    return () => { supabase.removeChannel(channel); chatChannelRef.current = null }
+  }, [teamId, qc, currentUserId])
 
   // ── Pinned messages query ─────────────────────────────────────────────────
   const pinnedQuery = useQuery({
@@ -354,31 +363,27 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     staleTime: 0,
   })
 
-  // ── Typing users query ───────────────────────────────────────────────────
-  const typingQuery = useQuery({
-    queryKey: TYPING_KEY(teamId ?? ''),
-    enabled: !!teamId,
-    queryFn: () => fetchTypingUsers(teamId!),
-    staleTime: 5000,
-    refetchInterval: 3000,
-  })
-
   // ── Mark as read ──────────────────────────────────────────────────────────
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const markAsRead = useCallback(
-    // TODO: Envisager de débouncer/limiter cette fonction pour réduire les écritures en base de données lors d'un défilement rapide.
     async (lastMsgId: string, lastMsgAt: string) => {
       if (!teamId || !currentUserId) return;
       if (lastMarkedRef.current === lastMsgId) return;
       lastMarkedRef.current = lastMsgId;
 
-      await supabase
-        .from('chat_read_receipts')
-        .upsert({
-          user_id: currentUserId,
-          team_id: teamId,
-          last_read_at: lastMsgAt,
-          last_read_msg: lastMsgId,
-        }, { onConflict: 'user_id,team_id' });
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+      debounceTimerRef.current = setTimeout(async () => {
+        await supabase
+          .from('chat_read_receipts')
+          .upsert({
+            user_id: currentUserId,
+            team_id: teamId,
+            last_read_at: lastMsgAt,
+            last_read_msg: lastMsgId,
+          }, { onConflict: 'user_id,team_id' });
+      }, 2000);
     },
     [teamId, currentUserId]
   );
@@ -486,22 +491,20 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   })
 
   // ── Set typing indicator ─────────────────────────────────────────────────
-  const setTyping = useCallback(async () => {
-    if (!teamId || !currentUserId) return
-    await supabase.from('chat_typing').upsert({
+  const setTyping = useCallback(async (isTyping: boolean = true) => {
+    if (!teamId || !currentUserId || !chatChannelRef.current || !profile) return
+    chatChannelRef.current.track({
       user_id: currentUserId,
-      team_id: teamId,
-      started_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,team_id' })
-  }, [teamId, currentUserId])
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      is_typing: isTyping,
+    })
+  }, [teamId, currentUserId, profile])
 
   // ── Clear typing indicator ───────────────────────────────────────────────
   const clearTyping = useCallback(async () => {
-    if (!teamId || !currentUserId) return
-    await supabase.from('chat_typing').delete()
-      .eq('user_id', currentUserId)
-      .eq('team_id', teamId)
-  }, [teamId, currentUserId])
+    await setTyping(false)
+  }, [setTyping])
 
   // ── Pin message ───────────────────────────────────────────────────────────
   const pinMessage = useMutation({
@@ -544,7 +547,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     messages:   [...olderPages.flat(), ...(messagesQuery.data ?? [])],
     receipts:   receiptsQuery.data ?? [],
     pinned:     pinnedQuery.data ?? [],
-    typing:     typingQuery.data ?? [],
+    typing:     typingUsers,
     isLoading:  messagesQuery.isLoading,
     isError:    messagesQuery.isError,
     olderCount,

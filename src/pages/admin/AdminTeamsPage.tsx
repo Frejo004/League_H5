@@ -87,7 +87,7 @@ function TeamRow({
   return (
     <div className={clsx(
       "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
-      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted"
+      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted hover:shadow-lg"
     )}>
       <div
         className="flex items-center justify-between gap-4 cursor-pointer relative z-10"
@@ -110,7 +110,7 @@ function TeamRow({
             )}
           </div>
         </div>
-        <div
+        <div 
           className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-text-primary transition-colors bg-surface-raised px-3 py-1.5 rounded-lg border border-surface-border"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -138,7 +138,7 @@ function TeamRow({
                     <select
                       value={captainPlayerId ?? ''}
                       onChange={e => handleSetCaptain(e.target.value || null)}
-                      disabled={setCaptain.isPending}
+                      disabled={setCaptain.isPending} 
                       className="input text-sm py-2 flex-1 font-medium bg-surface/50 border-surface-border"
                     >
                       <option value="">— Aucun capitaine —</option>
@@ -168,7 +168,7 @@ function TeamRow({
                   <div className="bg-surface/50 rounded-xl border border-surface-border overflow-hidden">
                     {(players ?? []).map(p => (
                       <div key={p.id}
-                        className="flex items-center justify-between py-2.5 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
+                        className="flex items-center justify-between py-2.5 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors shadow-sm">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-text-muted font-black text-sm w-6 text-center shrink-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                             {p.jersey_number ?? '—'}
@@ -196,7 +196,7 @@ function TeamRow({
                             hasAccount={!!p.user_id}
                           />
                           <button
-                            onClick={() => deactivatePlayer.mutate(p.id)}
+                            onClick={() => deactivatePlayer.mutate(p.id)} 
                             className="text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors p-1.5 rounded-lg"
                             title="Retirer le joueur"
                           >
@@ -214,9 +214,9 @@ function TeamRow({
                 <form onSubmit={handleAddPlayer} className="space-y-3 pt-3 border-t border-surface-border">
                   {playerError && <p className="text-red-400 text-xs">{playerError}</p>}
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                    <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} 
                       className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="Prénom" required />
-                    <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                    <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} 
                       className="input text-sm py-2 bg-surface/50 border-surface-border" placeholder="Nom" required />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -225,7 +225,7 @@ function TeamRow({
                     <select value={position} onChange={e => setPosition(e.target.value as PlayerPosition | '')}
                       className="input text-sm py-2 bg-surface/50 border-surface-border">
                       <option value="">Poste (optionnel)</option>
-                      {POSITIONS.map(pos => (
+                      {POSITIONS.map(pos => ( 
                         <option key={pos} value={pos}>{POSITION_LABELS[pos]}</option>
                       ))}
                     </select>
@@ -311,7 +311,7 @@ export function AdminTeamsPage() {
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div>
               <label className="label">Nom de l'équipe</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)}
+              <input type="text" value={name} onChange={e => setName(e.target.value)} 
                 className="input" placeholder="Les Aigles" required />
             </div>
             <div>
@@ -319,7 +319,7 @@ export function AdminTeamsPage() {
               <div className="flex gap-2 flex-wrap">
                 {TEAM_COLORS.map(c => (
                   <button key={c} type="button" onClick={() => setColor(c)}
-                    className={`w-7 h-7 rounded transition-all ${color === c ? 'ring-2 ring-white ring-offset-1 ring-offset-surface-card scale-110' : ''}`}
+                    className={`w-7 h-7 rounded transition-all active:scale-95 ${color === c ? 'ring-2 ring-white ring-offset-1 ring-offset-surface-card scale-110' : ''}`}
                     style={{ backgroundColor: c }} />
                 ))}
               </div>

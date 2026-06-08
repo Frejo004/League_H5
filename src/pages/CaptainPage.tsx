@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, TrendingUp, Camera, Layout, UserCheck, History, ClipboardList } from 'lucide-react'
+import { Crown, Users, Calendar, Target, MapPin, Pencil, Check, X as XIcon, ChevronRight, Zap, TrendingUp, Camera, Layout, UserCheck, History, ClipboardList, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { motion } from 'framer-motion'
-import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
+import { ResultBadge } from '@/components/ui/SharedBadges'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams, useUpdateTeam } from '@/hooks/useTeams'
 import { usePlayersByTeam, usePlayers } from '@/hooks/usePlayers'
+import { useTransfers } from '@/hooks/useTransfers'
 import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
 import { useScorers } from '@/hooks/useScorers'
@@ -16,11 +17,48 @@ import { useStandings } from '@/hooks/useStandings'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { FORMATIONS, PitchView } from '@/components/matches/MatchLineups'
 import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
-import type { TeamWithCaptain, Player, PlayerPosition } from '@/types/database'
+import type { TeamWithCaptain, Player } from '@/types/database'
 import type { MatchWithTeams } from '@/hooks/useMatches'
 import { pushLocal, useRealtimeTactics } from '@/hooks/useRealtime'
 import { PlayerRow } from '@/components/captain/PlayerRow'
 import { PlayerStatsDrawer } from '@/components/captain/PlayerStatsDrawer'
+import type { Team, Transfer as TransferType } from '@/types/database'
+
+// Type definitions for our broadcast data
+type BroadcastType = 'formation' | 'player_selected'
+type BroadcastData = {
+  type: BroadcastType
+  teamId: string
+  captainName?: string
+  formation?: string
+  playerName?: string
+  playerId?: string
+}
+
+// Type for transfers with joined data
+type TransferWithRelations = TransferType & {
+  player?: Player
+  from_team?: Team
+  to_team?: Team
+}
+
+function TransferStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
+    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-400 border-primary-500/30' },
+    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+  }
+  const cfg = map[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
+      {cfg.label}
+    </span>
+  )
+}
 
 function formatTime(dateStr: string) {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -542,14 +580,14 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
   useRealtimeTactics(teamId, nextMatch?.id)
 
   // Broadcast tactical updates to other players
-  const broadcastUpdate = useCallback((type: 'formation' | 'player_selected', data: any) => {
+  const broadcastUpdate = useCallback((type: BroadcastType, data: Omit<BroadcastData, 'type' | 'teamId' | 'captainName'>) => {
     if (!nextMatch) return
     // Unification du canal tactique au niveau du match
     const channel = supabase.channel(`tactics-match-${nextMatch.id}`)
     channel.send({
       type: 'broadcast',
       event: 'tactical_update',
-      payload: { type, ...data, teamId, captainName: profile?.full_name ?? 'Le Capitaine' }
+      payload: { type, ...data, teamId, captainName: profile?.full_name ?? 'Le Capitaine' } satisfies BroadcastData
     })
   }, [teamId, nextMatch, profile])
 
@@ -559,23 +597,22 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
     const channel = supabase.channel(`tactics-match-${nextMatch.id}`)
     channel
       .on('broadcast', { event: 'tactical_update' }, ({ payload }) => {
-        const { type, teamId: updateTeamId, captainName, formation, playerName, playerId } = payload
-
+        const data = payload as BroadcastData
         // On ne traite que si c'est notre équipe
-        if (updateTeamId !== teamId) { /* Do nothing if not for this team */ return }
+        if (data.teamId !== teamId) { /* Do nothing if not for this team */ return }
 
         let title = 'Tactique mise à jour'
-        let message = `${captainName} a modifié la formation.`
+        let message = `${data.captainName} a modifié la formation.`
 
-        if (type === 'player_selected') {
-          if (playerId === profile?.id || playerId === user?.id) {
+        if (data.type === 'player_selected') {
+          if (data.playerId === profile?.id || data.playerId === user?.id) {
             title = 'Tu es titulaire ! ⚽'
-            message = `Le capitaine t'a sélectionné pour le match contre ${nextMatch.home_team_id === teamId ? (nextMatch.away_team as any)?.name : (nextMatch.home_team as any)?.name}`
+            message = `Le capitaine t'a sélectionné pour le match contre ${nextMatch.home_team_id === teamId ? (nextMatch.away_team as unknown as Team)?.name : (nextMatch.home_team as unknown as Team)?.name}`
           } else {
-            message = `${captainName} a sélectionné ${playerName} dans le 5 majeur.`
+            message = `${data.captainName} a sélectionné ${data.playerName} dans le 5 majeur.`
           }
-        } else if (type === 'formation') {
-          message = `${captainName} a choisi la formation ${formation}.`
+        } else if (data.type === 'formation') {
+          message = `${data.captainName} a choisi la formation ${data.formation}.`
         }
 
         pushLocal(title, message, `tactics-${nextMatch.id}`, `/my-team?tab=tactique`)
@@ -628,7 +665,9 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
       })
 
       broadcastUpdate('formation', { formation: FORMATIONS[formationKey].label })
-    } catch (err) { }
+    } catch (error) {
+      console.error('Error updating formation:', error)
+    }
   }
 
   const handleTogglePlayer = async (playerId: string) => {
@@ -672,7 +711,9 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
           playerName: `${p?.first_name} ${p?.last_name}`
         })
       }
-    } catch (err) { }
+    } catch (error) {
+      console.error('Error toggling player:', error)
+    }
   }
 
   return (
@@ -906,6 +947,155 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
 // ── Onglet Stats ──────────────────────────────────────────────────────────────
 
+function TabTransferts({ teamId }: { teamId: string }) {
+  const { data: transfers, isLoading, approveAsHomeCaptain, approveAsAwayCaptain, rejectTransfer } = useTransfers()
+
+  if (isLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
+
+  // Split transfers into outgoing (from our team) and incoming (to our team)
+  const outgoingTransfers = (transfers as unknown as TransferWithRelations[] ?? []).filter(t => t.from_team_id === teamId)
+  const incomingTransfers = (transfers as unknown as TransferWithRelations[] ?? []).filter(t => t.to_team_id === teamId)
+
+  return (
+    <div className="space-y-6">
+      {/* Outgoing Transfers (from our team) */}
+      {outgoingTransfers.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-2">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">
+              DEMANDES SORTANTES ({outgoingTransfers.length})
+            </p>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+          </div>
+          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            {outgoingTransfers.map((transfer, i) => (
+              <div
+                key={transfer.id}
+                className={clsx(
+                  'p-4 flex flex-col gap-3',
+                  i < outgoingTransfers.length - 1 && 'border-b border-white/[0.03]'
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black shrink-0"
+                      style={{ backgroundColor: transfer.from_team?.color || '#6b7280' }}>
+                      {transfer.player?.first_name?.[0]}{transfer.player?.last_name?.[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-white uppercase tracking-tight truncate">
+                        {transfer.player?.first_name} {transfer.player?.last_name}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {transfer.from_team?.name} → {transfer.to_team?.name}
+                      </p>
+                      {transfer.reason && (
+                        <p className="text-xs text-slate-400 mt-1 italic">"{transfer.reason}"</p>
+                      )}
+                    </div>
+                  </div>
+                  <TransferStatusBadge status={transfer.status} />
+                </div>
+
+                {transfer.status === 'player_requested' && (
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => rejectTransfer.mutate(transfer.id)}
+                      disabled={rejectTransfer.isPending}
+                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      onClick={() => approveAsHomeCaptain.mutate(transfer.id)}
+                      disabled={approveAsHomeCaptain.isPending}
+                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      Approuver
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Incoming Transfers (to our team) */}
+      {incomingTransfers.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-2">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
+              DEMANDES ENTRANTES ({incomingTransfers.length})
+            </p>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+          </div>
+          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            {incomingTransfers.map((transfer, i) => (
+              <div
+                key={transfer.id}
+                className={clsx(
+                  'p-4 flex flex-col gap-3',
+                  i < incomingTransfers.length - 1 && 'border-b border-white/[0.03]'
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black shrink-0"
+                      style={{ backgroundColor: transfer.from_team?.color || '#6b7280' }}>
+                      {transfer.player?.first_name?.[0]}{transfer.player?.last_name?.[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-white uppercase tracking-tight truncate">
+                        {transfer.player?.first_name} {transfer.player?.last_name}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {transfer.from_team?.name} → {transfer.to_team?.name}
+                      </p>
+                      {transfer.reason && (
+                        <p className="text-xs text-slate-400 mt-1 italic">"{transfer.reason}"</p>
+                      )}
+                    </div>
+                  </div>
+                  <TransferStatusBadge status={transfer.status} />
+                </div>
+
+                {transfer.status === 'admin_approved' && (
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => rejectTransfer.mutate(transfer.id)}
+                      disabled={rejectTransfer.isPending}
+                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      onClick={() => approveAsAwayCaptain.mutate(transfer.id)}
+                      disabled={approveAsAwayCaptain.isPending}
+                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 transition-colors"
+                    >
+                      Finaliser le transfert
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {outgoingTransfers.length === 0 && incomingTransfers.length === 0 && (
+        <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
+          <Send size={40} className="mx-auto mb-4 text-slate-700" />
+          <p className="text-slate-400 font-black uppercase tracking-widest">Aucune demande de transfert</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
   const { data: scorers, isLoading } = useScorers(seasonId)
 
@@ -1069,6 +1259,9 @@ export function TeamView({
         {activeTab === 'tactique' && (
           <TabTactique teamId={teamId} seasonId={seasonId} teamColor={teamColor} readonly={readonly} />
         )}
+        {activeTab === 'transferts' && (
+          <TabTransferts teamId={teamId} />
+        )}
       </motion.div>
     </motion.div>
   )
@@ -1076,13 +1269,14 @@ export function TeamView({
 
 // ── Page principale capitaine ─────────────────────────────────────────────────
 
-type Tab = 'joueurs' | 'matchs' | 'stats' | 'tactique'
+type Tab = 'joueurs' | 'matchs' | 'stats' | 'tactique' | 'transferts'
 
-const TABS: { id: Tab; label: string; icon: any }[] = [
+const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number; className?: string }> }[] = [
   { id: 'joueurs', label: 'Joueurs', icon: Users },
   { id: 'matchs', label: 'Matchs', icon: Calendar },
   { id: 'tactique', label: 'Tactique', icon: Layout },
   { id: 'stats', label: 'Stats', icon: Target },
+  { id: 'transferts', label: 'Transferts', icon: Send },
 ]
 
 export function CaptainPage() {

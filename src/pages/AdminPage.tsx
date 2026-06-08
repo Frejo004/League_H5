@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords, ShieldAlert } from 'lucide-react'
+import { Settings, Users, Calendar, Trophy, Eye, SlidersHorizontal, Target, Swords, ShieldAlert, Newspaper, ArrowRightLeft, BarChart2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate, useSearchParams, Link } from 'react-router-dom'
 import { AdminSeasonsPage } from './admin/AdminSeasonsPage'
@@ -9,12 +9,18 @@ import { AdminGoalsPage } from './admin/AdminGoalsPage'
 import { AdminSanctionsPage } from './admin/AdminSanctionsPage'
 import { AdminSpectatorsPage } from './admin/AdminSpectatorsPage'
 import { AdminSettingsPage } from './admin/AdminSettingsPage'
+import { AdminNewsPage } from './admin/AdminNewsPage'
+import { AdminTransfersPage } from './admin/AdminTransfersPage'
+import { AdminPollsPage } from './admin/AdminPollsPage'
 import { useSpectators } from '@/hooks/useSpectators'
 import { clsx } from 'clsx'
 
 const TABS = [
   { id: 'seasons',    label: 'Saisons',     icon: Trophy },
+  { id: 'news',       label: 'Actualités',  icon: Newspaper },
   { id: 'teams',      label: 'Équipes',     icon: Users },
+  { id: 'transfers',  label: 'Transferts',  icon: ArrowRightLeft },
+  { id: 'polls',      label: 'Sondages',    icon: BarChart2 },
   { id: 'schedule',   label: 'Calendrier',  icon: Calendar },
   { id: 'goals',      label: 'Buts',        icon: Target },
   { id: 'sanctions',  label: 'Sanctions',   icon: ShieldAlert },
@@ -79,7 +85,10 @@ export function AdminPage() {
       {/* Tab content */}
       <div>
         {activeTab === 'seasons'    && <AdminSeasonsPage />}
+        {activeTab === 'news'       && <AdminNewsPage />}
         {activeTab === 'teams'      && <AdminTeamsPage />}
+        {activeTab === 'transfers'  && <AdminTransfersPage />}
+        {activeTab === 'polls'      && <AdminPollsPage />}
         {activeTab === 'schedule'   && <AdminSchedulePage />}
         {activeTab === 'goals'      && <AdminGoalsPage />}
         {activeTab === 'sanctions'  && <AdminSanctionsPage />}

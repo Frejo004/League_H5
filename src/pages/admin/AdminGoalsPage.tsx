@@ -106,7 +106,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
   return (
     <div className={clsx(
       "relative overflow-hidden p-4 rounded-xl transition-all duration-300",
-      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted"
+      expanded ? "glass-morphism border-primary-500/30 shadow-2xl" : "glass-morphism border-surface-border hover:border-surface-muted hover:shadow-lg"
     )}>
       <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between gap-4 relative z-10">
         <div className="flex items-center gap-3 min-w-0">
@@ -118,7 +118,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
           <span className="text-text-primary font-black text-sm uppercase tracking-wider truncate" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: away.color }} />
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 transition-all duration-300 group-hover:scale-105">
           {/* Progression buts enregistrés */}
           <span className="text-[10px] font-bold uppercase tracking-widest bg-surface/50 px-2 py-0.5 rounded border border-surface-border text-[#FFDF73]">
             {goals.length}/{(match.home_score ?? 0) + (match.away_score ?? 0)} buts
@@ -143,7 +143,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                   <div className="bg-surface/50 rounded-xl border border-surface-border overflow-hidden">
                     {goals.map(g => {
                       const assist = assistMap.get(g.id)
-                      const teamColor = g.team_id === home.id ? home.color : away.color
+                      const teamColor = g.team_id === home.id ? home.color : away.color 
                       return (
                         <div key={g.id} className="flex items-center gap-3 py-2 px-3 border-b border-surface-border last:border-b-0 hover:bg-surface-raised/50 transition-colors">
                           <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
@@ -159,12 +159,12 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                           </span>
                           <div className="flex gap-1 shrink-0">
                             {assist && (
-                              <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id, seasonId: match.season_id })}
+                              <button onClick={() => deleteAssist.mutate({ id: assist.id, matchId: match.id, seasonId: match.season_id })} 
                                 className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Supprimer la passe">
                                 <Trash2 size={13} />
                               </button>
                             )}
-                            <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id, seasonId: match.season_id })}
+                            <button onClick={() => deleteGoal.mutate({ id: g.id, matchId: match.id, seasonId: match.season_id })} 
                               className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Supprimer le but">
                               <Trash2 size={14} />
                             </button>
@@ -190,7 +190,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                       {/* Équipe qui marque */}
                       <div>
                         <label className="label">Équipe qui marque</label>
-                        <select value={goalTeam} onChange={e => { setGoalTeam(e.target.value); setGoalPlayer('') }}
+                        <select value={goalTeam} onChange={e => { setGoalTeam(e.target.value); setGoalPlayer('') }} 
                           className="input text-sm py-1.5">
                           <option value={home.id}>
                             {home.name} ({homeGoalsCount}/{homeScoreMax})
@@ -206,7 +206,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                         <label className="label">
                           {isOwnGoal ? 'Joueur (camp adverse)' : 'Buteur'}
                         </label>
-                        <select value={goalPlayer} onChange={e => setGoalPlayer(e.target.value)}
+                        <select value={goalPlayer} onChange={e => setGoalPlayer(e.target.value)} 
                           className="input text-sm py-1.5" required>
                           <option value="">Sélectionner...</option>
                           {eligiblePlayers.map(p => (
@@ -235,7 +235,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                     )}
 
                     <button type="submit" disabled={addGoal.isPending || limitReached}
-                      className="btn-primary text-sm py-1.5 flex items-center gap-1.5">
+                      className="btn-primary text-sm py-1.5 flex items-center gap-1.5 active:scale-95">
                       {addGoal.isPending ? <LoadingSpinner size="sm" /> : <Plus size={13} />}
                       Ajouter le but
                     </button>
@@ -256,7 +256,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="label">But concerné</label>
-                        <select value={assistGoalId} onChange={e => setAssistGoalId(e.target.value)}
+                        <select value={assistGoalId} onChange={e => setAssistGoalId(e.target.value)} 
                           className="input text-sm py-1.5" required>
                           <option value="">Sélectionner...</option>
                           {goalsWithoutAssist.map(g => (
@@ -269,7 +269,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                       </div>
                       <div>
                         <label className="label">Passeur (même équipe)</label>
-                        <select value={assistPlayer} onChange={e => setAssistPlayer(e.target.value)}
+                        <select value={assistPlayer} onChange={e => setAssistPlayer(e.target.value)} 
                           className="input text-sm py-1.5" required>
                           <option value="">Sélectionner...</option>
                           {getTeamPlayersForGoal(assistGoalId).map(p => (
@@ -280,7 +280,7 @@ function MatchGoalEditor({ match }: { match: MatchWithTeams }) {
                         </select>
                       </div>
                     </div>
-                    <button type="submit" disabled={addAssist.isPending}
+                    <button type="submit" disabled={addAssist.isPending} 
                       className="btn-secondary text-sm py-1.5 flex items-center gap-1.5">
                       {addAssist.isPending ? <LoadingSpinner size="sm" /> : <Plus size={13} />}
                       Ajouter la passe

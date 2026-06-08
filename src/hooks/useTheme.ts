@@ -9,15 +9,14 @@ export type ResolvedTheme = 'dark' | 'light'
 ;(function initTheme() {
   if (typeof window === 'undefined') return
   const saved = localStorage.getItem('theme') as Theme | null
-  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const resolved = saved === 'light' ? 'light' : saved === 'dark' ? 'dark' : (systemDark ? 'dark' : 'light')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const resolved = saved === 'light' ? 'light' : saved === 'dark' ? 'dark' : (prefersDark ? 'dark' : 'light')
   const root = document.documentElement
+  
   root.setAttribute('data-theme', resolved)
-  if (resolved === 'dark') {
-    root.classList.add('dark')
-  } else {
-    root.classList.remove('dark')
-  }
+  root.classList.toggle('dark', resolved === 'dark')
+  root.classList.remove('theme-dark', 'theme-light')
+  root.classList.add(`theme-${resolved}`)
 })()
 
 interface UseThemeReturn {
@@ -64,23 +63,11 @@ export function useTheme(): UseThemeReturn {
   // Appliquer le thème au document
   useEffect(() => {
     const root = document.documentElement
-    
-    // Retirer les anciennes classes
-    root.classList.remove('theme-dark', 'theme-light')
-    
-    // Ajouter la nouvelle classe
-    root.classList.add(`theme-${resolvedTheme}`)
-    
-    // Mettre à jour l'attribut data-theme pour les sélecteurs CSS
     root.setAttribute('data-theme', resolvedTheme)
+    root.classList.toggle('dark', resolvedTheme === 'dark')
 
-    // ── CRITIQUE : Synchroniser la classe 'dark' pour que Tailwind v4
-    // active ses préfixes dark: correctement ──────────────────────────
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
+    root.classList.remove('theme-dark', 'theme-light')
+    root.classList.add(`theme-${resolvedTheme}`)
     
     // Sauvegarder dans localStorage
     localStorage.setItem('theme', theme)

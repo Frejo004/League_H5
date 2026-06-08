@@ -73,19 +73,19 @@ function SettingsForm({ settings, seasonId, seasonName }: {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Victoire</label>
-              <input type="number" value={pointsWin} onChange={e => setPointsWin(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-emerald-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsWin} onChange={e => setPointsWin(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-emerald-500 hover:border-surface-muted" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Nul</label>
-              <input type="number" value={pointsDraw} onChange={e => setPointsDraw(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-amber-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsDraw} onChange={e => setPointsDraw(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-amber-500 hover:border-surface-muted" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Défaite</label>
-              <input type="number" value={pointsLoss} onChange={e => setPointsLoss(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-red-500" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
+              <input type="number" value={pointsLoss} onChange={e => setPointsLoss(e.target.value)} className="input text-lg font-black tabular-nums py-2 text-center bg-surface/50 border-surface-border text-red-500 hover:border-surface-muted" min={0} max={10} required style={{ fontFamily: "'Barlow Condensed', sans-serif" }} />
             </div>
           </div>
         </div>
-
+        
         {/* Playoff settings */}
         <div className="relative overflow-hidden p-6 rounded-2xl glass-morphism border border-surface-border space-y-5">
           <div className="flex items-center justify-between">

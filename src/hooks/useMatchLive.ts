@@ -7,10 +7,11 @@
  * - Durées : 1ère mi-temps 20min, repos 5min, 2ème mi-temps 20min
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { MatchEvent, LiveReaction, MatchEventType } from '@/types/database'
+import { useMatchLineups } from './useLineups'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes de durée (en minutes)
@@ -322,6 +323,17 @@ export function useLiveClock(
 export function useAdminMatchLive(matchId?: string) {
   const qc = useQueryClient()
 
+  // Canal pour les diffusions instantanées (Broadcast)
+  const broadcastChannel = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
+  useEffect(() => {
+    if (!matchId) return
+    const name = `match-live-com-${matchId}`
+    const ch = supabase.channel(name)
+    broadcastChannel.current = ch
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId])
+
   const invalidate = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
     qc.invalidateQueries({ queryKey: ['match-events', matchId] })
@@ -354,6 +366,7 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startSecondHalf = useMutation({
     mutationFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.rpc('start_second_half' as any, { p_match_id: matchId! });
       if (error) {
         console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error);
@@ -412,6 +425,12 @@ export function useAdminMatchLive(matchId?: string) {
         p_player2_id: event.player2_id || undefined,
         p_description: event.description || undefined,
       });
+
+      // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement
+      if (!error && event.type === 'goal') {
+        broadcastChannel.current?.send({ type: 'broadcast', event: 'goal_scored', payload: { teamId: event.team_id } })
+      }
+
       if (error) {
         console.error('[useAdminMatchLive] Erreur lors de l\'ajout d\'un événement de match:', error);
         throw error;
@@ -433,7 +452,7 @@ export function useAdminMatchLive(matchId?: string) {
 
   const updateReporters = useMutation({
     mutationFn: async ({ eventsReporterId, videoReporterId }: { eventsReporterId?: string | null; videoReporterId?: string | null }) => {
-      const updates: any = {}
+      const updates: { events_reporter_id?: string | null; video_reporter_id?: string | null } = {}
       if (eventsReporterId !== undefined) updates.events_reporter_id = eventsReporterId
       if (videoReporterId !== undefined) updates.video_reporter_id = videoReporterId
       
@@ -446,5 +465,47 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters }
+  // Envoyer une annonce flash en temps réel aux spectateurs (Broadcast)
+  const sendFlashAnnouncement = useCallback(async (message: string) => {
+    if (!broadcastChannel.current) return
+    await broadcastChannel.current.send({
+      type: 'broadcast',
+      event: 'announcement',
+      payload: { message, timestamp: new Date().toISOString() }
+    })
+  }, [])
+
+  return { startLive, signalHalftime, startSecondHalf, togglePause, endMatch, addEvent, deleteEvent, updateReporters, sendFlashAnnouncement }
+}
+
+// Hook pour vérifier si l'utilisateur est un joueur participant au match
+export function useIsMatchParticipant(matchId?: string, userId?: string) {
+  const { data: lineups } = useMatchLineups(matchId)
+  return useMemo(() => {
+    if (!lineups || !userId) return false
+    return lineups.some(l => l.player?.user_id === userId)
+  }, [lineups, userId])
+}
+
+// Hook pour écouter les messages directs et événements flash (Admin -> Spectateurs)
+export function useLiveAnnouncements(matchId?: string) {
+  const qc = useQueryClient()
+  const [announcement, setAnnouncement] = useState<{ message: string; timestamp: string } | null>(null)
+
+  useEffect(() => {
+    if (!matchId) return
+    const ch = supabase.channel(`match-live-com-${matchId}`)
+      .on('broadcast', { event: 'announcement' }, (payload) => {
+        setAnnouncement(payload.payload)
+        setTimeout(() => setAnnouncement(null), 8000) // Disparaît après 8s
+      })
+      .on('broadcast', { event: 'goal_scored' }, () => {
+        // Rafraîchir les données de match immédiatement si un but est détecté via broadcast
+        qc.invalidateQueries({ queryKey: ['matches', 'detail', matchId] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [matchId, qc])
+
+  return announcement
 }

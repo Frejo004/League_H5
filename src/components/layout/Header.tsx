@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
-import { NavLink, useLocation, Link, useSearchParams } from 'react-router-dom'
+import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
-  Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen, Swords,
+  Target, Users, Star, Crown, BarChart2,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
-import { useTheme, type ResolvedTheme } from '@/hooks/useTheme'
+import { usePolls } from '@/hooks/usePolls'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -45,8 +45,10 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/admin', label: 'Admin', icon: Settings },
   ],
   captain: [
@@ -57,8 +59,10 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
     { to: '/captain', label: 'Mon Équipe', icon: Crown },
   ],
@@ -70,8 +74,10 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
     { to: '/my-team', label: 'Mon Équipe', icon: Users },
   ],
@@ -82,20 +88,12 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/scorers', label: 'Buteurs', icon: Target },
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
+    { to: '/feedback', label: 'Avis', icon: MessageSquare },
   ],
 }
-
-const ADMIN_SUBNAV = [
-  { to: '/admin', label: 'Saisons', tab: 'seasons' },
-  { to: '/admin', label: 'Équipes', tab: 'teams' },
-  { to: '/admin', label: 'Matchs', tab: 'schedule' },
-  { to: '/admin', label: 'Scores', tab: 'schedule' },
-  { to: '/admin', label: 'Buts & Passes', tab: 'goals' },
-  { to: '/admin', label: 'Spectateurs', tab: 'spectators' },
-  { to: '/admin', label: 'Paramètres', tab: 'settings' },
-]
 
 // Mobile bottom nav (5 items max)
 const MOBILE_NAV_BASE: NavItem[] = [
@@ -216,14 +214,13 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
-  const chatRef = useRef<HTMLDivElement>(null)
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
-  const [searchParams] = useSearchParams()
-  const currentTab = searchParams.get('tab') || 'seasons'
-
+  // Badge pronostics actifs
+  const { data: allPolls } = usePolls()
+  const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
   // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
   const [prevPathname, setPrevPathname] = useState(location.pathname)
   if (location.pathname !== prevPathname) {
@@ -245,9 +242,6 @@ export default function Header() {
         item.to === '/palmares' ? [item, playoffItem] : [item]
       )
     : NAV_BY_ROLE[effectiveRole]
-  const roleColors = ROLE_COLORS[effectiveRole]
-
-  const isAdminPage = location.pathname.startsWith('/admin')
 
   // Mobile bottom nav — ajoute Admin si admin, Mon Équipe si capitaine ou joueur
   const mobileNav: NavItem[] = isAdmin
@@ -276,6 +270,8 @@ export default function Header() {
     '/rules':      'Règlement',
     '/chat':       'Messages',
     '/playoffs':   'Phase Finale',
+    '/feedback':   'Avis sur les matchs',
+    '/polls':      'Pronostics',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/dashboard')
@@ -289,7 +285,7 @@ export default function Header() {
           DESKTOP HEADER
           ════════════════════════════════════════════════════════════ */}
       <header
-        className="hidden lg:flex flex-col w-full shrink-0 z-30"
+        className="hidden lg:flex flex-col w-full shrink-0 z-30 sticky top-0"
         style={{ backgroundColor: 'var(--header-bg)', borderBottom: `1px solid var(--header-border)` }}
       >
         {/* ── Main bar (56px) ── */}
@@ -327,6 +323,14 @@ export default function Header() {
                 }}
               >
                 {label}
+                {to === '/polls' && activePollsCount > 0 && (
+                  <span
+                    className="ml-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black"
+                    style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
+                  >
+                    {activePollsCount}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -423,38 +427,6 @@ export default function Header() {
             </div>
           </div>
         </div>
-
-        {/* ── Sous-nav Admin (38px) ── */}
-        {isAdminPage && (
-          <div
-            className="flex items-center px-5 gap-1 overflow-x-auto"
-            style={{
-              height: 38,
-              backgroundColor: 'var(--header-sub)',
-              borderTop: `1px solid var(--header-border)`,
-            }}
-          >
-            {ADMIN_SUBNAV.map(({ label, to, tab }, i) => {
-              const isActive = currentTab === tab
-              return (
-                <Link
-                  key={i}
-                  to={`${to}?tab=${tab}`}
-                  className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-colors"
-                  style={{
-                    fontFamily: "'Barlow', sans-serif",
-                    color: isActive ? 'var(--accent)' : 'var(--header-nav-off)',
-                    backgroundColor: isActive ? `var(--accent)15` : 'transparent',
-                  }}
-                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-hov)' }}
-                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
-                >
-                  {label}
-                </Link>
-              )
-            })}
-          </div>
-        )}
 
         <LiveTicker />
       </header>

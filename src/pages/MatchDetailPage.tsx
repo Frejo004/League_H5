@@ -18,6 +18,7 @@ import { GoalAlert } from '@/components/live/GoalAlert'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
+import { MatchPollsTab } from '@/components/matches/MatchPollsTab'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
 import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
@@ -187,7 +188,7 @@ function GoalEvent({
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings' | 'live-video'
+type LiveTab = 'resume' | 'polls' | 'events' | 'stats' | 'lineups' | 'standings' | 'live-video'
 
 export function MatchDetailPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
@@ -611,6 +612,7 @@ export function MatchDetailPage() {
         <div className="flex gap-2 p-1.5 bg-surface-card/80 backdrop-blur-xl rounded-2xl mx-1 border border-surface-border/50 shadow-2xl sticky top-20 z-30">
           {[
             { id: 'lineups', label: 'Compositions', icon: UsersIcon },
+            { id: 'polls', label: 'Pronostics', icon: BarChart2 },
             { id: 'standings', label: 'Classement', icon: BarChart2 },
             { id: 'stats', label: 'Détails', icon: MapPin },
           ].map(tab => (
@@ -631,6 +633,11 @@ export function MatchDetailPage() {
         </div>
 
         <AnimatePresence mode="wait">
+          {activeTab === 'polls' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <MatchPollsTab matchId={match.id} matchStatus={match.status as 'scheduled'} />
+            </motion.div>
+          )}
           {activeTab === 'lineups' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <MatchLineups matchId={match.id} homeTeam={home} awayTeam={away} />
@@ -666,6 +673,7 @@ export function MatchDetailPage() {
 
   const tabs = [
     { id: 'resume',    label: 'Résumé',       icon: BarChart2  },
+    { id: 'polls',    label: 'Pronostics',   icon: BarChart2  },
     { id: 'events',   label: 'Événements',   icon: Calendar   },
     { id: 'stats',    label: 'Statistiques', icon: BarChart2  },
     { id: 'lineups',  label: 'Compositions', icon: UsersIcon  },
@@ -783,8 +791,8 @@ export function MatchDetailPage() {
                     } catch { return }
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
-                            text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
-                            hover:bg-surface-muted/20 transition-all backdrop-blur-md"
+                             text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
+                             hover:bg-surface-muted/20 transition-all backdrop-blur-md"
                 >
                   <Share2 size={12} />
                   <span className="hidden sm:inline">Partager</span>
@@ -1300,6 +1308,18 @@ export function MatchDetailPage() {
                 <LiveReactionBar matchId={match.id} />
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* ── Pronostics ── */}
+        {activeTab === 'polls' && (
+          <motion.div
+            key="polls"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <MatchPollsTab matchId={match.id} matchStatus={match.status as 'scheduled' | 'live' | 'completed' | 'cancelled'} />
           </motion.div>
         )}
 
