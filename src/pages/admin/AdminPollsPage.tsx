@@ -4,6 +4,7 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePolls, POLL_TYPE_CONFIG, getWinnerOptions } from '@/hooks/usePolls'
 import { useMatches } from '@/hooks/useMatches'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { clsx } from 'clsx'
 import type { Poll, PollStatus, PollType, MatchWithTeams } from '@/types/database'
 
@@ -166,12 +167,16 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
 // ── Page principale ───────────────────────────────────────────────────────────
 export function AdminPollsPage() {
   const { data: season } = useActiveSeason()
-  const { data: polls, isLoading, createPoll, updatePoll, deletePoll } = usePolls()
+  const { data: polls, isLoading, createPoll, updatePoll, deletePoll, deleteAllPolls } = usePolls()
   const { data: matches } = useMatches(season?.id)
 
   const [showForm, setShowForm] = useState(false)
   const [showAutoCreate, setShowAutoCreate] = useState(false)
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null)
+
+  // Modales de confirmation
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
 
   const [question, setQuestion]   = useState('')
   const [optionsStr, setOptionsStr] = useState('')
@@ -290,6 +295,16 @@ export function AdminPollsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {(polls?.length ?? 0) > 0 && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              disabled={deleteAllPolls.isPending}
+              className="btn-secondary flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
+            >
+              {deleteAllPolls.isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={14} />}
+              Tout supprimer
+            </button>
+          )}
           <button
             onClick={() => { setShowAutoCreate(!showAutoCreate); setShowForm(false) }}
             className="btn-secondary flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest"
@@ -526,7 +541,7 @@ export function AdminPollsPage() {
                     <Check size={14} />
                   </button>
                   <button
-                    onClick={() => { if (confirm('Supprimer ce sondage ?')) deletePoll.mutate(poll.id) }}
+                    onClick={() => setConfirmDeleteId(poll.id)}
                     className="p-2 rounded-lg bg-surface-raised hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                     title="Supprimer"
                   >
@@ -537,6 +552,34 @@ export function AdminPollsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modale suppression individuelle */}
+      {confirmDeleteId && (
+        <ConfirmModal
+          message="Supprimer ce sondage ? Cette action est irréversible et effacera également tous les paris associés."
+          confirmLabel="Supprimer"
+          danger
+          onConfirm={() => {
+            deletePoll.mutate(confirmDeleteId)
+            setConfirmDeleteId(null)
+          }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+
+      {/* Modale suppression totale */}
+      {confirmDeleteAll && (
+        <ConfirmModal
+          message={`Supprimer tous les ${polls?.length ?? 0} sondages de la saison en cours ? Tous les paris des joueurs seront également supprimés. Cette action est irréversible.`}
+          confirmLabel="Tout supprimer"
+          danger
+          onConfirm={() => {
+            if (season) deleteAllPolls.mutate(season.id)
+            setConfirmDeleteAll(false)
+          }}
+          onCancel={() => setConfirmDeleteAll(false)}
+        />
       )}
     </div>
   )

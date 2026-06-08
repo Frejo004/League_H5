@@ -136,7 +136,7 @@ export function usePolls() {
         .from('polls')
         .select(`
           *,
-          match:matches(*, home_team:teams(*), away_team:teams(*)),
+          match:matches(*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)),
           created_by_user:profiles(full_name, avatar_url)
         `)
         .eq('season_id', season!.id)
@@ -234,7 +234,15 @@ export function usePolls() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
   })
 
-  return { ...query, createPoll, createMatchPolls, updatePoll, deletePoll }
+  const deleteAllPolls = useMutation({
+    mutationFn: async (seasonId: string) => {
+      const { error } = await supabase.from('polls').delete().eq('season_id', seasonId)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
+  })
+
+  return { ...query, createPoll, createMatchPolls, updatePoll, deletePoll, deleteAllPolls }
 }
 
 // ─── usePoll ──────────────────────────────────────────────────────────────────
@@ -251,7 +259,7 @@ export function usePoll(pollId: string) {
         .from('polls')
         .select(`
           *,
-          match:matches(*, home_team:teams(*), away_team:teams(*)),
+          match:matches(*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)),
           created_by_user:profiles(full_name, avatar_url)
         `)
         .eq('id', pollId)
