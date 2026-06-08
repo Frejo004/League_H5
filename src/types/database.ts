@@ -12,6 +12,24 @@ export type SpectatorStatus = 'pending' | 'approved' | 'rejected'
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
 export type TransferStatus = 'pending' | 'player_requested' | 'home_captain_approved' | 'admin_approved' | 'approved' | 'rejected' | 'cancelled' | 'completed'
 export type PollStatus = 'draft' | 'active' | 'closed' | 'completed'
+export type PollType =
+  | 'custom'
+  | 'winner'
+  | 'btts'
+  | 'total_goals'
+  | 'goals_home'
+  | 'goals_away'
+  | 'goals_ht'
+  | 'goals_ht_home'
+  | 'goals_ht_away'
+  | 'cards_total'
+  | 'cards_home'
+  | 'cards_away'
+  | 'shots_total'
+  | 'shots_home'
+  | 'shots_away'
+  | 'corners'
+  | 'fouls'
 export type MatchEventType =
   | 'goal' | 'own_goal'
   | 'yellow_card' | 'red_card'
@@ -1206,6 +1224,8 @@ export interface Database {
           question: string
           options: string[]
           status: PollStatus
+          poll_type: PollType
+          correct_option_index: number | null
           starts_at: string | null
           ends_at: string | null
           created_by: string
@@ -1219,6 +1239,8 @@ export interface Database {
           question: string
           options: string[]
           status?: PollStatus
+          poll_type?: PollType
+          correct_option_index?: number | null
           starts_at?: string | null
           ends_at?: string | null
           created_by: string
@@ -1232,6 +1254,8 @@ export interface Database {
           question?: string
           options?: string[]
           status?: PollStatus
+          poll_type?: PollType
+          correct_option_index?: number | null
           starts_at?: string | null
           ends_at?: string | null
           created_by?: string
@@ -1249,6 +1273,8 @@ export interface Database {
           poll_id: string
           user_id: string
           option_index: number
+          is_correct: boolean | null
+          points_earned: number
           created_at: string
         }
         Insert: {
@@ -1256,6 +1282,8 @@ export interface Database {
           poll_id: string
           user_id: string
           option_index: number
+          is_correct?: boolean | null
+          points_earned?: number
           created_at?: string
         }
         Update: {
@@ -1263,6 +1291,8 @@ export interface Database {
           poll_id?: string
           user_id?: string
           option_index?: number
+          is_correct?: boolean | null
+          points_earned?: number
         }
         Relationships: [
           { foreignKeyName: "predictions_poll_id_fkey", columns: ["poll_id"], isOneToOne: false, referencedRelation: "polls", referencedColumns: ["id"] },
@@ -1485,6 +1515,7 @@ export type UserNotificationPreferences = Database['public']['Tables']['user_not
 export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type Poll = Database['public']['Tables']['polls']['Row']
 export type Prediction = Database['public']['Tables']['predictions']['Row']
+export type { PollType }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
