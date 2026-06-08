@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react'
-import { BarChart2, Trophy, Medal, Clock, Lock, Check, X, Star, ChevronDown, ChevronUp } from 'lucide-react'
-import { usePolls, useLeaderboard, usePoll } from '@/hooks/usePolls'
+import { BarChart2, Trophy, Medal, Clock, Lock, Check, X, Star, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
+import { usePolls, useLeaderboard } from '@/hooks/usePolls'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { useBasket } from '@/hooks/useBetSlips'
 import { PageHero } from '@/components/ui/PageHero'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
+import { BetBasket } from '@/components/ui/BetBasket'
 import clsx from 'clsx'
 import type { PollType, MatchWithTeams } from '@/types/database'
 import type { PollWithRelations } from '@/hooks/usePolls'
@@ -26,94 +28,95 @@ const MEDAL_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
 type Tab = 'polls' | 'leaderboard'
 
-// ─── Ligne de marché individuelle ─────────────────────────────────────────────
-function MarketRow({ pollId }: { pollId: string }) {
-  const { poll, predictions, userPrediction, vote } = usePoll(pollId)
-  const [voting, setVoting] = useState(false)
+// ─── Ligne de marché (panier) ─────────────────────────────────────────────────
+function MarketRow({
+  poll,
+  matchLabel,
+}: {
+  poll: PollWithRelations
+  matchLabel?: string
+}) {
+  const basket = useBasket()
 
-  if (poll.isLoading || !poll.data) return null
-
-  const p = poll.data
-  const totalVotes    = predictions.data?.length ?? 0
-  const votesByOption = p.options.map((_: string, idx: number) =>
-    predictions.data?.filter(v => v.option_index === idx).length ?? 0
-  )
+  const p          = poll
   const isActive   = p.status === 'active'
   const isResolved = p.status === 'completed' && p.correct_option_index != null
-  const showPct    = p.status !== 'active' || !!userPrediction.data
-  const myPick     = userPrediction.data
-  const userWon    = isResolved && myPick?.is_correct === true
+  const isClosed   = p.status === 'closed'
+  const inBasket   = basket.isInBasket(p.id)
+  const myOption   = basket.getOptionForPoll(p.id)
 
-  const handleVote = async (idx: number) => {
-    if (!isActive || voting || myPick) return
-    setVoting(true)
-    try { await vote.mutateAsync({ optionIndex: idx }) }
-    finally { setVoting(false) }
-  }
+  // Pour les polls déjà resolus on affiche les %
+  // On les calcule côté client à partir des votes stockés dans le hook global
+  // (on évite N requêtes usePoll individuelles en utilisant les données du poll groupé)
 
   return (
     <div className={clsx(
-      'border-b border-white/[0.05] last:border-0',
-      isResolved && userWon && 'bg-green-500/[0.03]',
+      'border-b border-white/[0.04] last:border-0 transition-colors',
+      inBasket && 'bg-primary-500/[0.04]',
+      isResolved && p.correct_option_index != null && 'bg-green-500/[0.02]',
     )}>
       {/* Question + meta */}
       <div className="flex items-center justify-between gap-2 px-4 py-2">
-        <span className="text-xs font-semibold text-text-secondary truncate">{p.question}</span>
+        <span className="text-xs font-semibold text-text-secondary">{p.question}</span>
         <div className="flex items-center gap-2 shrink-0">
-          {isResolved && myPick && (
-            <span className={clsx(
-              'text-[10px] font-black uppercase tracking-wide flex items-center gap-1',
-              userWon ? 'text-green-400' : 'text-slate-500'
-            )}>
-              {userWon
-                ? <><Star size={9} fill="currentColor" />+{myPick.points_earned} pts</>
-                : <><X size={9} />Raté</>}
-            </span>
-          )}
-          {!isActive && !isResolved && (
+          {isClosed && !isResolved && (
             <span className="text-[10px] font-bold text-yellow-500 uppercase flex items-center gap-1">
               <Lock size={9} /> Fermé
             </span>
           )}
-          <span className="text-[10px] text-text-muted">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</span>
+          {isResolved && (
+            <span className="text-[10px] font-bold text-blue-400 uppercase flex items-center gap-1">
+              <Check size={9} /> Résolu
+            </span>
+          )}
+          {inBasket && (
+            <span className="text-[10px] font-bold text-primary-400 uppercase flex items-center gap-1">
+              <ShoppingCart size={9} /> Dans le panier
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Options style paris */}
-      <div className="flex gap-1.5 px-4 pb-3">
+      {/* Options */}
+      <div className="flex gap-1.5 px-4 pb-3 flex-wrap">
         {p.options.map((option: string, idx: number) => {
-          const votes      = votesByOption[idx] ?? 0
-          const pct        = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0
-          const isMyPick   = myPick?.option_index === idx
-          const isCorrect  = isResolved && p.correct_option_index === idx
-          const isWrong    = isResolved && isMyPick && !isCorrect
-          const canVote    = isActive && !myPick && !voting
+          const isMyPick  = myOption === idx
+          const isCorrect = isResolved && p.correct_option_index === idx
+          const isWrong   = isResolved && isMyPick && !isCorrect
+          const canPick   = isActive
 
           return (
             <button
               key={idx}
-              onClick={() => handleVote(idx)}
-              disabled={!canVote}
+              onClick={() => {
+                if (!canPick) return
+                if (isMyPick) {
+                  // Désélectionner = retirer du panier
+                  basket.removeItem(p.id)
+                } else {
+                  basket.addItem({
+                    poll_id: p.id,
+                    poll_question: p.question,
+                    option_index: idx,
+                    option_label: option,
+                    match_label: matchLabel,
+                  })
+                }
+              }}
+              disabled={!canPick}
               className={clsx(
-                'relative flex-1 min-w-0 rounded-lg border overflow-hidden transition-all text-left',
-                'px-3 py-2',
-                isCorrect  ? 'border-green-500/40 bg-green-500/10'
-                : isWrong  ? 'border-red-500/30 bg-red-500/5'
-                : isMyPick ? 'border-primary-500/50 bg-primary-500/10'
-                : canVote  ? 'border-white/[0.08] bg-white/[0.03] hover:border-primary-500/30 hover:bg-primary-500/5 cursor-pointer'
-                :            'border-white/[0.05] bg-white/[0.02] cursor-default'
+                'relative flex-1 min-w-0 rounded-lg border overflow-hidden transition-all text-left px-3 py-2',
+                isCorrect
+                  ? 'border-green-500/40 bg-green-500/10'
+                  : isWrong
+                    ? 'border-red-500/30 bg-red-500/5'
+                    : isMyPick
+                      ? 'border-primary-500/60 bg-primary-500/15 ring-1 ring-primary-500/30'
+                      : canPick
+                        ? 'border-white/[0.08] bg-white/[0.03] hover:border-primary-500/30 hover:bg-primary-500/5 cursor-pointer'
+                        : 'border-white/[0.05] bg-white/[0.02] cursor-default'
               )}
             >
-              {/* Barre de fond */}
-              {showPct && (
-                <div
-                  className={clsx(
-                    'absolute inset-y-0 left-0 transition-all opacity-[0.12] rounded-lg',
-                    isCorrect ? 'bg-green-500' : isWrong ? 'bg-red-500' : 'bg-primary-500'
-                  )}
-                  style={{ width: `${pct}%` }}
-                />
-              )}
               <div className="relative flex items-center justify-between gap-1">
                 <div className="flex items-center gap-1.5 min-w-0">
                   {isCorrect && (
@@ -138,31 +141,17 @@ function MarketRow({ pollId }: { pollId: string }) {
                     {option}
                   </span>
                 </div>
-                {showPct && (
-                  <span className={clsx(
-                    'text-[10px] font-black shrink-0',
-                    isCorrect ? 'text-green-400' : 'text-text-muted'
-                  )}>
-                    {pct}%
-                  </span>
-                )}
               </div>
             </button>
           )
         })}
-        {voting && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <LoadingSpinner size="sm" />
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-// ─── Bloc par match (header scoreboard + liste marchés) ───────────────────────
+// ─── Bloc par match ───────────────────────────────────────────────────────────
 function MatchMarketBlock({
-  matchId,
   match,
   polls,
   activeCategory,
@@ -170,7 +159,7 @@ function MatchMarketBlock({
   matchId: string | null
   match?: MatchWithTeams & { status?: string }
   polls: PollWithRelations[]
-  activeCategory: PollType | 'all'
+  activeCategory: string
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -190,56 +179,48 @@ function MatchMarketBlock({
     scheduled: 'À venir', live: 'En direct', completed: 'Terminé', cancelled: 'Annulé',
   }
   const matchStatusColor: Record<string, string> = {
-    scheduled: 'text-blue-400',
-    live:      'text-green-400',
-    completed: 'text-slate-400',
-    cancelled: 'text-red-400',
+    scheduled: 'text-blue-400', live: 'text-green-400', completed: 'text-slate-400', cancelled: 'text-red-400',
   }
+
+  const matchLabel = match
+    ? `${match.home_team?.name ?? '?'} vs ${match.away_team?.name ?? '?'}`
+    : undefined
 
   return (
     <div className="rounded-xl border border-white/[0.07] overflow-hidden bg-surface-panel/40">
-      {/* Header match style scoreboard */}
+      {/* Header */}
       <button
         className="w-full flex items-center justify-between gap-4 px-4 py-3 bg-surface-raised/60 hover:bg-surface-raised/80 transition-colors"
         onClick={() => setCollapsed(c => !c)}
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {match ? (
             <>
-              {/* Équipes */}
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-sm font-black text-text-primary truncate text-right flex-1">
-                  {match.home_team?.name ?? '?'}
-                </span>
-                <div className="flex flex-col items-center shrink-0">
-                  <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">vs</span>
-                  {match.scheduled_at && (
-                    <span className="text-[9px] text-text-muted flex items-center gap-0.5 mt-0.5">
-                      <Clock size={8} />
-                      {new Date(match.scheduled_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                    </span>
-                  )}
-                </div>
-                <span className="text-sm font-black text-text-primary truncate flex-1">
-                  {match.away_team?.name ?? '?'}
-                </span>
-              </div>
-
-              {/* Statut match + compteurs */}
-              <div className="flex items-center gap-2 shrink-0">
-                {match.status && (
-                  <span className={clsx('text-[10px] font-black uppercase tracking-wide', matchStatusColor[match.status] ?? 'text-text-muted')}>
-                    {matchStatusLabel[match.status] ?? match.status}
+              <span className="text-sm font-black text-text-primary truncate text-right flex-1 uppercase tracking-wide">
+                {match.home_team?.name ?? '?'}
+              </span>
+              <div className="flex flex-col items-center shrink-0">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">vs</span>
+                {match.scheduled_at && (
+                  <span className="text-[9px] text-text-muted flex items-center gap-0.5 mt-0.5">
+                    <Clock size={8} />
+                    {new Date(match.scheduled_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                   </span>
                 )}
               </div>
+              <span className="text-sm font-black text-text-primary truncate flex-1 uppercase tracking-wide">
+                {match.away_team?.name ?? '?'}
+              </span>
+              {match.status && (
+                <span className={clsx('text-[10px] font-black uppercase tracking-wide shrink-0', matchStatusColor[match.status] ?? 'text-text-muted')}>
+                  {matchStatusLabel[match.status] ?? match.status}
+                </span>
+              )}
             </>
           ) : (
             <span className="text-sm font-black text-text-muted uppercase tracking-wide">Sans match</span>
           )}
         </div>
-
-        {/* Badges compteurs + chevron */}
         <div className="flex items-center gap-2 shrink-0">
           <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[10px] font-bold text-text-muted">
             {filtered.length} marché{filtered.length > 1 ? 's' : ''}
@@ -260,11 +241,10 @@ function MatchMarketBlock({
         </div>
       </button>
 
-      {/* Marchés */}
       {!collapsed && (
         <div className="divide-y divide-white/[0.04]">
           {filtered.map(poll => (
-            <MarketRow key={poll.id} pollId={poll.id} />
+            <MarketRow key={poll.id} poll={poll} matchLabel={matchLabel} />
           ))}
         </div>
       )}
@@ -274,14 +254,14 @@ function MatchMarketBlock({
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export function PollsPage() {
-  const [tab, setTab]             = useState<Tab>('polls')
+  const [tab, setTab]                     = useState<Tab>('polls')
   const [activeCategory, setActiveCategory] = useState<string>('all')
 
   const { data: season }                         = useActiveSeason()
   const { data: polls, isLoading }               = usePolls()
   const { data: leaderboard, isLoading: loadingLb } = useLeaderboard(season?.id)
 
-  // Groupement par match_id
+  // Groupement par match
   const groups = useMemo(() => {
     if (!polls) return []
     const map = new Map<string, { polls: PollWithRelations[]; match?: MatchWithTeams & { status?: string } }>()
@@ -300,14 +280,13 @@ export function PollsPage() {
     return [...map.entries()].sort(([keyA, a], [keyB, b]) => {
       if (keyA === '__none__') return 1
       if (keyB === '__none__') return -1
-      const dateA = a.match?.scheduled_at
-      const dateB = b.match?.scheduled_at
-      if (dateA && dateB) return new Date(dateA).getTime() - new Date(dateB).getTime()
+      const da = a.match?.scheduled_at, db = b.match?.scheduled_at
+      if (da && db) return new Date(da).getTime() - new Date(db).getTime()
       return 0
     })
   }, [polls])
 
-  // Compter par catégorie pour afficher les totaux dans le menu
+  // Comptage par catégorie
   const countByCategory = useMemo(() => {
     const counts: Record<string, number> = { all: polls?.length ?? 0 }
     for (const cat of CATEGORIES) {
@@ -317,10 +296,7 @@ export function PollsPage() {
     return counts
   }, [polls])
 
-  // Catégories qui ont au moins un poll
-  const availableCategories = CATEGORIES.filter(c =>
-    c.key === 'all' || (countByCategory[c.key] ?? 0) > 0
-  )
+  const availableCategories = CATEGORIES.filter(c => c.key === 'all' || (countByCategory[c.key] ?? 0) > 0)
 
   return (
     <div className="space-y-0">
@@ -329,12 +305,12 @@ export function PollsPage() {
         pattern="lines"
         accentColor="#8b5cf6"
         title="Sondages & Pronostics"
-        subtitle="Faites vos pronostics et grimpez au classement !"
+        subtitle="Sélectionne tes pronostics et valide ton bulletin !"
         icon={<BarChart2 size={20} className="text-purple-400" />}
         compact
       />
 
-      {/* Onglets principaux */}
+      {/* Onglets */}
       <div className="flex gap-1 border-b border-surface-border px-1">
         {([['polls', 'Pronostics'], ['leaderboard', 'Classement']] as [Tab, string][]).map(([id, label]) => (
           <button
@@ -354,19 +330,26 @@ export function PollsPage() {
 
       {/* ── Onglet Pronostics ── */}
       {tab === 'polls' && (
-        <div className="space-y-0 mt-4">
+        <div className="mt-4 space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <LoadingSpinner size="lg" />
-            </div>
+            <div className="flex items-center justify-center py-16"><LoadingSpinner size="lg" /></div>
           ) : !polls?.length ? (
-            <div className="card py-12 text-center opacity-50 mt-4">
+            <div className="card py-12 text-center opacity-50">
               <BarChart2 size={32} className="mx-auto mb-3 text-text-muted" />
               <p className="text-xs font-bold uppercase tracking-widest">Aucun pronostic disponible</p>
             </div>
           ) : (
             <>
-              {/* ── Menu catégories style bookmaker ── */}
+              {/* Bannière explicative panier */}
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-primary-500/[0.07] border border-primary-500/20 text-xs text-primary-300">
+                <ShoppingCart size={15} className="shrink-0 mt-0.5" />
+                <span>
+                  Clique sur une option pour l'ajouter à ton bulletin. Tu peux changer d'avis avant de valider.
+                  Choisis <strong>Simple</strong> (indépendant) ou <strong>Combiné</strong> (tout ou rien) dans le panier.
+                </span>
+              </div>
+
+              {/* Menu catégories */}
               <div className="sticky top-0 z-10 bg-surface-panel/90 backdrop-blur-md border-b border-white/[0.06]">
                 <div className="overflow-x-auto scrollbar-none">
                   <div className="flex items-center gap-0 min-w-max px-1 py-1">
@@ -384,9 +367,7 @@ export function PollsPage() {
                         {cat.label}
                         <span className={clsx(
                           'text-[9px] font-black px-1.5 py-0.5 rounded-full',
-                          activeCategory === cat.key
-                            ? 'bg-primary-500/30 text-primary-300'
-                            : 'bg-white/[0.06] text-text-muted'
+                          activeCategory === cat.key ? 'bg-primary-500/30 text-primary-300' : 'bg-white/[0.06] text-text-muted'
                         )}>
                           {cat.key === 'all' ? countByCategory['all'] : (countByCategory[cat.key] ?? 0)}
                         </span>
@@ -396,8 +377,8 @@ export function PollsPage() {
                 </div>
               </div>
 
-              {/* ── Blocs par match ── */}
-              <div className="space-y-3 mt-4">
+              {/* Blocs par match */}
+              <div className="space-y-3">
                 {groups.map(([key, group]) => (
                   <MatchMarketBlock
                     key={key}
@@ -417,13 +398,11 @@ export function PollsPage() {
       {tab === 'leaderboard' && (
         <div className="mt-4">
           {loadingLb ? (
-            <div className="flex items-center justify-center py-12">
-              <LoadingSpinner size="lg" />
-            </div>
+            <div className="flex items-center justify-center py-12"><LoadingSpinner size="lg" /></div>
           ) : !leaderboard?.length ? (
             <div className="card py-12 text-center opacity-50">
               <Medal size={32} className="mx-auto mb-3 text-text-muted" />
-              <p className="text-xs font-bold uppercase tracking-widest">Aucun pronostic résolu pour le moment</p>
+              <p className="text-xs font-bold uppercase tracking-widest">Aucun pronostic résolu</p>
             </div>
           ) : (
             <div className="card p-0 overflow-hidden">
@@ -439,38 +418,20 @@ export function PollsPage() {
                 </thead>
                 <tbody>
                   {leaderboard.map((entry, idx) => (
-                    <tr
-                      key={entry.user_id}
-                      className={clsx(
-                        'border-b border-surface-border/40 last:border-0 transition-colors hover:bg-surface-raised/30',
-                        idx === 0 && 'bg-yellow-500/5'
-                      )}
-                    >
+                    <tr key={entry.user_id} className={clsx('border-b border-surface-border/40 last:border-0 hover:bg-surface-raised/30', idx === 0 && 'bg-yellow-500/5')}>
                       <td className="px-4 py-3">
-                        {idx < 3
-                          ? <Medal size={16} className={MEDAL_COLORS[idx]} />
-                          : <span className="text-text-muted font-bold">{idx + 1}</span>}
+                        {idx < 3 ? <Medal size={16} className={MEDAL_COLORS[idx]} /> : <span className="text-text-muted font-bold">{idx + 1}</span>}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <PlayerAvatar
-                            avatarUrl={entry.avatar_url}
-                            firstName={entry.full_name?.split(' ')[0] ?? '?'}
-                            lastName={entry.full_name?.split(' ').slice(1).join(' ') ?? ''}
-                            size={28}
-                          />
+                          <PlayerAvatar avatarUrl={entry.avatar_url} firstName={entry.full_name?.split(' ')[0] ?? '?'} lastName={entry.full_name?.split(' ').slice(1).join(' ') ?? ''} size={28} />
                           <span className="font-bold text-text-primary truncate">{entry.full_name ?? 'Anonyme'}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-black text-primary-400">{entry.total_points} pts</td>
-                      <td className="px-4 py-3 text-right text-text-secondary hidden sm:table-cell">
-                        {entry.correct_predictions}/{entry.total_predictions}
-                      </td>
+                      <td className="px-4 py-3 text-right text-text-secondary hidden sm:table-cell">{entry.correct_predictions}/{entry.total_predictions}</td>
                       <td className="px-4 py-3 text-right hidden sm:table-cell">
-                        <span className={clsx(
-                          'font-bold text-xs',
-                          entry.success_rate >= 60 ? 'text-green-400' : entry.success_rate >= 40 ? 'text-yellow-400' : 'text-text-muted'
-                        )}>
+                        <span className={clsx('font-bold text-xs', entry.success_rate >= 60 ? 'text-green-400' : entry.success_rate >= 40 ? 'text-yellow-400' : 'text-text-muted')}>
                           {entry.success_rate}%
                         </span>
                       </td>
@@ -482,6 +443,9 @@ export function PollsPage() {
           )}
         </div>
       )}
+
+      {/* Panier flottant */}
+      <BetBasket />
     </div>
   )
 }

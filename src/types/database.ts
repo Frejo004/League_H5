@@ -1517,6 +1517,57 @@ export type Poll = Database['public']['Tables']['polls']['Row']
 export type Prediction = Database['public']['Tables']['predictions']['Row']
 export type { PollType }
 
+// ── Types bulletins de paris ──────────────────────────────────────────────────
+
+export type BetSlipType   = 'simple' | 'combo'
+export type BetSlipStatus = 'pending' | 'won' | 'lost' | 'void'
+
+export interface BetSlip {
+  id: string
+  user_id: string
+  season_id: string
+  type: BetSlipType
+  status: BetSlipStatus
+  points_earned: number
+  created_at: string
+  resolved_at: string | null
+}
+
+export interface BetSlipSelection {
+  id: string
+  slip_id: string
+  poll_id: string
+  option_index: number
+  is_correct: boolean | null
+  created_at: string
+}
+
+/** Sélection enrichie avec les données du poll (pour l'affichage) */
+export interface BetSlipSelectionDetail {
+  selection_id: string
+  poll_id: string
+  question: string
+  options: string[]
+  option_index: number
+  is_correct: boolean | null
+  poll_status: string
+  correct_option_index: number | null
+}
+
+/** Bulletin avec ses sélections détaillées (vue bet_slips_history) */
+export interface BetSlipWithSelections extends BetSlip {
+  selections: BetSlipSelectionDetail[]
+}
+
+/** Sélection en attente dans le panier (côté client, pas encore soumise) */
+export interface BasketItem {
+  poll_id: string
+  poll_question: string
+  option_index: number
+  option_label: string
+  match_label?: string
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Types de jointure — utilisés partout où Supabase retourne des relations
 // imbriquées. Évite les casts `as unknown as` dans les composants.
