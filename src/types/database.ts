@@ -30,6 +30,9 @@ export type PollType =
   | 'shots_away'
   | 'corners'
   | 'fouls'
+  | 'first_scorer'
+  | 'anytime_scorer'
+  | 'anytime_assister'
 export type MatchEventType =
   | 'goal' | 'own_goal'
   | 'yellow_card' | 'red_card'

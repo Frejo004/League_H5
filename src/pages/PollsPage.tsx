@@ -13,15 +13,17 @@ import type { PollWithRelations } from '@/hooks/usePolls'
 
 // ─── Catégories de filtrage ────────────────────────────────────────────────────
 const CATEGORIES: { key: string; label: string; types: (PollType | 'all')[] }[] = [
-  { key: 'all',     label: 'Tous les marchés', types: ['all'] },
-  { key: 'winner',  label: 'Vainqueur',        types: ['winner'] },
-  { key: 'btts',    label: 'Les 2 marquent',   types: ['btts'] },
-  { key: 'goals',   label: 'Buts',             types: ['total_goals', 'goals_home', 'goals_away', 'goals_ht', 'goals_ht_home', 'goals_ht_away'] },
-  { key: 'cards',   label: 'Cartons',          types: ['cards_total', 'cards_home', 'cards_away'] },
-  { key: 'shots',   label: 'Tirs',             types: ['shots_total', 'shots_home', 'shots_away'] },
-  { key: 'corners', label: 'Corners',          types: ['corners'] },
-  { key: 'fouls',   label: 'Fautes',           types: ['fouls'] },
-  { key: 'custom',  label: 'Sondages',         types: ['custom'] },
+  { key: 'all',       label: 'Tous les marchés', types: ['all'] },
+  { key: 'winner',    label: 'Vainqueur',         types: ['winner'] },
+  { key: 'btts',      label: 'Les 2 marquent',    types: ['btts'] },
+  { key: 'goals',     label: 'Buts',              types: ['total_goals', 'goals_home', 'goals_away', 'goals_ht', 'goals_ht_home', 'goals_ht_away'] },
+  { key: 'cards',     label: 'Cartons',           types: ['cards_total', 'cards_home', 'cards_away'] },
+  { key: 'shots',     label: 'Tirs',              types: ['shots_total', 'shots_home', 'shots_away'] },
+  { key: 'corners',   label: 'Corners',           types: ['corners'] },
+  { key: 'fouls',     label: 'Fautes',            types: ['fouls'] },
+  { key: 'scorers',   label: 'Buteurs',           types: ['first_scorer', 'anytime_scorer'] },
+  { key: 'assisters', label: 'Passeurs',          types: ['anytime_assister'] },
+  { key: 'custom',    label: 'Sondages',          types: ['custom'] },
 ]
 
 const MEDAL_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-600']

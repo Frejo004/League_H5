@@ -24,35 +24,40 @@ const AUTO_TYPES: Exclude<PollType, 'custom'>[] = [
 ]
 
 const POLL_TYPE_LABELS: Record<PollType, string> = {
-  custom:        'Sondage libre',
-  winner:        'Vainqueur',
-  btts:          'Les 2 équipes marquent',
-  total_goals:   'Total buts',
-  goals_home:    'Buts domicile',
-  goals_away:    'Buts extérieur',
-  goals_ht:      'Buts MT total',
-  goals_ht_home: 'Buts domicile MT',
-  goals_ht_away: 'Buts extérieur MT',
-  cards_total:   'Cartons total',
-  cards_home:    'Cartons domicile',
-  cards_away:    'Cartons extérieur',
-  shots_total:   'Tirs total',
-  shots_home:    'Tirs domicile',
-  shots_away:    'Tirs extérieur',
-  corners:       'Corners',
-  fouls:         'Fautes',
+  custom:           'Sondage libre',
+  winner:           'Vainqueur',
+  btts:             'Les 2 équipes marquent',
+  total_goals:      'Total buts',
+  goals_home:       'Buts domicile',
+  goals_away:       'Buts extérieur',
+  goals_ht:         'Buts MT total',
+  goals_ht_home:    'Buts domicile MT',
+  goals_ht_away:    'Buts extérieur MT',
+  cards_total:      'Cartons total',
+  cards_home:       'Cartons domicile',
+  cards_away:       'Cartons extérieur',
+  shots_total:      'Tirs total',
+  shots_home:       'Tirs domicile',
+  shots_away:       'Tirs extérieur',
+  corners:          'Corners',
+  fouls:            'Fautes',
+  first_scorer:     'Premier buteur',
+  anytime_scorer:   'Buteur dans le match',
+  anytime_assister: 'Passeur décisif',
 }
 
 const CATEGORIES: { key: string; label: string; types: (PollType | 'all')[] }[] = [
-  { key: 'all',      label: 'Tous',          types: ['all'] },
-  { key: 'winner',   label: 'Vainqueur',     types: ['winner'] },
-  { key: 'btts',     label: 'Les 2 marquent',types: ['btts'] },
-  { key: 'goals',    label: 'Buts',          types: ['total_goals', 'goals_home', 'goals_away', 'goals_ht', 'goals_ht_home', 'goals_ht_away'] },
-  { key: 'cards',    label: 'Cartons',       types: ['cards_total', 'cards_home', 'cards_away'] },
-  { key: 'shots',    label: 'Tirs',          types: ['shots_total', 'shots_home', 'shots_away'] },
-  { key: 'corners',  label: 'Corners',       types: ['corners'] },
-  { key: 'fouls',    label: 'Fautes',        types: ['fouls'] },
-  { key: 'custom',   label: 'Sondages',      types: ['custom'] },
+  { key: 'all',      label: 'Tous',           types: ['all'] },
+  { key: 'winner',   label: 'Vainqueur',      types: ['winner'] },
+  { key: 'btts',     label: 'Les 2 marquent', types: ['btts'] },
+  { key: 'goals',    label: 'Buts',           types: ['total_goals', 'goals_home', 'goals_away', 'goals_ht', 'goals_ht_home', 'goals_ht_away'] },
+  { key: 'cards',    label: 'Cartons',        types: ['cards_total', 'cards_home', 'cards_away'] },
+  { key: 'shots',    label: 'Tirs',           types: ['shots_total', 'shots_home', 'shots_away'] },
+  { key: 'corners',  label: 'Corners',        types: ['corners'] },
+  { key: 'fouls',    label: 'Fautes',         types: ['fouls'] },
+  { key: 'scorers',  label: 'Buteurs',        types: ['first_scorer', 'anytime_scorer'] },
+  { key: 'assisters',label: 'Passeurs',       types: ['anytime_assister'] },
+  { key: 'custom',   label: 'Sondages',       types: ['custom'] },
 ]
 
 const POLL_STATUS_STYLE: Record<PollStatus, { badge: string; label: string }> = {
@@ -364,12 +369,22 @@ function AdminMatchBlock({
 
 // ─── Panel génération automatique ─────────────────────────────────────────────
 function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
-  const { createMatchPolls } = usePolls()
+  const { createMatchPolls, createPlayerPolls } = usePolls()
   const [selectedMatch, setSelectedMatch] = useState('')
   const [selectedTypes, setSelectedTypes] = useState<Set<Exclude<PollType, 'custom'>>>(
     new Set(['winner', 'btts', 'total_goals'])
   )
+  const [selectedPlayerTypes, setSelectedPlayerTypes] = useState<Set<'first_scorer' | 'anytime_scorer' | 'anytime_assister'>>(new Set())
   const [success, setSuccess] = useState(false)
+
+  const isPending = createMatchPolls.isPending || createPlayerPolls.isPending
+  const totalSelected = selectedTypes.size + selectedPlayerTypes.size
+
+  const PLAYER_POLL_TYPES: { key: 'first_scorer' | 'anytime_scorer' | 'anytime_assister'; label: string }[] = [
+    { key: 'first_scorer',     label: 'Premier buteur' },
+    { key: 'anytime_scorer',   label: 'Buteur dans le match' },
+    { key: 'anytime_assister', label: 'Passeur décisif' },
+  ]
 
   const toggleType = (t: Exclude<PollType, 'custom'>) =>
     setSelectedTypes(prev => {
@@ -378,17 +393,43 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
       return next
     })
 
+  const togglePlayerType = (t: 'first_scorer' | 'anytime_scorer' | 'anytime_assister') =>
+    setSelectedPlayerTypes(prev => {
+      const next = new Set(prev)
+      next.has(t) ? next.delete(t) : next.add(t)
+      return next
+    })
+
   const match = matches.find(m => m.id === selectedMatch)
 
   async function handleCreate() {
-    if (!match || selectedTypes.size === 0) return
-    await createMatchPolls.mutateAsync({
-      matchId: match.id,
-      homeName: match.home_team?.name ?? 'Domicile',
-      awayName: match.away_team?.name ?? 'Extérieur',
-      scheduledAt: match.scheduled_at,
-      types: [...selectedTypes],
-    })
+    if (!match) return
+    if (selectedTypes.size === 0 && selectedPlayerTypes.size === 0) return
+
+    // Pronostics stats classiques
+    if (selectedTypes.size > 0) {
+      await createMatchPolls.mutateAsync({
+        matchId: match.id,
+        homeName: match.home_team?.name ?? 'Domicile',
+        awayName: match.away_team?.name ?? 'Extérieur',
+        scheduledAt: match.scheduled_at,
+        types: [...selectedTypes],
+      })
+    }
+
+    // Pronostics joueurs (buteur/passeur)
+    if (selectedPlayerTypes.size > 0) {
+      await createPlayerPolls.mutateAsync({
+        matchId: match.id,
+        homeTeamId: match.home_team_id,
+        awayTeamId: match.away_team_id,
+        homeName: match.home_team?.name ?? 'Domicile',
+        awayName: match.away_team?.name ?? 'Extérieur',
+        scheduledAt: match.scheduled_at,
+        types: [...selectedPlayerTypes],
+      })
+    }
+
     setSuccess(true)
     setTimeout(() => setSuccess(false), 3000)
   }
@@ -400,6 +441,7 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
         <h3 className="text-sm font-black uppercase tracking-wider text-text-primary">Génération automatique par match</h3>
       </div>
 
+      {/* Match */}
       <div>
         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1.5 block">Match</label>
         <select value={selectedMatch} onChange={e => setSelectedMatch(e.target.value)} className="input">
@@ -422,9 +464,10 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
         </div>
       )}
 
+      {/* Types stats classiques */}
       <div>
         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2 block">
-          Types de pronostics ({selectedTypes.size} sélectionnés)
+          Statistiques ({selectedTypes.size} sélectionnés)
         </label>
         <div className="flex flex-wrap gap-2">
           {AUTO_TYPES.map(type => (
@@ -445,17 +488,47 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
         </div>
       </div>
 
+      {/* Types joueurs */}
+      <div>
+        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2 block flex items-center gap-1">
+          Buteur / Passeur ({selectedPlayerTypes.size} sélectionnés)
+          <span className="text-[9px] text-text-muted normal-case">— options générées depuis les joueurs du match</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {PLAYER_POLL_TYPES.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => togglePlayerType(key)}
+              className={clsx(
+                'px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wide border transition-all',
+                selectedPlayerTypes.has(key)
+                  ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                  : 'bg-surface-raised border-surface-border text-text-muted hover:border-slate-500'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {selectedPlayerTypes.size > 0 && !selectedMatch && (
+          <p className="text-[10px] text-orange-400 mt-1.5">Sélectionne un match pour récupérer les joueurs automatiquement.</p>
+        )}
+      </div>
+
       <div className="flex items-center gap-3">
         <button
           onClick={handleCreate}
-          disabled={!selectedMatch || selectedTypes.size === 0 || createMatchPolls.isPending}
+          disabled={!selectedMatch || totalSelected === 0 || isPending}
           className="btn-primary flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest"
         >
-          {createMatchPolls.isPending ? <LoadingSpinner size="sm" /> : <Zap size={14} />}
-          Générer {selectedTypes.size} pronostic{selectedTypes.size > 1 ? 's' : ''}
+          {isPending ? <LoadingSpinner size="sm" /> : <Zap size={14} />}
+          Générer {totalSelected} pronostic{totalSelected > 1 ? 's' : ''}
         </button>
         {success && <span className="text-green-400 text-xs font-bold">✓ Pronostics créés !</span>}
-        {createMatchPolls.isError && <span className="text-red-400 text-xs font-bold">Erreur lors de la création</span>}
+        {(createMatchPolls.isError || createPlayerPolls.isError) && (
+          <span className="text-red-400 text-xs font-bold">Erreur lors de la création</span>
+        )}
       </div>
     </div>
   )

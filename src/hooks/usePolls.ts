@@ -114,6 +114,22 @@ export const POLL_TYPE_CONFIG: Record<
     question: () => 'Combien de fautes dans ce match ?',
     options: ['0 - 4 fautes', '5 - 9 fautes', '10 fautes et +'],
   },
+  // ── Types joueur (options générées dynamiquement) ──────────────────────────
+  first_scorer: {
+    label: 'Premier buteur',
+    question: (h, a) => `Qui marquera le premier but ? ${h} vs ${a}`,
+    options: [], // généré dynamiquement avec les noms des joueurs
+  },
+  anytime_scorer: {
+    label: 'Buteur dans le match',
+    question: (h, a) => `Quel joueur marquera dans ce match ? ${h} vs ${a}`,
+    options: [],
+  },
+  anytime_assister: {
+    label: 'Passeur décisif',
+    question: (h, a) => `Quel joueur donnera une passe décisive ? ${h} vs ${a}`,
+    options: [],
+  },
 }
 
 // Génère les options pour le type winner (avec les vrais noms d'équipes)
@@ -250,7 +266,81 @@ export function usePolls() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
   })
 
-  return { ...query, createPoll, createMatchPolls, updatePoll, deletePoll, deleteAllPolls, deleteAllPollsByMatch }
+  // ── Créer les pronostics buteur/passeur pour un match ─────────────────────
+  // Récupère les joueurs des deux équipes, génère les options dynamiquement,
+  // stocke le player_id dans poll_meta pour la résolution automatique
+  const createPlayerPolls = useMutation({
+    mutationFn: async ({
+      matchId,
+      homeTeamId,
+      awayTeamId,
+      homeName,
+      awayName,
+      scheduledAt,
+      types,
+    }: {
+      matchId: string
+      homeTeamId: string
+      awayTeamId: string
+      homeName: string
+      awayName: string
+      scheduledAt: string | null
+      types: ('first_scorer' | 'anytime_scorer' | 'anytime_assister')[]
+    }) => {
+      if (!season || !user) throw new Error('Missing data')
+
+      // Récupérer les joueurs actifs des 2 équipes
+      const { data: players, error: pErr } = await supabase
+        .from('players')
+        .select('id, first_name, last_name, team_id')
+        .in('team_id', [homeTeamId, awayTeamId])
+        .eq('is_active', true)
+        .order('last_name', { ascending: true })
+
+      if (pErr) throw pErr
+      if (!players?.length) throw new Error('Aucun joueur trouvé pour ce match')
+
+      const noGoalLabel = 'Aucun but'
+      const noAssistLabel = 'Aucune passe'
+
+      const polls: (typeof supabase extends { from: (t: string) => { insert: (v: infer I) => unknown } } ? never : never)[] = []
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const insertPolls: any[] = types.map(type => {
+        const config = POLL_TYPE_CONFIG[type]
+        const isAssist = type === 'anytime_assister'
+
+        // Options = noms des joueurs + option "Aucun but/passe" en dernier
+        const playerOptions = players.map(p => `${p.first_name} ${p.last_name}`)
+        const lastOption = isAssist ? noAssistLabel : noGoalLabel
+        const options = [...playerOptions, lastOption]
+
+        // Métadonnées : player_id pour chaque option (null pour la dernière)
+        const option_player_ids = [...players.map(p => p.id), null]
+
+        return {
+          season_id: season.id,
+          match_id: matchId,
+          question: config.question(homeName, awayName),
+          options,
+          poll_type: type,
+          status: 'active' as const,
+          ends_at: scheduledAt,
+          created_by: user.id,
+          poll_meta: { option_player_ids },
+        }
+      })
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _ = polls
+
+      const { error } = await supabase.from('polls').insert(insertPolls)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
+  })
+
+  return { ...query, createPoll, createMatchPolls, createPlayerPolls, updatePoll, deletePoll, deleteAllPolls, deleteAllPollsByMatch }
 }
 
 // ─── usePoll ──────────────────────────────────────────────────────────────────
