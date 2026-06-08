@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { BarChart2, Plus, Check, Trash2, Play, Pause, Calendar, Trophy, Zap } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { BarChart2, Plus, Check, Trash2, Play, Pause, Calendar, Trophy, Zap, ChevronDown, ChevronUp } from 'lucide-react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePolls, POLL_TYPE_CONFIG, getWinnerOptions } from '@/hooks/usePolls'
 import { useMatches } from '@/hooks/useMatches'
@@ -7,6 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { clsx } from 'clsx'
 import type { Poll, PollStatus, PollType, MatchWithTeams } from '@/types/database'
+import type { PollWithRelations } from '@/hooks/usePolls'
 
 const AUTO_TYPES: Exclude<PollType, 'custom'>[] = [
   'winner', 'btts', 'total_goals',
@@ -54,7 +55,200 @@ function StatusBadge({ status }: { status: PollStatus }) {
   )
 }
 
-// ── Panel auto-création batch pour un match ───────────────────────────────────
+// ── Carte d'un pronostic individuel ──────────────────────────────────────────
+function PollCard({
+  poll,
+  onEdit,
+  onDelete,
+  onActivate,
+  onClose,
+}: {
+  poll: PollWithRelations
+  onEdit: (p: Poll) => void
+  onDelete: (id: string) => void
+  onActivate: (id: string) => void
+  onClose: (id: string) => void
+}) {
+  return (
+    <div className="group flex items-start justify-between gap-4 px-4 py-3 rounded-xl bg-surface-raised border border-surface-border hover:border-surface-border/80 transition-colors">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <StatusBadge status={poll.status} />
+          {poll.poll_type !== 'custom' && (
+            <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 text-[10px] font-bold uppercase tracking-wide border border-primary-500/20">
+              {POLL_TYPE_LABELS[poll.poll_type]}
+            </span>
+          )}
+          {poll.correct_option_index != null && (
+            <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
+              <Check size={10} /> {poll.options[poll.correct_option_index]}
+            </span>
+          )}
+        </div>
+        <p className="font-semibold text-text-primary text-sm leading-snug">{poll.question}</p>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {poll.options.map((opt: string, idx: number) => (
+            <span
+              key={idx}
+              className={clsx(
+                'px-2 py-0.5 rounded text-[11px]',
+                poll.correct_option_index === idx
+                  ? 'bg-green-500/15 text-green-400 border border-green-500/30 font-bold'
+                  : 'bg-surface-panel text-text-muted border border-surface-border'
+              )}
+            >
+              {opt}
+            </span>
+          ))}
+        </div>
+        {poll.ends_at && (
+          <p className="mt-1.5 flex items-center gap-1 text-[10px] text-text-muted">
+            <Calendar size={10} />
+            Fermeture : {new Date(poll.ends_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+        {poll.status === 'draft' && (
+          <button
+            onClick={() => onActivate(poll.id)}
+            className="p-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-colors"
+            title="Activer"
+          >
+            <Play size={13} />
+          </button>
+        )}
+        {poll.status === 'active' && (
+          <button
+            onClick={() => onClose(poll.id)}
+            className="p-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 transition-colors"
+            title="Fermer"
+          >
+            <Pause size={13} />
+          </button>
+        )}
+        <button
+          onClick={() => onEdit(poll)}
+          className="p-1.5 rounded-lg bg-surface-panel hover:bg-primary-500/10 text-text-muted hover:text-primary-500 transition-colors"
+          title="Modifier"
+        >
+          <Check size={13} />
+        </button>
+        <button
+          onClick={() => onDelete(poll.id)}
+          className="p-1.5 rounded-lg bg-surface-panel hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+          title="Supprimer"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Section match avec ses pronostics ─────────────────────────────────────────
+function MatchPollsSection({
+  matchId,
+  matchLabel,
+  matchDate,
+  matchStatus,
+  polls,
+  onEdit,
+  onDelete,
+  onActivate,
+  onClose,
+  onDeleteMatch,
+}: {
+  matchId: string | null
+  matchLabel: string
+  matchDate: string | null
+  matchStatus?: string
+  polls: PollWithRelations[]
+  onEdit: (p: Poll) => void
+  onDelete: (id: string) => void
+  onActivate: (id: string) => void
+  onClose: (id: string) => void
+  onDeleteMatch: (matchId: string | null) => void
+}) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  const statusColors: Record<string, string> = {
+    scheduled: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    live:      'bg-green-500/10 text-green-400 border-green-500/20',
+    completed: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
+  }
+  const statusLabels: Record<string, string> = {
+    scheduled: 'Programmé', live: 'En cours', completed: 'Terminé', cancelled: 'Annulé',
+  }
+
+  return (
+    <div className="card border-surface-border overflow-hidden">
+      {/* Header match */}
+      <div
+        className="flex items-center justify-between gap-3 cursor-pointer select-none"
+        onClick={() => setCollapsed(c => !c)}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center shrink-0">
+            <Trophy size={14} className="text-primary-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-black text-text-primary uppercase tracking-wide truncate">
+              {matchLabel}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              {matchDate && (
+                <span className="text-[10px] text-text-muted flex items-center gap-1">
+                  <Calendar size={9} />
+                  {new Date(matchDate).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+              {matchStatus && (
+                <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full border', statusColors[matchStatus] ?? 'bg-slate-500/10 text-slate-400 border-slate-500/20')}>
+                  {statusLabels[matchStatus] ?? matchStatus}
+                </span>
+              )}
+              <span className="text-[10px] text-text-muted font-bold">
+                {polls.length} pronostic{polls.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {matchId !== null && (
+            <button
+              onClick={e => { e.stopPropagation(); onDeleteMatch(matchId) }}
+              className="p-1.5 rounded-lg bg-surface-raised hover:bg-red-500/10 text-text-muted hover:text-red-400 transition-colors"
+              title="Supprimer tous les pronostics de ce match"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+          <div className="text-text-muted">
+            {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </div>
+        </div>
+      </div>
+
+      {/* Liste des pronostics */}
+      {!collapsed && (
+        <div className="mt-3 space-y-2 border-t border-surface-border pt-3">
+          {polls.map(poll => (
+            <PollCard
+              key={poll.id}
+              poll={poll}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onActivate={onActivate}
+              onClose={onClose}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
   const { createMatchPolls } = usePolls()
   const [selectedMatch, setSelectedMatch] = useState('')
@@ -167,7 +361,7 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
 // ── Page principale ───────────────────────────────────────────────────────────
 export function AdminPollsPage() {
   const { data: season } = useActiveSeason()
-  const { data: polls, isLoading, createPoll, updatePoll, deletePoll, deleteAllPolls } = usePolls()
+  const { data: polls, isLoading, createPoll, updatePoll, deletePoll, deleteAllPolls, deleteAllPollsByMatch } = usePolls()
   const { data: matches } = useMatches(season?.id)
 
   const [showForm, setShowForm] = useState(false)
@@ -177,6 +371,37 @@ export function AdminPollsPage() {
   // Modales de confirmation
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [confirmDeleteMatchId, setConfirmDeleteMatchId] = useState<string | null | '__none__'>()
+
+  // Groupement des pronostics par match
+  const pollGroups = useMemo(() => {
+    if (!polls) return []
+    const map = new Map<string, { polls: PollWithRelations[]; matchLabel: string; matchDate: string | null; matchStatus?: string }>()
+
+    for (const poll of polls) {
+      const key = poll.match_id ?? '__none__'
+      if (!map.has(key)) {
+        const m = poll.match as (MatchWithTeams & { status?: string }) | undefined
+        map.set(key, {
+          polls: [],
+          matchLabel: m
+            ? `${m.home_team?.name ?? '?'} vs ${m.away_team?.name ?? '?'}${m.matchday ? ` — J${m.matchday}` : ''}`
+            : 'Sans match',
+          matchDate: m?.scheduled_at ?? null,
+          matchStatus: m?.status,
+        })
+      }
+      map.get(key)!.polls.push(poll)
+    }
+
+    // Trier : matchs avec date d'abord (croissant), puis sans match
+    return [...map.entries()].sort(([keyA, a], [keyB, b]) => {
+      if (keyA === '__none__') return 1
+      if (keyB === '__none__') return -1
+      if (a.matchDate && b.matchDate) return new Date(a.matchDate).getTime() - new Date(b.matchDate).getTime()
+      return 0
+    })
+  }, [polls])
 
   const [question, setQuestion]   = useState('')
   const [optionsStr, setOptionsStr] = useState('')
@@ -455,7 +680,7 @@ export function AdminPollsPage() {
         </div>
       )}
 
-      {/* Liste */}
+      {/* Liste groupée par match */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner size="lg" />
@@ -466,90 +691,21 @@ export function AdminPollsPage() {
           <p className="text-xs font-bold uppercase tracking-widest">Aucun sondage</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {polls.map(poll => (
-            <div key={poll.id} className="card group">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <StatusBadge status={poll.status} />
-                    {poll.poll_type !== 'custom' && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 text-[10px] font-bold uppercase tracking-wide border border-primary-500/20">
-                        {POLL_TYPE_LABELS[poll.poll_type]}
-                      </span>
-                    )}
-                    {poll.match && (
-                      <span className="text-[10px] text-text-muted flex items-center gap-1">
-                        <Trophy size={10} />
-                        {poll.match.home_team?.name} vs {poll.match.away_team?.name}
-                      </span>
-                    )}
-                    {poll.correct_option_index != null && (
-                      <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
-                        <Check size={10} /> Bonne réponse : {poll.options[poll.correct_option_index]}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-text-primary text-sm">{poll.question}</h3>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {poll.options.map((opt: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className={clsx(
-                          'px-2 py-0.5 rounded-lg text-xs',
-                          poll.correct_option_index === idx
-                            ? 'bg-green-500/15 text-green-400 border border-green-500/30 font-bold'
-                            : 'bg-surface-raised text-text-secondary'
-                        )}
-                      >
-                        {opt}
-                      </span>
-                    ))}
-                  </div>
-                  {poll.ends_at && (
-                    <p className="mt-1.5 flex items-center gap-1 text-[10px] text-text-muted">
-                      <Calendar size={10} />
-                      Fermeture : {new Date(poll.ends_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {poll.status === 'draft' && (
-                    <button
-                      onClick={() => updatePoll.mutate({ id: poll.id, status: 'active' })}
-                      className="p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-colors"
-                      title="Activer"
-                    >
-                      <Play size={14} />
-                    </button>
-                  )}
-                  {poll.status === 'active' && (
-                    <button
-                      onClick={() => updatePoll.mutate({ id: poll.id, status: 'closed' })}
-                      className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 transition-colors"
-                      title="Fermer"
-                    >
-                      <Pause size={14} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEdit(poll)}
-                    className="p-2 rounded-lg bg-surface-raised hover:bg-primary-500/10 text-text-muted hover:text-primary-500 transition-colors"
-                    title="Modifier"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(poll.id)}
-                    className="p-2 rounded-lg bg-surface-raised hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    title="Supprimer"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div className="space-y-4">
+          {pollGroups.map(([key, group]) => (
+            <MatchPollsSection
+              key={key}
+              matchId={key === '__none__' ? null : key}
+              matchLabel={group.matchLabel}
+              matchDate={group.matchDate}
+              matchStatus={group.matchStatus}
+              polls={group.polls}
+              onEdit={handleEdit}
+              onDelete={id => setConfirmDeleteId(id)}
+              onActivate={id => updatePoll.mutate({ id, status: 'active' })}
+              onClose={id => updatePoll.mutate({ id, status: 'closed' })}
+              onDeleteMatch={mid => setConfirmDeleteMatchId(mid ?? '__none__')}
+            />
           ))}
         </div>
       )}
@@ -557,7 +713,7 @@ export function AdminPollsPage() {
       {/* Modale suppression individuelle */}
       {confirmDeleteId && (
         <ConfirmModal
-          message="Supprimer ce sondage ? Cette action est irréversible et effacera également tous les paris associés."
+          message="Supprimer ce pronostic ? Cette action est irréversible et effacera également tous les paris associés."
           confirmLabel="Supprimer"
           danger
           onConfirm={() => {
@@ -565,6 +721,26 @@ export function AdminPollsPage() {
             setConfirmDeleteId(null)
           }}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+
+      {/* Modale suppression des pronostics d'un match */}
+      {confirmDeleteMatchId !== undefined && (
+        <ConfirmModal
+          message={
+            confirmDeleteMatchId === '__none__'
+              ? 'Supprimer tous les pronostics sans match associé ? Tous les paris des joueurs seront également supprimés.'
+              : `Supprimer tous les pronostics de ce match (${pollGroups.find(([k]) => k === confirmDeleteMatchId)?.[1].matchLabel ?? ''}) ? Tous les paris des joueurs seront également supprimés.`
+          }
+          confirmLabel="Supprimer"
+          danger
+          onConfirm={() => {
+            if (confirmDeleteMatchId && confirmDeleteMatchId !== '__none__') {
+              deleteAllPollsByMatch.mutate(confirmDeleteMatchId)
+            }
+            setConfirmDeleteMatchId(undefined)
+          }}
+          onCancel={() => setConfirmDeleteMatchId(undefined)}
         />
       )}
 

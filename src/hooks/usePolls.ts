@@ -242,7 +242,15 @@ export function usePolls() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
   })
 
-  return { ...query, createPoll, createMatchPolls, updatePoll, deletePoll, deleteAllPolls }
+  const deleteAllPollsByMatch = useMutation({
+    mutationFn: async (matchId: string) => {
+      const { error } = await supabase.from('polls').delete().eq('match_id', matchId)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
+  })
+
+  return { ...query, createPoll, createMatchPolls, updatePoll, deletePoll, deleteAllPolls, deleteAllPollsByMatch }
 }
 
 // ─── usePoll ──────────────────────────────────────────────────────────────────
