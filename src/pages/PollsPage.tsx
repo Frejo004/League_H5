@@ -47,40 +47,42 @@ function MarketRow({
   const inBasket   = basket.isInBasket(p.id)
   const myOption   = basket.getOptionForPoll(p.id)
 
-  // Pour les polls déjà resolus on affiche les %
-  // On les calcule côté client à partir des votes stockés dans le hook global
-  // (on évite N requêtes usePoll individuelles en utilisant les données du poll groupé)
+  // Détermine le nombre de colonnes selon le nb d'options
+  const gridClass =
+    p.options.length === 2 ? 'grid-cols-2' :
+    p.options.length === 3 ? 'grid-cols-3' :
+    'grid-cols-2'
 
   return (
     <div className={clsx(
-      'border-b border-white/[0.04] last:border-0 transition-colors',
-      inBasket && 'bg-primary-500/[0.04]',
-      isResolved && p.correct_option_index != null && 'bg-green-500/[0.02]',
+      'px-3 py-3 border-b border-white/[0.05] last:border-0 transition-colors',
+      inBasket ? 'bg-primary-500/[0.05]' : 'hover:bg-white/[0.02]',
+      isResolved && 'bg-green-500/[0.02]',
     )}>
-      {/* Question + meta */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2">
-        <span className="text-xs font-semibold text-text-secondary">{p.question}</span>
-        <div className="flex items-center gap-2 shrink-0">
+      {/* Question + statut */}
+      <div className="flex items-center justify-between gap-2 mb-2.5">
+        <span className="text-xs font-semibold text-text-secondary leading-snug">{p.question}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
           {isClosed && !isResolved && (
-            <span className="text-[10px] font-bold text-yellow-500 uppercase flex items-center gap-1">
-              <Lock size={9} /> Fermé
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black text-yellow-500 bg-yellow-500/10 uppercase tracking-wide flex items-center gap-0.5">
+              <Lock size={8} /> Fermé
             </span>
           )}
           {isResolved && (
-            <span className="text-[10px] font-bold text-blue-400 uppercase flex items-center gap-1">
-              <Check size={9} /> Résolu
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black text-green-400 bg-green-500/10 uppercase tracking-wide flex items-center gap-0.5">
+              <Check size={8} /> Résolu
             </span>
           )}
-          {inBasket && (
-            <span className="text-[10px] font-bold text-primary-400 uppercase flex items-center gap-1">
-              <ShoppingCart size={9} /> Dans le panier
+          {isActive && inBasket && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black text-primary-400 bg-primary-500/10 uppercase tracking-wide flex items-center gap-0.5">
+              <ShoppingCart size={8} /> Panier
             </span>
           )}
         </div>
       </div>
 
-      {/* Options */}
-      <div className="flex gap-1.5 px-4 pb-3 flex-wrap">
+      {/* Options en grille */}
+      <div className={clsx('grid gap-1.5', gridClass)}>
         {p.options.map((option: string, idx: number) => {
           const isMyPick  = myOption === idx
           const isCorrect = isResolved && p.correct_option_index === idx
@@ -93,7 +95,6 @@ function MarketRow({
               onClick={() => {
                 if (!canPick) return
                 if (isMyPick) {
-                  // Désélectionner = retirer du panier
                   basket.removeItem(p.id)
                 } else {
                   basket.addItem({
@@ -107,43 +108,41 @@ function MarketRow({
               }}
               disabled={!canPick}
               className={clsx(
-                'relative flex-1 min-w-0 rounded-lg border overflow-hidden transition-all text-left px-3 py-2',
+                'relative rounded-lg border py-2.5 px-2 text-center overflow-hidden transition-all',
                 isCorrect
-                  ? 'border-green-500/40 bg-green-500/10'
+                  ? 'border-green-500/50 bg-green-500/15'
                   : isWrong
                     ? 'border-red-500/30 bg-red-500/5'
                     : isMyPick
-                      ? 'border-primary-500/60 bg-primary-500/15 ring-1 ring-primary-500/30'
+                      ? 'border-primary-500/70 bg-primary-500/20 ring-1 ring-primary-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
                       : canPick
-                        ? 'border-white/[0.08] bg-white/[0.03] hover:border-primary-500/30 hover:bg-primary-500/5 cursor-pointer'
-                        : 'border-white/[0.05] bg-white/[0.02] cursor-default'
+                        ? 'border-white/[0.09] bg-white/[0.04] hover:border-primary-500/40 hover:bg-primary-500/8 cursor-pointer'
+                        : 'border-white/[0.05] bg-white/[0.02] cursor-default opacity-70'
               )}
             >
-              <div className="relative flex items-center justify-between gap-1">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {isCorrect && (
-                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                      <Check size={9} className="text-white" />
-                    </div>
-                  )}
-                  {isWrong && (
-                    <div className="w-4 h-4 rounded-full bg-red-500/40 flex items-center justify-center shrink-0">
-                      <X size={9} className="text-red-400" />
-                    </div>
-                  )}
-                  {isMyPick && !isResolved && (
-                    <div className="w-4 h-4 rounded-full bg-primary-500 flex items-center justify-center shrink-0">
-                      <Check size={9} className="text-white" />
-                    </div>
-                  )}
-                  <span className={clsx(
-                    'text-xs font-semibold truncate',
-                    isCorrect ? 'text-green-400' : isWrong ? 'text-red-400' : isMyPick ? 'text-primary-300' : 'text-text-primary'
-                  )}>
-                    {option}
-                  </span>
-                </div>
-              </div>
+              {/* Indicateur sélection */}
+              {isMyPick && !isResolved && (
+                <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-primary-500 flex items-center justify-center">
+                  <Check size={7} className="text-white" />
+                </span>
+              )}
+              {isCorrect && (
+                <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check size={7} className="text-white" />
+                </span>
+              )}
+              {isWrong && (
+                <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-red-500/60 flex items-center justify-center">
+                  <X size={7} className="text-white" />
+                </span>
+              )}
+
+              <span className={clsx(
+                'block text-xs font-bold leading-tight',
+                isCorrect ? 'text-green-400' : isWrong ? 'text-red-400/70' : isMyPick ? 'text-primary-200' : 'text-text-primary'
+              )}>
+                {option}
+              </span>
             </button>
           )
         })}
@@ -176,75 +175,105 @@ function MatchMarketBlock({
 
   const activeCnt   = polls.filter(p => p.status === 'active').length
   const resolvedCnt = polls.filter(p => p.status === 'completed').length
-
-  const matchStatusLabel: Record<string, string> = {
-    scheduled: 'À venir', live: 'En direct', completed: 'Terminé', cancelled: 'Annulé',
-  }
-  const matchStatusColor: Record<string, string> = {
-    scheduled: 'text-blue-400', live: 'text-green-400', completed: 'text-slate-400', cancelled: 'text-red-400',
-  }
+  const isLive      = match?.status === 'live'
+  const isCompleted = match?.status === 'completed'
 
   const matchLabel = match
     ? `${match.home_team?.name ?? '?'} vs ${match.away_team?.name ?? '?'}`
     : undefined
 
+  const homeColor = (match?.home_team as { color?: string } | undefined)?.color
+  const awayColor = (match?.away_team as { color?: string } | undefined)?.color
+
   return (
-    <div className="rounded-xl border border-white/[0.07] overflow-hidden bg-surface-panel/40">
-      {/* Header */}
+    <div className={clsx(
+      'rounded-xl overflow-hidden border transition-all',
+      isLive
+        ? 'border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.07)]'
+        : 'border-white/[0.07]'
+    )}>
+      {/* ── Header match ── */}
       <button
-        className="w-full flex items-center justify-between gap-4 px-4 py-3 bg-surface-raised/60 hover:bg-surface-raised/80 transition-colors"
+        className={clsx(
+          'w-full text-left transition-colors',
+          isLive
+            ? 'bg-green-500/[0.08] hover:bg-green-500/[0.12]'
+            : 'bg-surface-raised/70 hover:bg-surface-raised'
+        )}
         onClick={() => setCollapsed(c => !c)}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {match ? (
-            <>
-              <span className="text-sm font-black text-text-primary truncate text-right flex-1 uppercase tracking-wide">
-                {match.home_team?.name ?? '?'}
+        {/* Ligne principale : équipes */}
+        <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+          {/* Équipe domicile */}
+          <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
+            {homeColor && (
+              <span className="w-2 h-6 rounded-full shrink-0 opacity-80" style={{ backgroundColor: homeColor }} />
+            )}
+            <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate text-right"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match?.home_team?.name ?? '?'}
+            </span>
+          </div>
+
+          {/* Score / date / statut */}
+          <div className="flex flex-col items-center shrink-0 min-w-[60px]">
+            {isLive ? (
+              <span className="text-[10px] font-black text-green-400 uppercase flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Live
               </span>
-              <div className="flex flex-col items-center shrink-0">
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">vs</span>
-                {match.scheduled_at && (
-                  <span className="text-[9px] text-text-muted flex items-center gap-0.5 mt-0.5">
-                    <Clock size={8} />
-                    {new Date(match.scheduled_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                  </span>
-                )}
-              </div>
-              <span className="text-sm font-black text-text-primary truncate flex-1 uppercase tracking-wide">
-                {match.away_team?.name ?? '?'}
+            ) : isCompleted ? (
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Terminé</span>
+            ) : (
+              <span className="text-[10px] font-bold text-blue-400 uppercase">À venir</span>
+            )}
+            {match?.scheduled_at && (
+              <span className="text-[10px] text-text-muted mt-0.5 flex items-center gap-0.5">
+                <Clock size={8} />
+                {new Date(match.scheduled_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                {' '}
+                {new Date(match.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
-              {match.status && (
-                <span className={clsx('text-[10px] font-black uppercase tracking-wide shrink-0', matchStatusColor[match.status] ?? 'text-text-muted')}>
-                  {matchStatusLabel[match.status] ?? match.status}
-                </span>
-              )}
-            </>
-          ) : (
-            <span className="text-sm font-black text-text-muted uppercase tracking-wide">Sans match</span>
-          )}
+            )}
+          </div>
+
+          {/* Équipe extérieur */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {match?.away_team?.name ?? '?'}
+            </span>
+            {awayColor && (
+              <span className="w-2 h-6 rounded-full shrink-0 opacity-80" style={{ backgroundColor: awayColor }} />
+            )}
+          </div>
+
+          {/* Chevron */}
+          <span className="text-text-muted shrink-0">
+            {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+          </span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[10px] font-bold text-text-muted">
+
+        {/* Ligne badges */}
+        <div className="flex items-center gap-2 px-4 pb-2.5">
+          <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[9px] font-bold text-text-muted uppercase tracking-wide">
             {filtered.length} marché{filtered.length > 1 ? 's' : ''}
           </span>
           {activeCnt > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[10px] font-bold border border-green-500/20">
+            <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[9px] font-bold border border-green-500/20 uppercase tracking-wide">
               {activeCnt} ouvert{activeCnt > 1 ? 's' : ''}
             </span>
           )}
           {resolvedCnt > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-bold border border-blue-500/20">
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold border border-blue-500/20 uppercase tracking-wide">
               {resolvedCnt} résolu{resolvedCnt > 1 ? 's' : ''}
             </span>
           )}
-          <span className="text-text-muted">
-            {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-          </span>
         </div>
       </button>
 
       {!collapsed && (
-        <div className="divide-y divide-white/[0.04]">
+        <div className="bg-surface-panel/30 divide-y divide-white/[0.04]">
           {filtered.map(poll => (
             <MarketRow key={poll.id} poll={poll} matchLabel={matchLabel} />
           ))}
