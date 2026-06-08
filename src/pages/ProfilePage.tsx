@@ -310,7 +310,10 @@ export function ProfilePage() {
 
   const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
   const myTransfers = (transfers ?? []).filter(t => t.player_id === myPlayer?.id)
-  const hasPendingTransfer = myTransfers.some(t => ['player_requested', 'home_captain_approved', 'admin_approved'].includes(t.status))
+  const pendingTransfers = myTransfers.filter(t => ['player_requested', 'home_captain_approved', 'admin_approved'].includes(t.status))
+  const hasReachedLimit = pendingTransfers.length >= 2
+  const hasDuplicateTeam = selectedTeamId && pendingTransfers.some(t => t.to_team_id === selectedTeamId)
+  const canCreateTransfer = !hasReachedLimit && !hasDuplicateTeam
 
   const [displayName, setDisplayName] = useState(profile?.full_name ?? '')
   const [avatarBroken, setAvatarBroken] = useState(false)
@@ -636,11 +639,7 @@ export function ProfilePage() {
             </div>
           )}
 
-          {hasPendingTransfer ? (
-            <div className="text-sm text-slate-400">
-              Vous avez déjà une demande de transfert en attente.
-            </div>
-          ) : (
+          {canCreateTransfer ? (
             <form onSubmit={(e) => {
               e.preventDefault()
               if (!selectedTeamId || !myPlayer) return
@@ -663,11 +662,10 @@ export function ProfilePage() {
                 >
                   <option value="">Sélectionner une équipe</option>
                   {(teams || [])
-                    .filter(team => team.id !== myPlayer.team_id)
+                    .filter(team => team.id !== myPlayer.team_id && !pendingTransfers.some(t => t.to_team_id === team.id))
                     .map(team => (
                       <option key={team.id} value={team.id}>{team.name}</option>
-                    ))
-                  }
+                    ))}
                 </select>
               </div>
 
@@ -687,7 +685,7 @@ export function ProfilePage() {
 
               <button
                 type="submit"
-                disabled={!selectedTeamId || createTransfer.isPending}
+                disabled={!selectedTeamId || !canCreateTransfer || createTransfer.isPending}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-500
                            text-white text-sm font-semibold rounded-xl transition-all
                            disabled:opacity-50 disabled:cursor-not-allowed"
@@ -699,6 +697,14 @@ export function ProfilePage() {
                 )}
               </button>
             </form>
+          ) : (
+            <div className="text-sm text-slate-400">
+              {hasReachedLimit
+                ? 'Vous avez déjà 2 demandes de transfert en attente. Attendez qu\'elles soient traitées avant d\'en soumettre une nouvelle.'
+                : hasDuplicateTeam
+                  ? 'Vous avez déjà une demande en attente pour cette équipe.'
+                  : 'Vous avez déjà une demande de transfert en attente.'}
+            </div>
           )}
         </SectionCard>
       )}

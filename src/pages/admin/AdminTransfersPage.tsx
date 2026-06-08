@@ -9,6 +9,7 @@ import { useTeams } from '@/hooks/useTeams'
 import { usePlayers } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { clsx } from 'clsx'
 import type { TransferStatus } from '@/types/database'
 
@@ -56,6 +57,7 @@ export function AdminTransfersPage() {
   const [selectedFromTeam, setSelectedFromTeam] = useState<string | null>(null)
   const [selectedToTeam, setSelectedToTeam] = useState('')
   const [reason, setReason] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -276,9 +278,10 @@ export function AdminTransfersPage() {
                   {(transfer.status === 'pending' || transfer.status === 'player_requested' || transfer.status === 'cancelled') && (
                     <button
                       onClick={() => {
-                        if (confirm('Êtes-vous sûr de vouloir supprimer ce transfert ?')) {
-                          deleteTransfer.mutate(transfer.id)
-                        }
+                        const name = transfer.player
+                          ? `${transfer.player.first_name} ${transfer.player.last_name}`
+                          : 'ce transfert'
+                        setDeleteConfirm({ id: transfer.id, name })
                       }}
                       className="p-2 rounded-lg bg-surface-raised hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                       title="Supprimer"
@@ -291,6 +294,20 @@ export function AdminTransfersPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {deleteConfirm && (
+        <ConfirmModal
+          title="Supprimer le transfert"
+          message={`Êtes-vous sûr de vouloir supprimer le transfert de ${deleteConfirm.name} ? Cette action est irréversible.`}
+          confirmLabel="Supprimer"
+          danger
+          onConfirm={() => {
+            deleteTransfer.mutate(deleteConfirm.id)
+            setDeleteConfirm(null)
+          }}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
     </div>
   )

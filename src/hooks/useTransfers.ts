@@ -18,13 +18,13 @@ export function useTransfers() {
         .select(`
           *,
           player:players(*, team:teams!players_team_id_fkey(*)),
-          from_team:teams(*),
-          to_team:teams(*),
-          requested_by:profiles(*),
-          decided_by:profiles(*),
-          home_captain_approved_by_profile:profiles!home_captain_approved_by(*),
-          admin_approved_by_profile:profiles!admin_approved_by(*),
-          away_captain_approved_by_profile:profiles!away_captain_approved_by(*)
+          from_team:teams!transfers_from_team_id_fkey(*),
+          to_team:teams!transfers_to_team_id_fkey(*),
+          requested_by:profiles!transfers_requested_by_fkey(*),
+          decided_by:profiles!transfers_decided_by_fkey(*),
+          home_captain_approved_by_profile:profiles!transfers_home_captain_approved_by_fkey(*),
+          admin_approved_by_profile:profiles!transfers_admin_approved_by_fkey(*),
+          away_captain_approved_by_profile:profiles!transfers_away_captain_approved_by_fkey(*)
         `)
         .eq('season_id', season!.id)
         .order('created_at', { ascending: false })

@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase'
 import type { UserNotificationPreferences } from '@/types/database'
 import { useAuth } from './useAuth'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseError = { code?: string; status?: number; message?: string } & any
+
 export function useNotificationPreferences() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -10,14 +13,19 @@ export function useNotificationPreferences() {
   const query = useQuery({
     queryKey: ['notification_preferences', user?.id],
     enabled: !!user?.id,
-    queryFn: async (): Promise<UserNotificationPreferences> => {
+    retry: false,
+    queryFn: async (): Promise<UserNotificationPreferences | null> => {
       const { data, error } = await supabase
         .from('user_notification_preferences')
         .select('*')
         .eq('user_id', user?.id)
-        .single()
+        .maybeSingle()
 
-      if (error) throw error
+      // Table doesn't exist yet (404) or row not found — return null gracefully
+      if (error) {
+        if (error.code === 'PGRST116' || (error as SupabaseError).status === 404) return null
+        throw error
+      }
       return data
     },
   })
