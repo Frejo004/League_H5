@@ -10,7 +10,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Calendar, Play, Share2, Zap, Trophy,
-  Clock, Users, ExternalLink,
+  Clock, Users, ExternalLink, BarChart2,
   TrendingUp,
 } from 'lucide-react'
 
@@ -24,6 +24,7 @@ import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
 import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { MatchLineups } from '@/components/matches/MatchLineups'
+import { PublicMatchPolls } from '@/components/matches/PublicMatchPolls'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 import type { TeamRef } from '@/types/database'
@@ -32,7 +33,7 @@ import { PublicLayout } from '@/components/layout/PublicLayout'
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
-type LiveTab = 'resume' | 'events' | 'live-video' | 'info' | 'lineups'
+type LiveTab = 'resume' | 'events' | 'live-video' | 'info' | 'lineups' | 'polls'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utils
@@ -352,6 +353,7 @@ function TabBar({ tabs, activeTab, onChange, dark }: {
             {tab === 'lineups' && <><Users size={14} />Compos</>}
             {tab === 'live-video' && <><Play size={14} />{activeTab === 'live-video' ? 'En direct' : 'Vidéo'}</>}
             {tab === 'info' && <><MapPin size={14} />Infos</>}
+            {tab === 'polls' && <><BarChart2 size={14} />Pronostics</>}
           </button>
         ))}
       </div>
@@ -677,6 +679,7 @@ export function PublicMatchDetailPage() {
   const tabList: LiveTab[] = ['resume', 'events', 'lineups']
   if (hasLiveVideoTab) tabList.unshift('live-video')
   tabList.push('info')
+  tabList.push('polls')
 
   // ── Loading ─────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -883,6 +886,13 @@ export function PublicMatchDetailPage() {
                         viewerCount: viewerCount ?? 0,
                       }}
                     />
+                  </motion.div>
+                )}
+
+                {/* PRONOSTICS */}
+                {activeTab === 'polls' && (
+                  <motion.div key="polls" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} className="pt-1">
+                    <PublicMatchPolls matchId={id!} />
                   </motion.div>
                 )}
 
