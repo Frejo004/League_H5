@@ -330,6 +330,27 @@ export function usePoll(pollId: string) {
   return { poll: pollQuery, predictions: predictionsQuery, userPrediction: userPredictionQuery, vote }
 }
 
+// ─── usePollsByMatch ─────────────────────────────────────────────────────────
+// Récupère les sondages liés à un match précis (pour la page détail du match)
+export function usePollsByMatch(matchId?: string) {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['polls-by-match', matchId],
+    enabled: !!matchId,
+    queryFn: async (): Promise<PollWithRelations[]> => {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('*')
+        .eq('match_id', matchId!)
+        .in('status', ['active', 'closed', 'completed'])
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as unknown as PollWithRelations[]
+    },
+    refetchInterval: user ? 30_000 : false,
+  })
+}
+
 // ─── useLeaderboard ───────────────────────────────────────────────────────────
 
 export function useLeaderboard(seasonId?: string) {
