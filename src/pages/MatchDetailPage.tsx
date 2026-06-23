@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, Play, ShieldCheck } from 'lucide-react'
+import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, ShieldCheck } from 'lucide-react'
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -18,12 +18,8 @@ import { GoalAlert } from '@/components/live/GoalAlert'
 import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
-import { MatchPollsTab } from '@/components/matches/MatchPollsTab'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
-import { LiveVideoPlayer } from '@/components/live/LiveVideoPlayer'
-import { useWebRTCPresence } from '@/hooks/useWebRTCStream'
 import { getRouteParamType } from '@/lib/routeHelpers'
-
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
@@ -188,7 +184,7 @@ function GoalEvent({
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-type LiveTab = 'resume' | 'polls' | 'events' | 'stats' | 'lineups' | 'standings' | 'live-video'
+type LiveTab = 'resume' | 'events' | 'stats' | 'lineups' | 'standings'
 
 export function MatchDetailPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
@@ -287,9 +283,6 @@ export function MatchDetailPage() {
     match?.paused_at ?? null,
     match?.total_paused_seconds ?? 0
   )
-
-  // Présence WebRTC (légère, sans connexion P2P) : l'onglet vidéo gère sa propre connexion
-  const { viewerCount } = useWebRTCPresence((authLoading || isAdmin === true) ? '' : (id ?? ''))
 
   // Calcul des statistiques de match — doit être avant tout early return (règles des hooks)
   const matchStats = useMemo(() => {
@@ -613,7 +606,6 @@ export function MatchDetailPage() {
         <div className="flex gap-2 p-1.5 bg-surface-card/80 backdrop-blur-xl rounded-2xl mx-1 border border-surface-border/50 shadow-2xl sticky top-20 z-30">
           {[
             { id: 'lineups', label: 'Compositions', icon: UsersIcon },
-            { id: 'polls', label: 'Pronostics', icon: BarChart2 },
             { id: 'standings', label: 'Classement', icon: BarChart2 },
             { id: 'stats', label: 'Détails', icon: MapPin },
           ].map(tab => (
@@ -634,11 +626,6 @@ export function MatchDetailPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'polls' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <MatchPollsTab matchId={match.id} matchStatus={match.status as 'scheduled'} />
-            </motion.div>
-          )}
           {activeTab === 'lineups' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <MatchLineups matchId={match.id} homeTeam={home} awayTeam={away} />
@@ -674,16 +661,11 @@ export function MatchDetailPage() {
 
   const tabs = [
     { id: 'resume',    label: 'Résumé',       icon: BarChart2  },
-    { id: 'polls',    label: 'Pronostics',   icon: BarChart2  },
     { id: 'events',   label: 'Événements',   icon: Calendar   },
-    { id: 'stats',    label: 'Statistiques', icon: BarChart2  },
     { id: 'lineups',  label: 'Compositions', icon: UsersIcon  },
     { id: 'standings',label: 'Classement',   icon: Star       },
+    { id: 'stats',    label: 'Statistiques', icon: BarChart2  },
   ]
-
-  if (isLive) {
-    tabs.unshift({ id: 'live-video', label: '🔴 DIRECT VIDÉO', icon: Play })
-  }
 
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
@@ -724,7 +706,7 @@ export function MatchDetailPage() {
       )}
 
       {/* Alerte de but broadcast — masquée pour l'admin/reporters et pendant le direct vidéo */}
-      {activeTab !== 'live-video' && !(isAdmin || isEventsReporter) && (
+      {!(isAdmin || isEventsReporter) && (
         <GoalAlert
           matchId={id!}
           homeTeam={match.home_team}
@@ -862,24 +844,6 @@ export function MatchDetailPage() {
                       <span className="text-[9px] font-bold text-blue-400/60 tabular-nums">
                         Pause {Math.floor((clock.breakSecondsLeft ?? 0) / 60)}:{String(Math.floor((clock.breakSecondsLeft ?? 0) % 60)).padStart(2, '0')}
                       </span>
-                      {/* Bouton Regarder Live Vidéo pendant la mi-temps */}
-                      {isLive && (
-                        <button
-                          onClick={() => {
-                            setActiveTab('live-video')
-                            setTimeout(() => {
-                              const el = document.getElementById('live-video-section')
-                              if (el) {
-                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                              }
-                            }, 100)
-                          }}
-                          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-[10px] font-black uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                          🎥 Regarder le Direct Vidéo
-                        </button>
-                      )}
                     </div>
                   ) : isLive ? (
                     /* ── Match en cours ── */
@@ -909,24 +873,6 @@ export function MatchDetailPage() {
                         awayColor={away.color}
                         className="w-full"
                       />
-                      {/* Bouton Regarder Live Vidéo (Pulsing Red) */}
-                      {isLive && (
-                        <button
-                          onClick={() => {
-                            setActiveTab('live-video')
-                            setTimeout(() => {
-                              const el = document.getElementById('live-video-section')
-                              if (el) {
-                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                              }
-                            }, 100)
-                          }}
-                          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-[10px] font-black uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                          🎥 Regarder le Direct Vidéo
-                        </button>
-                      )}
                     </div>
                   ) : isCompleted ? (
                     <div className="px-4 py-1 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-md">
@@ -1018,49 +964,6 @@ export function MatchDetailPage() {
 
       {/* ── Tab Content ── */}
       <AnimatePresence mode="wait">
-
-        {/* ── Direct Vidéo ── */}
-        {activeTab === 'live-video' && (
-          <motion.div
-            key="live-video"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-4 px-2"
-          >
-            <div className="card border border-red-500/20 bg-red-950/5 p-4 rounded-2xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">DIFFUSION EN DIRECT</span>
-              </div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase">PROPULSÉ PAR WebRTC (P2P)</p>
-            </div>
-            
-            <div id="live-video-section" className="scroll-mt-24">
-              <LiveVideoPlayer
-                matchId={match.id}
-                events={liveEvents}
-                homeTeam={home}
-                awayTeam={away}
-                overlay={{
-                  homeName: home.name,
-                  awayName: away.name,
-                  homeScore: displayHomeScore,
-                  awayScore: displayAwayScore,
-                  clockLabel: clock.label,
-                  period: clock.phase === 2 ? 'Mi-temps' : clock.phase === 3 ? '2ème MT' : '1ère MT',
-                  isPaused: clock.isPaused ?? false,
-                  homeColor: home.color,
-                  awayColor: away.color,
-                  viewerCount: viewerCount,
-                }}
-              />
-            </div>
-          </motion.div>
-        )}
 
         {/* ── Résumé ── */}
         {activeTab === 'resume' && (
@@ -1312,18 +1215,6 @@ export function MatchDetailPage() {
           </motion.div>
         )}
 
-        {/* ── Pronostics ── */}
-        {activeTab === 'polls' && (
-          <motion.div
-            key="polls"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <MatchPollsTab matchId={match.id} matchStatus={match.status as 'scheduled' | 'live' | 'completed' | 'cancelled'} />
-          </motion.div>
-        )}
-
         {/* ── Événements ── */}
         {activeTab === 'events' && (
           <motion.div
@@ -1451,8 +1342,8 @@ export function MatchDetailPage() {
 
       </AnimatePresence>
 
-      {/* Animation de but — masquée pour l'admin/reporters et pendant le direct vidéo */}
-      {activeTab !== 'live-video' && !(isAdmin || isEventsReporter) && (
+      {/* Animation de but — masquée pour l'admin/reporters */}
+      {!(isAdmin || isEventsReporter) && (
         <GoalCelebration
           key={celebration.key}
           teamName={celebration.teamName}
