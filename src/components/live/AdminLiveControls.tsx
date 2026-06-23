@@ -145,6 +145,7 @@ export function AdminLiveControls({
   const [eventPlayer2, setEventPlayer2] = useState<string>('')
   const [eventMinute, setEventMinute] = useState<string>('')
   const [eventComment, setEventComment] = useState<string>('')
+  const [isPenalty, setIsPenalty] = useState(false)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [pauseReason, setPauseReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<MatchEvent | null>(null)
@@ -287,11 +288,13 @@ export function AdminLiveControls({
       player_id: eventPlayer || null,
       player2_id: eventPlayer2 || null,
       description: eventComment || null,
+      is_penalty: eventType === 'goal' ? isPenalty : false,
     })
     setShowEventForm(false)
     setEventPlayer('')
     setEventPlayer2('')
     setEventComment('')
+    setIsPenalty(false)
   }
 
   return (
@@ -878,6 +881,22 @@ export function AdminLiveControls({
               </select>
             </div>
 
+            {/* Penalty */}
+            {eventType === 'goal' && (
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPenalty}
+                    onChange={e => setIsPenalty(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-surface-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-500"></div>
+                </label>
+                <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Penalty ⚽</span>
+              </div>
+            )}
+
             {/* Minute */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted block ml-1">Minute</label>
@@ -1030,7 +1049,10 @@ export function AdminLiveControls({
                                               ev.type === 'pause' ? '⏸️ Pause' :
                                                 ev.type === 'resume' ? '▶️ Reprise' :
                                                   ev.type === 'comment' ? `💬 Commentaire` : ev.type}
-                    </span> 
+                    </span>
+                    {(ev.type === 'goal' || ev.type === 'own_goal') && (ev as any).is_penalty && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-yellow-500/20 text-yellow-600 text-[8px] font-black uppercase tracking-tighter">PENALTY</span>
+                    )}
                     {ev.team && (
                       <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.team.color }} />
                     )}

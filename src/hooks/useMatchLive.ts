@@ -414,6 +414,7 @@ export function useAdminMatchLive(matchId?: string) {
       player_id?: string | null
       player2_id?: string | null
       description?: string | null
+      is_penalty?: boolean
     }) => {
       const { error } = await supabase.rpc('add_match_event_v2', {
         p_match_id: matchId!,

@@ -284,6 +284,7 @@ export interface Database {
           team_id: string
           minute: number | null
           is_own_goal: boolean
+          is_penalty: boolean
           match_event_id: string | null
           created_at: string
         }
@@ -294,6 +295,7 @@ export interface Database {
           team_id: string
           minute?: number | null
           is_own_goal?: boolean
+          is_penalty?: boolean
           match_event_id?: string | null
           created_at?: string
         }
@@ -304,6 +306,7 @@ export interface Database {
           team_id?: string
           minute?: number | null
           is_own_goal?: boolean
+          is_penalty?: boolean
           match_event_id?: string | null
         }
         Relationships: []
@@ -824,6 +827,7 @@ export interface Database {
           player_id: string | null
           player2_id: string | null
           description: string | null
+          is_penalty: boolean
           created_at: string
           created_by: string
         }
@@ -837,6 +841,7 @@ export interface Database {
           player_id?: string | null
           player2_id?: string | null
           description?: string | null
+          is_penalty?: boolean
           created_at?: string
           created_by: string
         }
@@ -850,6 +855,7 @@ export interface Database {
           player_id?: string | null
           player2_id?: string | null
           description?: string | null
+          is_penalty?: boolean
           created_by?: string
         }
         Relationships: []

@@ -440,6 +440,7 @@ export function MatchDetailPage() {
       player_id: ev.player_id!,
       minute: ev.minute,
       is_own_goal: ev.type === 'own_goal',
+      is_penalty: (ev as any).is_penalty || false,
       players: ev.player ? {
         id: ev.player.id,
         first_name: ev.player.first_name,
@@ -962,7 +963,7 @@ export function MatchDetailPage() {
                   }).map(g => (
                     <div key={g.id} className="group cursor-default">
                       <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
-                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
+                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} {g.is_penalty ? '⚽ PK' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}
@@ -983,7 +984,7 @@ export function MatchDetailPage() {
                   }).map(g => (
                     <div key={g.id} className="group cursor-default">
                       <span className="text-[11px] font-bold text-text-muted group-hover:text-text-primary transition-colors">
-                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
+                        {g.players?.last_name}{g.is_own_goal ? ' (CSC)' : ''} {g.is_penalty ? '⚽ PK' : ''} <span className="text-text-muted/60 ml-1">{g.minute}'</span>
                       </span>
                     </div>
                   ))}

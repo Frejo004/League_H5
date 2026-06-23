@@ -306,8 +306,8 @@ function ScorersList({ sortedGoals, home, away, match }: {
                     size={32}
                   />
                 )}
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-[var(--t1)] truncate">{playerName}</p>
+                 <div className="min-w-0">
+                  <p className="text-sm font-bold text-[var(--t1)] truncate">{playerName} {g.is_penalty ? <span className="text-[9px] font-black text-yellow-600 uppercase tracking-wider ml-1">PK</span> : ''}</p>
                   {assistName && (
                     <p className={clsx("text-[11px] text-[var(--tm)] mt-0.5", !isHome && "text-right")}>
                       Passe : <span className="text-[var(--t2)] font-bold">{assistName}</span>
