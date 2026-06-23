@@ -260,10 +260,7 @@ export function AdminLiveControls({
       last_name: l.player?.last_name || '',
     }))
 
-    // Les joueurs sortants possibles sont les joueurs de la compo actuellement sur le terrain
-    const starters = allLineupPlayers.filter(p => pitchSet.has(p.id))
-
-    // Les joueurs entrants possibles sont tous les joueurs de l'effectif qui ne sont pas actuellement sur le terrain
+    const starters = currentPlayers.filter(p => pitchSet.has(p.id))
     const subs = currentPlayers.filter(p => !pitchSet.has(p.id))
 
     return { starters, subs }
@@ -271,6 +268,11 @@ export function AdminLiveControls({
 
   const handleAddEvent = async () => {
     if (!user) return
+
+    if (eventType === 'substitution' && !eventPlayer && !eventPlayer2) {
+      toast.error('Sélectionnez le joueur sortant et le joueur entrant')
+      return
+    }
 
     let finalMinute = clock.minute
     if (eventMinute) {

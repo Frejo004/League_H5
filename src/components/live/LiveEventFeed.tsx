@@ -180,17 +180,23 @@ export function LiveEventFeed({
           {isHome && (
             <div className="flex flex-col items-end text-right transition-transform group-hover:-translate-x-1 duration-300">
               <div className="flex items-center gap-3">
-                {(event.type === 'goal' || event.type === 'own_goal') && (
+              {(event.type === 'goal' || event.type === 'own_goal') && (
                   <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">
                     {scoreAt}
                   </span>
                 )}
-                <span className="text-sm font-black text-(--t1) uppercase tracking-tight leading-none">
-                  {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
-                </span>
+                {event.type === 'substitution' ? (
+                  <span className="text-sm font-black text-(--t1) leading-none">
+                    {playerName || '?'} <span className="text-emerald-500 mx-0.5">→</span> {player2Name || '?'}
+                  </span>
+                ) : (
+                  <span className="text-sm font-black text-(--t1) uppercase tracking-tight leading-none">
+                    {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
+                  </span>
+                )}
                 <span className="text-[11px] font-bold text-(--tm) tabular-nums">{displayMinute}'</span>
               </div>
-              {event.type === 'substitution' && player2Name && (
+              {event.type === 'goal' && player2Name && (
                 <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
                   <span className="text-[10px] text-(--t2) font-medium">
                     <span className="text-emerald-500 mr-1">↑</span> {player2Name}
@@ -233,22 +239,21 @@ export function LiveEventFeed({
             <div className="flex flex-col items-start text-left transition-transform group-hover:translate-x-1 duration-300">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-bold text-text-muted tabular-nums">{displayMinute}'</span>
-                <span className="text-sm font-black text-text-primary uppercase tracking-tight leading-none">
-                  {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
-                </span>
+                {event.type === 'substitution' ? (
+                  <span className="text-sm font-black text-text-primary leading-none">
+                    {playerName || '?'} <span className="text-emerald-500 mx-0.5">→</span> {player2Name || '?'}
+                  </span>
+                ) : (
+                  <span className="text-sm font-black text-text-primary uppercase tracking-tight leading-none">
+                    {event.type === 'own_goal' && playerName ? `${playerName} (CSC)` : (playerName || EVENT_LABELS[event.type])}
+                  </span>
+                )}
                 {(event.type === 'goal' || event.type === 'own_goal') && (
                   <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30">
                     {scoreAt}
                   </span>
                 )}
               </div>
-              {event.type === 'substitution' && player2Name && (
-                <div className="flex items-center gap-2 mt-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  <span className="text-[10px] text-text-secondary font-medium">
-                    <span className="text-emerald-500 mr-1">↑</span> {player2Name}
-                  </span>
-                </div>
-              )}
               {event.type === 'goal' && player2Name && (
                 <span className="text-[10px] text-text-muted italic mt-1 font-medium bg-surface-raised px-2 py-0.5 rounded">
                   Passe: <span className="text-text-secondary font-semibold">{player2Name}</span>
