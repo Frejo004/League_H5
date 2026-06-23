@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
-import { usePolls } from '@/hooks/usePolls'
+// import { usePolls } from '@/hooks/usePolls'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -45,7 +45,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -59,7 +59,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -74,7 +74,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -88,7 +88,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/scorers', label: 'Buteurs', icon: Target },
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
-    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -219,8 +219,8 @@ export default function Header() {
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
   // Badge pronostics actifs
-  const { data: allPolls } = usePolls()
-  const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
+  // const { data: allPolls } = usePolls()
+  // const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
   // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
   const [prevPathname, setPrevPathname] = useState(location.pathname)
   if (location.pathname !== prevPathname) {
@@ -271,7 +271,7 @@ export default function Header() {
     '/chat':       'Messages',
     '/playoffs':   'Phase Finale',
     '/feedback':   'Avis sur les matchs',
-    '/polls':      'Pronostics',
+    // '/polls':      'Pronostics',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/dashboard')
@@ -323,14 +323,14 @@ export default function Header() {
                 }}
               >
                 {label}
-                {to === '/polls' && activePollsCount > 0 && (
+                {/* {to === '/polls' && activePollsCount > 0 && (
                   <span
                     className="ml-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black"
                     style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                   >
                     {activePollsCount}
                   </span>
-                )}
+                )} */}
               </NavLink>
             ))}
           </nav>
