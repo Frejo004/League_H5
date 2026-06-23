@@ -416,15 +416,16 @@ export function useAdminMatchLive(matchId?: string) {
       description?: string | null
       is_penalty?: boolean
     }) => {
-      const { error } = await supabase.rpc('add_match_event_v2', {
+     const { error } = await supabase.rpc('add_match_event_v2', {
         p_match_id: matchId!,
         p_type: event.type,
         p_minute: event.minute,
         p_period: event.period,
-        p_team_id: event.team_id || undefined,
-        p_player_id: event.player_id || undefined,
-        p_player2_id: event.player2_id || undefined,
-        p_description: event.description || undefined,
+        p_team_id: event.team_id ?? null,
+        p_player_id: event.player_id ?? null,
+        p_player2_id: event.player2_id ?? null,
+        p_description: event.description ?? null,
+        p_is_penalty: event.is_penalty ?? false,
       });
 
       // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement
