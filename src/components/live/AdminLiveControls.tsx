@@ -214,16 +214,39 @@ export function AdminLiveControls({
   // Filtrer les compositions pour l'équipe en cours et l'équipe adverse
   const teamLineup = useMemo(() => lineups.filter(l => l.team_id === eventTeam), [lineups, eventTeam])
 
-  // Liste des joueurs retenus dans la compo par le capitaine (titulaires + remplaçants)
+  // Liste des joueurs retenus dans la compo par le capitaine (titulaires + remplaçants) + joueurs entrés via substitution
   // S'il n'y a pas de compo, on utilise la liste de tous les joueurs de l'équipe
   const teamLineupPlayers = useMemo(() => {
     if (teamLineup.length === 0) return currentPlayers
-    return teamLineup.map(l => ({
+    
+    const basePlayers = teamLineup.map(l => ({
       id: l.player_id,
       first_name: l.player?.first_name || '',
       last_name: l.player?.last_name || '',
     }))
-  }, [teamLineup, currentPlayers])
+
+    // Get all players from substitution events and add them if they are in currentPlayers
+    const subPlayers = new Map<string, { id: string; first_name: string; last_name: string }>()
+    events
+      .filter(e => e.type === 'substitution' && e.team_id === eventTeam)
+      .forEach(e => {
+        if (e.player_id) {
+          const p = currentPlayers.find(cp => cp.id === e.player_id)
+          if (p) subPlayers.set(p.id, p)
+        }
+        if (e.player2_id) {
+          const p = currentPlayers.find(cp => cp.id === e.player2_id)
+          if (p) subPlayers.set(p.id, p)
+        }
+      })
+
+    // Merge base players and sub players
+    const mergedMap = new Map<string, { id: string; first_name: string; last_name: string }>()
+    basePlayers.forEach(p => mergedMap.set(p.id, p))
+    subPlayers.forEach(p => mergedMap.set(p.id, p))
+    
+    return Array.from(mergedMap.values())
+  }, [teamLineup, currentPlayers, events, eventTeam])
 
   // Calcul dynamique des joueurs actuellement sur le terrain (starters) et sur le banc (subs)
   const substitutionPlayers = useMemo(() => {
@@ -255,14 +278,20 @@ export function AdminLiveControls({
       }
     })
 
-    const allLineupPlayers = teamLineup.map(l => ({
+    const lineupPlayers = teamLineup.map(l => ({
       id: l.player_id,
       first_name: l.player?.first_name || '',
       last_name: l.player?.last_name || '',
     }))
+    
+    // Merge lineup players with currentPlayers to ensure we have everyone
+    const allPlayersMap = new Map<string, { id: string; first_name: string; last_name: string }>()
+    lineupPlayers.forEach(p => allPlayersMap.set(p.id, p))
+    currentPlayers.forEach(p => allPlayersMap.set(p.id, p))
+    const allLineupPlayers = Array.from(allPlayersMap.values())
 
-    const starters = currentPlayers.filter(p => pitchSet.has(p.id))
-    const subs = currentPlayers.filter(p => !pitchSet.has(p.id))
+    const starters = allLineupPlayers.filter(p => pitchSet.has(p.id))
+    const subs = allLineupPlayers.filter(p => !pitchSet.has(p.id))
 
     return { starters, subs }
   }, [teamLineup, currentPlayers, events, eventTeam])
@@ -975,7 +1004,9 @@ export function AdminLiveControls({
                   className="w-full bg-surface-raised border border-surface-border rounded-2xl px-4 py-3 text-sm font-bold text-text-primary focus:ring-2 focus:ring-primary-500/20 focus:outline-none hover:border-surface-muted"
                 >
                   <option value="">— {eventType === 'substitution' ? 'Sélectionner le joueur' : 'Aucun passeur'} —</option>
-                  {(eventType === 'substitution' ? substitutionPlayers.subs : teamLineupPlayers)
+                  {(eventType === 'substitution' 
+                    ? substitutionPlayers.subs 
+                    : teamLineupPlayers)
                     .filter(p => p.id !== eventPlayer)
                     .map(p => (
                       <option key={p.id} value={p.id}>{p.first_name} {p.last_name}</option>

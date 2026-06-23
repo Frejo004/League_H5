@@ -405,28 +405,28 @@ export function useAdminMatchLive(matchId?: string) {
     onSuccess: invalidate,
   })
 
-  const addEvent = useMutation({
-    mutationFn: async (event: {
-      type: MatchEventType
-      minute: number
-      period: 1 | 2
-      team_id?: string | null
-      player_id?: string | null
-      player2_id?: string | null
-      description?: string | null
-      is_penalty?: boolean
-    }) => {
-     const { error } = await supabase.rpc('add_match_event_v2', {
-        p_match_id: matchId!,
-        p_type: event.type,
-        p_minute: event.minute,
-        p_period: event.period,
-        p_team_id: event.team_id ?? null,
-        p_player_id: event.player_id ?? null,
-        p_player2_id: event.player2_id ?? null,
-        p_description: event.description ?? null,
-        p_is_penalty: event.is_penalty ?? false,
-      });
+const addEvent = useMutation({
+  mutationFn: async (event: {
+    type: MatchEventType
+    minute: number
+    period: 1 | 2
+    team_id?: string | null
+    player_id?: string | null
+    player2_id?: string | null
+    description?: string | null
+    is_penalty?: boolean
+  }) => {
+    const { error } = await supabase.rpc('add_match_event_v2', {
+      p_match_id: matchId!,
+      p_type: event.type,
+      p_minute: event.minute,
+      p_period: event.period,
+      p_team_id: event.team_id ?? null,
+      p_player_id: event.player_id ?? null,
+      p_player2_id: event.player2_id ?? null,
+      p_description: event.description ?? null,
+      p_is_penalty: event.is_penalty ?? false, // <-- Ajoutez cette ligne !
+    });
 
       // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement
       if (!error && event.type === 'goal') {
