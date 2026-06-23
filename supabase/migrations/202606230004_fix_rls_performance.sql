@@ -161,6 +161,13 @@ CREATE POLICY "players: admin delete"
     )
   );
 
+-- Add missing SELECT policy for players
+DROP POLICY IF EXISTS "players: public select" ON public.players;
+CREATE POLICY "players: public select"
+  ON public.players FOR SELECT
+  TO authenticated
+  USING (true);
+
 -- ── 5. MATCHES ───────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "matches: admin insert" ON public.matches;
 CREATE POLICY "matches: admin insert"
@@ -217,6 +224,7 @@ CREATE POLICY "match_events: admin insert"
   );
 
 DROP POLICY IF EXISTS "match_events: admin or reporter insert" ON public.match_events;
+DROP POLICY IF EXISTS "match_events: reporter insert" ON public.match_events;
 CREATE POLICY "match_events: admin or reporter insert"
   ON public.match_events FOR INSERT
   TO authenticated
@@ -229,29 +237,7 @@ CREATE POLICY "match_events: admin or reporter insert"
     )
   );
 
-DROP POLICY IF EXISTS "match_events: reporter insert" ON public.match_events;
-CREATE POLICY "match_events: reporter insert"
-  ON public.match_events FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.matches m
-      WHERE m.id = match_id
-      AND (events_reporter_id = (select auth.uid()) OR video_reporter_id = (select auth.uid()))
-    )
-  );
-
 DROP POLICY IF EXISTS "match_events: admin delete" ON public.match_events;
-CREATE POLICY "match_events: admin delete"
-  ON public.match_events FOR DELETE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = (select auth.uid()) AND role = 'admin'
-    )
-  );
-
 DROP POLICY IF EXISTS "match_events: admin or reporter delete" ON public.match_events;
 CREATE POLICY "match_events: admin or reporter delete"
   ON public.match_events FOR DELETE
@@ -279,6 +265,7 @@ CREATE POLICY "goals: admin insert"
 
 -- goals: fusionner admin insert + reporter insert en une seule policy
 DROP POLICY IF EXISTS "goals: reporter insert" ON public.goals;
+DROP POLICY IF EXISTS "goals: authenticated insert" ON public.goals;
 CREATE POLICY "goals: authenticated insert"
   ON public.goals FOR INSERT
   TO authenticated
@@ -330,6 +317,7 @@ CREATE POLICY "assists: admin insert"
 
 -- assists: fusionner admin insert + reporter insert en une seule policy
 DROP POLICY IF EXISTS "assists: reporter insert" ON public.assists;
+DROP POLICY IF EXISTS "assists: authenticated insert" ON public.assists;
 CREATE POLICY "assists: authenticated insert"
   ON public.assists FOR INSERT
   TO authenticated
