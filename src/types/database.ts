@@ -1489,6 +1489,10 @@ export interface Database {
           reason?: string
         }
       }
+      delete_empty_bet_slips: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: UserRole
@@ -1524,7 +1528,6 @@ export type UserNotificationPreferences = Database['public']['Tables']['user_not
 export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type Poll = Database['public']['Tables']['polls']['Row']
 export type Prediction = Database['public']['Tables']['predictions']['Row']
-export type { PollType }
 
 // ── Types bulletins de paris ──────────────────────────────────────────────────
 

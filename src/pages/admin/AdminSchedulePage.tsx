@@ -129,32 +129,98 @@ function hasValidMatchdays(matches: SchedulableMatch[], requireTwoMatches = fals
   })
 }
 
+function fixturePairKey(teamId1: string, teamId2: string) {
+  return [teamId1, teamId2].sort().join(':')
+}
+
 function buildBalancedMatchdayUpdates(matches: SchedulableMatch[], keepCancelledSeparate = true) {
-  const matchdays: SchedulableMatch[][] = []
-  const activeMatches = matches
+  // 1. Split matches into fixed (completed/live), variable (scheduled/cancelled), and cancelled
+  const fixedMatches = matches.filter(match => match.status === 'completed' || match.status === 'live')
+    .sort(compareMatchesForScheduling)
+  const variableMatches = matches
+    .filter(match => match.status !== 'completed' && match.status !== 'live')
     .filter(match => !keepCancelledSeparate || match.status !== 'cancelled')
     .sort(compareMatchesForScheduling)
 
-  for (const match of activeMatches) {
-    const existingDay = matchdays.find(dayMatches => canPlaceInMatchday(dayMatches, match))
-    if (existingDay) {
-      existingDay.push(match)
-    } else {
-      matchdays.push([match])
+  // 2. Initialize matchdays structure
+  const allMatchdays: SchedulableMatch[][] = []
+  
+  // 3. Function to assign matches to days sequentially
+  function assignMatches(matchesToAssign: SchedulableMatch[]) {
+    const remaining = [...matchesToAssign]
+    
+    while (remaining.length > 0) {
+      // Get or create current day
+      const currentDayIndex = allMatchdays.length
+      let dayMatches = allMatchdays[currentDayIndex]
+      if (!dayMatches) {
+        dayMatches = []
+        allMatchdays.push(dayMatches)
+      }
+      
+      const usedTeams = new Set<string>()
+      dayMatches.forEach(m => {
+        usedTeams.add(m.home_team_id)
+        usedTeams.add(m.away_team_id)
+      })
+      
+      // Try to add matches to current day
+      for (let i = remaining.length - 1; i >= 0; i--) {
+        const match = remaining[i]
+        if (
+          dayMatches.length < 2 &&
+          !usedTeams.has(match.home_team_id) &&
+          !usedTeams.has(match.away_team_id)
+        ) {
+          dayMatches.push(match)
+          usedTeams.add(match.home_team_id)
+          usedTeams.add(match.away_team_id)
+          remaining.splice(i, 1)
+        }
+      }
+      
+      // If no matches added, start a new day
+      if (dayMatches.length === allMatchdays[currentDayIndex]?.length) {
+        allMatchdays.push([])
+      }
     }
   }
 
+  // 4. First assign fixed matches (completed/live)
+  assignMatches(fixedMatches)
+  
+  // 5. Split variable matches into aller and retour phases
+  const fixturePairs = new Map<string, SchedulableMatch[]>()
+  for (const match of variableMatches) {
+    const key = fixturePairKey(match.home_team_id, match.away_team_id)
+    fixturePairs.set(key, [...(fixturePairs.get(key) ?? []), match])
+  }
+  
+  const allerMatches: SchedulableMatch[] = []
+  const retourMatches: SchedulableMatch[] = []
+  for (const pair of fixturePairs.values()) {
+    if (pair.length >= 1) allerMatches.push(pair[0])
+    if (pair.length >= 2) retourMatches.push(pair[1])
+  }
+  
+  // 6. Assign aller then retour
+  assignMatches(allerMatches)
+  assignMatches(retourMatches)
+
+  // 7. Add cancelled matches
   if (keepCancelledSeparate) {
     const cancelledMatches = matches
       .filter(match => match.status === 'cancelled')
       .sort(compareMatchesForScheduling)
-
+    
     for (const match of cancelledMatches) {
-      matchdays.push([match])
+      allMatchdays.push([match])
     }
   }
 
-  return matchdays.flatMap((dayMatches, index) => {
+  // 8. Filter out empty days and generate updates
+  const nonEmptyMatchdays = allMatchdays.filter(day => day.length > 0)
+  return nonEmptyMatchdays.flatMap((dayMatches, index) => {
     const matchday = index + 1
     return dayMatches
       .filter(match => match.matchday !== matchday)
