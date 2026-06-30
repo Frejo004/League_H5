@@ -57,12 +57,19 @@ async function fetchUserTeams(userId: string) {
   const seen = new Set<string>()
 
   for (const row of playerTeams ?? []) {
-    const t = (row as any).teams as { id: string; name: string; color: string } | null
+    const typedRow = row as { 
+      team_id: string; 
+      teams?: { id: string; name: string; color: string }[] | null 
+    }
+    const teamsArray = typedRow.teams
+    const t = teamsArray?.[0]
     if (t && !seen.has(t.id)) { seen.add(t.id); result.push(t) }
   }
-  for (const t of captainTeams ?? []) {
+
+  for (const t of (captainTeams ?? []) as { id: string; name: string; color: string }[]) {
     if (!seen.has(t.id)) { seen.add(t.id); result.push(t) }
   }
+
   return result
 }
 
@@ -84,15 +91,17 @@ async function fetchVisibleChannels(userId: string) {
     .eq('captain_id', userId)
     .limit(1)
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile != null && profile.role === 'admin'
+
   const isCaptain = (captainTeam?.length ?? 0) > 0
 
   return (channels ?? []).filter(c => {
-    if (c.slug === 'captains') return isAdmin || isCaptain
+    const channel = c as { id: string; name: string; color: string; slug: string }
+    if (channel.slug === 'captains') return isAdmin || isCaptain
     return true
   }) as { id: string; name: string; color: string; slug: string }[]
-}
 
+}
 function truncate(text: string, max = 80) {
   return text.length > max ? text.slice(0, max) + '…' : text
 }
@@ -259,14 +268,16 @@ export function ChatToastProvider() {
           const team = teamMap.get(msg.team_id)
           if (!team) return
 
+          const senderProfile = sender ?? { full_name: 'Joueur', avatar_url: null }
+
           addToast({
             id: `toast-team-${msg.id}`,
             kind: 'team',
             contextId: msg.team_id,
             contextName: team.name,
             contextColor: team.color,
-            senderName: sender?.full_name ?? 'Joueur',
-            senderAvatar: sender?.avatar_url ?? null,
+            senderName: senderProfile.full_name,
+            senderAvatar: senderProfile.avatar_url,
             preview: truncate(msg.content),
             createdAt: Date.now(),
           })
@@ -288,14 +299,16 @@ export function ChatToastProvider() {
           const channel = channelMap.get(msg.channel_id)
           if (!channel) return
 
+          const senderProfile = sender ?? { full_name: 'Joueur', avatar_url: null }
+
           addToast({
             id: `toast-ch-${msg.id}`,
             kind: 'channel',
             contextId: msg.channel_id,
             contextName: channel.name,
             contextColor: channel.color,
-            senderName: sender?.full_name ?? 'Joueur',
-            senderAvatar: sender?.avatar_url ?? null,
+            senderName: senderProfile.full_name,
+            senderAvatar: senderProfile.avatar_url,
             preview: truncate(msg.content),
             createdAt: Date.now(),
           })
@@ -318,19 +331,23 @@ export function ChatToastProvider() {
             .eq('id', msg.conversation_id)
             .maybeSingle()
           if (!conv) return
-          if (conv.user_a !== user!.id && conv.user_b !== user!.id) return
+          type DmConversation = { user_a: string; user_b: string }
+          const conversation = conv as DmConversation
+          if (conversation.user_a !== user!.id && conversation.user_b !== user!.id) return
 
           const { data: sender } = await supabase
             .from('profiles').select('full_name, avatar_url').eq('id', msg.sender_id).maybeSingle()
+
+          const senderProfile = sender ?? { full_name: 'Joueur', avatar_url: null }
 
           addToast({
             id: `toast-dm-${msg.id}`,
             kind: 'dm',
             contextId: msg.conversation_id,
-            contextName: sender?.full_name ?? 'Joueur',
+            contextName: senderProfile.full_name,
             contextColor: '#3b82f6',
-            senderName: sender?.full_name ?? 'Joueur',
-            senderAvatar: sender?.avatar_url ?? null,
+            senderName: senderProfile.full_name,
+            senderAvatar: senderProfile.avatar_url,
             preview: truncate(msg.content),
             createdAt: Date.now(),
           })

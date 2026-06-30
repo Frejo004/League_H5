@@ -29,6 +29,7 @@ export function LiveReactionBar({ matchId, className }: LiveReactionBarProps) {
     if (burst.length === 0) return
     const last = burst[burst.length - 1]
     const fe: FloatingEmoji = { id: last.id, emoji: last.emoji, x: 10 + Math.random() * 80 }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFloating(prev => [...prev.slice(-15), fe])
     setTimeout(() => setFloating(prev => prev.filter(f => f.id !== fe.id)), 2800)
   }, [burst])

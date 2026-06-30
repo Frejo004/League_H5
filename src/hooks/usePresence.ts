@@ -10,7 +10,7 @@
  * "En ligne" = last_seen dans les 45 dernières secondes.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 

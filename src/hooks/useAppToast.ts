@@ -20,19 +20,6 @@ interface AppToast {
   detail?: string
 }
 
-const KIND_STYLES: Record<AppToastKind, { bar: string; icon: string; bg: string; border: string }> = {
-  error:   { bar: 'bg-red-500',    icon: '✕',  bg: 'bg-[#0f1420]', border: 'border-red-500/30' },
-  warning: { bar: 'bg-amber-400',  icon: '⚠',  bg: 'bg-[#0f1420]', border: 'border-amber-400/30' },
-  success: { bar: 'bg-[#C8F135]',  icon: '✓',  bg: 'bg-[#0f1420]', border: 'border-[#C8F135]/30' },
-  info:    { bar: 'bg-blue-400',   icon: 'ℹ',  bg: 'bg-[#0f1420]', border: 'border-blue-400/30' },
-}
-
-const ICON_COLOR: Record<AppToastKind, string> = {
-  error:   'text-red-400',
-  warning: 'text-amber-400',
-  success: 'text-[#C8F135]',
-  info:    'text-blue-400',
-}
 
 export function useAppToast(autoDismissMs = 5000) {
   const [toasts, setToasts] = useState<AppToast[]>([])

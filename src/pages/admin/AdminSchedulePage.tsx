@@ -93,16 +93,6 @@ function compareMatchesForScheduling(a: SchedulableMatch, b: SchedulableMatch) {
   )
 }
 
-function canPlaceInMatchday(dayMatches: SchedulableMatch[], match: SchedulableMatch) {
-  if (dayMatches.length >= 2) return false
-  return !dayMatches.some(
-    dayMatch =>
-      dayMatch.home_team_id === match.home_team_id ||
-      dayMatch.away_team_id === match.home_team_id ||
-      dayMatch.home_team_id === match.away_team_id ||
-      dayMatch.away_team_id === match.away_team_id
-  )
-}
 
 function hasDuplicateTeamInMatchday(dayMatches: SchedulableMatch[]) {
   const teamIds = dayMatches.flatMap(match => [match.home_team_id, match.away_team_id])

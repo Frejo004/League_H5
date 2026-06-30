@@ -216,7 +216,7 @@ export function MatchDetailPage() {
   const isScheduled = match?.status === 'scheduled'
   const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
-  const { user, isAdmin, isCaptain, isLoading: authLoading } = useAuth()
+  const { user, isAdmin, isCaptain } = useAuth()
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -433,7 +433,7 @@ export function MatchDetailPage() {
       player_id: ev.player_id!,
       minute: ev.minute,
       is_own_goal: ev.type === 'own_goal',
-      is_penalty: (ev as any).is_penalty || false,
+      is_penalty: (ev as { is_penalty?: boolean }).is_penalty || false,
       players: ev.player ? {
         id: ev.player.id,
         first_name: ev.player.first_name,

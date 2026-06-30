@@ -49,7 +49,7 @@ function toGenericMessage(m: TeamMessageFull): GenericMessage {
     content: m.content,
     created_at: m.created_at,
     edited_at: m.edited_at ?? null,
-    reply_to_id: (m as any).reply_to_id ?? null,
+    reply_to_id: (m as { reply_to_id?: string | null }).reply_to_id ?? null,
     sender: m.sender ?? { id: m.sender_id, full_name: null, avatar_url: null },
     reactions: (m.reactions ?? []).map(r => ({
       id: r.id,
@@ -59,6 +59,7 @@ function toGenericMessage(m: TeamMessageFull): GenericMessage {
       created_at: r.created_at,
       profile: r.profile ?? null,
     })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     reply_to: (m as any).reply_to ?? null,
   }
 }
@@ -105,26 +106,23 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
 
   // ── Calcul premier message non lu ────────────────────────────────────────
   const myReceipt = useMemo(() => receipts.find(r => r.user_id === user?.id), [receipts, user?.id])
-  const firstUnreadIdRef = useRef<string | null | undefined>(undefined)
-
-  useEffect(() => {
-    if (firstUnreadIdRef.current !== undefined) return
-    if (isLoading || messages.length === 0) return
+  const firstUnreadId = useMemo(() => {
+    if (isLoading || messages.length === 0) return undefined
     if (!myReceipt) {
-      firstUnreadIdRef.current = messages[0]?.id ?? null
+      return messages[0]?.id ?? null
     } else {
       const firstUnread = messages.find(
         m => m.created_at > myReceipt.last_read_at && m.sender_id !== user?.id
       )
-      firstUnreadIdRef.current = firstUnread?.id ?? null
+      return firstUnread?.id ?? null
     }
   }, [isLoading, messages, myReceipt, user?.id])
 
   const unreadCount = useMemo(() => {
-    if (!firstUnreadIdRef.current || messages.length === 0) return 0
-    const idx = messages.findIndex(m => m.id === firstUnreadIdRef.current)
+    if (!firstUnreadId || messages.length === 0) return 0
+    const idx = messages.findIndex(m => m.id === firstUnreadId)
     return idx === -1 ? 0 : messages.length - idx
-  }, [messages])
+  }, [messages, firstUnreadId])
 
   // ── Push notifications sur nouveaux messages ──────────────────────────────
   const prevMessagesRef = useRef<TeamMessageFull[]>([])
@@ -264,7 +262,7 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
       onRequestPush={push.request}
 
       // Non-lus
-      firstUnreadId={firstUnreadIdRef.current ?? undefined}
+      firstUnreadId={firstUnreadId ?? undefined}
       unreadCount={unreadCount}
 
       // Pagination

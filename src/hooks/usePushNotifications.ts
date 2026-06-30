@@ -13,24 +13,17 @@
  * et les notifications web déjà en place dans useRealtime.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type PushPermissionState = 'default' | 'granted' | 'denied' | 'unsupported'
 
 export function usePushNotifications(userId?: string) {
-  const [permission, setPermission] = useState<PushPermissionState>('default')
-  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [permission, setPermission] = useState<PushPermissionState>(() => {
+    if (typeof Notification === 'undefined') return 'unsupported'
+    return Notification.permission as PushPermissionState
+  })
   const [isLoading, setIsLoading] = useState(false)
-
-  // Vérifier l'état initial
-  useEffect(() => {
-    if (typeof Notification === 'undefined') {
-      setPermission('unsupported')
-      return
-    }
-    setPermission(Notification.permission as PushPermissionState)
-  }, [])
 
   // Demander la permission et s'abonner
   const subscribe = useCallback(async () => {
@@ -53,7 +46,6 @@ export function usePushNotifications(userId?: string) {
         user_agent: navigator.userAgent.slice(0, 200),
       }, { onConflict: 'user_id,endpoint' })
 
-      setIsSubscribed(true)
       return true
     } catch (err) {
       console.error('[Push] Erreur abonnement:', err)

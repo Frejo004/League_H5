@@ -11,6 +11,11 @@ import { X, Share, Plus } from 'lucide-react'
 
 const LS_KEY = 'lh5_pwa_dismissed'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 function isIOS() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent)
 }
@@ -18,25 +23,21 @@ function isIOS() {
 function isInStandaloneMode() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
+    (window.navigator as { standalone?: boolean }).standalone === true
   )
 }
 
 export function PWAInstallPrompt() {
   const [show, setShow] = useState(false)
-  const [isIos, setIsIos] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const isIos = isIOS()
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
     // Ne pas afficher si déjà installé ou déjà refusé
     if (isInStandaloneMode()) return
     if (localStorage.getItem(LS_KEY)) return
 
-    const ios = isIOS()
-    setIsIos(ios)
-
-    if (ios) {
+    if (isIos) {
       // iOS : afficher après 3s
       const t = setTimeout(() => setShow(true), 3000)
       return () => clearTimeout(t)
@@ -44,13 +45,13 @@ export function PWAInstallPrompt() {
       // Android/Chrome : écouter l'événement natif
       const handler = (e: Event) => {
         e.preventDefault()
-        setDeferredPrompt(e)
+        setDeferredPrompt(e as BeforeInstallPromptEvent)
         setShow(true)
       }
       window.addEventListener('beforeinstallprompt', handler)
       return () => window.removeEventListener('beforeinstallprompt', handler)
     }
-  }, [])
+  }, [isIos])
 
   const dismiss = () => {
     setShow(false)

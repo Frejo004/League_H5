@@ -1081,7 +1081,7 @@ export function AdminLiveControls({
                                                 ev.type === 'resume' ? '▶️ Reprise' :
                                                   ev.type === 'comment' ? `💬 Commentaire` : ev.type}
                     </span>
-                    {(ev.type === 'goal' || ev.type === 'own_goal') && (ev as any).is_penalty && (
+                    {(ev.type === 'goal' || ev.type === 'own_goal') && (ev as { is_penalty?: boolean }).is_penalty && (
                       <span className="px-1.5 py-0.5 rounded-md bg-yellow-500/20 text-yellow-600 text-[8px] font-black uppercase tracking-tighter">PENALTY</span>
                     )}
                     {ev.team && (

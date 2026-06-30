@@ -29,13 +29,9 @@ export function useBasket() {
   return ctx
 }
 
-/** Crée l'état du panier — à utiliser dans un provider */
-export function createBasketState(): BasketState {
-  // NOTE: On utilise un pattern fonctionnel pour que ce hook soit appelable
-  // dans un composant React (voir BetBasketProvider)
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [items, setItems]     = useState<BasketItem[]>([])
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+/** Hook personnalisé pour créer l'état du panier — à utiliser dans un provider */
+export function useBasketState(): BasketState {
+  const [items, setItems] = useState<BasketItem[]>([])
   const [slipType, setSlipType] = useState<BetSlipType>('simple')
 
   const addItem = useCallback((item: BasketItem) => {
@@ -91,7 +87,7 @@ export function useBetSlips() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      return (data ?? []) as BetSlipWithSelections[]
+      return (data ?? []) as unknown as BetSlipWithSelections[]
     },
   })
 
@@ -111,8 +107,7 @@ export function useBetSlips() {
         poll_id: i.poll_id,
         option_index: i.option_index,
       }))
-
-      const { data, error } = await supabase.rpc('submit_bet_slip', {
+      const { data, error } = await (supabase as any).rpc('submit_bet_slip', {
         p_user_id: user.id,
         p_season_id: season.id,
         p_type: type,

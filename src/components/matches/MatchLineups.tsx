@@ -1,15 +1,14 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Users, UserCheck, Shield, Edit3, Layout, ShieldAlert, UserX } from 'lucide-react'
-import { useMatchLineups, useUpdateMatchLineup } from '@/hooks/useLineups'
+import { useMatchLineups, useUpdateMatchLineup, type MatchLineup } from '@/hooks/useLineups'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSuspensions } from '@/hooks/useDisciplinaryStats'
-import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
 import { useRealtimeMatchTactics } from '@/hooks/useRealtime'
+import { FORMATIONS } from './formations'
 
 import type { TeamRef } from '@/types/database'
 
@@ -22,59 +21,37 @@ interface MatchLineupsProps {
   awayFormation?: string
 }
 
-export const FORMATIONS: Record<string, { label: string, style: string, coords: { x: number, y: number, pos: string }[] }> = {
-  '2-1-1': {
-    label: '2-1-1', style: 'Équilibré',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 30, y: 65, pos: 'LD' }, { x: 70, y: 65, pos: 'RD' }, { x: 50, y: 45, pos: 'CM' }, { x: 50, y: 20, pos: 'ST' }
-    ]
-  },
-  '1-2-1': {
-    label: '1-2-1', style: 'Possession',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 50, y: 65, pos: 'CD' }, { x: 30, y: 45, pos: 'LM' }, { x: 70, y: 45, pos: 'RM' }, { x: 50, y: 20, pos: 'ST' }
-    ]
-  },
-  '2-2': {
-    label: '2-2', style: 'Rapide',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 30, y: 65, pos: 'LD' }, { x: 70, y: 65, pos: 'RD' }, { x: 30, y: 30, pos: 'LF' }, { x: 70, y: 30, pos: 'RF' }
-    ]
-  },
-  '1-1-2': {
-    label: '1-1-2', style: 'Offensif',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 50, y: 70, pos: 'CD' }, { x: 50, y: 45, pos: 'CM' }, { x: 30, y: 25, pos: 'LF' }, { x: 70, y: 25, pos: 'RF' }
-    ]
-  },
-  '0-2-2': {
-    label: '0-2-2', style: 'Ultra Attaque',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 30, y: 55, pos: 'LM' }, { x: 70, y: 55, pos: 'RM' }, { x: 30, y: 25, pos: 'LF' }, { x: 70, y: 25, pos: 'RF' }
-    ]
-  },
-  '1-3': {
-    label: '1-3', style: 'Tout Attaque',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 50, y: 70, pos: 'CD' }, { x: 20, y: 35, pos: 'LF' }, { x: 50, y: 25, pos: 'CF' }, { x: 80, y: 35, pos: 'RF' }
-    ]
-  },
-  '3-1': {
-    label: '3-1', style: 'Défensif',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 20, y: 65, pos: 'LD' }, { x: 50, y: 70, pos: 'CD' }, { x: 80, y: 65, pos: 'RD' }, { x: 50, y: 30, pos: 'ST' }
-    ]
-  },
-  'Rotation': {
-    label: 'Rotation', style: 'Futsal',
-    coords: [
-      { x: 50, y: 85, pos: 'GK' }, { x: 25, y: 60, pos: 'P1' }, { x: 75, y: 60, pos: 'P2' }, { x: 25, y: 35, pos: 'P3' }, { x: 75, y: 35, pos: 'P4' }
-    ]
-  }
+interface LineupEditorProps {
+  matchId: string
+  teamId: string
+  onClose: () => void
+  initialStarters: string[]
+  initialSubs: string[]
+  initialFormation: string
+  teamColor: string
+  suspendedPlayerIds: string[]
 }
 
-export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFormation, awayFormation }: MatchLineupsProps) {
-  const { isAdmin, isCaptain, profile } = useAuth()
+interface FullMatchPitchProps {
+  homePlayers: MatchLineup[]
+  awayPlayers: MatchLineup[]
+  homeColor: string
+  awayColor: string
+  homeFormation: string
+  awayFormation: string
+  suspendedPlayerIds: string[]
+}
+
+interface PitchPartProps {
+  players: MatchLineup[]
+  teamColor: string
+  formation: string
+  side: 'left' | 'right'
+  suspendedPlayerIds: string[]
+}
+
+export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt }: MatchLineupsProps) {
+  const { isCaptain, profile } = useAuth()
 
   // Initialiser sur l'équipe du capitaine s'il fait partie du match
   const defaultTab = useMemo(() => {
@@ -134,7 +111,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
           { ...homeTeam, tabId: 'home' as const },
           { id: 'both', name: 'Face à Face', color: '#C8F135', tabId: 'both' as const },
           { ...awayTeam, tabId: 'away' as const }
-        ].map((team, idx) => {
+        ].map((team) => {
           const isBoth = team.tabId === 'both'
           const isActive = activeTab === team.tabId
 
@@ -147,13 +124,13 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                 isActive ? "text-text-primary" : "text-text-muted hover:text-text-secondary"
               )}
             >
-              {!isBoth && <div className="w-2.5 h-2.5 rounded shadow-lg" style={{ backgroundColor: (team as any).color }} />}
+              {!isBoth && <div className="w-2.5 h-2.5 rounded shadow-lg" style={{ backgroundColor: (team as { color?: string }).color }} />}
               {team.name}
               {isActive && (
                 <motion.div
                   layoutId="activeTabLineup"
                   className="absolute bottom-0 inset-x-0 h-0.5"
-                  style={{ backgroundColor: (team as any).color }}
+                  style={{ backgroundColor: (team as { color?: string }).color }}
                 />
               )}
             </button>
@@ -174,7 +151,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
                 {['pitch', 'list'].map(mode => (
                   <button
                     key={mode}
-                    onClick={() => setViewMode(mode as any)}
+                    onClick={() => setViewMode(mode as 'pitch' | 'list')}
                     className={clsx(
                       "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                       viewMode === mode ? "bg-surface-muted text-text-primary shadow-lg" : "text-text-muted hover:text-text-secondary"
@@ -311,7 +288,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt, homeFor
   )
 }
 
-function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, initialFormation, teamColor, suspendedPlayerIds = [] }: any) {
+function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, initialFormation, teamColor, suspendedPlayerIds = [] }: LineupEditorProps) {
   const { data: players } = usePlayersByTeam(teamId)
   const updateLineup = useUpdateMatchLineup()
 
@@ -388,7 +365,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
             </div>
           </div>
           <PitchView
-            players={starters.map(id => ({ player_id: id, player: players?.find(p => p.id === id) })) as any}
+            players={starters.map(id => ({ player_id: id, player: players?.find(p => p.id === id) })) as { player_id: string; player?: { id?: string; avatar_url?: string; jersey_number?: number } }[]}
             teamColor={teamColor}
             formation={formation}
             suspendedPlayerIds={suspendedPlayerIds}
@@ -468,7 +445,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
   )
 }
 
-function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: any, isStarter?: boolean, isSuspended?: boolean }) {
+function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: MatchLineup, isStarter?: boolean, isSuspended?: boolean }) {
   return (
     <div className={clsx(
       "group flex items-center gap-4 p-3 rounded-2xl bg-surface-muted/10 border border-surface-border/50 transition-all cursor-default",
@@ -518,7 +495,7 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
       </div>
 
       <AnimatePresence>
-        {players.map((l: any, idx: number) => {
+        {players.map((l, idx: number) => {
           const coord = coords[idx] || { x: 50, y: 50 }
           const isSuspended = suspendedPlayerIds.includes(l.player_id)
 
@@ -574,7 +551,7 @@ export function PitchView({ players, teamColor, formation, suspendedPlayerIds = 
   )
 }
 
-export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor, homeFormation, awayFormation, suspendedPlayerIds = [] }: any) {
+export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor, homeFormation, awayFormation, suspendedPlayerIds = [] }: FullMatchPitchProps) {
   return (
     <div className="relative aspect-[16/10] w-full max-w-4xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-surface-border shadow-[0_0_50px_rgba(0,0,0,0.5)]">
       {/* Texture & Lignes Landscape */}
@@ -603,13 +580,13 @@ export function FullMatchPitch({ homePlayers, awayPlayers, homeColor, awayColor,
   )
 }
 
-function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [] }: any) {
+function PitchPart({ players, teamColor, formation, side, suspendedPlayerIds = [] }: PitchPartProps) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   const isLeft = side === 'left'
 
   return (
     <>
-      {players.map((l: any, idx: number) => {
+      {players.map((l, idx: number) => {
         const coord = coords[idx] || { x: 50, y: 50 }
         const isSuspended = suspendedPlayerIds.includes(l.player_id)
 

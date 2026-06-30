@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Trophy, Home, LogIn, Sun, Moon, BarChart2 } from 'lucide-react'
+import { Trophy, Home, LogIn, Sun, Moon, BarChart2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 

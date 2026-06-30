@@ -1161,7 +1161,7 @@ export function GenericChat({
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const prevCountRef = useRef(0)
+  const [prevCount, setPrevCount] = useState(0)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Marquer comme lu ─────────────────────────────────────────────────────
@@ -1173,15 +1173,16 @@ export function GenericChat({
 
   // ── Scroll auto ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (messages.length > prevCountRef.current) {
+    if (messages.length > prevCount) {
       if (!showScrollBtn) {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
       } else {
-        setNewMsgCount(n => n + (messages.length - prevCountRef.current))
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setNewMsgCount(messages.length - prevCount)
       }
     }
-    prevCountRef.current = messages.length
-  }, [messages.length, showScrollBtn])
+    setPrevCount(messages.length)
+  }, [messages.length, showScrollBtn, prevCount])
 
   // ── Détection scroll ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -1581,7 +1582,7 @@ export function GenericChat({
                 || next.sender_id !== msg.sender_id
                 || (new Date(next.created_at).getTime() - msgDate.getTime()) >= GROUP_THRESHOLD_MS
 
-              const isNew = idx >= messages.length - (messages.length - prevCountRef.current)
+              const isNew = idx >= messages.length - (messages.length - prevCount)
               const readBy = readByMessage.get(msg.id) ?? []
               const isPinned = pinnedMessages.some(p => p.id === msg.id)
 

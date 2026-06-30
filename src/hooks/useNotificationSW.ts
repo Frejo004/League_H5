@@ -86,8 +86,8 @@ export function useNotificationSW(userId?: string) {
           })
 
           // Sauvegarder dans Supabase
-          const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')!) as any))
-          const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')!) as any))
+          const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')!)))
+          const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')!)))
 
           await supabase.from('push_subscriptions').upsert({
             user_id: userId,

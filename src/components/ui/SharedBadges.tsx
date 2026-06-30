@@ -1,25 +1,4 @@
 import { clsx } from 'clsx'
-import type { PlayerPosition } from '@/types/database'
-
-/**
- * Libellés des postes de joueurs
- */
-export const POSITION_LABELS: Record<PlayerPosition, string> = {
-  goalkeeper: 'Gardien',
-  defender:   'Défenseur',
-  midfielder: 'Milieu',
-  forward:    'Attaquant',
-}
-
-/**
- * Couleurs associées aux postes
- */
-export const POSITION_COLORS: Record<PlayerPosition, string> = {
-  goalkeeper: 'text-yellow-400 bg-yellow-400/10',
-  defender:   'text-blue-400 bg-blue-400/10',
-  midfielder: 'text-green-400 bg-green-400/10',
-  forward:    'text-orange-400 bg-orange-400/10',
-}
 
 /**
  * Badge de forme (W/D/L) utilisé dans les tableaux de classement

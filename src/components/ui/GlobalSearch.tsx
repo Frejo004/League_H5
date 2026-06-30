@@ -45,8 +45,6 @@ export function GlobalSearch() {
   // Focus input à l'ouverture
   useEffect(() => {
     if (open) {
-      setQuery('')
-      setCursor(0)
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [open])
@@ -58,8 +56,8 @@ export function GlobalSearch() {
       .map(p => ({
         id: p.id,
         label: `${p.first_name} ${p.last_name}`,
-        sub: (p as any).teams?.name ?? '',
-        color: (p as any).teams?.color ?? '#334155',
+        sub: (p as { teams?: { name?: string } }).teams?.name ?? '',
+        color: (p as { teams?: { color?: string } }).teams?.color ?? '#334155',
         avatar: p.avatar_url,
         href: `/players/${p.slug || p.id}`,
         type: 'player' as const,
@@ -79,14 +77,14 @@ export function GlobalSearch() {
     ...(matches ?? [])
       .filter(m => {
         const q = query.toLowerCase()
-        const home = (m.home_team as any)?.name?.toLowerCase() ?? ''
-        const away = (m.away_team as any)?.name?.toLowerCase() ?? ''
+        const home = (m.home_team as { name?: string })?.name?.toLowerCase() ?? ''
+        const away = (m.away_team as { name?: string })?.name?.toLowerCase() ?? ''
         return home.includes(q) || away.includes(q)
       })
       .slice(0, 3)
       .map(m => {
-        const home = (m.home_team as any)?.name ?? '?'
-        const away = (m.away_team as any)?.name ?? '?'
+        const home = (m.home_team as { name?: string })?.name ?? '?'
+        const away = (m.away_team as { name?: string })?.name ?? '?'
         const score = m.status === 'completed'
           ? `${m.home_score} – ${m.away_score}`
           : m.status === 'live' ? '🔴 LIVE' : `J${m.matchday}`
@@ -94,7 +92,7 @@ export function GlobalSearch() {
           id: m.id,
           label: `${home} vs ${away}`,
           sub: score,
-          color: (m.home_team as any)?.color ?? '#334155',
+          color: (m.home_team as { color?: string })?.color ?? '#334155',
           avatar: null,
           href: `/matches/${m.slug || m.id}`,
           type: 'match' as const,

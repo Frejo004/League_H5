@@ -1307,10 +1307,77 @@ export interface Database {
           { foreignKeyName: "predictions_poll_id_fkey", columns: ["poll_id"], isOneToOne: false, referencedRelation: "polls", referencedColumns: ["id"] },
           { foreignKeyName: "predictions_user_id_fkey", columns: ["user_id"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }
         ]
+      },
+      bet_slips: {
+        Row: {
+          id: string
+          user_id: string
+          season_id: string
+          type: BetSlipType
+          status: BetSlipStatus
+          points_earned: number
+          created_at: string
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          season_id: string
+          type: BetSlipType
+          status?: BetSlipStatus
+          points_earned?: number
+          created_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          season_id?: string
+          type?: BetSlipType
+          status?: BetSlipStatus
+          points_earned?: number
+          resolved_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "bet_slips_user_id_fkey", columns: ["user_id"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] },
+          { foreignKeyName: "bet_slips_season_id_fkey", columns: ["season_id"], isOneToOne: false, referencedRelation: "seasons", referencedColumns: ["id"] }
+        ]
+      },
+      bet_slip_selections: {
+        Row: {
+          id: string
+          slip_id: string
+          poll_id: string
+          option_index: number
+          is_correct: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slip_id: string
+          poll_id: string
+          option_index: number
+          is_correct?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slip_id?: string
+          poll_id?: string
+          option_index?: number
+          is_correct?: boolean | null
+        }
+        Relationships: [
+          { foreignKeyName: "bet_slip_selections_slip_id_fkey", columns: ["slip_id"], isOneToOne: false, referencedRelation: "bet_slips", referencedColumns: ["id"] },
+          { foreignKeyName: "bet_slip_selections_poll_id_fkey", columns: ["poll_id"], isOneToOne: false, referencedRelation: "polls", referencedColumns: ["id"] }
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      bet_slips_history: {
+        Row: BetSlipWithSelections
+        Relationships: []
+      }
     }
     Functions: {
       get_invite_player: {
@@ -1492,6 +1559,18 @@ export interface Database {
       delete_empty_bet_slips: {
         Args: Record<string, never>
         Returns: undefined
+      },
+      submit_bet_slip: {
+        Args: {
+          p_user_id: string
+          p_season_id: string
+          p_type: BetSlipType
+          p_selections: Array<{
+            poll_id: string
+            option_index: number
+          }>
+        }
+        Returns: string
       }
     }
     Enums: {

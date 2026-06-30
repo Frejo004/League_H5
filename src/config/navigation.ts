@@ -1,7 +1,6 @@
 import {
   LayoutDashboard, Trophy, Calendar, Target,
   Users, User, BarChart2, Star, BookOpen, Swords,
-  MessageSquare,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 

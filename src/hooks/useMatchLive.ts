@@ -425,7 +425,7 @@ const addEvent = useMutation({
       p_player_id: event.player_id ?? null,
       p_player2_id: event.player2_id ?? null,
       p_description: event.description ?? null,
-      p_is_penalty: event.is_penalty ?? false, // <-- Ajoutez cette ligne !
+      p_is_penalty: event.is_penalty ?? false,
     });
 
       // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement

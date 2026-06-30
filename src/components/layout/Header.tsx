@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
-  Target, Users, Star, Crown, BarChart2,
+  Target, Users, Star, Crown,
   Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'

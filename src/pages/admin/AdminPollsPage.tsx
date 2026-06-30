@@ -389,14 +389,22 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
   const toggleType = (t: Exclude<PollType, 'custom'>) =>
     setSelectedTypes(prev => {
       const next = new Set(prev)
-      next.has(t) ? next.delete(t) : next.add(t)
+      if (next.has(t)) {
+        next.delete(t)
+      } else {
+        next.add(t)
+      }
       return next
     })
 
   const togglePlayerType = (t: 'first_scorer' | 'anytime_scorer' | 'anytime_assister') =>
     setSelectedPlayerTypes(prev => {
       const next = new Set(prev)
-      next.has(t) ? next.delete(t) : next.add(t)
+      if (next.has(t)) {
+        next.delete(t)
+      } else {
+        next.add(t)
+      }
       return next
     })
 

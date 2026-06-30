@@ -1,13 +1,24 @@
 import { BarChart2, Check, X, Star, Lock, Clock } from 'lucide-react'
 import { usePollsByMatch, usePoll } from '@/hooks/usePolls'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 
 function Deadline({ endsAt }: { endsAt: string | null }) {
-  if (!endsAt) return null
-  const diff = new Date(endsAt).getTime() - Date.now()
-  if (diff <= 0) return null
+  const [diff, setDiff] = useState<number | null>(() => {
+    if (!endsAt) return null
+    return new Date(endsAt).getTime() - Date.now()
+  })
+  
+  useEffect(() => {
+    if (!endsAt) return
+    const interval = setInterval(() => {
+      setDiff(new Date(endsAt).getTime() - Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [endsAt])
+  
+  if (!diff || diff <= 0) return null
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
   const isUrgent = diff < 30 * 60_000

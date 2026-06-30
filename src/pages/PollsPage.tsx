@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { BarChart2, Trophy, Medal, Clock, Lock, Check, X, Star, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
+import { BarChart2, Medal, Clock, Lock, Check, X, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react'
 import { usePolls, useLeaderboard } from '@/hooks/usePolls'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useBasket } from '@/hooks/useBetSlips'

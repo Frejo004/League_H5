@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 

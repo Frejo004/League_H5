@@ -29,6 +29,7 @@ import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 import type { TeamRef } from '@/types/database'
 import { PublicLayout } from '@/components/layout/PublicLayout'
+import { supabase } from '@/lib/supabase'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -399,7 +400,7 @@ function InfoSection({ match, season }: { match: any; season: any }) {
               const as_ = match.away_score ?? 0
               const draw = hs === as_
               try {
-                await (navigator as any).share({
+                await (navigator as { share?: (data: { title: string; text: string; url: string }) => Promise<void> }).share({
                   title: draw
                     ? `Match nul : ${match.home_team.name} ${hs} – ${as_} ${match.away_team.name}`
                     : `${match.home_team.name} ${hs} – ${as_} ${match.away_team.name}`,
@@ -624,15 +625,13 @@ export function PublicMatchDetailPage() {
   // ── Realtime ────────────────────────────────────────────────────────────
   useRealtimeMatch(id)
 
-  const eventLoopEnabled = (match as any)?.events_enabled ?? false
+  const eventLoopEnabled = (match as { events_enabled?: boolean })?.events_enabled ?? false
   const fetchedOnceRef = useRef(false)
 
   const pollEvents = useCallback(async () => {
     if (!id || fetchedOnceRef.current || !eventLoopEnabled) return
     try {
-      const supabaseClient = (window as any)?.supabase
-      if (!supabaseClient) return
-      const { data } = await supabaseClient
+      const { data } = await supabase
         .from('match_events')
         .select('*')
         .eq('match_id', id)
@@ -652,9 +651,9 @@ export function PublicMatchDetailPage() {
   // ── Chrono live ─────────────────────────────────────────────────────────
   const clock = useLiveClock(
     match?.live_started_at ?? null,
-    (match as any)?.live_period as 1 | 2 | null ?? null,
-    (match?.status as any) ?? 'scheduled',
-    (match as any)?.halftime_at,
+    (match as { live_period?: 1 | 2 | null })?.live_period ?? null,
+    match?.status ?? 'scheduled',
+    (match as { halftime_at?: string })?.halftime_at,
     match?.is_paused ?? false,
     match?.paused_at ?? null,
     match?.total_paused_seconds ?? 0,
@@ -663,7 +662,7 @@ export function PublicMatchDetailPage() {
   // ── Derived ─────────────────────────────────────────────────────────────
   const home = match?.home_team as TeamRef | undefined
   const away = match?.away_team as TeamRef | undefined
-  const goals = useMemo(() => (match?.goals ?? []) as any[], [match])
+  const goals = useMemo(() => (match?.goals ?? []) as unknown[], [match])
 
   const isLive = match?.status === 'live'
   const isCompleted = match?.status === 'completed'
@@ -673,7 +672,7 @@ export function PublicMatchDetailPage() {
   const { viewerCount } = useWebRTCPresence(id ?? '')
   const isStreamingLive = isLive
 
-  const sortedGoals = useMemo(() => [...(goals ?? [])].sort((a: any, b: any) => (a.minute ?? 0) - (b.minute ?? 0)), [goals])
+  const sortedGoals = useMemo(() => [...(goals ?? [])].sort((a: { minute?: number }, b: { minute?: number }) => (a.minute ?? 0) - (b.minute ?? 0)), [goals])
   const hasLiveVideoTab = isLive && isStreamingLive
 
   const tabList: LiveTab[] = ['resume', 'events', 'lineups']
