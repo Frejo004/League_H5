@@ -8,9 +8,8 @@ import { useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRealtimeMatchTactics } from '@/hooks/useRealtime'
-import { FORMATIONS } from './formations'
-
 import type { TeamRef } from '@/types/database'
+import { FORMATIONS } from '@/components/matches/formations'
 
 interface MatchLineupsProps {
   matchId: string
