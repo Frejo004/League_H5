@@ -1,4 +1,5 @@
 import { clsx } from 'clsx'
+export { POSITION_LABELS } from '@/components/ui/shared/constants'
 
 /**
  * Badge de forme (W/D/L) utilisé dans les tableaux de classement
