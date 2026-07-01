@@ -8,27 +8,30 @@ interface BreadcrumbItem {
 
 export function Breadcrumbs({ items, className, homeTo = '/' }: { items: BreadcrumbItem[], className?: string, homeTo?: string }) {
   return (
-    <nav className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest overflow-x-auto whitespace-nowrap scrollbar-hide ${className ?? ''}`}>
-      <Link 
+    <nav className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest overflow-x-auto whitespace-nowrap scrollbar-hide ${className ?? ''}`}
+         style={{ color: 'var(--color-text-muted)' }}
+         aria-label="Fil d'Ariane">
+      <Link
         to={homeTo}
-        className="hover:text-primary-400 transition-colors flex items-center gap-1 shrink-0"
+        className="hover:text-primary-400 transition-colors flex items-center gap-1 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-500 rounded"
         title="Accueil"
       >
         <Home size={11} />
       </Link>
-      
+
       {items.map((item, i) => (
         <div key={i} className="flex items-center gap-1.5 shrink-0">
-          <ChevronRight size={10} className="text-slate-700" />
+          <ChevronRight size={10} style={{ color: 'var(--color-surface-muted)' }} />
           {item.to ? (
-            <Link 
-              to={item.to} 
-              className="hover:text-slate-200 transition-colors"
+            <Link
+              to={item.to}
+              className="transition-colors hover:text-primary-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-500 rounded"
+              style={{ color: 'var(--color-text-muted)' }}
             >
               {item.label}
             </Link>
           ) : (
-            <span className="text-slate-300 truncate max-w-[150px]">
+            <span className="truncate max-w-[150px]" style={{ color: 'var(--color-text-secondary)' }}>
               {item.label}
             </span>
           )}

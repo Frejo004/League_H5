@@ -307,7 +307,8 @@ export default function Header() {
                 end={to === '/dashboard'}
                 aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
                 className="relative flex items-center px-3 text-[13px] font-semibold whitespace-nowrap
-                           transition-colors duration-150 shrink-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded"
+                           transition-colors duration-150 shrink-0
+                           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135] rounded"
                 style={({ isActive }) => ({
                   fontFamily: "'Barlow', sans-serif",
                   color: isActive ? 'var(--accent)' : 'var(--header-nav-off)',
@@ -350,7 +351,7 @@ export default function Header() {
             {profile && (
               <NavLink
                 to="/chat"
-                className="relative p-1.5 rounded-lg transition-colors"
+                className="relative p-1.5 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
                 style={({ isActive }) => ({ color: isActive ? 'var(--header-text)' : 'var(--header-nav-off)' })}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-text)' }}
                 onMouseLeave={e => {
@@ -376,11 +377,12 @@ export default function Header() {
             <div ref={notifRef} className="relative">
               <button
                 onClick={() => setNotifOpen(v => !v)}
-                className="relative p-1.5 rounded-lg transition-colors"
+                className="relative p-1.5 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
                 style={{ color: notifOpen ? 'var(--header-text)' : 'var(--header-nav-off)' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-text)' }}
                 onMouseLeave={e => { if (!notifOpen) (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
                 aria-label="Notifications"
+                aria-expanded={notifOpen}
               >
                 <Bell size={17} />
                 {count > 0 && (
@@ -415,7 +417,7 @@ export default function Header() {
               <Avatar profile={profile} role={effectiveRole} />
               <button
                 onClick={signOut}
-                className="p-1.5 rounded-lg transition-colors group"
+                className="p-1.5 rounded-lg transition-colors group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
                 style={{ color: 'var(--header-nav-off)' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--header-nav-off)' }}
