@@ -1,4 +1,5 @@
 import { Target } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
@@ -72,8 +73,9 @@ export function ScorersPage() {
 
           <div className="flex flex-col gap-1.5 sm:gap-2 stagger-fast">
             {scorers?.filter(s => s.goals > 0).map((row, i) => (
-              <div
+              <Link
                 key={row.player_id}
+                to={`/players/${row.player_slug || row.player_id}`}
                 className={clsx(
                   'grid grid-cols-[2.5rem_1fr_3rem_3rem] sm:grid-cols-[3rem_1fr_4rem_4rem] gap-2 items-center px-4 sm:px-6 py-3 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden bg-surface-card',
                   i === 0 ? 'border border-[#FFDF73]/40 shadow-[0_4px_20px_rgba(255,223,115,0.15)] bg-gradient-to-r from-[#FFDF73]/10 to-transparent' :
@@ -144,7 +146,7 @@ export function ScorersPage() {
                     {row.assists || '—'}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

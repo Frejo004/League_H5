@@ -5,9 +5,26 @@ import { useTeams } from '@/hooks/useTeams'
 import { useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SkeletonRect, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
 import { motion } from 'framer-motion'
+
+/** Skeleton d'une carte équipe — même grille que la vraie card */
+function SkeletonTeamCard() {
+  return (
+    <div className="glass-morphism rounded-3xl p-5 space-y-4">
+      <div className="flex items-center gap-4">
+        <SkeletonRect className="w-14 h-14 rounded-2xl shrink-0" />
+        <div className="flex-1 space-y-2">
+          <SkeletonLine width="w-2/3" height="h-4" />
+          <SkeletonLine width="w-1/3" height="h-3" />
+        </div>
+        <SkeletonRect className="w-5 h-5 rounded" />
+      </div>
+      <SkeletonRect className="w-full h-1 rounded-full" />
+    </div>
+  )
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -53,7 +70,9 @@ export function TeamsPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonTeamCard key={i} />)}
+        </div>
       ) : !season ? (
         <div className="card">
           <div className="empty-state">

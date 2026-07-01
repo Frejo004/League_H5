@@ -9,6 +9,8 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { useScorers } from '@/hooks/useScorers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { PageHero } from '@/components/ui/PageHero'
+import { SkeletonPlayerProfile } from '@/components/ui/SkeletonLoader'
 import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -57,7 +59,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
 
   const maxVal = useMemo(() => Math.max(...evolution.map(e => e.goals), 1), [evolution])
 
-  if (isLoading) return <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+  if (isLoading) return <SkeletonPlayerProfile />
   if (!profile) return (
     <div className="card">
       <div className="empty-state py-8">
@@ -135,10 +137,10 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
       {/* ── Stats saison (KPIs Premium) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Matchs joués', value: profile.matches_played, icon: Calendar, color: 'text-slate-300', highlight: false },
-          { label: 'Buts', value: profile.goals, icon: Target, color: 'text-[#FFDF73]', highlight: false },
-          { label: 'Passes déc.', value: profile.assists, icon: Zap, color: 'text-emerald-400', highlight: false },
-          { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-500', highlight: (mvpData?.total_mvp ?? 0) > 0 },
+          { label: 'Matchs',          value: profile.matches_played, icon: Calendar, color: 'text-slate-300',  highlight: false },
+          { label: 'Buts',            value: profile.goals,          icon: Target,   color: 'text-[#FFDF73]', highlight: false },
+          { label: 'Passes déc.',     value: profile.assists,        icon: Zap,      color: 'text-emerald-400', highlight: false },
+          { label: 'Homme du match',  value: mvpData?.total_mvp ?? 0, icon: Star,    color: 'text-amber-500', highlight: (mvpData?.total_mvp ?? 0) > 0 },
         ].map(({ label, value, icon: Icon, color, highlight }) => (
           <div
             key={label}
@@ -152,7 +154,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {value}
             </p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-center">{label}</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1 text-center">{label}</p>
           </div>
         ))}
       </div>
@@ -179,28 +181,26 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
                     title={`J${e.matchday} · ${e.goals} but${e.goals > 1 ? 's' : ''} cumulé${e.goals > 1 ? 's' : ''}`}
                   />
                 </div>
-                <span className="text-[8px] text-slate-600">J{e.matchday}</span>
+                <span className="text-[10px] text-slate-600">J{e.matchday}</span>
               </div>
             ))}
           </div>
 
-          {/* Légende */}
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-orange-400/70" />
-              <span className="text-[10px] text-slate-500">Buts cumulés</span>
-            </div>
-            <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-green-500/70" />
-              <span className="text-[10px] text-slate-500">Victoire</span>
+              <span className="text-[11px] text-slate-500">Victoire</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-red-500/70" />
-              <span className="text-[10px] text-slate-500">Défaite</span>
+              <span className="text-[11px] text-slate-500">Défaite</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-slate-500/60" />
-              <span className="text-[10px] text-slate-500">Nul</span>
+              <span className="text-[11px] text-slate-500">Nul</span>
+            </div>
+            <div className="ml-auto text-[11px] text-slate-500 font-bold">
+              Buts cumulés par match
             </div>
           </div>
         </div>
@@ -346,27 +346,32 @@ export function MyStatsPage() {
   return (
     <div className="space-y-4">
 
-      {/* Header */}
-      <div className="flex items-center gap-2.5">
-        <Target size={18} className="text-orange-400" />
-        <h1 className="page-title">Mes Stats</h1>
-      </div>
+      {/* PageHero — cohérent avec les autres pages */}
+      <PageHero
+        imageUrl="https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=1200&q=80&auto=format&fit=crop"
+        pattern="hexagon"
+        accentColor="#f97316"
+        title="Mes Stats"
+        subtitle={season?.name}
+        icon={<Target size={20} className="text-orange-400" />}
+        compact
+      />
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <SkeletonPlayerProfile />
       ) : !season ? (
         <div className="card">
           <div className="empty-state py-8">
-            <Calendar size={24} className="text-slate-600 mb-2" />
-            <p className="text-slate-400 text-sm">Aucune saison active.</p>
+            <Calendar size={24} className="empty-state-icon" />
+            <p className="text-text-muted text-sm">Aucune saison active.</p>
           </div>
         </div>
       ) : !myPlayer ? (
         <div className="card">
           <div className="empty-state py-8">
-            <Shield size={24} className="text-slate-600 mb-2" />
-            <p className="text-slate-300 font-medium">Aucun profil joueur trouvé</p>
-            <p className="text-slate-500 text-sm mt-1">
+            <div className="empty-state-icon"><Shield size={24} /></div>
+            <p className="text-text-primary font-medium">Aucun profil joueur trouvé</p>
+            <p className="text-text-muted text-sm mt-1">
               Tu n'es pas encore lié à un joueur dans cette saison.
             </p>
           </div>

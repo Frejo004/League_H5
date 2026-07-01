@@ -1,4 +1,5 @@
 import { BarChart2, Target, Star, Shield, Zap } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useStandings } from '@/hooks/useStandings'
@@ -6,7 +7,7 @@ import { useMvpRanking } from '@/hooks/useMvpVotes'
 import { useMatches } from '@/hooks/useMatches'
 import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SkeletonKpiGrid, SkeletonCard } from '@/components/ui/SkeletonLoader'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 
@@ -61,7 +62,15 @@ export function StatsPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+        <div className="space-y-4">
+          <SkeletonKpiGrid count={4} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <SkeletonCard lines={6} />
+            <SkeletonCard lines={6} />
+            <SkeletonCard lines={6} />
+            <SkeletonCard lines={6} />
+          </div>
+        </div>
       ) : !season ? (
         <div className="card">
           <div className="empty-state">
@@ -131,33 +140,24 @@ export function StatsPage() {
               ) : (
                 <div className="space-y-2">
                   {topScorers.map((s, i) => (
-                    <div key={s.player_id} className="flex items-center gap-3">
+                    <Link key={s.player_id} to={`/players/${s.player_slug || s.player_id}`}
+                      className="flex items-center gap-3 hover:bg-surface-raised/50 rounded-xl px-2 py-1 -mx-2 transition-colors group">
                       <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">{i + 1}</span>
-                      <PlayerAvatar
-                        firstName={s.first_name}
-                        lastName={s.last_name}
-                        avatarUrl={s.avatar_url}
-                        teamColor={s.team_color}
-                        size={32}
-                      />
+                      <PlayerAvatar firstName={s.first_name} lastName={s.last_name} avatarUrl={s.avatar_url} teamColor={s.team_color} size={32} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-text-primary text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate group-hover:text-primary-400 transition-colors">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
                           <span className="text-xs text-text-muted truncate">{s.team_name}</span>
                         </div>
                       </div>
-                      {/* Bar */}
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
-                          <div
-                            className="h-full bg-orange-400 rounded-full"
-                            style={{ width: `${(s.goals / (topScorers[0]?.goals || 1)) * 100}%` }}
-                          />
+                          <div className="h-full bg-orange-400 rounded-full" style={{ width: `${(s.goals / (topScorers[0]?.goals || 1)) * 100}%` }} />
                         </div>
                         <span className="text-text-primary font-black text-sm w-4 text-right">{s.goals}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -177,17 +177,12 @@ export function StatsPage() {
               ) : (
                 <div className="space-y-2">
                   {topAssisters.map((s, i) => (
-                    <div key={s.player_id} className="flex items-center gap-3">
+                    <Link key={s.player_id} to={`/players/${s.player_slug || s.player_id}`}
+                      className="flex items-center gap-3 hover:bg-surface-raised/50 rounded-xl px-2 py-1 -mx-2 transition-colors group">
                       <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">{i + 1}</span>
-                      <PlayerAvatar
-                        firstName={s.first_name}
-                        lastName={s.last_name}
-                        avatarUrl={s.avatar_url}
-                        teamColor={s.team_color}
-                        size={32}
-                      />
+                      <PlayerAvatar firstName={s.first_name} lastName={s.last_name} avatarUrl={s.avatar_url} teamColor={s.team_color} size={32} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-text-primary text-sm font-semibold truncate">{s.first_name} {s.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate group-hover:text-primary-400 transition-colors">{s.first_name} {s.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.team_color }} />
                           <span className="text-xs text-text-muted truncate">{s.team_name}</span>
@@ -195,14 +190,11 @@ export function StatsPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
-                          <div
-                            className="h-full bg-violet-400 rounded-full"
-                            style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }}
-                          />
+                          <div className="h-full bg-violet-400 rounded-full" style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }} />
                         </div>
                         <span className="text-text-primary font-black text-sm w-4 text-right">{s.assists}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -230,19 +222,14 @@ export function StatsPage() {
               ) : (
                 <div className="space-y-2">
                   {mvpRanking.slice(0, 5).map((m, i) => (
-                    <div key={m.player_id} className="flex items-center gap-3">
+                    <Link key={m.player_id} to={`/players/${m.player_slug || m.player_id}`}
+                      className="flex items-center gap-3 hover:bg-surface-raised/50 rounded-xl px-2 py-1 -mx-2 transition-colors group">
                       <span className="text-sm font-bold text-text-muted w-5 text-right shrink-0">
                         {i === 0 ? '🏆' : i + 1}
                       </span>
-                      <PlayerAvatar
-                        firstName={m.first_name}
-                        lastName={m.last_name}
-                        avatarUrl={m.avatar_url}
-                        teamColor={m.team_color}
-                        size={32}
-                      />
+                      <PlayerAvatar firstName={m.first_name} lastName={m.last_name} avatarUrl={m.avatar_url} teamColor={m.team_color} size={32} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-text-primary text-sm font-semibold truncate">{m.first_name} {m.last_name}</p>
+                        <p className="text-text-primary text-sm font-semibold truncate group-hover:text-primary-400 transition-colors">{m.first_name} {m.last_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.team_color }} />
                           <span className="text-xs text-text-muted truncate">{m.team_name}</span>
@@ -250,17 +237,15 @@ export function StatsPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
-                          <div
-                            className="h-full bg-amber-400 rounded-full animate-pulse"
-                            style={{ width: `${(m.mvp_titles / (mvpRanking[0]?.mvp_titles || 1)) * 100}%` }}
-                          />
+                          <div className="h-full bg-amber-400 rounded-full animate-pulse"
+                            style={{ width: `${(m.mvp_titles / (mvpRanking[0]?.mvp_titles || 1)) * 100}%` }} />
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-amber-400 font-black text-sm block leading-none">{m.mvp_titles} MVP</span>
                           <span className="text-[9px] text-text-muted font-bold block mt-0.5">{m.votes} vote{m.votes > 1 ? 's' : ''}</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

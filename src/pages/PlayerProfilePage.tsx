@@ -10,6 +10,7 @@ import { POSITION_LABELS, ResultBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
 import { useMemo, useState } from 'react'
 import { getRouteParamType } from '@/lib/routeHelpers'
+import { POSITION_COLORS } from '@/components/ui/shared/constants'
 
 
 function formatDate(dateStr: string | null) {
@@ -333,30 +334,41 @@ export function PlayerProfilePage() {
         { label: `${player.first_name} ${player.last_name}` }
       ]} />
 
-      {/* ── Hero card ── */}
-      <div className="card">
-        <div className="flex items-center gap-4">
+      {/* ── Hero card enrichi — couleur équipe + glow ── */}
+      <div className="relative overflow-hidden rounded-2xl p-[1.5px]"
+           style={{ background: `linear-gradient(135deg, ${player.team.color}80 0%, ${player.team.color}20 50%, transparent 100%)` }}>
+        <div className="relative rounded-2xl overflow-hidden p-5 sm:p-6 flex items-center gap-5 bg-grid-pattern"
+             style={{ backgroundColor: 'var(--color-surface-card)' }}>
 
-          {/* Avatar / initiales */}
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center
-                       text-white text-xl font-bold shrink-0 ring-2 ring-surface-border"
-            style={{ backgroundColor: player.team.color }}
-          >
-            {player.avatar_url
-              ? <img src={player.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
-              : `${player.first_name[0]}${player.last_name[0]}`
-            }
+          {/* Glow équipe en fond */}
+          <div className="absolute inset-0 pointer-events-none"
+               style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${player.team.color}18 0%, transparent 70%)` }} />
+
+          {/* Avatar avec ring couleur équipe */}
+          <div className="relative shrink-0 z-10">
+            <div className="absolute inset-0 blur-xl rounded-full opacity-50"
+                 style={{ backgroundColor: player.team.color }} />
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-black shrink-0 shadow-2xl relative overflow-hidden border-2"
+              style={{ backgroundColor: player.team.color, borderColor: `${player.team.color}80` }}
+            >
+              {player.avatar_url
+                ? <img src={player.avatar_url} alt={`${player.first_name} ${player.last_name}`} className="w-full h-full object-cover" />
+                : <span style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{player.first_name[0]}{player.last_name[0]}</span>
+              }
+            </div>
           </div>
 
-          {/* Infos */}
-          <div className="flex-1 min-w-0">
+          {/* Infos joueur */}
+          <div className="flex-1 min-w-0 z-10">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-white">
+              <h1 className="text-2xl font-black text-text-primary uppercase tracking-wide leading-tight"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {player.first_name} {player.last_name}
               </h1>
               {player.jersey_number && (
-                <span className="badge bg-surface-raised text-slate-400 border border-surface-border text-xs">
+                <span className="text-base font-black px-2 py-0.5 rounded border"
+                      style={{ color: player.team.color, borderColor: `${player.team.color}40`, backgroundColor: `${player.team.color}15`, fontFamily: "'Barlow Condensed', sans-serif" }}>
                   #{player.jersey_number}
                 </span>
               )}
@@ -365,37 +377,45 @@ export function PlayerProfilePage() {
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {/* Équipe */}
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: player.team.color }} />
-                <span className="text-sm text-slate-400">{player.team.name}</span>
+                <span className="w-3 h-3 rounded-sm shrink-0 shadow-sm" style={{ backgroundColor: player.team.color }} />
+                <span className="text-sm font-semibold text-text-secondary">{player.team.name}</span>
               </div>
 
-              {/* Poste */}
+              {/* Poste avec couleur */}
               {player.position && (
-                <span className="text-sm text-slate-500">
+                <span className={clsx(
+                  'text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border',
+                  POSITION_COLORS[player.position as keyof typeof POSITION_COLORS] ?? 'text-text-muted bg-surface-raised border-surface-border'
+                )}>
                   {POSITION_LABELS[player.position] ?? player.position}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Rang buteur */}
-          {rankDisplay && (
-            <div className="text-center shrink-0">
-              <p className="text-2xl font-bold text-orange-400">#{rankDisplay}</p>
-              <p className="text-[10px] text-slate-600 uppercase tracking-wider">Buteurs</p>
-            </div>
-          )}
-
-          {/* Bouton comparer */}
-          <Link
-            to="/players"
-            state={{ compareWith: id }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors text-[10px] font-black uppercase tracking-wider shrink-0"
-            title="Comparer avec un autre joueur"
-          >
-            <GitCompare size={13} />
-            <span className="hidden sm:block">Comparer</span>
-          </Link>
+          {/* Rang buteur + bouton comparer */}
+          <div className="flex flex-col items-end gap-3 shrink-0 z-10">
+            {rankDisplay && (
+              <div className="text-center border-l pl-5"
+                   style={{ borderColor: `${player.team.color}30` }}>
+                <p className="text-3xl font-black tabular-nums drop-shadow-lg"
+                   style={{ color: player.team.color, fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  #{rankDisplay}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5 text-text-muted">Buteurs</p>
+              </div>
+            )}
+            <Link
+              to="/players"
+              state={{ compareWith: id }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-colors text-[10px] font-black uppercase tracking-wider shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
+              style={{ borderColor: 'var(--color-surface-border)', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface-raised)' }}
+              title="Comparer avec un autre joueur"
+            >
+              <GitCompare size={12} />
+              <span className="hidden sm:block">Comparer</span>
+            </Link>
+          </div>
         </div>
       </div>
 

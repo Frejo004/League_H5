@@ -91,7 +91,7 @@ function SectionTitle({ icon: Icon, title, color = '#f59e0b' }: {
       >
         <Icon size={15} style={{ color }} />
       </div>
-      <h2 className="text-sm font-black text-white uppercase tracking-wider leading-none">{title}</h2>
+      <h2 className="text-sm font-black text-text-primary uppercase tracking-wider leading-none">{title}</h2>
     </div>
   )
 }
@@ -103,7 +103,8 @@ function InfoBadge({ icon: Icon, label, value, color }: {
   color: string
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+    <div className="flex items-center gap-3 p-3 rounded-xl border"
+         style={{ borderColor: 'var(--color-surface-border)', backgroundColor: 'var(--color-surface-raised)' }}>
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ backgroundColor: color + '20' }}
@@ -111,8 +112,8 @@ function InfoBadge({ icon: Icon, label, value, color }: {
         <Icon size={16} style={{ color }} />
       </div>
       <div>
-        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{label}</p>
-        <p className="text-sm font-black text-white leading-tight">{value}</p>
+        <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">{label}</p>
+        <p className="text-sm font-black text-text-primary leading-tight">{value}</p>
       </div>
     </div>
   )
@@ -124,7 +125,7 @@ function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
   return (
     <div
       className="rounded-2xl overflow-hidden border"
-      style={{ borderColor: team.color + '40', background: `linear-gradient(135deg, ${team.color}12 0%, #0f1420 70%)` }}
+      style={{ borderColor: team.color + '40', background: `linear-gradient(135deg, ${team.color}12 0%, var(--color-surface-card) 70%)` }}
     >
       {/* Header */}
       <div
@@ -147,8 +148,8 @@ function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
           }
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-black text-white leading-tight truncate">{team.name}</p>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+          <p className="text-sm font-black text-text-primary leading-tight truncate">{team.name}</p>
+          <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider mt-0.5">
             {team.players.length} joueur{team.players.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -157,7 +158,7 @@ function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
       {/* Joueurs */}
       <div className="px-4 py-3 space-y-1.5">
         {team.players.length === 0 ? (
-          <p className="text-xs text-slate-600 italic">Aucun joueur enregistré</p>
+          <p className="text-xs text-text-muted italic">Aucun joueur enregistré</p>
         ) : (
           team.players.map((player, i) => (
             <div key={player.id} className="flex items-center gap-2">
@@ -167,7 +168,7 @@ function TeamCard({ team, rank }: { team: TeamWithPlayers; rank: number }) {
               >
                 {player.jersey_number ?? i + 1}.
               </span>
-              <span className="text-xs text-slate-300 font-medium">
+              <span className="text-xs text-text-secondary font-medium">
                 {player.first_name} {player.last_name}
               </span>
             </div>
@@ -193,7 +194,7 @@ export function RulesPage() {
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden rounded-2xl border border-amber-500/30 p-6 text-center"
-        style={{ background: 'var(--color-surface-card)' }}
+        style={{ backgroundColor: 'var(--color-surface-card)' }}
       >
         <div className="absolute inset-0 pointer-events-none bg-linear-to-br from-amber-500/5 to-transparent" />
         <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-amber-500 to-transparent" />
@@ -205,12 +206,12 @@ export function RulesPage() {
           </div>
 
           <h1
-            className="text-4xl lg:text-5xl font-black text-white tracking-tight mb-1"
+            className="text-4xl lg:text-5xl font-black tracking-tight mb-1 text-text-primary"
             style={{ fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '-0.02em' }}
           >
             HIGH FIVE <span className="text-amber-400">LIGUE</span>
           </h1>
-          <p className="text-slate-400 text-sm font-medium mb-6">
+          <p className="text-text-muted text-sm font-medium mb-6">
             Règlement officiel & organisation
             {season && <span className="text-amber-500/70 ml-2">— {season.name}</span>}
           </p>
@@ -225,14 +226,15 @@ export function RulesPage() {
       </div>
 
       {/* ── Tabs Navigation ── */}
-      <div className="flex gap-2 p-1.5 bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-white/[0.08] sticky top-20 z-30 shadow-2xl mx-1 sm:mx-0">
+      <div className="flex gap-2 p-1.5 backdrop-blur-xl rounded-2xl border sticky top-20 z-30 shadow-2xl mx-1 sm:mx-0"
+           style={{ backgroundColor: 'var(--color-surface-card)', borderColor: 'var(--color-surface-border)' }}>
         <button
           onClick={() => setActiveTab('ligue')}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-400",
+            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
             activeTab === 'ligue'
               ? "bg-[#C8F135] text-black shadow-[0_0_25px_rgba(200,241,53,0.3)] scale-[1.01]"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-raised"
           )}
         >
           <Trophy size={14} />
@@ -241,10 +243,10 @@ export function RulesPage() {
         <button
           onClick={() => setActiveTab('effectifs')}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-400",
+            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
             activeTab === 'effectifs'
               ? "bg-red-600 text-white shadow-[0_0_25px_rgba(220,38,38,0.3)] scale-[1.01]"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-raised"
           )}
         >
           <Users size={14} />
@@ -253,10 +255,10 @@ export function RulesPage() {
         <button
           onClick={() => setActiveTab('arbitrage')}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-400",
+            "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
             activeTab === 'arbitrage'
               ? "bg-blue-600 text-white shadow-[0_0_25px_rgba(37,99,235,0.3)] scale-[1.01]"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-raised"
           )}
         >
           <Scale size={14} />

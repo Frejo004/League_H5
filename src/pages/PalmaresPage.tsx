@@ -221,12 +221,19 @@ function SeasonCard({ season, isActive, isExpanded, onToggle }: {
         </div>
       </button>
 
-      {/* Expanded detail */}
-      {isExpanded && (
-        <div className="px-4 pb-4 border-t border-surface-border/50">
-          <SeasonDetail season={season} />
-        </div>
-      )}
+      {/* Expanded detail — avec transition smooth */}
+      <div
+        className={clsx(
+          'overflow-hidden transition-all duration-300 ease-in-out',
+          isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+        )}
+      >
+        {isExpanded && (
+          <div className="px-4 pb-4 border-t border-surface-border/50">
+            <SeasonDetail season={season} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

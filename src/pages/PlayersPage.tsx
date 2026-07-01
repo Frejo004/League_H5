@@ -530,13 +530,13 @@ export function PlayersPage() {
 
                 <div className="flex items-center gap-1 mx-1">
                   {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                    // Logique simple pour afficher les pages autour de la page courante
-                    let pageNum = i + 1;
-                    if (totalPages > 5) {
-                      if (page > 3) pageNum = page - 2 + i;
-                      if (page > totalPages - 2) pageNum = totalPages - 4 + i;
-                    }
-                    if (pageNum > totalPages) return null;
+                    // Fenêtre bornée : 5 pages autour de la page courante
+                    let startPage = Math.max(1, page - 2)
+                    const endPage = Math.min(totalPages, startPage + 4)
+                    // Ajuster le début si on est près de la fin
+                    startPage = Math.max(1, endPage - 4)
+                    const pageNum = startPage + i
+                    if (pageNum > totalPages) return null
 
                     return (
                       <button
@@ -544,8 +544,8 @@ export function PlayersPage() {
                         onClick={() => setPage(pageNum)}
                         className={clsx(
                           "w-8 h-8 rounded-lg text-xs font-black transition-all",
-                          page === pageNum 
-                            ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20" 
+                          page === pageNum
+                            ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20"
                             : "text-text-muted hover:text-text-primary hover:bg-surface-muted/50"
                         )}
                       >
