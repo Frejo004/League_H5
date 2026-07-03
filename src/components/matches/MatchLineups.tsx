@@ -294,12 +294,13 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
   const [starters, setStarters] = useState<string[]>(initialStarters)
   const [subs, setSubs] = useState<string[]>(initialSubs)
   const [formation, setFormation] = useState(initialFormation)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  const containsSuspended = starters.some(id => suspendedPlayerIds.includes(id)) || subs.some(id => suspendedPlayerIds.includes(id))
+  const containsSuspended = starters.some(id => suspendedPlayerIds.includes(id))
 
   const handleTogglePlayer = (playerId: string) => {
     if (suspendedPlayerIds.includes(playerId)) {
-      // Si le joueur est suspendu, on permet uniquement de le désélectionner s'il y était déjà
+      // Joueur suspendu : on peut uniquement le retirer s'il était déjà sélectionné
       if (starters.includes(playerId)) {
         setStarters(starters.filter(id => id !== playerId))
       } else if (subs.includes(playerId)) {
@@ -309,34 +310,51 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
     }
 
     if (starters.includes(playerId)) {
+      // Titulaire → banc
       setStarters(starters.filter(id => id !== playerId))
       setSubs([...subs, playerId])
     } else if (subs.includes(playerId)) {
+      // Banc → retiré
       setSubs(subs.filter(id => id !== playerId))
     } else {
-      if (starters.length >= 5) setSubs([...subs, playerId])
-      else setStarters([...starters, playerId])
+      // Non sélectionné → titulaire si places dispo, sinon banc
+      if (starters.length < 5) setStarters([...starters, playerId])
+      else setSubs([...subs, playerId])
     }
   }
 
   const handleSave = async () => {
-    if (containsSuspended) return
-    const formationCoords = FORMATIONS[formation].coords
-    const startersWithPositions = starters.map((pid, idx) => ({
-      id: pid,
-      pos: `${formation}:${formationCoords[idx].pos}`
-    }))
+    if (!canSave) return
+    setSaveError(null)
+    try {
+      const formationCoords = FORMATIONS[formation].coords
+      const startersWithPositions = starters.map((pid, idx) => ({
+        id: pid,
+        pos: `${formation}:${formationCoords[idx]?.pos ?? 'P' + (idx + 1)}`
+      }))
 
-    await updateLineup.mutateAsync({
-      matchId,
-      teamId,
-      starters: startersWithPositions,
-      substitutes: subs
-    })
-    onClose()
+      await updateLineup.mutateAsync({
+        matchId,
+        teamId,
+        starters: startersWithPositions,
+        substitutes: subs,
+      })
+      onClose()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Erreur lors de la sauvegarde'
+      setSaveError(msg)
+    }
   }
 
-  const canSave = starters.length === 5 && !containsSuspended
+  // La composition est valide dès qu'il y a au moins 1 titulaire et aucun suspendu
+  // parmi les titulaires. On n'impose plus strictement 5 (cas d'équipes incomplètes).
+  const canSave = starters.length >= 1 && starters.length <= 5 && !containsSuspended
+
+  // Message d'aide contextuel sous le compteur
+  const starterHint =
+    starters.length === 0 ? 'Sélectionne au moins 1 titulaire'
+    : starters.length < 5 ? `${5 - starters.length} place${5 - starters.length > 1 ? 's' : ''} restante${5 - starters.length > 1 ? 's' : ''}`
+    : null
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -351,11 +369,12 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
               {Object.keys(FORMATIONS).map(key => (
                 <button
                   key={key}
-                  disabled={containsSuspended}
                   onClick={() => setFormation(key)}
                   className={clsx(
                     "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all",
-                    formation === key ? "bg-primary-600 border-primary-500 text-white shadow-lg" : "bg-surface-muted/30 border-surface-border text-text-muted"
+                    formation === key
+                      ? "bg-primary-600 border-primary-500 text-white shadow-lg"
+                      : "bg-surface-muted/30 border-surface-border text-text-muted hover:border-primary-500/40"
                   )}
                 >
                   <span className="text-xs font-black">{FORMATIONS[key].label}</span>
@@ -374,27 +393,40 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
             <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Sélection</p>
-            <span className="text-[10px] font-black text-text-primary bg-surface-muted/30 px-3 py-1 rounded-full border border-surface-border">{starters.length}/5</span>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className={clsx(
+                "text-[10px] font-black px-3 py-1 rounded-full border",
+                starters.length === 5
+                  ? "bg-primary-500/10 border-primary-500/30 text-primary-400"
+                  : "bg-surface-muted/30 border-surface-border text-text-primary"
+              )}>
+                {starters.length}/5
+              </span>
+              {starterHint && (
+                <span className="text-[9px] text-text-muted font-bold">{starterHint}</span>
+              )}
+            </div>
           </div>
           <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
             {players?.map(p => {
               const isSuspended = suspendedPlayerIds.includes(p.id)
-              const isSelected = starters.includes(p.id) || subs.includes(p.id)
+              const isStarter = starters.includes(p.id)
+              const isSub = subs.includes(p.id)
 
               return (
                 <button
                   key={p.id}
                   onClick={() => handleTogglePlayer(p.id)}
-                  disabled={isSuspended && !isSelected}
+                  disabled={isSuspended && !isStarter && !isSub}
                   className={clsx(
                     "w-full flex items-center gap-4 p-3 rounded-2xl border transition-all text-left",
                     isSuspended
                       ? "bg-red-500/5 border-red-500/10 opacity-40 cursor-not-allowed"
-                      : starters.includes(p.id)
+                      : isStarter
                         ? "bg-primary-500/10 border-primary-500/30"
-                        : subs.includes(p.id)
+                        : isSub
                           ? "bg-blue-500/10 border-blue-500/30"
-                          : "bg-surface-muted/10 border-surface-border opacity-60"
+                          : "bg-surface-muted/10 border-surface-border opacity-60 hover:opacity-100"
                   )}
                 >
                   <div className={clsx(
@@ -416,6 +448,17 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
                     </div>
                     <p className="text-[10px] text-text-muted/60 font-bold uppercase">{p.position}</p>
                   </div>
+                  {/* Badge de statut à droite */}
+                  {isStarter && (
+                    <span className="shrink-0 text-[8px] font-black uppercase px-2 py-0.5 rounded-lg bg-primary-500/20 text-primary-400 border border-primary-500/30">
+                      Titulaire
+                    </span>
+                  )}
+                  {isSub && (
+                    <span className="shrink-0 text-[8px] font-black uppercase px-2 py-0.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                      Banc
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -423,10 +466,18 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
         </div>
       </div>
 
+      {/* Avertissement suspendu parmi titulaires */}
       {containsSuspended && (
         <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 text-red-400 text-[10px] font-black uppercase tracking-widest leading-relaxed animate-pulse">
           <span className="shrink-0 mt-0.5">⚠️</span>
-          <span>La composition contient un joueur suspendu. Veuillez le retirer pour pouvoir valider.</span>
+          <span>Un titulaire est suspendu. Retirez-le avant de valider.</span>
+        </div>
+      )}
+
+      {/* Erreur de sauvegarde */}
+      {saveError && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest">
+          ❌ {saveError}
         </div>
       )}
 
@@ -434,11 +485,26 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
         <button
           onClick={handleSave}
           disabled={!canSave || updateLineup.isPending}
-          className={clsx("flex-1 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] transition-all", canSave ? "bg-primary-600 text-white shadow-xl hover:bg-primary-500 active:scale-[0.98]" : "bg-surface-muted text-text-muted cursor-not-allowed")}
+          className={clsx(
+            "flex-1 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] transition-all",
+            canSave && !updateLineup.isPending
+              ? "bg-primary-600 text-white shadow-xl hover:bg-primary-500 active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
         >
-          {updateLineup.isPending ? "Transmission..." : "Valider"}
+          {updateLineup.isPending
+            ? "Transmission..."
+            : starters.length === 0
+              ? "Sélectionne des joueurs"
+              : "Valider la composition"
+          }
         </button>
-        <button onClick={onClose} className="px-8 py-4 rounded-2xl bg-surface-muted/30 border border-surface-border text-text-primary font-black uppercase tracking-widest hover:bg-surface-muted transition-colors">Annuler</button>
+        <button
+          onClick={onClose}
+          className="px-8 py-4 rounded-2xl bg-surface-muted/30 border border-surface-border text-text-primary font-black uppercase tracking-widest hover:bg-surface-muted transition-colors"
+        >
+          Annuler
+        </button>
       </div>
     </div>
   )
