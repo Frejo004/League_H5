@@ -7,8 +7,9 @@ import { motion } from 'framer-motion'
 import { ResultBadge } from '@/components/ui/SharedBadges'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useTeams, useUpdateTeam } from '@/hooks/useTeams'
-import { usePlayersByTeam, usePlayers } from '@/hooks/usePlayers'
+import { useUpdateTeam } from '@/hooks/useTeams'
+import { usePlayersByTeam } from '@/hooks/usePlayers'
+import { useMyTeam } from '@/hooks/useMyTeam'
 import { useTransfers } from '@/hooks/useTransfers'
 import { supabase } from '@/lib/supabase'
 import { useMatches } from '@/hooks/useMatches'
@@ -949,7 +950,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 // ── Onglet Stats ──────────────────────────────────────────────────────────────
 
 function TabTransferts({ teamId }: { teamId: string }) {
-  const { data: transfers, isLoading, approveAsHomeCaptain, approveAsAwayCaptain, rejectTransfer } = useTransfers()
+  const { data: transfers, isLoading, approveAsHomeCaptain, approveAsAwayCaptain, rejectTransfer } = useTransfers(teamId)
 
   if (isLoading) return <div className="flex justify-center py-10"><LoadingSpinner /></div>
 
@@ -1283,8 +1284,9 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number; className?
 export function CaptainPage() {
   const { profile, isCaptain } = useAuth()
   const { data: season } = useActiveSeason()
-  const { data: teams } = useTeams(season?.id)
-  const { data: allPlayers } = usePlayers(season?.id)
+  // useMyTeam charge uniquement le joueur + l'équipe du capitaine connecté,
+  // sans charger toute la liste des joueurs de la saison.
+  const { myTeam, myPlayer, isLoading: teamLoading } = useMyTeam(season?.id)
   const { data: standings } = useStandings(season?.id)
 
   // Édition nom d'équipe
@@ -1294,21 +1296,14 @@ export function CaptainPage() {
   const [nameError, setNameError] = useState('')
 
   // Upload logo équipe
-  const logoRef = useRef<HTMLInputElement>(null) // Corrected: was missing type
+  const logoRef = useRef<HTMLInputElement>(null)
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
 
   if (!isCaptain) return <Navigate to="/dashboard" replace />
 
-  const myPlayer = (allPlayers ?? []).find(p => p.user_id === profile?.id)
-
-  const myTeamTyped = (teams ?? []).find(t => {
-    const team = t as unknown as TeamWithCaptain
-    return (
-      team.captain_id === profile?.id ||
-      (myPlayer && team.captain_player_id === myPlayer.id)
-    )
-  }) as unknown as TeamWithCaptain | undefined
+  // Caste vers TeamWithCaptain pour accéder aux champs étendus
+  const myTeamTyped = myTeam as unknown as TeamWithCaptain | null
 
   function startEditName() {
     setTeamName(myTeamTyped?.name ?? '')
@@ -1379,10 +1374,13 @@ export function CaptainPage() {
         <h1 className="page-title">Mon Équipe</h1>
       </div>
 
-      {!season ? (
+      {!season || teamLoading ? (
         <div className="card">
           <div className="empty-state py-6">
-            <p className="text-slate-400 text-sm">Aucune saison active.</p>
+            {teamLoading
+              ? <LoadingSpinner />
+              : <p className="text-slate-400 text-sm">Aucune saison active.</p>
+            }
           </div>
         </div>
       ) : !myTeamTyped ? (
