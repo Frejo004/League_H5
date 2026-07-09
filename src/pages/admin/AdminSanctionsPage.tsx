@@ -17,7 +17,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 export function AdminSanctionsPage() {
   const { data: season } = useActiveSeason()
   const { data: stats, isLoading: statsLoading } = useDisciplinaryStats(season?.id)
-  const { data: suspensions = [], addSuspension, toggleSuspension, deleteSuspension, updateServed } = useSuspensions(season?.id)
+  const { data: suspensions = [], isLoading: suspensionsLoading, addSuspension, toggleSuspension, deleteSuspension, updateServed } = useSuspensions(season?.id)
   const { data: allPlayers = [] } = usePlayers(season?.id)
 
   const [showAddForm, setShowAddForm] = useState(false)
@@ -50,7 +50,8 @@ export function AdminSanctionsPage() {
     `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  if (statsLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
+  // On attend seulement que les suspensions soient chargées — les stats peuvent arriver après
+  if (suspensionsLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

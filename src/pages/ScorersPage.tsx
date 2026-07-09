@@ -1,8 +1,9 @@
-import { Target } from 'lucide-react'
+import { Target, Ban } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
+import { useActiveSuspendedPlayerIds } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
@@ -11,6 +12,7 @@ import { clsx } from 'clsx'
 export function ScorersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
+  const { data: suspendedIds } = useActiveSuspendedPlayerIds(season?.id)
 
   useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
@@ -114,12 +116,20 @@ export function ScorersPage() {
                     )}
                   />
                   <div className="min-w-0 flex flex-col justify-center">
-                    <p className={clsx(
-                      "text-base sm:text-lg font-black uppercase tracking-wider truncate",
-                      i === 0 ? 'text-text-primary text-glow-sm' : 'text-text-secondary group-hover:text-text-primary'
-                    )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                      {row.first_name} {row.last_name}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={clsx(
+                        "text-base sm:text-lg font-black uppercase tracking-wider truncate",
+                        i === 0 ? 'text-text-primary text-glow-sm' : 'text-text-secondary group-hover:text-text-primary'
+                      )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                        {row.first_name} {row.last_name}
+                      </p>
+                      {suspendedIds?.has(row.player_id) && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-[9px] font-black text-red-400 uppercase tracking-wider shrink-0">
+                          <Ban size={9} />
+                          Suspendu
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                         style={{ backgroundColor: row.team_color }} />

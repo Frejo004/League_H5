@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { User, Search, ChevronDown, Crown, GitCompare, ChevronRight, ChevronLeft } from 'lucide-react'
+import { User, Search, ChevronDown, Crown, GitCompare, ChevronRight, ChevronLeft, Ban } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useTeams } from '@/hooks/useTeams'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
-import { usePlayerDiscipline } from '@/hooks/useDisciplinaryStats'
+import { usePlayerDiscipline, useActiveSuspendedPlayerIds } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { clsx } from 'clsx'
@@ -167,6 +167,7 @@ export function PlayersPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: players, isLoading: playersLoading } = usePlayers(season?.id)
   const { data: teams } = useTeams(season?.id)
+  const { data: suspendedIds } = useActiveSuspendedPlayerIds(season?.id)
 
   const [search, setSearch] = useState('')
   const [filterTeam, setFilterTeam] = useState('')
@@ -452,6 +453,12 @@ export function PlayersPage() {
                       {isCaptain && (
                         <span className="badge bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[9px] px-1.5 py-0.5 shrink-0">
                           Capitaine
+                        </span>
+                      )}
+                      {suspendedIds?.has(p.id) && (
+                        <span className="flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                          <Ban size={8} />
+                          Suspendu
                         </span>
                       )}
                     </div>

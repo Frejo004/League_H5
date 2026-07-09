@@ -8,6 +8,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { Database } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 import { PostgrestError } from '@supabase/supabase-js'
+import { useEffect } from 'react'
 
 export interface Suspension {
   id: string
@@ -240,6 +241,23 @@ export function useSuspensions(seasonId?: string) {
     },
   })
 
+  // Realtime : rafraîchir automatiquement quand une suspension est créée/modifiée/supprimée
+  useEffect(() => {
+    if (!seasonId) return
+    const channel = supabase
+      .channel(`suspensions-realtime-${seasonId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'suspensions',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['suspensions', seasonId] })
+        queryClient.invalidateQueries({ queryKey: ['my-active-suspension'] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [seasonId, queryClient])
+
   const addSuspension = useMutation({
     mutationFn: async (payload: Partial<Suspension>) => {
       const { data, error } = await supabase.from('suspensions').insert({
@@ -288,4 +306,68 @@ export function useSuspensions(seasonId?: string) {
     deleteSuspension, 
     updateServed 
   }
+}
+
+/**
+ * useActiveSuspendedPlayerIds — IDs des joueurs actuellement suspendus
+ * Utilisé pour afficher un badge "suspendu" sur les pages publiques
+ */
+export function useActiveSuspendedPlayerIds(seasonId?: string) {
+  return useQuery({
+    queryKey: ['suspended-player-ids', seasonId],
+    enabled: !!seasonId,
+    staleTime: 30_000,
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await supabase
+        .from('suspensions')
+        .select('player_id')
+        .eq('season_id', seasonId!)
+        .eq('is_active', true)
+      if (error) throw error
+      return new Set((data ?? []).map(s => s.player_id))
+    },
+  })
+}
+
+/**
+ * useMyActiveSuspension — Suspension active du joueur connecté
+ * Utilisé dans le Dashboard pour afficher la bannière de sanction
+ */
+export function useMyActiveSuspension(userId?: string, seasonId?: string) {
+  return useQuery({
+    queryKey: ['my-active-suspension', userId, seasonId],
+    enabled: !!userId && !!seasonId,
+    staleTime: 30_000,
+    queryFn: async (): Promise<Suspension | null> => {
+      // Récupérer le player_id lié à cet utilisateur
+      const { data: player } = await supabase
+        .from('players')
+        .select('id')
+        .eq('user_id', userId!)
+        .maybeSingle()
+
+      if (!player) return null
+
+      const { data, error } = await supabase
+        .from('suspensions')
+        .select(`
+          *,
+          player:players(
+            id,
+            first_name,
+            last_name,
+            team:teams(id, name, color)
+          )
+        `)
+        .eq('player_id', player.id)
+        .eq('season_id', seasonId!)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) throw error
+      return data as unknown as Suspension | null
+    },
+  })
 }

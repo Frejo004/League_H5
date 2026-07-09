@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bell, Calendar, CheckCircle2, Star,
-  UserPlus, AlertTriangle, X, ChevronRight, CheckCheck, Users, UserCheck, MessageSquare
+  UserPlus, AlertTriangle, X, ChevronRight, CheckCheck, Users, UserCheck, MessageSquare, ShieldAlert, ShieldCheck
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Notification, NotifType } from '@/hooks/useNotifications'
@@ -24,8 +24,10 @@ const TYPE_CONFIG: Record<NotifType, {
   invite_expiring:   { icon: AlertTriangle, color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
   spectator_request: { icon: Users,          color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20'  },
   spectator_approved: { icon: UserCheck,      color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-  tactique_selected: { icon: UserCheck,      color: 'text-primary-400', bg: 'bg-primary-500/10', border: 'border-primary-500/20' },
-  mention:           { icon: MessageSquare,  color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20'    },
+  tactique_selected:  { icon: UserCheck,    color: 'text-primary-400', bg: 'bg-primary-500/10', border: 'border-primary-500/20' },
+  mention:            { icon: MessageSquare, color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20'    },
+  suspension_added:   { icon: ShieldAlert,   color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30'     },
+  suspension_lifted:  { icon: ShieldCheck,   color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
 }
 
 function timeAgo(date: Date): string {

@@ -23,6 +23,8 @@ export type NotifType =
   | 'tactique_selected'
   | 'mention'
   | 'poll_resolved'
+  | 'suspension_added'
+  | 'suspension_lifted'
 
 export interface Notification {
   id: string
@@ -316,6 +318,61 @@ export function useNotifications() {
 
     return () => { supabase.removeChannel(channel) }
   }, [isAdmin, qc])
+
+  // Realtime : Détecter quand une suspension est ajoutée/levée pour le joueur connecté
+  useEffect(() => {
+    if (!user?.id) return
+
+    // On écoute toutes les suspensions — on filtre côté client sur le player lié à cet user
+    const channel = supabase
+      .channel(`suspension-player-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'suspensions' }, async (payload) => {
+        const suspension = payload.new as {
+          id: string; player_id: string; reason: string; matches_count: number; is_active: boolean
+        }
+        // Vérifier si cette suspension concerne le joueur lié à cet utilisateur
+        const { data: player } = await supabase
+          .from('players')
+          .select('id, first_name, last_name')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!player || player.id !== suspension.player_id) return
+
+        qc.invalidateQueries({ queryKey: ['suspensions'] })
+        pushLocal(
+          '🚫 Sanction disciplinaire',
+          `Tu es suspendu pour ${suspension.matches_count} match${suspension.matches_count > 1 ? 's' : ''} — Motif : ${suspension.reason}`,
+          `suspension-added-${suspension.id}`,
+          '/dashboard'
+        )
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'suspensions' }, async (payload) => {
+        const updated = payload.new as { id: string; player_id: string; is_active: boolean; reason: string }
+        const old = payload.old as { is_active: boolean }
+        // Levée de sanction : is_active passe de true à false
+        if (old.is_active === false || updated.is_active !== false) return
+
+        const { data: player } = await supabase
+          .from('players')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!player || player.id !== updated.player_id) return
+
+        qc.invalidateQueries({ queryKey: ['suspensions'] })
+        pushLocal(
+          '✅ Sanction levée',
+          'Ta suspension a été levée. Tu peux à nouveau participer aux matchs.',
+          `suspension-lifted-${updated.id}`,
+          '/dashboard'
+        )
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, qc])
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {
