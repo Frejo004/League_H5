@@ -9,7 +9,7 @@ import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Camera, Mic, Trending
 import { clsx } from 'clsx'
 import { useAdminMatchLive, useLiveClock } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
-import { useDisciplinaryStats } from '@/hooks/useDisciplinaryStats'
+import { useDisciplinaryStats, useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useWebRTCBroadcaster } from '@/hooks/useWebRTCStream'
@@ -160,6 +160,7 @@ export function AdminLiveControls({
   const { videoDevices, audioDevices, refresh: refreshDevices } = useCameraDevices()
 
   const { data: stats } = useDisciplinaryStats(seasonId)
+  const { addSuspension } = useSuspensions(seasonId)
 
   const isLive = status === 'live'
   const isScheduled = status === 'scheduled'
@@ -319,6 +320,29 @@ export function AdminLiveControls({
       description: eventComment || null,
       is_penalty: eventType === 'goal' ? isPenalty : false,
     })
+
+    // ── Auto-suspension sur carton rouge ──────────────────────────────────────
+    // Crée automatiquement une suspension de 1 match pour le joueur concerné
+    if (eventType === 'red_card' && eventPlayer && seasonId) {
+      try {
+        await addSuspension.mutateAsync({
+          player_id: eventPlayer,
+          season_id: seasonId,
+          reason: `Carton rouge — J${finalMinute}'`,
+          match_id_trigger: matchId,
+          matches_count: 1,
+          matches_served: 0,
+          is_active: true,
+          is_auto_generated: true,
+        })
+        toast.success('Suspension automatique créée', 'Le joueur est suspendu pour 1 match')
+      } catch (err) {
+        // La suspension manuelle reste possible depuis la page admin
+        toast.error('Carton rouge enregistré', 'La suspension automatique a échoué — à créer manuellement')
+        console.error('[AdminLiveControls] Erreur création suspension auto:', err)
+      }
+    }
+
     setShowEventForm(false)
     setEventPlayer('')
     setEventPlayer2('')
