@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useEffect, useState, useCallback, useRef, useContext, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Session, RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
@@ -231,3 +231,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export { AuthContext }
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

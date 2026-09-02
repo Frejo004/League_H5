@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame,
   Radio, Clock, CheckCircle2, AlertCircle, ChevronRight,
-  Crown, Settings, Zap, Star, BarChart2, Shield, Ban,
+  Crown, Settings, Zap, Star, BarChart2, Shield, Ban, X,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { useTournaments } from '@/hooks/useTournaments'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers, type ScorerRow } from '@/hooks/useScorers'
@@ -710,6 +711,47 @@ function SuspensionBanner({ userId, seasonId }: { userId: string; seasonId: stri
   )
 }
 
+// ── Bannière info tournois d'échecs ─────────────────────────────────────────────
+function ChessTournamentBanner({ tournaments, onDismiss }: { tournaments: any[]; onDismiss: () => void }) {
+  const activeTournament = tournaments.find(t => t.status === 'in_progress' || t.status === 'registration_open')
+  
+  if (!activeTournament) return null
+  
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-purple-900/10 p-4 mb-6">
+      <button 
+        onClick={onDismiss}
+        className="absolute top-2 right-2 p-1 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
+      >
+        <X size={16} />
+      </button>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+          <Trophy size={20} className="text-purple-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Tournoi d'échecs</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTournament.status === 'in_progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+            }`}>
+              {activeTournament.status === 'in_progress' ? 'En cours' : 'Inscriptions ouvertes'}
+            </span>
+          </div>
+          <p className="text-sm font-semibold text-text-primary truncate">{activeTournament.name}</p>
+          <p className="text-xs text-text-muted">{activeTournament.participants?.length || 0} participants</p>
+        </div>
+        <Link 
+          to={`/tournaments/${activeTournament.slug}`}
+          className="shrink-0 px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-colors"
+        >
+          Voir
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 // ── Widget suspensions publiques (visible par tous) ──────────────────────────
 function ActiveSuspensionsWidget({ seasonId, isAdmin = false }: { seasonId: string; isAdmin?: boolean }) {
   const { data: suspensions = [], isLoading } = useSuspensions(seasonId)
@@ -794,6 +836,10 @@ export function DashboardPage() {
   const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
   const { isCaptain, isAdmin, profile, role } = useAuth()
   const { sendNotification } = useNotificationSW(profile?.id)
+  const { data: tournaments } = useTournaments()
+  
+  // State pour gérer la bannière tournois d'échecs
+  const [showChessBanner, setShowChessBanner] = useState(true)
 
   const handleTestNotification = () => {
     sendNotification(
@@ -927,6 +973,14 @@ export function DashboardPage() {
   // Rendu du tableau de bord en fonction du rôle
   return (
     <div className="space-y-4">
+      {/* Bannière info tournois d'échecs */}
+      {showChessBanner && (
+        <ChessTournamentBanner 
+          tournaments={tournaments || []} 
+          onDismiss={() => setShowChessBanner(false)} 
+        />
+      )}
+      
       {isAdmin ? (
         <AdminDashboardContent
           liveMatches={liveMatches}
@@ -985,7 +1039,7 @@ export function DashboardPage() {
         />
       )}
     </div>
-  );
+  )
 }
 
 // Interfaces pour les props des tableaux de bord spécifiques

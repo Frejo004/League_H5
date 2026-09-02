@@ -60,6 +60,8 @@ const LandingPage        = lazyPage(() => import('@/pages/LandingPage'), 'Landin
 const ChatPage           = lazyPage(() => import('@/pages/ChatPage'), 'ChatPage')
 const PlayoffsPage       = lazyPage(() => import('@/pages/PlayoffsPage'), 'PlayoffsPage')
 const MatchFeedbackPage  = lazyPage(() => import('@/pages/MatchFeedbackPage'), 'MatchFeedbackPage')
+const TournamentsPage    = lazyPage(() => import('@/pages/TournamentsPage'), 'TournamentsPage')
+const TournamentDetailPage = lazyPage(() => import('@/pages/TournamentDetailPage'), 'TournamentDetailPage')
 // const PollsPage       = lazyPage(() => import('@/pages/PollsPage'), 'PollsPage')
 const NotFoundPage       = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
 
@@ -112,6 +114,8 @@ export const router = createBrowserRouter([
               { path: '/profile',                 element: <ProfilePage /> },
               { path: '/chat',                    element: <ChatPage /> },
               { path: '/playoffs',                element: <PlayoffsPage /> },
+              { path: '/tournaments',             element: <TournamentsPage /> },
+              { path: '/tournaments/:slug',       element: <TournamentDetailPage /> },
               // { path: '/polls',                element: <PollsPage /> },
             ],
           },

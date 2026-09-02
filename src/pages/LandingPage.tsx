@@ -2,7 +2,7 @@ import { Link, Navigate } from 'react-router-dom'
 import {
   Trophy, Calendar, BarChart2,
   MessageCircle, Radio, Star, Zap,
-  Shield, ChevronRight
+  Shield, ChevronRight, Crown
 } from 'lucide-react'
 import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 
@@ -15,6 +15,7 @@ import { LiveClock } from '@/components/live/LiveClock' // Keep this import
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { NewsFeed } from '@/hooks/NewsFeed'
+import { useTournaments } from '@/hooks/useTournaments'
 
 const ACCENT = '#C8F135'
 
@@ -49,6 +50,57 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
         <p className="text-xs text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">
           {desc}
         </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Chess Tournament Card ───────────────────────────────────────────────────────
+function ChessTournamentCard({ tournament }: { tournament: any }) {
+  return (
+    <div className="relative overflow-hidden p-6 rounded-4xl bg-gradient-to-br from-purple-500/10 to-purple-900/10 border border-purple-500/30 group hover:border-purple-500/50 transition-all duration-500 hover:-translate-y-2">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-500" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+            <Crown size={24} className="text-purple-400" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Tournoi d'échecs</span>
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-[9px] font-bold ${
+              tournament.status === 'in_progress' ? 'bg-green-500/20 text-green-400' : 
+              tournament.status === 'registration_open' ? 'bg-blue-500/20 text-blue-400' : 
+              'bg-gray-500/20 text-gray-400'
+            }`}>
+              {tournament.status === 'in_progress' ? 'En cours' : 
+               tournament.status === 'registration_open' ? 'Inscriptions ouvertes' : 
+               tournament.status}
+            </span>
+          </div>
+        </div>
+        
+        <h3 className="text-lg font-black text-text-primary mb-2 font-['Barlow_Condensed'] uppercase tracking-tight">
+          {tournament.name}
+        </h3>
+        
+        <div className="flex items-center gap-4 mb-4 text-xs text-text-muted">
+          <span className="flex items-center gap-1">
+            <Trophy size={12} className="text-purple-400" />
+            {tournament.tournament_type}
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar size={12} className="text-purple-400" />
+            {tournament.participants?.length || 0} participants
+          </span>
+        </div>
+        
+        <Link 
+          to={`/tournaments/${tournament.slug}`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-all duration-300 group-hover:scale-105"
+        >
+          Voir le tournoi <ChevronRight size={16} />
+        </Link>
       </div>
     </div>
   )
@@ -125,6 +177,7 @@ function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
 export function LandingPage() {
   const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
+  const { data: tournaments } = useTournaments()
 
   const { data: liveMatches } = useQuery({
     queryKey: ['live-matches-landing'],
@@ -391,6 +444,34 @@ export function LandingPage() {
           <StatPill value="LIVE" label="Streaming" />
         </div>
       </section>
+
+      {/* ── Chess Tournaments Section ── */}
+      {tournaments && tournaments.length > 0 && (
+        <section className="relative z-20 px-6 mb-24">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
+                  Tournois <span style={{ color: '#A855F7' }}>d'échecs</span>
+                </h2>
+                <p className="text-slate-500 mt-2 font-medium">Rejoignez les compétitions d'échecs HIGHFIVE.</p>
+              </div>
+              <Link 
+                to="/tournaments"
+                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition-colors"
+              >
+                Voir tous les tournois <ChevronRight size={16} />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tournaments.slice(0, 3).map(tournament => (
+                <ChessTournamentCard key={tournament.id} tournament={tournament} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── News Feed Section ── */}
       <section className="relative z-20 px-6 py-24">
