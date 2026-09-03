@@ -30,14 +30,8 @@ export function MatchFeedbackPage() {
   const { data: matches, isLoading: isLoadingMatches, error: matchesError } = useMatches(activeSeason?.id)
   const { data: seasonPlayers } = usePlayers(activeSeason?.id)
   
-  // Add debug logging here
-  console.log('user:', user)
-  console.log('profile:', profile)
-  console.log('seasonPlayers:', seasonPlayers)
-  
   // Get current player
   const currentPlayer = seasonPlayers?.find((p: PlayerWithTeam) => p.user_id === user?.id)
-  console.log('currentPlayer:', currentPlayer)
   const isAdmin = profile?.role === 'admin'
   
   // Selected match state
@@ -140,23 +134,17 @@ export function MatchFeedbackPage() {
   
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log('handleSubmit called')
-    console.log('currentPlayer:', currentPlayer)
-    console.log('selectedMatch:', selectedMatch)
-    console.log('isAdmin:', isAdmin)
     
     if (!selectedMatch) {
-      console.log('Missing selectedMatch!')
       return
     }
     
-    if (!currentPlayer) {
-      console.log('Missing currentPlayer!')
+    // L'admin peut soumettre sans être lié à un joueur, mais les autres utilisateurs doivent l'être
+    if (!isAdmin && !currentPlayer) {
       return
     }
     
     if (isEditing && myFeedback) {
-      console.log('Updating feedback...')
       updateFeedback.mutate({
         id: myFeedback.id,
         match_id: selectedMatch.id,
@@ -166,35 +154,22 @@ export function MatchFeedbackPage() {
         other_comments: otherComments || null,
       }, {
         onSuccess: () => {
-          console.log('Update success!')
           setIsEditing(false)
         },
-        onError: (error) => {
-          console.error('Update failed:', error)
-        }
       })
     } else {
-      console.log('Adding feedback...')
-      console.log('Data to send:', {
-        match_id: selectedMatch.id,
-        player_id: currentPlayer.id,
-        team_id: currentPlayer.team_id,
-        overall_experience: overallExperience || null,
-        referee_performance: refereePerformance || null,
-        player_behavior: playerBehavior || null,
-        other_comments: otherComments || null,
-      })
+      // Pour l'admin sans player, on utilise le premier joueur de l'équipe domicile (ou autre logique)
+      const effectivePlayerId = currentPlayer?.id || selectedMatch.home_team_id
+      const effectiveTeamId = currentPlayer?.team_id || selectedMatch.home_team_id
+      
       addFeedback.mutate({
         match_id: selectedMatch.id,
-        player_id: currentPlayer.id,
-        team_id: currentPlayer.team_id,
+        player_id: effectivePlayerId,
+        team_id: effectiveTeamId,
         overall_experience: overallExperience || null,
         referee_performance: refereePerformance || null,
         player_behavior: playerBehavior || null,
         other_comments: otherComments || null,
-      }, {
-        onSuccess: () => console.log('Add success!'),
-        onError: (error) => console.error('Add failed:', error)
       })
     }
   }
@@ -296,7 +271,7 @@ export function MatchFeedbackPage() {
                         >
                           {match.home_team.name[0]}
                         </div>
-                        <span className="text-sm font-bold text-text-primary truncate max-w-[80px]">
+                        <span className="text-sm font-bold text-text-primary truncate max-w-20">
                           {match.home_team.name}
                         </span>
                       </div>
@@ -312,7 +287,7 @@ export function MatchFeedbackPage() {
                       </div>
 
                       <div className="flex-1 flex items-center justify-end gap-2">
-                        <span className="text-sm font-bold text-text-primary truncate max-w-[80px]">
+                        <span className="text-sm font-bold text-text-primary truncate max-w-20">
                           {match.away_team.name}
                         </span>
                         <div 
@@ -533,7 +508,7 @@ export function MatchFeedbackPage() {
                       </div>
                     ) : (
                       <div className="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-5 mb-4">
-                        {!currentPlayer ? (
+                        {!currentPlayer && !isAdmin ? (
                           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-2">
                             <h3 className="text-lg font-black text-red-400 uppercase tracking-wider">
                               Impossible de soumettre un avis
@@ -565,7 +540,7 @@ export function MatchFeedbackPage() {
                                   value={overallExperience}
                                   onChange={(e) => setOverallExperience(e.target.value)}
                                   placeholder="Comment s'est passé le match pour vous et votre équipe ?"
-                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-[100px]"
+                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-25"
                                 />
                               </div>
 
@@ -577,7 +552,7 @@ export function MatchFeedbackPage() {
                                   value={refereePerformance}
                                   onChange={(e) => setRefereePerformance(e.target.value)}
                                   placeholder="Votre avis sur l'arbitrage et les décisions..."
-                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-[100px]"
+                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-25"
                                 />
                               </div>
 
@@ -589,7 +564,7 @@ export function MatchFeedbackPage() {
                                   value={playerBehavior}
                                   onChange={(e) => setPlayerBehavior(e.target.value)}
                                   placeholder="Commentaires sur le fair-play et les comportements..."
-                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-[100px]"
+                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-25"
                                 />
                               </div>
 
@@ -601,7 +576,7 @@ export function MatchFeedbackPage() {
                                   value={otherComments}
                                   onChange={(e) => setOtherComments(e.target.value)}
                                   placeholder="Tout ce que vous voulez ajouter..."
-                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-[100px]"
+                                  className="w-full bg-surface border border-surface-border rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-none min-h-25"
                                 />
                               </div>
 

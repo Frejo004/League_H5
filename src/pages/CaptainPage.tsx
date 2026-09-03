@@ -24,6 +24,7 @@ import type { MatchWithTeams } from '@/hooks/useMatches'
 import { pushLocal, useRealtimeTactics } from '@/hooks/useRealtime'
 import { PlayerRow } from '@/components/captain/PlayerRow'
 import { PlayerStatsDrawer } from '@/components/captain/PlayerStatsDrawer'
+import { TransferStatusBadge } from '@/components/ui/StatusBadges'
 import type { Team, Transfer as TransferType } from '@/types/database'
 
 // Type definitions for our broadcast data
@@ -42,24 +43,6 @@ type TransferWithRelations = TransferType & {
   player?: Player
   from_team?: Team
   to_team?: Team
-}
-
-function TransferStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; color: string }> = {
-    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-400 border-primary-500/30' },
-    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
-    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
-  }
-  const cfg = map[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
-      {cfg.label}
-    </span>
-  )
 }
 
 function formatTime(dateStr: string) {
@@ -128,11 +111,11 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         {pending.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                 En attente ({pending.length})
               </p>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
             </div>
             <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
               {pending.map((p, i) => (
@@ -153,11 +136,11 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         {linked.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                 Comptes liés ({linked.length})
               </p>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
             </div>
             <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
               {linked.map((p, i) => (
@@ -196,7 +179,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
   return (
     <Link
       to={`/matches/${match.slug || match.id}`}
-      className="flex items-center gap-4 px-4 py-4 hover:bg-white/5 transition-all border-b border-white/[0.03] last:border-b-0 group"
+      className="flex items-center gap-4 px-4 py-4 hover:bg-white/5 transition-all border-b border-white/3 last:border-b-0 group"
     >
       {/* Résultat badge */}
       <div className="shrink-0">
@@ -220,7 +203,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
             {match.venue && (
               <span className="flex items-center gap-1">
                 <MapPin size={10} className="text-slate-600" />
-                <span className="truncate max-w-[80px]">{match.venue}</span>
+                <span className="truncate max-w-20">{match.venue}</span>
               </span>
             )}
           </div>
@@ -286,7 +269,7 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
               <p className={clsx('text-2xl font-black tabular-nums', s.color)}>{s.value}</p>
               <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">{s.label}</p>
             </div>
-            <s.icon size={40} className="absolute -bottom-2 -right-2 text-white/[0.03] group-hover:text-white/10 transition-colors" />
+            <s.icon size={40} className="absolute -bottom-2 -right-2 text-white/3 group-hover:text-white/10 transition-colors" />
           </div>
         ))}
       </div>
@@ -322,7 +305,7 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
             <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">Modifiez vos filtres ou revenez plus tard.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.03]">
+          <div className="divide-y divide-white/3">
             {filtered.map(m => (
               <MatchRow key={m.id} match={m} teamId={teamId} />
             ))}
@@ -457,7 +440,7 @@ function LineupHistoryDrawer({
                   players={starters}
                   teamColor={teamColor}
                   formation={formation}
-                  className="aspect-[3/4] max-h-64"
+                  className="aspect-3/4 max-h-64"
                 />
               </div>
 
@@ -481,7 +464,7 @@ function LineupHistoryDrawer({
                       key={l.id}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5',
-                        i < starters.length - 1 && 'border-b border-white/[0.04]'
+                        i < starters.length - 1 && 'border-b border-white/4'
                       )}
                     >
                       <div
@@ -523,7 +506,7 @@ function LineupHistoryDrawer({
                       key={l.id}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5',
-                        i < subs.length - 1 && 'border-b border-white/[0.04]'
+                        i < subs.length - 1 && 'border-b border-white/4'
                       )}
                     >
                       <div
@@ -640,7 +623,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
   if (!nextMatch) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-6 text-center glass-morphism rounded-[2rem] border border-white/5">
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center glass-morphism rounded-4xl border border-white/5">
         <Calendar size={40} className="text-slate-700 mb-4" />
         <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match programmé</p>
         <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">La tactique sera disponible dès qu'un match sera planifié.</p>
@@ -847,10 +830,10 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
               players={teamLineup.filter(l => l.is_starter)}
               teamColor={teamColor}
               formation={currentFormation}
-              className="aspect-[3/4]"
+              className="aspect-3/4"
             />
             {updateLineup.isPending && (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-20">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-4xl flex items-center justify-center z-20">
                 <LoadingSpinner size="lg" />
               </div>
             )}
@@ -893,7 +876,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                   onClick={() => setSelectedHistoryMatch(m)}
                   className={clsx(
                     'w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-white/5 transition-colors',
-                    i < pastMatches.length - 1 && 'border-b border-white/[0.04]'
+                    i < pastMatches.length - 1 && 'border-b border-white/4'
                   )}
                 >
                   {/* Résultat */}
@@ -964,11 +947,11 @@ function TabTransferts({ teamId }: { teamId: string }) {
       {outgoingTransfers.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
             <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">
               DEMANDES SORTANTES ({outgoingTransfers.length})
             </p>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
           </div>
           <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
             {outgoingTransfers.map((transfer, i) => (
@@ -976,7 +959,7 @@ function TabTransferts({ teamId }: { teamId: string }) {
                 key={transfer.id}
                 className={clsx(
                   'p-4 flex flex-col gap-3',
-                  i < outgoingTransfers.length - 1 && 'border-b border-white/[0.03]'
+                  i < outgoingTransfers.length - 1 && 'border-b border-white/3'
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -1028,11 +1011,11 @@ function TabTransferts({ teamId }: { teamId: string }) {
       {incomingTransfers.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
               DEMANDES ENTRANTES ({incomingTransfers.length})
             </p>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
           </div>
           <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
             {incomingTransfers.map((transfer, i) => (
@@ -1040,7 +1023,7 @@ function TabTransferts({ teamId }: { teamId: string }) {
                 key={transfer.id}
                 className={clsx(
                   'p-4 flex flex-col gap-3',
-                  i < incomingTransfers.length - 1 && 'border-b border-white/[0.03]'
+                  i < incomingTransfers.length - 1 && 'border-b border-white/3'
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -1149,7 +1132,7 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Passes</span>
         </div>
 
-        <div className="divide-y divide-white/[0.03]">
+        <div className="divide-y divide-white/3">
           {teamScorers.map((row, i) => (
             <div
               key={row.player_id}
@@ -1396,7 +1379,7 @@ export function CaptainPage() {
       ) : (
         <>
           {/* Premium Team Hero */}
-          <div className="relative overflow-hidden rounded-[2rem] glass-morphism border border-white/10 shadow-2xl mb-6">
+          <div className="relative overflow-hidden rounded-4xl glass-morphism border border-white/10 shadow-2xl mb-6">
             {/* Background Mesh/Glow */}
             <div
               className="absolute inset-0 opacity-20 blur-3xl -z-10"

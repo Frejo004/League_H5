@@ -17,42 +17,9 @@ import { useTransfers } from '@/hooks/useTransfers'
 import { useTeams } from '@/hooks/useTeams'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
+import { RoleBadge, TransferStatusBadge } from '@/components/ui/StatusBadges'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function StatusBadge({ role }: { role: string }) {
-  const map: Record<string, { label: string; color: string }> = {
-    admin: { label: 'Admin', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    captain: { label: 'Capitaine', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    player: { label: 'Joueur', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    spectator: { label: 'Spectateur', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
-  }
-  const cfg = map[role] ?? { label: role, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
-      <ShieldCheck size={11} />
-      {cfg.label}
-    </span>
-  )
-}
-
-function TransferStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; color: string }> = {
-    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-400 border-primary-500/30' },
-    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
-    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
-  }
-  const cfg = map[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.color}`}>
-      {cfg.label}
-    </span>
-  )
-}
 
 function Alert({ type, children }: { type: 'error' | 'success'; children: React.ReactNode }) {
   const isError = type === 'error'
@@ -536,7 +503,7 @@ export function ProfilePage() {
             </p>
             <p className="text-sm text-slate-500 mt-0.5 truncate">{user?.email}</p>
             <div className="mt-2">
-              {profile?.role && <StatusBadge role={profile.role} />}
+              {profile?.role && <RoleBadge role={profile.role} />}
             </div>
             {avatarError && (
               <p className="text-red-400 text-xs mt-2 flex items-center gap-1">

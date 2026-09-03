@@ -338,7 +338,22 @@ export function AdminLiveControls({
         toast.success('Suspension automatique créée', 'Le joueur est suspendu pour 1 match')
       } catch (err) {
         // La suspension manuelle reste possible depuis la page admin
-        toast.error('Carton rouge enregistré', 'La suspension automatique a échoué — à créer manuellement')
+        toast.error(
+          'Carton rouge enregistré', 
+          <div className="flex flex-col gap-2">
+            <p>La suspension automatique a échoué — à créer manuellement</p>
+            <a 
+              href="/admin?tab=sanctions" 
+              className="text-xs font-bold text-primary-400 hover:text-primary-300 underline"
+              onClick={(e) => {
+                e.stopPropagation()
+                window.location.href = '/admin?tab=sanctions'
+              }}
+            >
+              → Ouvrir la page Sanctions
+            </a>
+          </div>
+        )
         console.error('[AdminLiveControls] Erreur création suspension auto:', err)
       }
     }
@@ -944,7 +959,7 @@ export function AdminLiveControls({
                     onChange={e => setIsPenalty(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-surface-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-500"></div>
+                  <div className="w-9 h-5 bg-surface-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-500"></div>
                 </label>
                 <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Penalty ⚽</span>
               </div>

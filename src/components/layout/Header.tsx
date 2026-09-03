@@ -3,13 +3,13 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
-// import { usePolls } from '@/hooks/usePolls'
+import { usePolls } from '@/hooks/usePolls'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { GlobalSearch } from '@/components/ui/GlobalSearch'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -45,7 +45,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -59,7 +59,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -74,7 +74,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/teams', label: 'Équipes', icon: Users },
     { to: '/players', label: 'Joueurs', icon: User },
     { to: '/stats', label: 'Stats', icon: Star },
-    // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
+    { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
@@ -219,8 +219,8 @@ export default function Header() {
   const { data: chatTeams } = useChatUnread(profile?.id)
   const totalChatUnread = chatTeams?.reduce((s, t) => s + t.unread, 0) ?? 0
   // Badge pronostics actifs
-  // const { data: allPolls } = usePolls()
-  // const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
+  const { data: allPolls } = usePolls()
+  const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
   // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
   const [prevPathname, setPrevPathname] = useState(location.pathname)
   if (location.pathname !== prevPathname) {
@@ -271,7 +271,7 @@ export default function Header() {
     '/chat':       'Messages',
     '/playoffs':   'Phase Finale',
     '/feedback':   'Avis sur les matchs',
-    // '/polls':      'Pronostics',
+    '/polls':      'Pronostics',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/dashboard')
@@ -324,14 +324,14 @@ export default function Header() {
                 }}
               >
                 {label}
-                {/* {to === '/polls' && activePollsCount > 0 && (
+                {to === '/polls' && activePollsCount > 0 && (
                   <span
-                    className="ml-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black"
+                    className="ml-1 min-w-4 h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black"
                     style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                   >
                     {activePollsCount}
                   </span>
-                )} */}
+                )}
               </NavLink>
             ))}
           </nav>
@@ -363,7 +363,7 @@ export default function Header() {
                 <MessageCircle size={17} />
                 {totalChatUnread > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                    className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full
                                flex items-center justify-center text-[9px] font-black"
                     style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                   >
@@ -387,7 +387,7 @@ export default function Header() {
                 <Bell size={17} />
                 {count > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                    className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full
                                flex items-center justify-center text-[9px] font-black"
                     style={{
                       backgroundColor: hasUrgent ? '#ef4444' : 'var(--accent)',
@@ -483,7 +483,7 @@ export default function Header() {
                   <Bell size={19} />
                   {count > 0 && (
                     <span
-                      className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                      className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full
                                  flex items-center justify-center text-[9px] font-black"
                       style={{
                         backgroundColor: hasUrgent ? '#ef4444' : 'var(--accent)',
@@ -515,7 +515,7 @@ export default function Header() {
                   <MessageCircle size={19} />
                   {totalChatUnread > 0 && (
                     <span
-                      className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                      className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full
                              flex items-center justify-center text-[9px] font-black"
                       style={{ backgroundColor: 'var(--accent)', color: '#0D1117' }}
                     >
@@ -776,7 +776,7 @@ export default function Header() {
                     <MessageCircle size={isActive ? 20 : 18} strokeWidth={isActive ? 2.5 : 2} />
                     {totalChatUnread > 0 && (
                       <span
-                        className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-1 rounded-full
+                        className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-1 rounded-full
                                    flex items-center justify-center text-[8px] font-black shadow-lg"
                         style={{ backgroundColor: '#ef4444', color: '#fff' }}
                       >

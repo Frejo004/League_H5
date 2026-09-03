@@ -55,9 +55,9 @@ function MarketRow({
 
   return (
     <div className={clsx(
-      'px-3 py-3 border-b border-white/[0.05] last:border-0 transition-colors',
-      inBasket ? 'bg-primary-500/[0.05]' : 'hover:bg-white/[0.02]',
-      isResolved && 'bg-green-500/[0.02]',
+      'px-3 py-3 border-b border-white/5 last:border-0 transition-colors',
+      inBasket ? 'bg-primary-500/5' : 'hover:bg-white/2',
+      isResolved && 'bg-green-500/2',
     )}>
       {/* Question + statut */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -116,8 +116,8 @@ function MarketRow({
                     : isMyPick
                       ? 'border-primary-500/70 bg-primary-500/20 ring-1 ring-primary-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
                       : canPick
-                        ? 'border-white/[0.09] bg-white/[0.04] hover:border-primary-500/40 hover:bg-primary-500/8 cursor-pointer'
-                        : 'border-white/[0.05] bg-white/[0.02] cursor-default opacity-70'
+                        ? 'border-white/9 bg-white/4 hover:border-primary-500/40 hover:bg-primary-500/8 cursor-pointer'
+                        : 'border-white/5 bg-white/2 cursor-default opacity-70'
               )}
             >
               {/* Indicateur sélection */}
@@ -197,7 +197,7 @@ function MatchMarketBlock({
         className={clsx(
           'w-full text-left transition-colors',
           isLive
-            ? 'bg-green-500/[0.08] hover:bg-green-500/[0.12]'
+            ? 'bg-green-500/8 hover:bg-green-500/12'
             : 'bg-surface-raised/70 hover:bg-surface-raised'
         )}
         onClick={() => setCollapsed(c => !c)}
@@ -216,7 +216,7 @@ function MatchMarketBlock({
           </div>
 
           {/* Score / date / statut */}
-          <div className="flex flex-col items-center shrink-0 min-w-[60px]">
+          <div className="flex flex-col items-center shrink-0 min-w-15">
             {isLive ? (
               <span className="text-[10px] font-black text-green-400 uppercase flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -256,7 +256,7 @@ function MatchMarketBlock({
 
         {/* Ligne badges */}
         <div className="flex items-center gap-2 px-4 pb-2.5">
-          <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[9px] font-bold text-text-muted uppercase tracking-wide">
+          <span className="px-2 py-0.5 rounded-full bg-white/6 text-[9px] font-bold text-text-muted uppercase tracking-wide">
             {filtered.length} marché{filtered.length > 1 ? 's' : ''}
           </span>
           {activeCnt > 0 && (
@@ -273,7 +273,7 @@ function MatchMarketBlock({
       </button>
 
       {!collapsed && (
-        <div className="bg-surface-panel/30 divide-y divide-white/[0.04]">
+        <div className="bg-surface-panel/30 divide-y divide-white/4">
           {filtered.map(poll => (
             <MarketRow key={poll.id} poll={poll} matchLabel={matchLabel} />
           ))}
@@ -381,7 +381,7 @@ export function PollsPage() {
               </div>
 
               {/* Menu catégories */}
-              <div className="sticky top-0 z-10 bg-surface-panel/90 backdrop-blur-md border-b border-white/[0.06]">
+              <div className="sticky top-0 z-10 bg-surface-panel/90 backdrop-blur-md border-b border-white/6">
                 <div className="overflow-x-auto scrollbar-none">
                   <div className="flex items-center gap-0 min-w-max px-1 py-1">
                     {availableCategories.map(cat => (
@@ -392,13 +392,13 @@ export function PollsPage() {
                           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all mx-0.5',
                           activeCategory === cat.key
                             ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                            : 'text-text-muted hover:text-text-primary hover:bg-white/[0.04]'
+                            : 'text-text-muted hover:text-text-primary hover:bg-white/4'
                         )}
                       >
                         {cat.label}
                         <span className={clsx(
                           'text-[9px] font-black px-1.5 py-0.5 rounded-full',
-                          activeCategory === cat.key ? 'bg-primary-500/30 text-primary-300' : 'bg-white/[0.06] text-text-muted'
+                          activeCategory === cat.key ? 'bg-primary-500/30 text-primary-300' : 'bg-white/6 text-text-muted'
                         )}>
                           {cat.key === 'all' ? countByCategory['all'] : (countByCategory[cat.key] ?? 0)}
                         </span>

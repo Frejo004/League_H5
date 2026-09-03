@@ -10,41 +10,9 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { TransferStatusBadge } from '@/components/ui/StatusBadges'
 import { clsx } from 'clsx'
 import type { TransferStatus } from '@/types/database'
-
-function StatusBadge({ status }: { status: TransferStatus }) {
-  const styles = {
-    pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-    player_requested: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    home_captain_approved: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    admin_approved: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
-    approved: 'bg-green-500/10 text-green-500 border-green-500/20',
-    rejected: 'bg-red-500/10 text-red-500 border-red-500/20',
-    cancelled: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
-    completed: 'bg-primary-500/10 text-primary-500 border-primary-500/20',
-  }
-
-  const labels = {
-    pending: 'En attente',
-    player_requested: 'Demande envoyée',
-    home_captain_approved: 'Approuvé par capitaine',
-    admin_approved: 'Approuvé par admin',
-    approved: 'Approuvé',
-    rejected: 'Refusé',
-    cancelled: 'Annulé',
-    completed: 'Terminé',
-  }
-
-  return (
-    <span className={clsx(
-      'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border',
-      styles[status as keyof typeof styles]
-    )}>
-      {labels[status as keyof typeof labels]}
-    </span>
-  )
-}
 
 export function AdminTransfersPage() {
   const { data: season } = useActiveSeason()
@@ -62,6 +30,12 @@ export function AdminTransfersPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedPlayer || !selectedToTeam || !season?.id) return
+
+    // Validation : empêcher les transferts vers la même équipe
+    if (selectedFromTeam && selectedFromTeam === selectedToTeam) {
+      alert('Erreur : L\'équipe source et l\'équipe destination ne peuvent pas être identiques.')
+      return
+    }
 
     await createTransfer.mutateAsync({
       player_id: selectedPlayer,
@@ -159,7 +133,7 @@ export function AdminTransfersPage() {
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="input min-h-[80px] text-sm"
+                className="input min-h-20 text-sm"
                 placeholder="Raison du transfert..."
               />
             </div>
@@ -221,7 +195,7 @@ export function AdminTransfersPage() {
                       <p className="font-bold text-text-primary truncate">
                         {transfer.player ? `${transfer.player.first_name} ${transfer.player.last_name}` : 'Joueur inconnu'}
                       </p>
-                      <StatusBadge status={transfer.status} />
+                      <TransferStatusBadge status={transfer.status} variant="compact" />
                     </div>
                     {/* Transfer Path */}
                     <div className="flex items-center gap-2 mt-1 text-xs">

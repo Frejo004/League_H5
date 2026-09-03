@@ -62,6 +62,7 @@ const PlayoffsPage       = lazyPage(() => import('@/pages/PlayoffsPage'), 'Playo
 const MatchFeedbackPage  = lazyPage(() => import('@/pages/MatchFeedbackPage'), 'MatchFeedbackPage')
 const TournamentsPage    = lazyPage(() => import('@/pages/TournamentsPage'), 'TournamentsPage')
 const TournamentDetailPage = lazyPage(() => import('@/pages/TournamentDetailPage'), 'TournamentDetailPage')
+const PollsPage       = lazyPage(() => import('@/pages/PollsPage'), 'PollsPage')
 const NotFoundPage       = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
 
 export const router = createBrowserRouter([
@@ -115,7 +116,7 @@ export const router = createBrowserRouter([
               { path: '/playoffs',                element: <PlayoffsPage /> },
               { path: '/tournaments',             element: <TournamentsPage /> },
               { path: '/tournaments/:slug',       element: <TournamentDetailPage /> },
-              // { path: '/polls',                element: <PollsPage /> },
+              { path: '/polls',                element: <PollsPage /> },
             ],
           },
         ],

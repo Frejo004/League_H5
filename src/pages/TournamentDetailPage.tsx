@@ -1,20 +1,22 @@
 import { useParams } from 'react-router-dom'
 import { useTournamentWithMatches } from '@/hooks/useTournaments'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { Trophy, Calendar, Users, Clock, ArrowLeft, User, CheckCircle } from 'lucide-react'
+import { PageHero } from '@/components/ui/PageHero'
+import { Trophy, Calendar, Users, Clock, ArrowLeft, User, CheckCircle, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useRegisterTournament } from '@/hooks/useTournaments'
+import clsx from 'clsx'
 
-export default function TournamentDetailPage() {
+export function TournamentDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: tournament, isLoading, error } = useTournamentWithMatches(slug || '')
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const registerTournament = useRegisterTournament()
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -22,8 +24,16 @@ export default function TournamentDetailPage() {
 
   if (error || !tournament) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Tournoi non trouvé</div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-text-primary mb-2">Tournoi non trouvé</h2>
+        <Link 
+          to="/tournaments"
+          className="mt-4 flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Retour aux tournois
+        </Link>
       </div>
     )
   }
@@ -34,30 +44,24 @@ export default function TournamentDetailPage() {
 
   const handleRegister = () => {
     if (user && tournament.id) {
-      // L'inscription utilise directement l'ID utilisateur Supabase, pas besoin de profil football
       registerTournament.mutate({ tournamentId: tournament.id, playerId: user.id })
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'upcoming': return 'bg-gray-500'
-      case 'registration_open': return 'bg-green-500'
-      case 'in_progress': return 'bg-blue-500'
-      case 'completed': return 'bg-purple-500'
-      case 'cancelled': return 'bg-red-500'
-      default: return 'bg-gray-500'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'À venir'
-      case 'registration_open': return 'Inscriptions ouvertes'
-      case 'in_progress': return 'En cours'
-      case 'completed': return 'Terminé'
-      case 'cancelled': return 'Annulé'
-      default: return status
+      case 'upcoming': 
+        return { color: 'text-slate-400', bg: 'bg-slate-500/15', border: 'border-slate-500/30', label: 'À venir' }
+      case 'registration_open': 
+        return { color: 'text-green-400', bg: 'bg-green-500/15', border: 'border-green-500/30', label: 'Inscriptions ouvertes' }
+      case 'in_progress': 
+        return { color: 'text-blue-400', bg: 'bg-blue-500/15', border: 'border-blue-500/30', label: 'En cours' }
+      case 'completed': 
+        return { color: 'text-purple-400', bg: 'bg-purple-500/15', border: 'border-purple-500/30', label: 'Terminé' }
+      case 'cancelled': 
+        return { color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30', label: 'Annulé' }
+      default: 
+        return { color: 'text-slate-400', bg: 'bg-slate-500/15', border: 'border-slate-500/30', label: status }
     }
   }
 
@@ -72,6 +76,15 @@ export default function TournamentDetailPage() {
     }
   }
 
+  const getTournamentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'elimination': return 'Élimination directe'
+      case 'swiss': return 'Système suisse'
+      case 'round_robin': return 'Tous contre tous'
+      default: return type
+    }
+  }
+
   // Group matches by round
   const matchesByRound = tournament.matches?.reduce((acc, match) => {
     if (!acc[match.round]) {
@@ -81,124 +94,182 @@ export default function TournamentDetailPage() {
     return acc
   }, {} as Record<number, typeof tournament.matches>) || {}
 
+  const statusConfig = getStatusConfig(tournament.status)
+
   return (
-    <div className="min-h-screen bg-surface p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <Link to="/tournaments" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour aux tournois
-        </Link>
+    <div className="space-y-6">
+      {/* Retour */}
+      <Link 
+        to="/tournaments" 
+        className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors"
+      >
+        <ArrowLeft size={16} />
+        Retour aux tournois
+      </Link>
 
-        {/* Tournament Header */}
-        <div className="bg-surface-light rounded-lg p-8 mb-8 border border-surface-lighter">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center mb-4">
-                <Trophy className="w-10 h-10 text-primary mr-3" />
-                <h1 className="text-3xl font-bold text-white">{tournament.name}</h1>
+      {/* Hero avec titre et statut */}
+      <div className="glass-morphism rounded-2xl p-6 md:p-8 border border-surface-border">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-xl bg-purple-500/15 border border-purple-500/30 shrink-0">
+                <Trophy size={24} className="text-purple-400" />
               </div>
-              
-              <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium text-white mb-4 ${getStatusColor(tournament.status)}`}>
-                {getStatusLabel(tournament.status)}
-              </div>
-              
-              {tournament.description && (
-                <p className="text-gray-400 mb-6">{tournament.description}</p>
-              )}
+              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-text-primary">
+                {tournament.name}
+              </h1>
             </div>
             
-            {canRegister && !isFull && (
-              <button
-                onClick={handleRegister}
-                disabled={registerTournament.isPending}
-                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium"
+            <span className={clsx(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border',
+              statusConfig.color, statusConfig.bg, statusConfig.border
+            )}>
+              {statusConfig.label}
+            </span>
+          </div>
+          
+          {canRegister && !isFull && (
+            <button
+              onClick={handleRegister}
+              disabled={registerTournament.isPending}
+              className="px-6 py-3 rounded-xl bg-primary-500 text-white text-sm font-black uppercase tracking-wider hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+            >
+              {registerTournament.isPending ? 'Inscription...' : "S'inscrire"}
+            </button>
+          )}
+
+          {isRegistered && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/15 border border-green-500/30">
+              <CheckCircle size={16} className="text-green-400" />
+              <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Inscrit</span>
+            </div>
+          )}
+        </div>
+
+        {tournament.description && (
+          <p className="text-text-secondary leading-relaxed mb-6">
+            {tournament.description}
+          </p>
+        )}
+
+        {/* Infos principales */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {tournament.starts_at && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-muted/30">
+              <Calendar size={18} className="text-text-muted shrink-0" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-text-muted mb-0.5">Début</p>
+                <p className="text-xs font-semibold text-text-primary">
+                  {new Date(tournament.starts_at).toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-muted/30">
+            <Users size={18} className="text-text-muted shrink-0" />
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-text-muted mb-0.5">Participants</p>
+              <p className="text-xs font-semibold text-text-primary">
+                {tournament.participants?.length || 0}
+                {tournament.max_participants && ` / ${tournament.max_participants}`}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-muted/30">
+            <Clock size={18} className="text-text-muted shrink-0" />
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-text-muted mb-0.5">Format</p>
+              <p className="text-xs font-semibold text-text-primary">
+                {getTournamentTypeLabel(tournament.tournament_type)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {tournament.prize && (
+          <div className="mt-6 pt-6 border-t border-surface-border">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏆</span>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-text-muted mb-0.5">Prix</p>
+                <p className="text-sm font-bold text-primary-400">{tournament.prize}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Participants */}
+      <div className="glass-morphism rounded-2xl p-6 border border-surface-border">
+        <h2 className="text-lg font-black uppercase tracking-wide text-text-primary mb-4">
+          Participants
+        </h2>
+        
+        {tournament.participants && tournament.participants.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {tournament.participants.map((participant) => (
+              <div 
+                key={participant.id} 
+                className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted/20 hover:bg-surface-muted/40 transition-colors"
               >
-                {registerTournament.isPending ? 'Inscription...' : "S'inscrire"}
-              </button>
-            )}
-          </div>
-
-          {/* Tournament Info */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {tournament.starts_at && (
-              <div className="flex items-center text-gray-400">
-                <Calendar className="w-5 h-5 mr-3" />
-                <span>{new Date(tournament.starts_at).toLocaleDateString('fr-FR', { 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
-              </div>
-            )}
-            
-            <div className="flex items-center text-gray-400">
-              <Users className="w-5 h-5 mr-3" />
-              <span>{tournament.participants?.length || 0} participants</span>
-              {tournament.max_participants && ` / ${tournament.max_participants}`}
-            </div>
-            
-            <div className="flex items-center text-gray-400">
-              <Clock className="w-5 h-5 mr-3" />
-              <span className="capitalize">
-                {tournament.tournament_type === 'elimination' ? 'Élimination directe' : 
-                 tournament.tournament_type === 'swiss' ? 'Système suisse' : 
-                 'Tous contre tous'}
-              </span>
-            </div>
-          </div>
-
-          {tournament.prize && (
-            <div className="pt-4 border-t border-surface-light">
-              <p className="text-primary font-medium text-lg">🏆 {tournament.prize}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Participants */}
-        <div className="bg-surface-light rounded-lg p-6 mb-8 border border-surface-lighter">
-          <h2 className="text-xl font-bold text-white mb-4">Participants</h2>
-          {tournament.participants && tournament.participants.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tournament.participants.map((participant) => (
-                <div key={participant.id} className="flex items-center bg-surface rounded-lg p-4">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold mr-3">
-                    {participant.player?.username?.[0]?.toUpperCase() || '?'}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{participant.player?.username || 'Anonyme'}</p>
-                    <p className="text-gray-400 text-sm">ELO: {participant.elo_rating}</p>
-                  </div>
-                  {participant.status === 'confirmed' && (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  )}
+                <div className="w-10 h-10 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-primary-400 font-black text-sm shrink-0">
+                  {participant.player?.username?.[0]?.toUpperCase() || '?'}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400">Aucun participant pour le moment</p>
-          )}
-        </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-text-primary truncate">
+                    {participant.player?.username || 'Anonyme'}
+                  </p>
+                  <p className="text-xs text-text-muted">ELO: {participant.elo_rating}</p>
+                </div>
+                {participant.status === 'confirmed' && (
+                  <CheckCircle size={16} className="text-green-400 shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-text-muted text-center py-8">Aucun participant pour le moment</p>
+        )}
+      </div>
 
-        {/* Matches / Bracket */}
-        {tournament.matches && tournament.matches.length > 0 && (
-          <div className="bg-surface-light rounded-lg p-6 border border-surface-lighter">
-            <h2 className="text-xl font-bold text-white mb-6">Matchs</h2>
+      {/* Matchs */}
+      {tournament.matches && tournament.matches.length > 0 && (
+        <div className="glass-morphism rounded-2xl p-6 border border-surface-border">
+          <h2 className="text-lg font-black uppercase tracking-wide text-text-primary mb-6">
+            Matchs du tournoi
+          </h2>
+          
+          <div className="space-y-8">
             {Object.entries(matchesByRound).map(([round, matches]) => (
-              <div key={round} className="mb-8">
-                <h3 className="text-lg font-medium text-white mb-4">Ronde {round}</h3>
+              <div key={round}>
+                <h3 className="text-sm font-black uppercase tracking-wider text-primary-400 mb-4">
+                  Ronde {round}
+                </h3>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {matches?.map((match) => (
-                    <div key={match.id} className="bg-surface rounded-lg p-4 border border-surface-lighter">
+                    <div 
+                      key={match.id} 
+                      className="glass-morphism rounded-xl p-4 border border-surface-border hover:border-primary-500/30 transition-colors"
+                    >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs text-gray-400">Match #{match.match_number}</span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          match.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          match.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-gray-500/20 text-gray-400'
-                        }`}>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">
+                          Match #{match.match_number}
+                        </span>
+                        <span className={clsx(
+                          'text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full',
+                          match.status === 'completed' ? 'bg-green-500/15 text-green-400 border border-green-500/30' :
+                          match.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
+                          'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+                        )}>
                           {match.status === 'completed' ? 'Terminé' :
                            match.status === 'in_progress' ? 'En cours' :
                            'Programmé'}
@@ -206,36 +277,44 @@ export default function TournamentDetailPage() {
                       </div>
                       
                       <div className="space-y-2">
-                        <div className={`flex items-center justify-between p-2 rounded ${
-                          match.winner_id === match.player1_id ? 'bg-green-500/10' : ''
-                        }`}>
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="text-white">{match.player1?.username || 'TBD'}</span>
+                        <div className={clsx(
+                          'flex items-center justify-between p-2 rounded-lg',
+                          match.winner_id === match.player1_id && 'bg-green-500/10 border border-green-500/20'
+                        )}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User size={14} className="text-text-muted shrink-0" />
+                            <span className="text-sm font-semibold text-text-primary truncate">
+                              {match.player1?.username || 'TBD'}
+                            </span>
                           </div>
                           {match.winner_id === match.player1_id && (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle size={14} className="text-green-400 shrink-0" />
                           )}
                         </div>
                         
-                        <div className="text-center text-gray-400 text-sm py-1">vs</div>
+                        <div className="text-center text-text-muted text-xs font-bold py-1">vs</div>
                         
-                        <div className={`flex items-center justify-between p-2 rounded ${
-                          match.winner_id === match.player2_id ? 'bg-green-500/10' : ''
-                        }`}>
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="text-white">{match.player2?.username || 'TBD'}</span>
+                        <div className={clsx(
+                          'flex items-center justify-between p-2 rounded-lg',
+                          match.winner_id === match.player2_id && 'bg-green-500/10 border border-green-500/20'
+                        )}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User size={14} className="text-text-muted shrink-0" />
+                            <span className="text-sm font-semibold text-text-primary truncate">
+                              {match.player2?.username || 'TBD'}
+                            </span>
                           </div>
                           {match.winner_id === match.player2_id && (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle size={14} className="text-green-400 shrink-0" />
                           )}
                         </div>
                       </div>
                       
                       {match.result && (
-                        <div className="mt-3 pt-3 border-t border-surface-light text-center">
-                          <span className="text-sm text-gray-400">{getMatchResultLabel(match.result)}</span>
+                        <div className="mt-3 pt-3 border-t border-surface-border text-center">
+                          <span className="text-xs text-text-muted font-semibold">
+                            {getMatchResultLabel(match.result)}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -244,16 +323,20 @@ export default function TournamentDetailPage() {
               </div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Rules */}
-        {tournament.rules && (
-          <div className="bg-surface-light rounded-lg p-6 mt-8 border border-surface-lighter">
-            <h2 className="text-xl font-bold text-white mb-4">Règles</h2>
-            <div className="text-gray-400 whitespace-pre-line">{tournament.rules}</div>
+      {/* Règles */}
+      {tournament.rules && (
+        <div className="glass-morphism rounded-2xl p-6 border border-surface-border">
+          <h2 className="text-lg font-black uppercase tracking-wide text-text-primary mb-4">
+            Règles du tournoi
+          </h2>
+          <div className="prose prose-invert max-w-none text-text-secondary whitespace-pre-line leading-relaxed">
+            {tournament.rules}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
