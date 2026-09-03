@@ -28,6 +28,7 @@ const TYPE_CONFIG: Record<NotifType, {
   mention:            { icon: MessageSquare, color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20'    },
   suspension_added:   { icon: ShieldAlert,   color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30'     },
   suspension_lifted:  { icon: ShieldCheck,   color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  poll_resolved:      { icon: CheckCircle2,  color: 'text-green-400',   bg: 'bg-green-500/10',   border: 'border-green-500/20'   },
 }
 
 function timeAgo(date: Date): string {

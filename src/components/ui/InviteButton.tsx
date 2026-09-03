@@ -16,6 +16,7 @@ interface InviteButtonProps {
 export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonProps) {
   const { user } = useAuth()
   const { data: invite, isLoading } = usePlayerInvite(playerId)
+  const inviteData = invite as any
   const createInvite = useCreateInvite()
   const revokeInvite = useRevokeInvite()
   const [copied, setCopied] = useState(false)
@@ -32,15 +33,15 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
 
   const playerSlug = slugify(playerName)
 
-  const inviteUrl = invite?.token
+  const inviteUrl = inviteData?.token
     ? `${window.location.origin}/auth/join?invite=${playerSlug}`
     : null
 
   // Affichage masqué (pas besoin de masquer car c'est déjà propre)
   const inviteUrlDisplay = inviteUrl
 
-  const isExpired = invite?.expires_at
-    ? new Date(invite.expires_at) < new Date()
+  const isExpired = inviteData?.expires_at
+    ? new Date(inviteData.expires_at) < new Date()
     : false
 
   async function handleGenerate() {
@@ -115,9 +116,9 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
         </div>
       )}
 
-      {invite && !isExpired && (
+      {inviteData && !isExpired && (
         <p className="text-xs text-slate-600">
-          Expire le {new Date(invite.expires_at).toLocaleString('fr-FR', {
+          Expire le {new Date(inviteData.expires_at).toLocaleString('fr-FR', {
             day: '2-digit', month: '2-digit',
             hour: '2-digit', minute: '2-digit',
           })}

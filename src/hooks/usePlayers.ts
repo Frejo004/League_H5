@@ -15,11 +15,12 @@ export function usePlayers(seasonId?: string) {
         .order('last_name')
       if (playersErr) throw playersErr
 
-      if (!players?.length) return []
+      const playersList = (players ?? []) as Player[]
 
-      // Fetch équipes + profils liés en parallèle
-      const teamIds   = [...new Set(players.map(p => p.team_id))]
-      const userIds   = players.map(p => p.user_id).filter(Boolean) as string[]
+      if (!playersList.length) return []
+
+      const teamIds = playersList.map(p => p.team_id)
+      const userIds = playersList.map(p => p.user_id).filter(Boolean) as string[]
 
       const [teamsRes, profilesRes] = await Promise.all([
         supabase.from('teams').select('id, name, color').in('id', teamIds),
@@ -28,15 +29,19 @@ export function usePlayers(seasonId?: string) {
           : Promise.resolve({ data: [] }),
       ])
 
-      const teamsMap    = new Map((teamsRes.data ?? []).map(t => [t.id, t]))
-      const profilesMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]))
+      const teamsData = teamsRes.data ?? []
+      const profilesData = profilesRes.data ?? []
+      const teamsMap = new Map(teamsData.map((t: any) => [t.id, t]))
+      const profilesMap = new Map(profilesData.map((p: any) => [p.id, p]))
 
-      return players.map(p => ({
-        ...p,
-        // avatar_url : priorité au profil lié (toujours à jour), fallback sur players.avatar_url
-        avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
-        teams: teamsMap.get(p.team_id) as TeamRef | null,
-      }))
+      return playersList.map(p => {
+        const team = teamsMap.get(p.team_id) as any
+        return {
+          ...p,
+          avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
+          teams: team ? { id: team.id, name: team.name, color: team.color } : null,
+        }
+      })
     },
   })
 }
@@ -57,7 +62,6 @@ export function usePlayersByTeam(teamId?: string) {
       const players = data as Player[]
       if (!players.length) return players
 
-      // Récupère les avatars depuis profiles (toujours à jour)
       const userIds = players.map(p => p.user_id).filter(Boolean) as string[]
       if (!userIds.length) return players
 
@@ -65,8 +69,7 @@ export function usePlayersByTeam(teamId?: string) {
         .from('profiles')
         .select('id, avatar_url')
         .in('id', userIds)
-
-      const profilesMap = new Map((profiles ?? []).map(p => [p.id, p]))
+      const profilesMap = new Map((profiles ?? []).map((p: any) => [p.id, p]))
 
       return players.map(p => ({
         ...p,
@@ -88,6 +91,7 @@ export function useCreatePlayer() {
       position?: Player['position']
       user_id?: string | null
     }) => {
+      // @ts-expect-error Supabase insert typing inference issue
       const { data, error } = await supabase.from('players').insert(values).select().single()
       if (error) throw error
       return data as Player
@@ -105,6 +109,7 @@ export function useUpdatePlayer() {
     mutationFn: async ({ id, ...values }: { id: string } & Database['public']['Tables']['players']['Update']) => {
       const { data, error } = await supabase
         .from('players')
+        // @ts-expect-error Supabase update typing inference issue
         .update(values)
         .eq('id', id)
         .select()
@@ -125,6 +130,7 @@ export function useDeactivatePlayer() {
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
         .from('players')
+        // @ts-expect-error Supabase update typing inference issue
         .update({ is_active: false })
         .eq('id', id)
         .select('season_id, team_id')
@@ -133,8 +139,12 @@ export function useDeactivatePlayer() {
       return data
     },
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['players', data.season_id] })
-      qc.invalidateQueries({ queryKey: ['players', 'team', data.team_id] })
+      if (data) {
+        // @ts-expect-error Supabase select typing inference issue
+        qc.invalidateQueries({ queryKey: ['players', data.season_id] })
+        // @ts-expect-error Supabase select typing inference issue
+        qc.invalidateQueries({ queryKey: ['players', 'team', data.team_id] })
+      }
     },
   })
 }

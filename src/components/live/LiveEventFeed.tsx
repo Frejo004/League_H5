@@ -226,7 +226,9 @@ export function LiveEventFeed({
             <div className="w-3 h-4.5 bg-red-500 rounded-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] rotate-12" />
           ) : event.type === 'substitution' ? (
             <span className="text-emerald-500 text-sm font-black">⇄</span>
-          ) : event.type === 'goal' && event.is_penalty ? (
+          ) : (event as any).type === 'goal' && (event as any).is_penalty ? (
+            <span className="text-yellow-500 text-sm font-black">PK</span>
+          ) : (event as any).type === 'own_goal' && (event as any).is_penalty ? (
             <span className="text-yellow-500 text-sm font-black">PK</span>
           ) : ['shot', 'shot_on_target', 'foul', 'corner'].includes(event.type) ? (
             <span className="text-base">{EVENT_ICONS[event.type]}</span>

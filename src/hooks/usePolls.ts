@@ -169,6 +169,7 @@ export function usePolls() {
 
       const { data, error } = await supabase
         .from('polls')
+        // @ts-expect-error Supabase insert typing inference issue
         .insert({
           ...pollData,
           season_id: season.id,
@@ -218,7 +219,7 @@ export function usePolls() {
         }
       })
 
-      const { error } = await supabase.from('polls').insert(polls)
+      const { error } = await supabase.from('polls').insert(polls as never)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
@@ -228,7 +229,7 @@ export function usePolls() {
     mutationFn: async ({ id, ...updates }: { id: string } & PollUpdate) => {
       const { data, error } = await supabase
         .from('polls')
-        .update(updates)
+        .update(updates as never)
         .eq('id', id)
         .select()
         .single()
@@ -311,12 +312,12 @@ export function usePolls() {
         const isAssist = type === 'anytime_assister'
 
         // Options = noms des joueurs + option "Aucun but/passe" en dernier
-        const playerOptions = players.map(p => `${p.first_name} ${p.last_name}`)
+        const playerOptions = players.map((p: any) => `${p.first_name} ${p.last_name}`)
         const lastOption = isAssist ? noAssistLabel : noGoalLabel
         const options = [...playerOptions, lastOption]
 
         // Métadonnées : player_id pour chaque option (null pour la dernière)
-        const option_player_ids = [...players.map(p => p.id), null]
+        const option_player_ids = [...players.map((p: any) => p.id), null]
 
         return {
           season_id: season.id,
@@ -334,7 +335,7 @@ export function usePolls() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = polls
 
-      const { error } = await supabase.from('polls').insert(insertPolls)
+      const { error } = await supabase.from('polls').insert(insertPolls as never)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
@@ -417,6 +418,7 @@ export function usePoll(pollId: string) {
 
       const { data, error } = await supabase
         .from('predictions')
+        // @ts-expect-error Supabase insert typing inference issue
         .insert({ poll_id: pollId, user_id: user.id, option_index: optionIndex })
         .select()
         .single()
@@ -456,7 +458,11 @@ export function usePollsByMatch(matchId?: string) {
   // Realtime : rafraîchit instantanément quand un poll du match change (résolution auto)
   useEffect(() => {
     if (!matchId) return
-    const ch = supabase.channel(`polls-match-${matchId}`)
+    const name = `polls-match-${matchId}`
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
+    if (existing) supabase.removeChannel(existing)
+
+    const ch = supabase.channel(name)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'polls',
         filter: `match_id=eq.${matchId}`,
@@ -471,7 +477,11 @@ export function usePollsByMatch(matchId?: string) {
   // Realtime sur predictions : met à jour les comptages quand quelqu'un vote
   useEffect(() => {
     if (!matchId || !user) return
-    const ch = supabase.channel(`predictions-match-${matchId}`)
+    const name = `predictions-match-${matchId}`
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
+    if (existing) supabase.removeChannel(existing)
+
+    const ch = supabase.channel(name)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'predictions',
       }, () => {

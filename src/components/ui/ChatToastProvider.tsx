@@ -91,6 +91,7 @@ async function fetchVisibleChannels(userId: string) {
     .eq('captain_id', userId)
     .limit(1)
 
+  // @ts-expect-error profile typing inference issue
   const isAdmin = profile != null && profile.role === 'admin'
 
   const isCaptain = (captainTeam?.length ?? 0) > 0

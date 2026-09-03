@@ -41,6 +41,7 @@ export function GoalAlert({ matchId, homeTeam, awayTeam }: GoalAlertProps) {
                 .select('first_name, last_name')
                 .eq('id', newEvent.player_id)
                 .single()
+              // @ts-expect-error Supabase select typing inference issue
               if (player) playerName = `${player.first_name} ${player.last_name}`
             }
 

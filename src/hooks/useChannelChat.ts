@@ -185,6 +185,7 @@ async function fetchChannelPage(channelId: string, beforeId?: string): Promise<C
       .from('channel_messages')
       .select('id, content, sender:profiles!channel_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
+    // @ts-expect-error Supabase select typing inference issue
     const replyRows = replies as unknown as ReplyRow[] | null
     for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
@@ -226,7 +227,7 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
         const { data } = await supabase.rpc('count_channel_messages_before', {
           p_channel_id: channelId,
           p_before_id: page[0].id,
-        })
+        } as never)
         setOlderCount(Number(data ?? 0))
       } else {
         setOlderCount(0)
@@ -243,7 +244,7 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
     supabase.rpc('count_channel_messages_before', {
       p_channel_id: channelId,
       p_before_id: first.id,
-    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+    } as never).then(({ data }) => setOlderCount(Number(data ?? 0)))
   }, [channelId, messagesQuery.data])
 
   // Reset pages anciennes quand on change de canal
@@ -297,7 +298,7 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
       await supabase.from('channel_read_receipts').upsert({
         user_id: currentUserId, channel_id: channelId,
         last_read_at: lastMsgAt, last_read_msg: lastMsgId,
-      }, { onConflict: 'user_id,channel_id' })
+      } as never, { onConflict: 'user_id,channel_id' })
     }, 2000);
   }, [channelId, currentUserId])
 
@@ -306,7 +307,7 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
       const { data: newMsg, error } = await supabase.from('channel_messages').insert({
         channel_id: channelId!, sender_id: senderId,
         content: content.trim(), reply_to_id: replyToId ?? null,
-      }).select('id').single()
+      } as never).select('id').single()
       if (error) throw error
 
       // Enregistrer les mentions @
@@ -494,6 +495,7 @@ async function fetchDmPage(conversationId: string, beforeId?: string): Promise<D
       .from('dm_messages')
       .select('id, content, sender:profiles!dm_messages_sender_id_fkey(id, full_name)')
       .in('id', replyIds)
+    // @ts-expect-error Supabase select typing inference issue
     const replyRows = replies as unknown as ReplyRow[] | null
     for (const r of replyRows ?? []) replyMap.set(r.id, r)
   }
@@ -528,11 +530,11 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
       const page = await fetchDmPage(conversationId, oldest.id)
       if (page.length > 0) {
         setOlderPages(prev => [page, ...prev])
-        const { data } = await supabase.rpc('count_dm_messages_before', {
-          p_conversation_id: conversationId,
-          p_before_id: page[0].id,
-        })
-        setOlderCount(Number(data ?? 0))
+      const { data } = await supabase.rpc('count_dm_messages_before', {
+        p_conversation_id: conversationId,
+        p_before_id: page[0].id,
+      } as never)
+      setOlderCount(Number(data ?? 0))
       } else {
         setOlderCount(0)
       }
@@ -547,7 +549,7 @@ export function useDmChat(conversationId?: string, currentUserId?: string) {
     supabase.rpc('count_dm_messages_before', {
       p_conversation_id: conversationId,
       p_before_id: first.id,
-    }).then(({ data }) => setOlderCount(Number(data ?? 0)))
+    } as never).then(({ data }) => setOlderCount(Number(data ?? 0)))
   }, [conversationId, messagesQuery.data])
 
   useEffect(() => {

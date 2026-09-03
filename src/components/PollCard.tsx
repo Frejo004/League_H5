@@ -56,7 +56,7 @@ export function PollCard({ pollId }: { pollId: string }) {
             {poll.data.match && (
               <div className="text-[10px] text-text-muted flex items-center gap-1 mt-0.5">
                 <Trophy size={10} />
-                {poll.data.match.home_team?.name} vs {poll.data.match.away_team?.name}
+                Match {poll.data.match.matchday}
               </div>
             )}
           </div>

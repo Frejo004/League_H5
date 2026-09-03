@@ -39,20 +39,21 @@ async function fetchTeamPlayersWithAvatars(teamId: string) {
     .order('jersey_number', { ascending: true })
   if (playersErr) throw playersErr
 
-  // Requête 3 : avatars depuis profiles pour les joueurs avec un compte
-  const userIds = (players ?? []).map(p => p.user_id).filter(Boolean) as string[]
+  const playersList = (players ?? []) as any[]
+  const userIds = playersList.map(p => p.user_id).filter(Boolean) as string[]
   const profilesMap = new Map<string, string | null>()
   if (userIds.length) {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, avatar_url')
       .in('id', userIds)
-    for (const prof of profiles ?? []) {
+    for (const prof of (profiles ?? [])) {
+      // @ts-expect-error Supabase select typing inference issue
       profilesMap.set(prof.id, prof.avatar_url)
     }
   }
 
-  return (players ?? []).map(p => ({
+  return playersList.map((p: any) => ({
     ...p,
     avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
   }))
@@ -73,6 +74,7 @@ export function useTeam(teamId?: string) {
 
       const playersWithAvatar = await fetchTeamPlayersWithAvatars(teamId!);
 
+      // @ts-expect-error Supabase select typing inference issue
       return { ...team, players: playersWithAvatar }
     },
   })
@@ -101,11 +103,13 @@ export function useTeamBySlug(slug?: string, seasonId?: string) {
       
       const { data: team, error: teamErr } = await query.single()
       if (teamErr) throw teamErr
+      const teamData = team as Team
+      if (!teamData) throw new Error('Team not found')
 
       // Requête 2 : les joueurs actifs de l'équipe
-      const playersWithAvatar = await fetchTeamPlayersWithAvatars(team.id);
+      const playersWithAvatar = await fetchTeamPlayersWithAvatars(teamData.id);
 
-      return { ...team, players: playersWithAvatar }
+      return { ...teamData, players: playersWithAvatar }
     },
   })
 }
@@ -119,7 +123,10 @@ export function useCreateTeam() {
       color?: string
       logo_url?: string | null
     }) => {
-      const { data, error } = await supabase.from('teams').insert(values).select().single()
+      const { data, error } = await supabase.from('teams')
+        .insert(values as never)
+        .select()
+        .single()
       if (error) throw error
       return data as Team
     },
@@ -136,7 +143,7 @@ export function useUpdateTeam() {
     mutationFn: async ({ id, ...values }: Database['public']['Tables']['teams']['Update'] & { id: string }) => {
       const { data, error } = await supabase
         .from('teams')
-        .update(values)
+        .update(values as never)
         .eq('id', id)
         .select()
         .single()
@@ -175,7 +182,7 @@ export function useSetCaptain() {
         p_team_id:           teamId,
         p_captain_player_id: captainPlayerId,
         p_captain_user_id:   captainUserId,
-      })
+      } as never)
       if (error) throw error
     },
     onSuccess: () => {

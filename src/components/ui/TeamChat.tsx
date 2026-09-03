@@ -100,7 +100,7 @@ export function TeamChat({ teamId, teamColor, teamName, embedded = false }: Team
   useEffect(() => {
     import('@/lib/supabase').then(({ supabase }) => {
       supabase.from('teams').select('captain_id').eq('id', teamId).maybeSingle()
-        .then(({ data }) => setCaptainId(data?.captain_id ?? null))
+        .then(({ data }) => setCaptainId((data as any)?.captain_id ?? null))
     })
   }, [teamId])
 
