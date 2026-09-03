@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { useTheme } from '@/hooks/useTheme'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-// import { BetBasketProvider } from '@/components/ui/BetBasketProvider'
 import { router } from '@/router'
 
 const queryClient = new QueryClient({
@@ -21,9 +20,7 @@ export default function App() {
     <ErrorBoundary message="L'application a rencontré une erreur critique. Rechargez la page.">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {/* <BetBasketProvider> */}
-            <RouterProvider router={router} />
-          {/* </BetBasketProvider> */}
+          <RouterProvider router={router} />
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

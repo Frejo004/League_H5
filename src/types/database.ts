@@ -1524,6 +1524,10 @@ export interface Database {
         }
         Returns: undefined
       }
+      start_second_half: {
+        Args: { p_match_id: string }
+        Returns: undefined
+      }
       add_match_event_v2: {
         Args: {
           p_match_id: string
@@ -1571,6 +1575,18 @@ export interface Database {
           }>
         }
         Returns: string
+      }
+      update_match_lineup: {
+        Args: {
+          p_match_id: string
+          p_team_id: string
+          p_players: Array<{
+            player_id: string
+            is_starter: boolean
+            position?: string | null
+          }>
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -562,6 +562,7 @@ export function PublicMatchDetailPage() {
 
   const [showGoalOverlay, setShowGoalOverlay] = useState<{ teamName: string; teamColor: string; score: string } | null>(null)
   const prevScoreRef = useRef<{ home: number; away: number } | null>(null)
+  const goalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const paramType = idOrSlug ? getRouteParamType(idOrSlug) : 'id'
 
@@ -577,13 +578,13 @@ export function PublicMatchDetailPage() {
   // ── Effet pour détecter un nouveau but ─────────────────────────────────────
   useEffect(() => {
     if (!match || match.status !== 'live') return
-    
+
     const currentScore = { home: match.home_score ?? 0, away: match.away_score ?? 0 }
-    
+
     if (prevScoreRef.current) {
       const homeGoal = currentScore.home > prevScoreRef.current.home
       const awayGoal = currentScore.away > prevScoreRef.current.away
-      
+
       if (homeGoal || awayGoal) {
         const team = homeGoal ? match.home_team : match.away_team
         setShowGoalOverlay({
@@ -591,11 +592,18 @@ export function PublicMatchDetailPage() {
           teamColor: team?.color ?? '#C8F135',
           score: `${currentScore.home}-${currentScore.away}`
         })
-        setTimeout(() => setShowGoalOverlay(null), 5000)
+        goalTimeoutRef.current = setTimeout(() => setShowGoalOverlay(null), 5000)
       }
     }
-    
+
     prevScoreRef.current = currentScore
+
+    return () => {
+      if (goalTimeoutRef.current) {
+        clearTimeout(goalTimeoutRef.current)
+        goalTimeoutRef.current = null
+      }
+    }
   }, [match])
 
   const [activeTab, setActiveTab] = useState<LiveTab>(() => {
@@ -642,9 +650,7 @@ export function PublicMatchDetailPage() {
 
   useEffect(() => {
     void pollEvents()
-    if (!eventLoopEnabled) return
-    return () => clearInterval(1000)
-  }, [pollEvents, eventLoopEnabled])
+  }, [pollEvents])
 
   const { data: liveEvents = [] } = useMatchEvents(id)
 

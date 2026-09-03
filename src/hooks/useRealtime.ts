@@ -26,6 +26,14 @@ function getTeamName(team: TeamNameRef | TeamNameRef[] | null | undefined, fallb
   return value?.name ?? fallback
 }
 
+function getOrCreateChannel(name: string) {
+  const existing = supabase.getChannels().find(c => c.topic === `realtime:${name}`)
+  if (existing) {
+    supabase.removeChannel(existing)
+  }
+  return supabase.channel(name)
+}
+
 /**
  * Helper : envoyer une notification via le Service Worker actif (iOS PWA + desktop)
  * - Si l'app est au premier plan → ne fait rien (le badge UI suffit)
@@ -68,7 +76,7 @@ export function useRealtimeMatch(matchId?: string) {
     if (!matchId) return
 
     const channelName = `match-detail-${matchId}`
-    const channel = supabase.channel(channelName)
+    const channel = getOrCreateChannel(channelName)
 
     channel
       // 1. Match core updates
@@ -156,7 +164,7 @@ export function useRealtimeMatches(seasonId?: string) {
     if (!seasonId) return
 
     const channelName = `matches-season-${seasonId}`
-    const channel = supabase.channel(channelName)
+    const channel = getOrCreateChannel(channelName)
     
     channel
       // 1. Match updates (scores, status, etc.)
@@ -231,7 +239,7 @@ export function useRealtimeTeams(seasonId?: string) {
     if (!seasonId) return
 
     const channelName = `teams-season-${seasonId}`
-    const channel = supabase.channel(channelName)
+    const channel = getOrCreateChannel(channelName)
 
     channel
       .on('postgres_changes', { 
@@ -271,7 +279,7 @@ export function useRealtimeTactics(teamId?: string, matchId?: string) {
     if (!teamId || !matchId) return
 
     const channelName = `tactics-team-${teamId}-${matchId}`
-    const channel = supabase.channel(channelName)
+    const channel = getOrCreateChannel(channelName)
     
     channel
       .on('postgres_changes', { 
@@ -305,7 +313,7 @@ export function useRealtimeMatchTactics(matchId?: string) {
     if (!matchId) return
 
     const channelName = `tactics-match-${matchId}`
-    const channel = supabase.channel(channelName)
+    const channel = getOrCreateChannel(channelName)
     
     channel
       .on('postgres_changes', { 

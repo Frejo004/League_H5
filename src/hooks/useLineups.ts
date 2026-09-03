@@ -63,8 +63,8 @@ export function useUpdateMatchLineup() {
 
       if (players.length === 0) return
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.rpc('update_match_lineup' as any, {
+      // @ts-expect-error Supabase RPC typing inference issue; params are validated in database.ts
+      const { error } = await supabase.rpc('update_match_lineup', {
         p_match_id: matchId,
         p_team_id: teamId,
         p_players: players

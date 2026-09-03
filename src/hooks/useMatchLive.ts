@@ -76,12 +76,12 @@ export function useMatchEvents(matchId?: string) {
 export function useLiveReactions(matchId?: string) {
   const qc = useQueryClient()
   const [burst, setBurst] = useState<{ emoji: string; id: string }[]>([])
+  const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
 
   const query = useQuery({
     queryKey: ['live-reactions', matchId],
     enabled: !!matchId,
     queryFn: async () => {
-      // Compter les réactions des 30 dernières secondes par emoji
       const since = new Date(Date.now() - 30_000).toISOString()
       const { data } = await supabase
         .from('live_reactions')
@@ -90,6 +90,7 @@ export function useLiveReactions(matchId?: string) {
         .gte('created_at', since)
       const counts: Record<string, number> = {}
       for (const r of data ?? []) {
+        // @ts-expect-error Supabase select typing inference issue
         counts[r.emoji] = (counts[r.emoji] ?? 0) + 1
       }
       return counts
@@ -111,23 +112,31 @@ export function useLiveReactions(matchId?: string) {
         filter: `match_id=eq.${matchId}`,
       }, (payload) => {
         const r = payload.new as LiveReaction
-        // Ajouter au burst visuel
         const id = `${Date.now()}-${Math.random()}`
         setBurst(prev => [...prev.slice(-20), { emoji: r.emoji, id }])
-        // Supprimer après l'animation
-        setTimeout(() => setBurst(prev => prev.filter(b => b.id !== id)), 3000)
+        const timeout = setTimeout(() => {
+          setBurst(prev => prev.filter(b => b.id !== id))
+          timeoutsRef.current.delete(timeout)
+        }, 3000)
+        timeoutsRef.current.add(timeout)
         qc.invalidateQueries({ queryKey: ['live-reactions', matchId] })
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(ch) }
+    return () => {
+      timeoutsRef.current.forEach(t => clearTimeout(t))
+      timeoutsRef.current.clear()
+      supabase.removeChannel(ch)
+    }
   }, [matchId, qc])
 
   const sendReaction = useMutation({
     mutationFn: async ({ emoji, userId }: { emoji: string; userId: string }) => {
-      const { error } = await supabase.from('live_reactions').insert({
-        match_id: matchId!, user_id: userId, emoji,
-      })
+      const { error } = await supabase.from('live_reactions')
+        .insert({
+          // @ts-expect-error Supabase insert typing inference issue
+          match_id: matchId!, user_id: userId, emoji,
+        })
       if (error) throw error
     },
   })
@@ -344,10 +353,12 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startLive = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('start_match_live', { p_match_id: matchId! });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('start_match_live', { p_match_id: matchId! })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur au démarrage du match en direct:', error);
-        throw error;
+        console.error('[useAdminMatchLive] Erreur au démarrage du match en direct:', error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -355,10 +366,12 @@ export function useAdminMatchLive(matchId?: string) {
 
   const signalHalftime = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('match_halftime', { p_match_id: matchId! });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('match_halftime', { p_match_id: matchId! })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur lors du signalement de la mi-temps:', error);
-        throw error;
+        console.error('[useAdminMatchLive] Erreur lors du signalement de la mi-temps:', error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -366,11 +379,12 @@ export function useAdminMatchLive(matchId?: string) {
 
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.rpc('start_second_half' as any, { p_match_id: matchId! });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('start_second_half', { p_match_id: matchId! })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error);
-        throw error;
+        console.error('[useAdminMatchLive] Erreur au démarrage de la deuxième mi-temps:', error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -378,13 +392,15 @@ export function useAdminMatchLive(matchId?: string) {
 
   const togglePause = useMutation({
     mutationFn: async (reason?: string) => {
-      const { error } = await supabase.rpc('toggle_match_pause_v2', { 
-        p_match_id: matchId!,
-        p_reason: reason || undefined
-      });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('toggle_match_pause_v2', { 
+          p_match_id: matchId!,
+          p_reason: reason || undefined
+        })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur lors de l\'activation/désactivation de la pause:', error);
-        throw error;
+        console.error("[useAdminMatchLive] Erreur lors de l'activation/désactivation de la pause:", error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -392,14 +408,16 @@ export function useAdminMatchLive(matchId?: string) {
 
   const endMatch = useMutation({
     mutationFn: async ({ homeScore, awayScore }: { homeScore: number; awayScore: number }) => {
-      const { error } = await supabase.rpc('end_match_live', {
-        p_match_id: matchId!,
-        p_home_score: homeScore,
-        p_away_score: awayScore,
-      });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('end_match_live', {
+          p_match_id: matchId!,
+          p_home_score: homeScore,
+          p_away_score: awayScore,
+        })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur lors de la fin du match:', error);
-        throw error;
+        console.error('[useAdminMatchLive] Erreur lors de la fin du match:', error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -416,37 +434,40 @@ const addEvent = useMutation({
     description?: string | null
     is_penalty?: boolean
   }) => {
-    const { error } = await supabase.rpc('add_match_event_v2', {
-      p_match_id: matchId!,
-      p_type: event.type,
-      p_minute: event.minute,
-      p_period: event.period,
-      p_team_id: event.team_id ?? null,
-      p_player_id: event.player_id ?? null,
-      p_player2_id: event.player2_id ?? null,
-      p_description: event.description ?? null,
-      p_is_penalty: event.is_penalty ?? false,
-    });
+    const { error } = await supabase
+      // @ts-expect-error Supabase RPC typing inference issue
+      .rpc('add_match_event_v2', {
+        p_match_id: matchId!,
+        p_type: event.type,
+        p_minute: event.minute,
+        p_period: event.period,
+        p_team_id: event.team_id ?? null,
+        p_player_id: event.player_id ?? null,
+        p_player2_id: event.player2_id ?? null,
+        p_description: event.description ?? null,
+        p_is_penalty: event.is_penalty ?? false,
+      })
 
-      // Broadcast instantané pour les buts afin que les spectateurs voient le score bouger immédiatement
-      if (!error && event.type === 'goal') {
-        broadcastChannel.current?.send({ type: 'broadcast', event: 'goal_scored', payload: { teamId: event.team_id } })
-      }
+    if (!error && event.type === 'goal') {
+      broadcastChannel.current?.send({ type: 'broadcast', event: 'goal_scored', payload: { teamId: event.team_id } })
+    }
 
-      if (error) {
-        console.error('[useAdminMatchLive] Erreur lors de l\'ajout d\'un événement de match:', error);
-        throw error;
-      }
-    },
-    onSuccess: invalidate,
-  })
+    if (error) {
+      console.error("[useAdminMatchLive] Erreur lors de l'ajout d'un événement de match:", error)
+      throw error
+    }
+  },
+  onSuccess: invalidate,
+})
 
   const deleteEvent = useMutation({
     mutationFn: async (eventId: string) => {
-      const { error } = await supabase.rpc('delete_match_event_v2', { p_event_id: eventId });
+      const { error } = await supabase
+        // @ts-expect-error Supabase RPC typing inference issue
+        .rpc('delete_match_event_v2', { p_event_id: eventId })
       if (error) {
-        console.error('[useAdminMatchLive] Erreur lors de la suppression d\'un événement de match:', error);
-        throw error;
+        console.error('[useAdminMatchLive] Erreur lors de la suppression d\'un événement de match:', error)
+        throw error
       }
     },
     onSuccess: invalidate,
@@ -458,7 +479,9 @@ const addEvent = useMutation({
       if (eventsReporterId !== undefined) updates.events_reporter_id = eventsReporterId
       if (videoReporterId !== undefined) updates.video_reporter_id = videoReporterId
       
-      const { error } = await supabase.from('matches').update(updates).eq('id', matchId!)
+      const { error } = await supabase.from('matches')
+        // @ts-expect-error Supabase update typing inference issue
+        .update(updates).eq('id', matchId!)
       if (error) {
         console.error('[useAdminMatchLive] Erreur lors de la mise à jour des rapporteurs:', error)
         throw error

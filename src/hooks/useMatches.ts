@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Match, MatchWithTeams, MatchDetail } from '@/types/database'
+import type { Match, MatchWithTeams, MatchDetail, Database } from '@/types/database'
 
 // Re-export pour les imports existants qui importent depuis ce fichier
 export type { MatchWithTeams } from '@/types/database'
@@ -27,7 +27,7 @@ export function useMatches(seasonId?: string) {
 }
 
 // Fonction utilitaire pour éviter la duplication de code lors de la récupération des détails de match
-async function fetchMatchDetails(matchIdentifier: string, isSlug: boolean, seasonId?: string): Promise<MatchDetail> {
+async function fetchMatchDetails(matchIdentifier: string, isSlug: boolean, seasonId?: string): Promise<MatchDetail | null> {
   let query = supabase
     .from('matches')
     .select(`
@@ -47,9 +47,9 @@ async function fetchMatchDetails(matchIdentifier: string, isSlug: boolean, seaso
   if (seasonId) {
     query = query.eq('season_id', seasonId);
   }
-  const { data, error } = await query.single();
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
-  return data as unknown as MatchDetail;
+  return data as unknown as MatchDetail | null;
 }
 
 export function useMatch(matchId?: string) {
@@ -64,7 +64,7 @@ export function useMatch(matchId?: string) {
     // Rafraîchissement automatique toutes les 5s quand le match est live
     // pour s'assurer que live_started_at, live_period, is_paused sont toujours à jour
     refetchInterval: (query) => {
-      const data = query.state.data as MatchDetail | undefined
+      const data = query.state.data as MatchDetail | null | undefined
       return data?.status === 'live' ? 5000 : false
     },
   })
@@ -85,7 +85,7 @@ export function useMatchBySlug(slug?: string, seasonId?: string) {
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchInterval: (query) => {
-      const data = query.state.data as MatchDetail | undefined
+      const data = query.state.data as MatchDetail | null | undefined
       return data?.status === 'live' ? 5000 : false
     },
   })
@@ -102,9 +102,14 @@ export function useCreateMatch() {
       scheduled_at?: string | null
       venue?: string | null
     }) => {
-      const { data, error } = await supabase.from('matches').insert(values).select().single()
+      const { data, error } = await supabase
+        .from('matches')
+        // @ts-expect-error Supabase insert typing inference issue
+        .insert(values as Database['public']['Tables']['matches']['Insert'])
+        .select()
+        .single()
       if (error) throw error
-      return data as Match
+      return data as Database['public']['Tables']['matches']['Row']
     },
     onSuccess: (_data, variables) =>
       qc.invalidateQueries({ queryKey: ['matches', variables.season_id] }),
@@ -114,19 +119,16 @@ export function useCreateMatch() {
 export function useUpdateMatch() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...values }: Partial<Match> & { id: string }) => {
-      // Exclure les colonnes système pour éviter l'erreur de type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-      const { created_at, updated_at, ...updateData } = values as any
-      
+    mutationFn: async ({ id, ...values }: { id: string } & Partial<Database['public']['Tables']['matches']['Update']>) => {
       const { data, error } = await supabase
         .from('matches')
-        .update(updateData)
+        // @ts-expect-error Supabase update typing inference issue
+        .update(values as Database['public']['Tables']['matches']['Update'])
         .eq('id', id)
         .select()
         .single()
       if (error) throw error
-      return data as Match
+      return data as Database['public']['Tables']['matches']['Row']
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['matches', data.season_id] })
