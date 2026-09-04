@@ -65,7 +65,7 @@ export function TournamentsPage() {
     <div className="space-y-6">
       {/* Hero */}
       <PageHero
-        imageUrl="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1200&q=80&auto=format&fit=crop"
+        imageUrl="https://images.unsplash.com/photo-1529699211952-d4ac3f3d3ff1?w=1200&q=80&auto=format&fit=crop"
         pattern="hexagon"
         title="Tournois"
         subtitle="Participez aux tournois d'échecs de la communauté"

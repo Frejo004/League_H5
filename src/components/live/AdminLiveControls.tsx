@@ -79,14 +79,14 @@ function DeleteConfirmModal({
         <div className="flex gap-2 pt-1">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl border border-surface-border text-[11px] font-black text-text-muted uppercase tracking-widest hover:bg-surface-raised transition-all"
-          > 
+            className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-surface-border text-[11px] font-black text-text-muted uppercase tracking-widest hover:bg-surface-raised transition-all"
+          >
             Annuler
           </button>
           <button
             onClick={onConfirm}
             disabled={isPending}
-            className="flex-1 py-2.5 rounded-xl bg-red-500 border border-red-400/30 text-[11px] font-black text-white uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+            className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-red-500 border border-red-400/30 text-[11px] font-black text-white uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
           >
             {isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={13} />}
             Supprimer
@@ -693,7 +693,7 @@ export function AdminLiveControls({
                 onClick={() => { togglePause.mutate(pauseReason); setPauseReason('') }}
                 disabled={togglePause.isPending}
                 className={clsx(
-                  "flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all shadow-sm",
+                  "min-h-[44px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all shadow-sm",
                   isPaused
                     ? "bg-green-500/20 border-green-500/40 text-green-600 hover:bg-green-500/30 flex-1"
                     : "bg-amber-500/20 border-amber-500/40 text-amber-600 hover:bg-amber-500/30 min-w-30"
@@ -732,7 +732,7 @@ export function AdminLiveControls({
               <button
                 onClick={() => startSecondHalf.mutate()}
                 disabled={startSecondHalf.isPending}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-blue-500 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+                className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-blue-500 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20 active:scale-[0.98]"
               >
                 {startSecondHalf.isPending ? <LoadingSpinner size="sm" /> : <Play size={14} />}
                 Lancer 2ème MT

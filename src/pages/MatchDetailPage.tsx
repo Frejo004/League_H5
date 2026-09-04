@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, ShieldCheck } from 'lucide-react'
+import { MapPin, Calendar, Star, CheckCircle2, Share2, UsersIcon, BarChart2, ShieldCheck, Tv } from 'lucide-react'
 import { useMatch, useMatchBySlug } from '@/hooks/useMatches'
 import { useMvpVotes, useMyMvpVote, useVoteMvp } from '@/hooks/useMvpVotes'
 import { usePlayersByTeam } from '@/hooks/usePlayers'
@@ -7,6 +7,7 @@ import { useRealtimeMatch } from '@/hooks/useRealtime'
 import { useLiveClock, useMatchEvents } from '@/hooks/useMatchLive'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
+import { generateMatchStory, shareOrDownload } from '@/lib/storyGenerator'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { SkeletonCard, SkeletonKpiGrid, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
@@ -217,6 +218,7 @@ export function MatchDetailPage() {
   const [activeTab, setActiveTab] = useState<LiveTab>('resume')
 
   const { user, isAdmin, isCaptain } = useAuth()
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -468,6 +470,54 @@ export function MatchDetailPage() {
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
 
+  const topScorerLine = (() => {
+    const counts = new Map<string, { name: string; team: string; count: number }>()
+    for (const g of match.goals as GoalWithPlayer[]) {
+      const name = `${g.players?.first_name ?? ''} ${g.players?.last_name ?? ''}`.trim() || 'Joueur'
+      const team = g.team_id === home.id ? home.name : away.name
+      const key = `${name}-${team}`
+      counts.set(key, { name, team, count: (counts.get(key)?.count ?? 0) + 1 })
+    }
+    const top = [...counts.values()].sort((a, b) => b.count - a.count)[0]
+    return top ? `Top buteur : ${top.name} (${top.team}) · ${top.count} but${top.count > 1 ? 's' : ''}` : ''
+  })()
+
+  async function handleShareStory() {
+    if (isGeneratingStory) return
+    setIsGeneratingStory(true)
+    try {
+      const blob = await generateMatchStory({
+        home: {
+          name: home.name,
+          shortName: home.name,
+          color: home.color ?? '#888',
+          logoUrl: home.logo_url,
+          score: match.home_score ?? 0,
+        },
+        away: {
+          name: away.name,
+          shortName: away.name,
+          color: away.color ?? '#888',
+          logoUrl: away.logo_url,
+          score: match.away_score ?? 0,
+        },
+        title: isLive ? 'En direct' : isCompleted ? 'Score final' : 'À venir',
+        subtitle: match.seasons?.name ?? season?.name ?? '',
+        highlight: topScorerLine,
+        status: isLive ? 'live' : isCompleted ? 'completed' : 'scheduled',
+        liveMinute: clock?.minute != null ? `${clock.minute}'` : undefined,
+        footer: 'League H5',
+      })
+      await shareOrDownload(
+        blob,
+        `league-h5-${home.name}-vs-${away.name}.png`,
+        `${home.name} ${match.home_score ?? 0} - ${match.away_score ?? 0} ${away.name} #LeagueH5`,
+      )
+    } finally {
+      setIsGeneratingStory(false)
+    }
+  }
+
   const assistMap = new Map(
     assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
   )
@@ -669,6 +719,26 @@ export function MatchDetailPage() {
 
   return (
     <div className="space-y-6 pb-24 relative min-h-screen">
+      {/* Lien vers le scoreboard plein écran pour TV / club-house */}
+      <div className="mx-1 mb-2 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleShareStory}
+          disabled={isGeneratingStory}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-[11px] font-bold uppercase tracking-widest text-text-muted hover:text-text-primary hover:border-primary-500/30 transition-colors disabled:opacity-50"
+        >
+          <Share2 size={12} /> {isGeneratingStory ? 'Génération…' : 'Partager en story'}
+        </button>
+        <Link
+          to={`/scoreboard/${match.slug ?? match.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-[11px] font-bold uppercase tracking-widest text-text-muted hover:text-text-primary hover:border-primary-500/30 transition-colors"
+        >
+          <Tv size={12} /> Scoreboard TV
+        </Link>
+      </div>
+
       {/* Admin Controls en Direct */}
       {(isAdmin || isEventsReporter || isVideoReporter) && isLive && (
         <div className="mx-1 mb-6">

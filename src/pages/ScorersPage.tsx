@@ -4,12 +4,14 @@ import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useActiveSuspendedPlayerIds } from '@/hooks/useDisciplinaryStats'
+import { useSeo } from '@/hooks/useSeo'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { clsx } from 'clsx'
 
 export function ScorersPage() {
+  useSeo({ title: 'Buteurs', description: 'Classement des meilleurs buteurs de la ligue H5.' })
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   const { data: scorers, isLoading: scorersLoading } = useScorers(season?.id)
   const { data: suspendedIds } = useActiveSuspendedPlayerIds(season?.id)

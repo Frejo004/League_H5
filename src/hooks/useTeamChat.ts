@@ -13,6 +13,9 @@ import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+
+type RpcFn = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
+const rpc = supabase.rpc as unknown as RpcFn
 import type { TeamMessageFull, ChatReadReceipt } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,14 +46,14 @@ export async function saveMentions(
       .eq('team_id', contextId)
       .eq('is_active', true)
       .not('user_id', 'is', null)
-    memberRows = (players as any ?? []).filter((p: any) => p.user_id) as { user_id: string }[]
+    memberRows = ((players ?? []) as Array<{ user_id: string | null }>).filter(p => p.user_id) as { user_id: string }[]
   } else {
     // Canal global : récupérer tous les profils actifs
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id')
       .neq('id', mentionedBy)
-    memberRows = (profiles as any ?? []).map((p: any) => ({ user_id: p.id }))
+    memberRows = ((profiles ?? []) as Array<{ id: string }>).map(p => ({ user_id: p.id }))
   }
 
   let targetUserIds: string[] = []
@@ -65,7 +68,7 @@ export async function saveMentions(
       .in('id', memberRows.map(m => m.user_id))
 
     for (const mention of rawMentions) {
-      const matched = (profiles as any ?? []).find((p: any) =>
+      const matched = ((profiles ?? []) as Array<{ id: string; full_name: string | null }>).find(p =>
         (p.full_name ?? '').toLowerCase().includes(mention)
       )
       if (matched && matched.id !== mentionedBy) {
@@ -79,12 +82,12 @@ export async function saveMentions(
   if (targetUserIds.length === 0) return
 
   // Insérer dans chat_mentions (ignorer les doublons)
-  await (supabase.from('chat_mentions') as any).insert(
+  await supabase.from('chat_mentions').insert(
     targetUserIds.map(uid => ({
       message_id: messageId,
       mentioned_user_id: uid,
       mentioned_by: mentionedBy,
-    }))
+    })) as never
   )
 }
 
@@ -128,8 +131,13 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
     .limit(PAGE_SIZE)
 
   if (beforeId) {
-    const { data: pivot } = await (supabase.from('team_messages') as any).select('created_at').eq('id', beforeId).single()
-    if (pivot) query = query.lt('created_at', pivot.created_at)
+    const { data: pivot } = await supabase
+      .from('team_messages')
+      .select('created_at')
+      .eq('id', beforeId)
+      .single()
+    const pivotRow = pivot as { created_at: string } | null
+    if (pivotRow) query = query.lt('created_at', pivotRow.created_at)
   }
 
   const { data: msgs, error } = await query
@@ -137,7 +145,7 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   if (!msgs || msgs.length === 0) return []
 
   const replyIds = [...new Set(
-    (msgs as any []).map((m: any) => m.reply_to_id).filter(Boolean) as string[]
+    ((msgs ?? []) as Array<{ reply_to_id: string | null }>).map(m => m.reply_to_id).filter((id): id is string => Boolean(id))
   )]
   const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
@@ -148,8 +156,11 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
     for (const r of (replies ?? []) as unknown as ReplyRow[]) replyMap.set(r.id, r)
   }
 
-  return msgs
-    .map((m: any) => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
+  return ((msgs ?? []) as Array<Record<string, unknown>>)
+    .map((m) => {
+      const replyToId = (m as { reply_to_id?: string }).reply_to_id
+      return { ...m, reply_to: replyToId ? (replyMap.get(replyToId) ?? null) : null }
+    })
     .reverse() as unknown as TeamMessageFull[]
 }
 
@@ -279,7 +290,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
           teamId,
           pages: prev.teamId === teamId ? [page, ...prev.pages] : [page],
         }))
-        const { data } = await (supabase.rpc as any)('count_team_messages_before', {
+        const { data } = await rpc('count_team_messages_before', {
           p_team_id: teamId,
           p_before_id: page[0].id,
         })
@@ -296,7 +307,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   useEffect(() => {
     if (!teamId || !messagesQuery.data?.length) return
     const first = messagesQuery.data[0]
-    ;(supabase.rpc as any)('count_team_messages_before', {
+    rpc('count_team_messages_before', {
       p_team_id: teamId,
       p_before_id: first.id,
     }).then(({ data }: any) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
@@ -381,7 +392,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
             team_id: teamId,
             last_read_at: lastMsgAt,
             last_read_msg: lastMsgId,
-          } as any, { onConflict: 'user_id,team_id' });
+          } as never, { onConflict: 'user_id,team_id' });
       }, 2000);
     },
     [teamId, currentUserId]
@@ -395,7 +406,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         sender_id: senderId,
         content: content.trim(),
         reply_to_id: replyToId ?? null,
-      } as any).select('id').single()
+      } as never).select('id').single()
       if (error) throw error
 
       // Extraire et enregistrer les mentions @
@@ -451,7 +462,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
           .eq('message_id', messageId).eq('user_id', userId).eq('emoji', emoji)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('team_message_reactions').insert({ message_id: messageId, user_id: userId, emoji } as any)
+        const { error } = await supabase.from('team_message_reactions').insert({ message_id: messageId, user_id: userId, emoji } as never)
         if (error) throw error
       }
     },
@@ -481,8 +492,9 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   // ── Edit message ───────────────────────────────────────────────────────────
   const editMessage = useMutation({
     mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
-      const { error } = await (supabase.from('team_messages') as any)
-        .update({ content: content.trim(), edited_at: new Date().toISOString() })
+      const { error } = await supabase
+        .from('team_messages')
+        .update({ content: content.trim(), edited_at: new Date().toISOString() } as never)
         .eq('id', messageId)
       if (error) throw error
     },
@@ -513,7 +525,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         team_id: teamId,
         message_id: messageId,
         pinned_by: currentUserId,
-      } as any)
+      } as never)
       if (error) throw error
     },
     onSuccess: () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId ?? '') }),
@@ -631,10 +643,12 @@ export function useIsTeamMember(teamId?: string, userId?: string) {
       const { data: player } = await supabase.from('players').select('id')
         .eq('team_id', teamId!).eq('user_id', userId!).eq('is_active', true).maybeSingle()
       if (player) return true
-      const { data: team } = await (supabase.from('teams') as any).select('captain_id').eq('id', teamId!).maybeSingle()
-      if ((team as any)?.captain_id === userId) return true
-      const { data: profile } = await (supabase.from('profiles') as any).select('role').eq('id', userId!).maybeSingle()
-      return (profile as any)?.role === 'admin'
+      const { data: team } = await supabase.from('teams').select('captain_id').eq('id', teamId!).maybeSingle()
+      const teamRow = team as { captain_id?: string | null } | null
+      if (teamRow?.captain_id === userId) return true
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId!).maybeSingle()
+      const profileRow = profile as { role?: string } | null
+      return profileRow?.role === 'admin'
     },
     staleTime: 60_000,
   })

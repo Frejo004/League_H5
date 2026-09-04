@@ -1,6 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
+type RpcFn = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
+const rpc = supabase.rpc as unknown as RpcFn
+
+interface PlayerWithAvatarSlug {
+  id: string
+  user_id: string | null
+  avatar_url: string | null
+  slug: string | null
+}
+
+interface ProfileAvatarRow {
+  id: string
+  avatar_url: string | null
+}
+
 export interface ScorerRow {
   player_id: string
   first_name: string
@@ -21,39 +36,39 @@ export function useScorers(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 1000 * 60 * 10, // 10 min — ne change qu'après une mise à jour de match
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_scorers', {
+      const { data, error } = await rpc('get_scorers', {
         p_season_id: seasonId!,
       })
       if (error) throw error
       const rows = (data ?? []) as Omit<ScorerRow, 'avatar_url'>[]
       if (!rows.length) return [] as ScorerRow[]
 
-      // Enrichir avec les avatars : priorité profil lié, fallback players.avatar_url, et player_slug
       const playerIds = rows.map(r => r.player_id)
       const { data: players } = await supabase
         .from('players')
         .select('id, user_id, avatar_url, slug')
         .in('id', playerIds)
 
-      const userIds = (players as any ?? []).map((p: any) => p.user_id).filter(Boolean) as string[]
+      const playersArr = (players ?? []) as PlayerWithAvatarSlug[]
+      const userIds = playersArr.map(p => p.user_id).filter((id): id is string => Boolean(id))
       const profilesMap = new Map<string, string | null>()
       if (userIds.length) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, avatar_url')
           .in('id', userIds)
-        for (const p of profiles as any ?? []) profilesMap.set(p.id, p.avatar_url)
+        for (const p of (profiles ?? []) as ProfileAvatarRow[]) profilesMap.set(p.id, p.avatar_url)
       }
 
-      const playersMap = new Map((players as any ?? []).map((p: any) => [p.id, p]))
+      const playersMap = new Map(playersArr.map(p => [p.id, p]))
 
       return rows.map(r => {
         const p = playersMap.get(r.player_id)
-        const avatar = ((p as any)?.user_id ? profilesMap.get((p as any).user_id) : null) ?? (p as any)?.avatar_url ?? null
+        const avatar = (p?.user_id ? profilesMap.get(p.user_id) : null) ?? p?.avatar_url ?? null
         return {
           ...r,
           avatar_url: avatar,
-          player_slug: (p as any)?.slug ?? null,
+          player_slug: p?.slug ?? null,
         } as ScorerRow
       })
     },

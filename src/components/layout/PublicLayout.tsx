@@ -51,7 +51,8 @@ export function PublicLayout({ children, hideFooter = false }: PublicLayoutProps
               </svg>
             </div>
             <span
-              className="text-lg font-black tracking-wider text-white select-none font-['Barlow_Condensed']"
+              className="text-lg font-black tracking-wider select-none font-['Barlow_Condensed']"
+              style={{ color: dark ? '#fff' : 'var(--color-text-primary)' }}
             >
               LEAGUE <span style={{ color: ACCENT }}>H5</span>
             </span>

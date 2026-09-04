@@ -7,6 +7,7 @@ import { useMatches } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
+import { useSeo } from '@/hooks/useSeo'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
 import { exportCSV } from '@/hooks/useExport'
@@ -311,6 +312,10 @@ function PodiumCard({ row, rank, teamSlug }: { row: StandingRow; rank: 1 | 2 | 3
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
+  useSeo({
+    title: `Classement${season?.name ? ` — ${season.name}` : ''}`,
+    description: 'Classement actualisé de la ligue de football H5 — points, victoires, buts.',
+  })
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
   const { data: matches } = useMatches(season?.id)
   const { data: teams } = useTeams(season?.id)

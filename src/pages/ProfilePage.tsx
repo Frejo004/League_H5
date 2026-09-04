@@ -51,7 +51,7 @@ function SectionCard({
       <div className="p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <span className="p-1.5 rounded-lg bg-primary-500/10 text-primary-400">{icon}</span>
-          <h2 className="text-sm font-bold text-white tracking-wide uppercase">{title}</h2>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">{title}</h2>
         </div>
         {children}
       </div>

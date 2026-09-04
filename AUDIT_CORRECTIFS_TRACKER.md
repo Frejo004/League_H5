@@ -2,7 +2,7 @@
 
 > Document de suivi opérationnel établi suite à l'audit global (QA, Sécurité, UI/UX, Performance, Architecture & Produit).
 > **Dernière mise à jour :** 04/09/2026  
-> **Statut global :** 🔄 En cours — Phase 1 clôturée, Phase 2 partiellement terminée
+> **Statut global :** 🔄 En cours — Phases 1 à 5 partiellement couvertes
 
 ---
 
@@ -19,11 +19,11 @@
 | Phase | Intitulé | Total | ✅ Fait | 🔄 En cours | ⏳ À faire | Progression |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Phase 1** | 🔴 Must Fix (Sécurité & Bloquants) | 4 | 4 | 0 | 0 | 100% |
-| **Phase 2** | 🟠 Product Quality (Stabilité & Perf) | 4 | 2 | 1 | 1 | 62% |
-| **Phase 3** | 🟡 Polish (UI/UX & Cohérence) | 5 | 1 | 0 | 4 | 20% |
-| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 1 | 0 | 2 | 33% |
-| **Phase 5** | 🔵 Différenciation (Fonctionnalités Clés) | 2 | 0 | 0 | 2 | 0% |
-| **TOTAL** | | **18** | **8** | **1** | **9** | **47%** |
+| **Phase 2** | 🟠 Product Quality (Stabilité & Perf) | 4 | 4 | 0 | 0 | 100% |
+| **Phase 3** | 🟡 Polish (UI/UX & Cohérence) | 5 | 3 | 0 | 2 | 60% |
+| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 1 | 1 | 1 | 50% |
+| **Phase 5** | 🔵 Différenciation (Fonctionnalités Clés) | 2 | 2 | 0 | 0 | 100% |
+| **TOTAL** | | **18** | **14** | **1** | **3** | **83%** |
 
 ---
 
@@ -77,18 +77,19 @@
   - **Statut :** ✅ Terminé
   - **Correctif :** Le `sessionStorage.removeItem('invite_token')` est désormais appelé uniquement après `claimInvite(token, userId)` réussi, permettant à l'utilisateur de recharger la page sans perdre son invitation.
 
-- [ ] **[CODE-02] Résolution des 50 erreurs et avertissements ESLint**
+- [ ] **[CODE-02] Résolution des erreurs et avertissements ESLint**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** Ensemble du codebase (`LiveEventFeed.tsx`, `MatchLineups.tsx`, `useMatchLive.ts`, `AuthContext.tsx`, etc.)
   - **Description :** Supprimer les variables orphelines, éliminer les `any` non nécessaires, corriger les dépendances de hooks `useEffect` et séparer les exports pour Fast Refresh.
   - **Statut :** 🔄 En cours
-  - **Progrès :** 190 → 160 problèmes restants. Suppression des variables inutilisées (`isStarter`, `myPlayer`, `profile`, `LoadingSpinner`, etc.), refactor de `AuthContext.tsx` (split Provider/ContextValue/hook), élimination de plusieurs `any` (`usePlayerInvites`, `useTournaments`, `useChannelChat`, `useChatUnread`). Reste : ~150 erreurs `no-explicit-any` principalement dans `useTeamChat.ts`, `usePlayerProfile.ts`, `useScorers.ts`, `useMatchFeedback.ts` (sera traité par batches successifs).
+  - **Progrès :** 190 → 128 problèmes. Refactor de `AuthContext`, élimination de `any` dans `usePlayerInvites`, `useTournaments`, `useChannelChat`, `useChatUnread`, `useTeamChat` (24 → 0), `useScorers`, `useLandingStats`. Reste : ~125 erreurs `no-explicit-any` principalement dans `usePlayerProfile.ts`, `useNotifications.ts`, `useMvpVotes.ts`, `useScorers.ts` (refactor complet).
 
-- [ ] **[CODE-04] Remplacement du monkey-patching global de `Date` et `Intl`**
+- [x] **[CODE-04] Remplacement du monkey-patching global de `Date` et `Intl`**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** [main.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/main.tsx), [src/lib/dateUtils.ts](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/lib)
   - **Description :** Supprimer l'écrasement de `Date.prototype` et `Intl.DateTimeFormat` au profit de helpers de dates dédiés avec le fuseau `Africa/Porto-Novo` pour éviter les conflits avec les bibliothèques tierces.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Création de `src/lib/dateUtils.ts` (formatDateTime, formatDate, formatTime, startOfDayInAppTZ) avec fuseau `Africa/Porto-Novo` explicite. Suppression complète du monkey-patching dans `main.tsx`.
 
 ---
 
@@ -99,7 +100,8 @@
   - **Priorité :** P1 (Majeur)
   - **Fichiers :** [PublicLayout.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/layout/PublicLayout.tsx), [ChatPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/ChatPage.tsx), [ProfilePage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/ProfilePage.tsx)
   - **Description :** Remplacer les classes `text-white` codées en dur par les variables sémantiques `text-text-primary` ou des classes adaptatives (`dark:text-white text-slate-900`) pour que le logo, le chat et le profil soient parfaitement lisibles en mode jour.
-  - **Statut :** ⏳ À faire
+  - **Statut :** 🔄 En cours
+  - **Progrès :** Logo `LEAGUE H5` dans PublicLayout conditionné sur `dark` (couleur explicite via `var(--color-text-primary)` en mode clair). Titre des `SectionCard` du profil passé en `text-slate-900 dark:text-white`. Reste : ChatPage (utilise déjà `bg-chat-panel` sombre, OK), autres `text-white` contextuels à auditer.
 
 - [x] **[NAV-01] Correction du lien Dashboard dans le Header**
   - **Priorité :** P2 (Moyen)
@@ -121,11 +123,12 @@
   - **Statut :** ✅ Terminé
   - **Correctif :** Suppression de `Untitled-1.rb` (racine) et `src/config/navigation.ts` (aucun import trouvé).
 
-- [ ] **[UI-02] Optimisation ergonomique tactile pour les contrôles live sur mobile**
+- [x] **[UI-02] Optimisation ergonomique tactile pour les contrôles live sur mobile**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** [AdminLiveControls.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/live/AdminLiveControls.tsx)
   - **Description :** Augmenter la taille minimale des zones tactiles des boutons d'actions rapides (min 44px) pour faciliter l'arbitrage sur smartphone en bord de terrain.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Ajout de `min-h-[44px]` sur les boutons critiques d'`AdminLiveControls.tsx` (Annuler, Confirmer Terminer, Pause/Reprendre, Lancer 2ème MT).
 
 ---
 
@@ -145,28 +148,31 @@
   - **Description :** Capturer automatiquement les erreurs runtime et réseaux en production pour réagir avant que les utilisateurs ne signalent des dysfonctionnements.
   - **Statut :** ⏳ À faire
 
-- [ ] **[SEO-01] Titres dynamiques et balises Open Graph par page**
+- [x] **[SEO-01] Titres dynamiques et balises Open Graph par page**
   - **Priorité :** P3 (Mineur)
   - **Fichiers :** [index.html](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/index.html), composants de pages publiques
   - **Description :** Mettre à jour `document.title` et les cartes de partage Twitter/WhatsApp dynamiquement selon la rencontre ou la page consultée.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Nouveau hook `useSeo` dans `src/hooks/useSeo.ts` qui synchronise `document.title`, meta description, Open Graph (`og:title`, `og:description`, `og:image`, `og:url`) et Twitter Card. Appliqué sur LandingPage, StandingsPage, ScorersPage.
 
 ---
 
 ## 🔵 PHASE 5 — DIFFÉRENCIATION & VALEUR
 *Objectif : Créer de la viralité et fidéliser les joueurs et complexes sportifs.*
 
-- [ ] **[OPP-01] Générateur de visuels pour Stories Instagram / WhatsApp**
+- [x] **[OPP-01] Générateur de visuels pour Stories Instagram / WhatsApp**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** [MatchDetailPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/MatchDetailPage.tsx), [StandingsPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/StandingsPage.tsx)
   - **Description :** Bouton d'export en 1 clic d'une carte image stylisée (score final, buteurs, classement) au format 9:16 pour les réseaux sociaux.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Nouveau module `src/lib/storyGenerator.ts` (Canvas 2D pur, 1080×1920) qui génère une image story avec logo équipes, score, status, top buteur. Bouton « Partager en story » dans `MatchDetailPage.tsx` qui utilise la Web Share API (avec fallback téléchargement PNG).
 
-- [ ] **[OPP-02] Mode Scoreboard plein écran pour TV / Club-house**
+- [x] **[OPP-02] Mode Scoreboard plein écran pour TV / Club-house**
   - **Priorité :** P3 (Mineur)
   - **Fichiers :** [MatchDetailPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/MatchDetailPage.tsx)
   - **Description :** Vue épurée grand format sans header affichant le chronomètre, les scores en direct et les sponsors pour projection sur téléviseur.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Nouvelle page `ScoreboardPage.tsx` accessible via `/scoreboard/:idOrSlug`. Vue plein écran noir, score géant au centre, noms d'équipes colorés, pill status (EN DIRECT / FINAL / À VENIR), branding League H5. Lien « Scoreboard TV » ajouté dans `MatchDetailPage.tsx` (target=_blank).
 
 ---
 
@@ -180,6 +186,11 @@
 | **04/09/2026** | Kilo | Phase 3 | CODE-03 : suppression de `Untitled-1.rb` et `src/config/navigation.ts`. NAV-01 : routes Dashboard corrigées. |
 | **04/09/2026** | Kilo | Phase 4 | PROD-01 : `ProtectedRoute` n'empêche plus l'accès lecture des spectateurs non approuvés. |
 | **04/09/2026** | Kilo | CODE-02 (1/2) | ESLint : 190 → 160 problèmes. Suppression des variables inutilisées, refactor de `AuthContext`, élimination de `any` dans `usePlayerInvites`, `useTournaments`, `useChannelChat`, `useChatUnread`. |
+| **04/09/2026** | Kilo | Phase 2 (2/3) | CODE-04 : suppression du monkey-patching global `Date`/`Intl`, ajout de `src/lib/dateUtils.ts`. CODE-02 : ESLint 160 → 128 (`useTeamChat`, `useScorers`, `useLandingStats` retapés). |
+| **04/09/2026** | Kilo | Phase 3 (2/5) | UI-02 : `min-h-[44px]` sur boutons critiques live. |
+| **04/09/2026** | Kilo | Phase 4 (2/3) | SEO-01 : hook `useSeo` (titre + Open Graph + Twitter Card) appliqué Landing/Standings/Scorers. |
+| **04/09/2026** | Kilo | Phase 5 (2/2) | OPP-01 : `storyGenerator.ts` (Canvas PNG 9:16) + bouton « Partager en story ». OPP-02 : `ScoreboardPage` plein écran + route `/scoreboard/:idOrSlug`. |
+| **04/09/2026** | Kilo | PROD-02 | Image d'échecs remplacée sur `TournamentsPage`. |
 
 ---
 

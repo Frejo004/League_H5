@@ -9,6 +9,7 @@ import bgImage from '@/assets/leagueH5-bg_bg.jpg'
 import { useLandingStats } from '@/hooks/useLandingStats'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
+import { useSeo } from '@/hooks/useSeo'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { LiveClock } from '@/components/live/LiveClock' // Keep this import
@@ -175,6 +176,10 @@ function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LandingPage() {
+  useSeo({
+    title: 'Accueil',
+    description: 'League H5 — la ligue de football en ligne : matchs en direct, classement, stats, paris et communauté.',
+  })
   const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
   const { data: tournaments } = useTournaments()
