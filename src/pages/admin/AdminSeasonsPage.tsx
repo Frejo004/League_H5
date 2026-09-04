@@ -95,7 +95,7 @@ export function AdminSeasonsPage() {
     if (season.is_active) return
     setActivateError(null)
     try {
-      const { error } = await supabase.rpc('set_active_season', { p_season_id: season.id })
+      const { error } = await (supabase.rpc as any)('set_active_season', { p_season_id: season.id })
       if (error) throw error
       qc.invalidateQueries({ queryKey: ['seasons'] })
     } catch (err: unknown) {

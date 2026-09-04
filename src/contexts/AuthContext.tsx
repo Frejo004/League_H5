@@ -1,8 +1,9 @@
-import { createContext, useEffect, useState, useCallback, useRef, useContext, type ReactNode } from 'react'
+import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { Session, RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { Profile, UserRole } from '@/types/database'
+import type { Profile } from '@/types/database'
+import { AuthContext } from './authContextValue'
 
 /**
  * ⚠️ ATTENTION : NE PAS MODIFIER LA LOGIQUE D'AUTHENTIFICATION SANS COMPRENDRE LE FLUX COMPLET
@@ -23,21 +24,6 @@ import type { Profile, UserRole } from '@/types/database'
  * ⚠️ Toute modification de cette logique peut casser le flux d'authentification.
  * ⚠️ Tester minutieusement : connexion, déconnexion, rafraîchissement, retour après fermeture.
  */
-
-interface AuthContextValue {
-  session: Session | null
-  user: Session['user'] | null
-  profile: Profile | null
-  role: UserRole | null
-  isLoading: boolean        // initialisation globale
-  isProfileLoading: boolean // re-fetch profil en cours (token refresh, etc.)
-  isAdmin: boolean
-  isCaptain: boolean
-  signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -230,12 +216,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export { AuthContext }
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+// AuthContext est défini dans `./authContextValue.ts`
+// et le hook `useAuth` dans `@/hooks/useAuth` afin de respecter
+// la règle `react-refresh/only-export-components`.

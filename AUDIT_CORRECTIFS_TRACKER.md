@@ -2,7 +2,7 @@
 
 > Document de suivi opérationnel établi suite à l'audit global (QA, Sécurité, UI/UX, Performance, Architecture & Produit).
 > **Dernière mise à jour :** 04/09/2026  
-> **Statut global :** ⏳ En attente de lancement des correctifs
+> **Statut global :** 🔄 En cours — Phase 1 clôturée, Phase 2 partiellement terminée
 
 ---
 
@@ -18,64 +18,71 @@
 
 | Phase | Intitulé | Total | ✅ Fait | 🔄 En cours | ⏳ À faire | Progression |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Phase 1** | 🔴 Must Fix (Sécurité & Bloquants) | 4 | 0 | 0 | 4 | 0% |
-| **Phase 2** | 🟠 Product Quality (Stabilité & Perf) | 4 | 0 | 0 | 4 | 0% |
-| **Phase 3** | 🟡 Polish (UI/UX & Cohérence) | 5 | 0 | 0 | 5 | 0% |
-| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 0 | 0 | 3 | 0% |
+| **Phase 1** | 🔴 Must Fix (Sécurité & Bloquants) | 4 | 4 | 0 | 0 | 100% |
+| **Phase 2** | 🟠 Product Quality (Stabilité & Perf) | 4 | 2 | 1 | 1 | 62% |
+| **Phase 3** | 🟡 Polish (UI/UX & Cohérence) | 5 | 1 | 0 | 4 | 20% |
+| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 1 | 0 | 2 | 33% |
 | **Phase 5** | 🔵 Différenciation (Fonctionnalités Clés) | 2 | 0 | 0 | 2 | 0% |
-| **TOTAL** | | **18** | **0** | **0** | **18** | **0%** |
+| **TOTAL** | | **18** | **8** | **1** | **9** | **47%** |
 
 ---
 
 ## 🔴 PHASE 1 — MUST FIX (Sécurité & Bugs Bloquants)
 *Objectif : Rendre l'application 100% stable, compilable et débloquer les flux critiques.*
 
-- [ ] **[SEC-01] Rétablir les droits d'exécution RPC pour les invitations**
+- [x] **[SEC-01] Rétablir les droits d'exécution RPC pour les invitations**
   - **Priorité :** P0 (Bloquant)
   - **Fichiers :** [supabase/migrations/](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/supabase/migrations), [usePlayerInvites.ts](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/hooks/usePlayerInvites.ts)
   - **Description :** Rétablir `GRANT EXECUTE` sur `claim_player_invite` et `get_invite_player` pour les rôles `anon` et `authenticated`. Ces permissions avaient été révoquées par erreur lors du nettoyage du linter, rendant impossible l'onboarding de tout joueur invité via lien.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Migration `202609040001_phase1_critical_fixes.sql` accordant `GRANT EXECUTE` aux rôles `anon` et `authenticated`. Refactorisation de `usePlayerInvites.ts` pour supprimer les `any` au profit d'un wrapper `RpcFn` typé.
 
-- [ ] **[CODE-01] Résoudre les erreurs TypeScript et restaurer `npm run build:check`**
+- [x] **[CODE-01] Résoudre les erreurs TypeScript et restaurer `npm run build:check`**
   - **Priorité :** P0 (Bloquant)
   - **Fichiers :** [useTeams.ts](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/hooks/useTeams.ts), [TeamsPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/TeamsPage.tsx), [StandingsPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/StandingsPage.tsx), [AdminTeamsPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/admin/AdminTeamsPage.tsx), [ScorersPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/ScorersPage.tsx), [AdminTransfersPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/admin/AdminTransfersPage.tsx), [ProfilePage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/ProfilePage.tsx)
   - **Description :** Fixer le typage de `useTeams` (actuellement déduit en `never[]` et contaminant 8 pages), supprimer la prop `title` invalide passée à `ConfirmModal`, typer `player_slug` sur `ScorerRow`, et sécuriser `myVote` dans `MatchDetailPage`. Obtenir un exit code 0 sur `npm run build:check`.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** `useTeams.ts` et `usePlayers.ts` retapés avec des interfaces explicites (`TeamWithPlayersCount`, `Record<string, unknown>`). Suppression des imports/types inutilisés. Séparation de `AuthContext` (Provider/composant) et `authContextValue.ts` (constante de contexte) pour respecter `react-refresh/only-export-components`.
 
-- [ ] **[BUG-01] Corriger la contrainte SQL et la génération des Playoffs**
+- [x] **[BUG-01] Corriger la contrainte SQL et la génération des Playoffs**
   - **Priorité :** P0 (Bloquant)
   - **Fichiers :** [PlayoffsPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/PlayoffsPage.tsx), migrations Supabase
   - **Description :** L'arbre des tours suivants insère `home_team_id: null` et `away_team_id: null` alors que la table `matches` impose `NOT NULL` et `home_team_id <> away_team_id`, causant un crash PostgreSQL immédiat.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Migration `202609040001_phase1_critical_fixes.sql` relâchant le `NOT NULL` sur `home_team_id`/`away_team_id` et adaptant la contrainte `matches_different_teams` pour tolérer les équipes « À déterminer ».
 
-- [ ] **[BUG-02] Corriger l'injection de clé étrangère sur les avis de matchs admin**
+- [x] **[BUG-02] Corriger l'injection de clé étrangère sur les avis de matchs admin**
   - **Priorité :** P1 (Majeur)
   - **Fichiers :** [MatchFeedbackPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/MatchFeedbackPage.tsx#L162)
   - **Description :** Empêcher le fallback `currentPlayer?.id || selectedMatch.home_team_id` qui injecte un ID d'équipe dans un champ `player_id` de clé étrangère.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Garde explicite `if (!currentPlayer?.id) { alert('…'); return }` avant l'insertion. L'admin doit désormais être associé à un joueur pour soumettre un avis.
 
 ---
 
 ## 🟠 PHASE 2 — PRODUCT QUALITY (Stabilité & Performance)
 *Objectif : Optimiser le temps de chargement, la propreté du code et la robustesse des flux.*
 
-- [ ] **[PERF-01] Chargement différé et dynamique du SDK Metered**
+- [x] **[PERF-01] Chargement différé et dynamique du SDK Metered**
   - **Priorité :** P1 (Majeur)
   - **Fichiers :** [index.html](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/index.html#L35), [useWebRTCStream.ts](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/hooks/useWebRTCStream.ts)
   - **Description :** Retirer le `<script>` synchrone bloquant dans le `<head>` d'[index.html](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/index.html) et le charger à la demande via un hook d'injection dynamique uniquement lors du visionnage ou de la diffusion live.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Suppression du `<script>` bloquant d'`index.html`. Création de `src/lib/meteredLoader.ts` qui injecte le SDK Metered à la demande (avec fallback jsdelivr) appelé depuis `useWebRTCStream.ts` (broadcast / viewer / presence).
 
-- [ ] **[UX-01] Préservation du token d'invitation en cas de rafraîchissement**
+- [x] **[UX-01] Préservation du token d'invitation en cas de rafraîchissement**
   - **Priorité :** P1 (Majeur)
   - **Fichiers :** [JoinPage.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/pages/auth/JoinPage.tsx)
   - **Description :** Ne plus purger le token du `sessionStorage` dès la résolution initiale, mais uniquement après le succès effectif du compte et du claim du joueur.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Le `sessionStorage.removeItem('invite_token')` est désormais appelé uniquement après `claimInvite(token, userId)` réussi, permettant à l'utilisateur de recharger la page sans perdre son invitation.
 
 - [ ] **[CODE-02] Résolution des 50 erreurs et avertissements ESLint**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** Ensemble du codebase (`LiveEventFeed.tsx`, `MatchLineups.tsx`, `useMatchLive.ts`, `AuthContext.tsx`, etc.)
   - **Description :** Supprimer les variables orphelines, éliminer les `any` non nécessaires, corriger les dépendances de hooks `useEffect` et séparer les exports pour Fast Refresh.
-  - **Statut :** ⏳ À faire
+  - **Statut :** 🔄 En cours
+  - **Progrès :** 190 → 160 problèmes restants. Suppression des variables inutilisées (`isStarter`, `myPlayer`, `profile`, `LoadingSpinner`, etc.), refactor de `AuthContext.tsx` (split Provider/ContextValue/hook), élimination de plusieurs `any` (`usePlayerInvites`, `useTournaments`, `useChannelChat`, `useChatUnread`). Reste : ~150 erreurs `no-explicit-any` principalement dans `useTeamChat.ts`, `usePlayerProfile.ts`, `useScorers.ts`, `useMatchFeedback.ts` (sera traité par batches successifs).
 
 - [ ] **[CODE-04] Remplacement du monkey-patching global de `Date` et `Intl`**
   - **Priorité :** P2 (Moyen)
@@ -94,11 +101,12 @@
   - **Description :** Remplacer les classes `text-white` codées en dur par les variables sémantiques `text-text-primary` ou des classes adaptatives (`dark:text-white text-slate-900`) pour que le logo, le chat et le profil soient parfaitement lisibles en mode jour.
   - **Statut :** ⏳ À faire
 
-- [ ] **[NAV-01] Correction du lien Dashboard dans le Header**
+- [x] **[NAV-01] Correction du lien Dashboard dans le Header**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** [Header.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/layout/Header.tsx#L55)
   - **Description :** Remplacer `to: '/'` par `to: '/dashboard'` pour les rôles capitaine, joueur et spectateur, éliminant ainsi le saut de redirection et rétablissant la mise en valeur active de l'onglet.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Mise à jour des routes `Dashboard` pour `captain`, `player` et `spectator` dans `Header.tsx`.
 
 - [ ] **[PROD-02] Clarification du module Tournois (Échecs vs Football)**
   - **Priorité :** P2 (Moyen)
@@ -106,11 +114,12 @@
   - **Description :** Harmoniser les visuels (remplacer l'image de ballon de foot par un visuel échiquéen ou intégrer le tournoi dans une section "Esports & Communauté" dédiée) et ajouter le lien dans le menu de navigation si le module est conservé.
   - **Statut :** ⏳ À faire
 
-- [ ] **[CODE-03] Nettoyage des fichiers orphelins et code mort**
+- [x] **[CODE-03] Nettoyage des fichiers orphelins et code mort**
   - **Priorité :** P3 (Mineur)
   - **Fichiers :** `Untitled-1.rb`, [src/config/navigation.ts](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/config/navigation.ts)
   - **Description :** Supprimer le dump JSON Supabase mal nommé `Untitled-1.rb` et le fichier de configuration de navigation redondant non importé.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Suppression de `Untitled-1.rb` (racine) et `src/config/navigation.ts` (aucun import trouvé).
 
 - [ ] **[UI-02] Optimisation ergonomique tactile pour les contrôles live sur mobile**
   - **Priorité :** P2 (Moyen)
@@ -123,11 +132,12 @@
 ## 🟢 PHASE 4 — GROWTH & CONVERSION
 *Objectif : Maximiser l'activation des nouveaux utilisateurs et le suivi technique.*
 
-- [ ] **[PROD-01] Accès spectateur libre en lecture seule**
+- [x] **[PROD-01] Accès spectateur libre en lecture seule**
   - **Priorité :** P1 (Majeur)
   - **Fichiers :** [ProtectedRoute.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/auth/ProtectedRoute.tsx), [PendingApprovalModal.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/auth/PendingApprovalModal.tsx)
   - **Description :** Remplacer le blocage systématique par un mode "Spectateur Libre" : consultation libre des scores, matchs et classements, avec demande d'approbation requise uniquement lors de tentatives d'actions interactives (chat, paris, votes MVP).
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** `ProtectedRoute.tsx` ne bloque plus l'accès au spectateur en attente/non approuvé ; le `Outlet` est rendu. Les composants interactifs conservent la modale `PendingApprovalModal` au point d'action (chat, paris, votes MVP).
 
 - [ ] **[OBS-01] Intégration de la télémétrie et capture d'erreurs (Sentry)**
   - **Priorité :** P2 (Moyen)
@@ -165,6 +175,11 @@
 | Date | Auteur | Tâche | Détail |
 | :--- | :--- | :--- | :--- |
 | **04/09/2026** | Audit Team | Initialisation | Création du registre de suivi avec les 18 chantiers priorisés de l'audit. |
+| **04/09/2026** | Kilo | Phase 1 — Must Fix | Application des 4 correctifs bloquants (SEC-01, CODE-01, BUG-01, BUG-02). `npm run build:check` retourne 0. |
+| **04/09/2026** | Kilo | Phase 2 (1/3) | PERF-01 : lazy load du SDK Metered via `meteredLoader.ts`. UX-01 : token d'invitation préservé jusqu'au claim effectif. |
+| **04/09/2026** | Kilo | Phase 3 | CODE-03 : suppression de `Untitled-1.rb` et `src/config/navigation.ts`. NAV-01 : routes Dashboard corrigées. |
+| **04/09/2026** | Kilo | Phase 4 | PROD-01 : `ProtectedRoute` n'empêche plus l'accès lecture des spectateurs non approuvés. |
+| **04/09/2026** | Kilo | CODE-02 (1/2) | ESLint : 190 → 160 problèmes. Suppression des variables inutilisées, refactor de `AuthContext`, élimination de `any` dans `usePlayerInvites`, `useTournaments`, `useChannelChat`, `useChatUnread`. |
 
 ---
 

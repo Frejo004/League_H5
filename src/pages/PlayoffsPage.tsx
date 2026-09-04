@@ -64,8 +64,7 @@ function usePlayoffMatches(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 30_000,
     queryFn: async (): Promise<PlayoffMatch[]> => {
-      const { data, error } = await supabase
-        .from('matches')
+      const { data, error } = await (supabase.from('matches') as any)
         .select(`
           id, slug, season_id, home_team_id, away_team_id,
           home_score, away_score, status, matchday, scheduled_at,
@@ -120,7 +119,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         })
       }
-      const { error: e1 } = await supabase.from('matches').insert(firstRoundMatches)
+      const { error: e1 } = await (supabase.from('matches') as any).insert(firstRoundMatches)
       if (e1) throw e1
 
       // Créer les matchs des rounds suivants (sans équipes — à remplir après)
@@ -136,7 +135,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         }))
         if (roundMatches.length > 0) {
-          const { error: e2 } = await supabase.from('matches').insert(roundMatches)
+          const { error: e2 } = await (supabase.from('matches') as any).insert(roundMatches)
           if (e2) throw e2
         }
       }
@@ -171,8 +170,7 @@ function useAdvanceWinner(seasonId?: string) {
           : match.away_team_id
 
       // Trouver le prochain match à remplir
-      const { data: nextMatches } = await supabase
-        .from('matches')
+      const { data: nextMatches } = await (supabase.from('matches') as any)
         .select('id, home_team_id, away_team_id')
         .eq('season_id', seasonId!)
         .eq('matchday', nextRoundMatchday)
@@ -186,7 +184,7 @@ function useAdvanceWinner(seasonId?: string) {
         ? { home_team_id: winnerId }
         : { away_team_id: winnerId }
 
-      await supabase.from('matches').update(update).eq('id', targetMatch.id)
+      await (supabase.from('matches') as any).update(update).eq('id', targetMatch.id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['playoff-matches', seasonId] })

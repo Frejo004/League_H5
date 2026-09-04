@@ -15,8 +15,7 @@ export function useNotificationPreferences() {
     enabled: !!user?.id,
     retry: false,
     queryFn: async (): Promise<UserNotificationPreferences | null> => {
-      const { data, error } = await supabase
-        .from('user_notification_preferences')
+      const { data, error } = await (supabase.from('user_notification_preferences') as any)
         .select('*')
         .eq('user_id', user?.id)
         .maybeSingle()
@@ -32,8 +31,7 @@ export function useNotificationPreferences() {
 
   const updatePreferences = useMutation({
     mutationFn: async (updates: Partial<UserNotificationPreferences>) => {
-      const { data, error } = await supabase
-        .from('user_notification_preferences')
+      const { data, error } = await (supabase.from('user_notification_preferences') as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update(updates as any)
         .eq('user_id', user?.id)
@@ -50,8 +48,7 @@ export function useNotificationPreferences() {
 
   const togglePreference = useMutation({
     mutationFn: async ({ key, value }: { key: keyof UserNotificationPreferences; value: boolean }) => {
-      const { data, error } = await supabase
-        .from('user_notification_preferences')
+      const { data, error } = await (supabase.from('user_notification_preferences') as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ [key]: value } as any)
         .eq('user_id', user?.id)

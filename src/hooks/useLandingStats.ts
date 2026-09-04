@@ -22,19 +22,19 @@ export function useLandingStats() {
       const { count: teamsCount } = await supabase
         .from('teams')
         .select('*', { count: 'exact', head: true })
-        .eq('season_id', season.id)
+        .eq('season_id', (season as any).id)
 
       // 3. Count players
       const { count: playersCount } = await supabase
         .from('players')
         .select('*', { count: 'exact', head: true })
-        .eq('season_id', season.id)
+        .eq('season_id', (season as any).id)
         .eq('is_active', true)
 
       return {
         teams: teamsCount ?? 0,
         players: playersCount ?? 0,
-        seasonName: season.name
+        seasonName: (season as any).name
       }
     },
     staleTime: 1000 * 60 * 10 // 10 minutes

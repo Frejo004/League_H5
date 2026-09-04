@@ -19,8 +19,8 @@ export function usePalmaresData(seasonId?: string) {
     staleTime: 1000 * 60 * 30,
     queryFn: async (): Promise<PalmaresData> => {
       const [standingsRes, scorersRes, matchesRes] = await Promise.all([
-        supabase.rpc('get_standings', { p_season_id: seasonId! }),
-        supabase.rpc('get_scorers',   { p_season_id: seasonId! }),
+        (supabase.rpc as any)('get_standings', { p_season_id: seasonId! }),
+        (supabase.rpc as any)('get_scorers',   { p_season_id: seasonId! }),
         supabase
           .from('matches')
           .select('id, status, home_score, away_score')
@@ -28,7 +28,7 @@ export function usePalmaresData(seasonId?: string) {
           .eq('status', 'completed'),
       ])
 
-      const standings: StandingRow[] = (standingsRes.data ?? []).map(row => ({
+      const standings: StandingRow[] = (standingsRes.data as any ?? []).map((row: any) => ({
         ...row,
         team_logo: row.team_logo ?? null,
         form: row.form ? (row.form.split(',') as Array<'W' | 'D' | 'L'>) : [],
@@ -37,8 +37,8 @@ export function usePalmaresData(seasonId?: string) {
       const scorers: ScorerRow[] = (scorersRes.data ?? []) as ScorerRow[]
       const matches = matchesRes.data ?? []
 
-      const totalGoals = matches.reduce(
-        (sum, m) => sum + (Number(m.home_score) || 0) + (Number(m.away_score) || 0), 0
+      const totalGoals = (matches as any []).reduce(
+        (sum: number, m: any) => sum + (Number(m.home_score) || 0) + (Number(m.away_score) || 0), 0
       )
 
       const topScorer   = scorers.filter(s => s.goals > 0).sort((a, b) => b.goals - a.goals)[0] ?? null

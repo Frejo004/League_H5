@@ -19,7 +19,7 @@ export function useMatchFeedback(matchId?: string) {
           *,
           players(*)
         `)
-        .eq('match_id', matchId)
+        .eq('match_id', matchId as any)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -30,7 +30,7 @@ export function useMatchFeedback(matchId?: string) {
 }
 
 // Hook pour récupérer le feedback de l'utilisateur courant pour un match
-export function useMyMatchFeedback(matchId?: string, playerId?: string) {
+export function useMyMatchFeedback(matchId?: string, playerId?: string | null) {
   const { data: feedbacks } = useMatchFeedback(matchId)
   return feedbacks?.find(f => f.player_id === playerId)
 }
@@ -48,8 +48,7 @@ export function useAddMatchFeedback() {
       player_behavior?: string | null
       other_comments?: string | null
     }) => {
-      const { data, error } = await supabase
-        .from('match_feedback')
+      const { data, error } = await (supabase.from('match_feedback') as any)
         .insert(feedback)
         .select()
         .single()
@@ -77,8 +76,7 @@ export function useUpdateMatchFeedback() {
       player_behavior?: string | null
       other_comments?: string | null
     }) => {
-      const { data, error } = await supabase
-        .from('match_feedback')
+      const { data, error } = await (supabase.from('match_feedback') as any)
         .update({
           overall_experience: feedback.overall_experience,
           referee_performance: feedback.referee_performance,

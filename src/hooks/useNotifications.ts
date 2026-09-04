@@ -113,7 +113,7 @@ function useMyVotedMatches(userId?: string, matchIds?: string[]) {
         .eq('voted_by', userId!)
         .in('match_id', matchIds!)
       if (error) throw error
-      return new Set((data ?? []).map(v => v.match_id))
+      return new Set((data as any ?? []).map((v: any) => v.match_id))
     },
   })
 }
@@ -163,7 +163,7 @@ function useMyNextLineup(userId?: string, matchId?: string) {
         .from('match_lineups')
         .select('is_starter, team_id, matches(home_team_id, away_team:teams!away_team_id(name), home_team:teams!home_team_id(name))')
         .eq('match_id', matchId!)
-        .eq('player_id', p.id)
+        .eq('player_id', (p as any).id)
         .maybeSingle()
       if (error) throw error
       return data as unknown as MyNextLineupData | null
@@ -222,11 +222,11 @@ export function useNotifications() {
 
         if (!prediction) return
 
-        const won = prediction.is_correct === true
+        const won = (prediction as any).is_correct === true
         pushLocal(
           won ? '🎉 Bon pronostic !' : '❌ Pronostic raté',
           won
-            ? `+${prediction.points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
+            ? `+${(prediction as any).points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
             : `Réponse correcte : ${updated.options[updated.correct_option_index]}`,
           `poll-resolved-${updated.id}`,
           updated.match_id ? `/matches/${updated.match_id}` : '/polls'
@@ -305,7 +305,7 @@ export function useNotifications() {
             .eq('id', newReq.user_id)
             .single()
           
-          const name = profile?.full_name ?? profile?.email ?? 'Un nouvel utilisateur'
+          const name = (profile as any)?.full_name ?? (profile as any)?.email ?? 'Un nouvel utilisateur'
           pushLocal(
             'Demande d\'accès',
             `${name} souhaite rejoindre la ligue`,
@@ -337,7 +337,7 @@ export function useNotifications() {
           .eq('user_id', user.id)
           .maybeSingle()
 
-        if (!player || player.id !== suspension.player_id) return
+        if (!player || (player as any).id !== suspension.player_id) return
 
         qc.invalidateQueries({ queryKey: ['suspensions'] })
         pushLocal(
@@ -359,7 +359,7 @@ export function useNotifications() {
           .eq('user_id', user.id)
           .maybeSingle()
 
-        if (!player || player.id !== updated.player_id) return
+        if (!player || (player as any).id !== updated.player_id) return
 
         qc.invalidateQueries({ queryKey: ['suspensions'] })
         pushLocal(
@@ -452,7 +452,7 @@ export function useNotifications() {
         });
       }
     };
-    generateMvpVoteNotifs(matches ?? [], user, votedMatchIds);
+    generateMvpVoteNotifs(matches ?? [], user, votedMatchIds as Set<string> | undefined);
 
     // ── 4. Invitations en attente (admin/captain) ───────────────────────────
     const generateInviteNotifs = (isPrivileged: boolean, invites: PendingInvite[]) => {

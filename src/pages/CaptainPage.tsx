@@ -1265,11 +1265,11 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number; className?
 ]
 
 export function CaptainPage() {
-  const { profile, isCaptain } = useAuth()
+  const { isCaptain } = useAuth()
   const { data: season } = useActiveSeason()
   // useMyTeam charge uniquement le joueur + l'équipe du capitaine connecté,
   // sans charger toute la liste des joueurs de la saison.
-  const { myTeam, myPlayer, isLoading: teamLoading } = useMyTeam(season?.id)
+  const { myTeam, isLoading: teamLoading } = useMyTeam(season?.id)
   const { data: standings } = useStandings(season?.id)
 
   // Édition nom d'équipe

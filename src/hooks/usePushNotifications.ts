@@ -38,13 +38,13 @@ export function usePushNotifications(userId?: string) {
 
       // Enregistrer dans Supabase (subscription simplifiée sans VAPID)
       // On stocke juste le user_agent pour identifier l'appareil
-      await supabase.from('push_subscriptions').upsert({
+      await (supabase.from('push_subscriptions') as any).upsert({
         user_id: userId,
         endpoint: `local-${userId}-${Date.now()}`,
         p256dh: 'local',
         auth: 'local',
         user_agent: navigator.userAgent.slice(0, 200),
-      }, { onConflict: 'user_id,endpoint' })
+      } as any, { onConflict: 'user_id,endpoint' } as any)
 
       return true
     } catch (err) {

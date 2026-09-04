@@ -52,7 +52,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/admin', label: 'Admin', icon: Settings },
   ],
   captain: [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
     { to: '/matches', label: 'Matchs', icon: Calendar },
     { to: '/scorers', label: 'Buteurs', icon: Target },
@@ -67,7 +67,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/captain', label: 'Mon Équipe', icon: Crown },
   ],
   player: [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
     { to: '/matches', label: 'Matchs', icon: Calendar },
     { to: '/scorers', label: 'Buteurs', icon: Target },
@@ -82,7 +82,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/my-team', label: 'Mon Équipe', icon: Users },
   ],
   spectator: [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/standings', label: 'Classement', icon: Trophy },
     { to: '/matches', label: 'Matchs', icon: Calendar },
     { to: '/scorers', label: 'Buteurs', icon: Target },

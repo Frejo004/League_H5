@@ -2,8 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Team, Database } from '@/types/database'
 
+export interface TeamWithPlayersCount extends Team {
+  players?: { count: number }[]
+}
+
 export function useTeams(seasonId?: string) {
-  return useQuery({
+  return useQuery<TeamWithPlayersCount[]>({
     queryKey: ['teams', seasonId],
     enabled: !!seasonId,
     queryFn: async () => {
@@ -12,25 +16,23 @@ export function useTeams(seasonId?: string) {
         .select('*, slug, players!players_team_id_fkey(count)')
         .eq('season_id', seasonId!)
         .eq('players.is_active', true)
-        .order('name')
+        .order('name') as { data: TeamWithPlayersCount[] | null; error: unknown }
       if (error) {
-        // Fallback sans le count si la relation échoue
         const { data: fallback, error: fallbackErr } = await supabase
           .from('teams')
           .select('*, slug')
           .eq('season_id', seasonId!)
           .order('name')
         if (fallbackErr) throw fallbackErr
-        return fallback
+        return (fallback ?? []) as unknown as TeamWithPlayersCount[]
       }
-      return data
+      return (data ?? []) as TeamWithPlayersCount[]
     },
   })
 }
 
 // Fonction utilitaire pour éviter la duplication de code lors de la récupération des joueurs et de leurs avatars
-async function fetchTeamPlayersWithAvatars(teamId: string) {
-  // Requête 2 : les joueurs actifs de l'équipe
+async function fetchTeamPlayersWithAvatars(teamId: string): Promise<(Record<string, unknown>)[]> {
   const { data: players, error: playersErr } = await supabase
     .from('players')
     .select('*')
@@ -39,24 +41,28 @@ async function fetchTeamPlayersWithAvatars(teamId: string) {
     .order('jersey_number', { ascending: true })
   if (playersErr) throw playersErr
 
-  const playersList = (players ?? []) as any[]
-  const userIds = playersList.map(p => p.user_id).filter(Boolean) as string[]
+  const playersList = (players ?? []) as Record<string, unknown>[]
+  const userIds = playersList
+    .map(p => p.user_id as string | null | undefined)
+    .filter((id): id is string => Boolean(id))
   const profilesMap = new Map<string, string | null>()
   if (userIds.length) {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, avatar_url')
       .in('id', userIds)
-    for (const prof of (profiles ?? [])) {
-      // @ts-expect-error Supabase select typing inference issue
+    for (const prof of (profiles ?? []) as Array<{ id: string; avatar_url: string | null }>) {
       profilesMap.set(prof.id, prof.avatar_url)
     }
   }
 
-  return playersList.map((p: any) => ({
-    ...p,
-    avatar_url: (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url,
-  }))
+  return playersList.map((p) => {
+    const userId = p.user_id as string | null | undefined
+    return {
+      ...p,
+      avatar_url: (userId ? profilesMap.get(userId) : null) ?? (p.avatar_url as string | null | undefined) ?? null,
+    }
+  })
 }
 
 export function useTeam(teamId?: string) {
@@ -74,8 +80,7 @@ export function useTeam(teamId?: string) {
 
       const playersWithAvatar = await fetchTeamPlayersWithAvatars(teamId!);
 
-      // @ts-expect-error Supabase select typing inference issue
-      return { ...team, players: playersWithAvatar }
+      return { ...(team as Team), players: playersWithAvatar } as Team & { players: Awaited<ReturnType<typeof fetchTeamPlayersWithAvatars>> }
     },
   })
 }
@@ -109,7 +114,7 @@ export function useTeamBySlug(slug?: string, seasonId?: string) {
       // Requête 2 : les joueurs actifs de l'équipe
       const playersWithAvatar = await fetchTeamPlayersWithAvatars(teamData.id);
 
-      return { ...teamData, players: playersWithAvatar }
+      return { ...teamData, players: playersWithAvatar } as Team & { players: Awaited<ReturnType<typeof fetchTeamPlayersWithAvatars>> }
     },
   })
 }

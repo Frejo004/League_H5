@@ -9,20 +9,23 @@ export interface InvitePlayerInfo {
   is_valid: boolean
 }
 
+type RpcFn = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
+const rpc = supabase.rpc as unknown as RpcFn
+
 /** Resolve a token before signup — works unauthenticated */
 export async function resolveInviteToken(token: string): Promise<InvitePlayerInfo | null> {
-  const { data, error } = await supabase.rpc('get_invite_player', { p_token: token });
+  const { data, error } = await rpc('get_invite_player', { p_token: token });
   if (error) {
     console.error('[resolveInviteToken] Erreur lors de la récupération de l\'invitation:', error);
     return null;
   }
-  if (!data?.length) return null;
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
   return data[0] as InvitePlayerInfo
 }
 
 /** Claim an invite after signup — links user_id to player */
 export async function claimInvite(token: string, userId: string): Promise<void> {
-  const { error } = await supabase.rpc('claim_player_invite', {
+  const { error } = await rpc('claim_player_invite', {
     p_token: token,
     p_user_id: userId,
   })
@@ -57,8 +60,7 @@ export function useCreateInvite() {
       playerId: string
       createdBy: string
     }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('upsert_player_invite' as any, {
+      const { data, error } = await rpc('upsert_player_invite', {
         p_player_id: playerId,
         p_created_by: createdBy
       });

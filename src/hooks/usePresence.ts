@@ -25,9 +25,9 @@ export function useMyPresence(userId?: string) {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const publish = useCallback(async (uid: string) => {
-    await supabase.from('user_presence').upsert(
-      { user_id: uid, online_at: new Date().toISOString() },
-      { onConflict: 'user_id' }
+    await (supabase.from('user_presence') as any).upsert(
+      { user_id: uid, online_at: new Date().toISOString() } as any,
+      { onConflict: 'user_id' } as any
     )
   }, [])
 
@@ -100,9 +100,9 @@ export function useOnlineUsers(userIds: string[]) {
 
       const threshold = Date.now() - ONLINE_THRESHOLD
       const online = new Set<string>()
-      for (const row of data ?? []) {
-        if (new Date(row.last_seen).getTime() > threshold) {
-          online.add(row.user_id)
+      for (const row of data as any ?? []) {
+        if (new Date((row as any).last_seen).getTime() > threshold) {
+          online.add((row as any).user_id)
         }
       }
       return online

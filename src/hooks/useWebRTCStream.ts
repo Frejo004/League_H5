@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { loadMeteredSdk } from '@/lib/meteredLoader'
 import { useAppToast } from '@/hooks/useAppToast'
 
 // ── Nombre maximum de viewers simultanés ───────────────────────────────────
@@ -64,8 +65,10 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
 
       const { roomURL } = data
 
-      // 2. Initialiser le meeting
-      const meeting = new Metered.Meeting()
+      // 2. Initialiser le meeting (SDK chargé à la demande — voir meteredLoader.ts)
+      const loaded = await loadMeteredSdk()
+      if (!loaded || !window.Metered?.Meeting) throw new Error('SDK Metered indisponible')
+      const meeting = new window.Metered.Meeting()
       meetingRef.current = meeting
 
       // 3. Rejoindre la room
@@ -373,7 +376,9 @@ export function useWebRTCViewer(matchId: string) {
         if (data?.error) throw new Error(data.error)
         if (!data?.roomURL) throw new Error('Aucune roomURL retournée par l\'edge function')
 
-        const meeting = new Metered.Meeting()
+        const loaded = await loadMeteredSdk()
+        if (!loaded || !window.Metered?.Meeting) throw new Error('SDK Metered indisponible')
+        const meeting = new window.Metered.Meeting()
         meetingRef.current = meeting
 
         await meeting.join({ roomURL: data.roomURL, name: `Viewer-${Math.random().toString(36).slice(2, 6)}` })
@@ -446,8 +451,8 @@ export function useWebRTCPresence(matchId: string) {
     if (!matchId) return
     const joinPresence = async () => {
       try {
-        // Vérifier que le SDK Metered est bien chargé
-        if (typeof Metered === 'undefined' || !Metered?.Meeting) {
+        const loaded = await loadMeteredSdk()
+        if (!loaded || !window.Metered?.Meeting) {
           console.warn('📡 [Presence] SDK Metered non disponible')
           return null
         }
@@ -455,7 +460,7 @@ export function useWebRTCPresence(matchId: string) {
         if (error) throw error
         if (data?.error) throw new Error(data.error)
         if (!data?.roomURL) throw new Error('Aucune roomURL retournée par l\'edge function')
-        const meeting = new Metered.Meeting()
+        const meeting = new window.Metered.Meeting()
         await meeting.join({ roomURL: data.roomURL, name: 'Presence-Tracker' })
         const update = async () => {
           try {

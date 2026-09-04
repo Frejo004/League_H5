@@ -16,7 +16,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function AdminSanctionsPage() {
   const { data: season } = useActiveSeason()
-  const { data: stats, isLoading: statsLoading } = useDisciplinaryStats(season?.id)
+  const { data: stats } = useDisciplinaryStats(season?.id)
   const { data: suspensions = [], isLoading: suspensionsLoading, addSuspension, toggleSuspension, deleteSuspension, updateServed } = useSuspensions(season?.id)
   const { data: allPlayers = [] } = usePlayers(season?.id)
 

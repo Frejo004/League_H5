@@ -199,8 +199,8 @@ export interface Database {
         Row: {
           id: string
           season_id: string
-          home_team_id: string
-          away_team_id: string
+          home_team_id: string | null
+          away_team_id: string | null
           slug: string
           matchday: number
           scheduled_at: string | null
@@ -226,8 +226,8 @@ export interface Database {
         Insert: {
           id?: string
           season_id: string
-          home_team_id: string
-          away_team_id: string
+          home_team_id?: string | null
+          away_team_id?: string | null
           slug?: string
           matchday: number
           scheduled_at?: string | null
@@ -252,8 +252,8 @@ export interface Database {
         Update: {
           id?: string
           season_id?: string
-          home_team_id?: string
-          away_team_id?: string
+          home_team_id?: string | null
+          away_team_id?: string | null
           slug?: string
           matchday?: number
           scheduled_at?: string | null

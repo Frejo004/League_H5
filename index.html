@@ -28,22 +28,6 @@
     <meta property="og:description" content="Suivez votre ligue de football H5 en temps réel" />
     <meta property="og:image" content="/logo-h5.png" />
     <meta property="og:type" content="website" />
-    <script>
-      // Charger le SDK Metered avec retry en cas d'échec
-      (function loadMeteredSDK() {
-        var script = document.createElement('script');
-        script.src = 'https://cdn.metered.ca/sdk/video/1.4.6/sdk.min.js';
-        script.async = false;
-        script.onerror = function() {
-          console.warn('[Metered] CDN principal échoué, tentative sur jsdelivr...');
-          var fallback = document.createElement('script');
-          fallback.src = 'https://cdn.jsdelivr.net/npm/@metered-ca/video@1.4.6/dist/sdk.min.js';
-          fallback.async = false;
-          document.head.appendChild(fallback);
-        };
-        document.head.appendChild(script);
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

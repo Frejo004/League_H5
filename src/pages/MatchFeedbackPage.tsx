@@ -158,14 +158,16 @@ export function MatchFeedbackPage() {
         },
       })
     } else {
-      // Pour l'admin sans player, on utilise le premier joueur de l'équipe domicile (ou autre logique)
-      const effectivePlayerId = currentPlayer?.id || selectedMatch.home_team_id
-      const effectiveTeamId = currentPlayer?.team_id || selectedMatch.home_team_id
+      // Admin sans joueur associé : ne pas permettre l'injection d'un team_id dans player_id
+      if (!currentPlayer?.id) {
+        alert('Vous devez être associé à un joueur pour soumettre un avis.')
+        return
+      }
       
       addFeedback.mutate({
         match_id: selectedMatch.id,
-        player_id: effectivePlayerId,
-        team_id: effectiveTeamId,
+        player_id: currentPlayer.id,
+        team_id: currentPlayer.team_id ?? selectedMatch.home_team_id,
         overall_experience: overallExperience || null,
         referee_performance: refereePerformance || null,
         player_behavior: playerBehavior || null,

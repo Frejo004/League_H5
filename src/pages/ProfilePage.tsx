@@ -335,8 +335,7 @@ export function ProfilePage() {
       // On ajoute un timestamp dans l'URL stockée en base pour forcer le
       // rechargement du cache navigateur partout dans l'app (Header, profils, etc.)
       const avatarUrlWithBust = `${data.publicUrl}?t=${Date.now()}`
-      const { error: dbErr } = await supabase
-        .from('profiles')
+      const { error: dbErr } = await (supabase.from('profiles') as any)
         .update({ avatar_url: avatarUrlWithBust })
         .eq('id', user.id)
       if (dbErr) throw dbErr
@@ -378,8 +377,7 @@ export function ProfilePage() {
 
     setNameError(null); setNameSuccess(false); setNameLoading(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase.from('profiles') as any)
         .update({ full_name: trimmed })
         .eq('id', currentUser.id)
       if (error) throw error

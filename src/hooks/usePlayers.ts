@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Player, Database } from '@/types/database'
-import type { TeamRef } from '@/types/database' // Assurez-vous que TeamRef est bien importé ou défini
+
 export function usePlayers(seasonId?: string) {
   return useQuery({
     queryKey: ['players', seasonId],
@@ -29,13 +29,13 @@ export function usePlayers(seasonId?: string) {
           : Promise.resolve({ data: [] }),
       ])
 
-      const teamsData = teamsRes.data ?? []
-      const profilesData = profilesRes.data ?? []
-      const teamsMap = new Map(teamsData.map((t: any) => [t.id, t]))
-      const profilesMap = new Map(profilesData.map((p: any) => [p.id, p]))
+      const teamsData = (teamsRes.data ?? []) as Array<{ id: string; name: string; color: string | null; logo_url?: string | null; captain_id?: string | null }>
+      const profilesData = (profilesRes.data ?? []) as Array<{ id: string; avatar_url: string | null }>
+      const teamsMap = new Map(teamsData.map((t) => [t.id, t]))
+      const profilesMap = new Map(profilesData.map((p) => [p.id, p]))
 
       return playersList.map(p => {
-        const team = teamsMap.get(p.team_id) as any
+        const team = teamsMap.get(p.team_id)
         return {
           ...p,
           avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
@@ -69,7 +69,7 @@ export function usePlayersByTeam(teamId?: string) {
         .from('profiles')
         .select('id, avatar_url')
         .in('id', userIds)
-      const profilesMap = new Map((profiles ?? []).map((p: any) => [p.id, p]))
+      const profilesMap = new Map(((profiles ?? []) as Array<{ id: string; avatar_url: string | null }>).map((p) => [p.id, p]))
 
       return players.map(p => ({
         ...p,

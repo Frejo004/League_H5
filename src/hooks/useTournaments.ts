@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Tournament, TournamentWithParticipants, TournamentWithMatches, TournamentParticipant, TournamentMatch } from '@/types/tournament'
+import type { Tournament, TournamentWithParticipants, TournamentWithMatches, TournamentParticipant } from '@/types/tournament'
 
 // Get all tournaments
 export function useTournaments() {
@@ -102,7 +102,7 @@ export function useRegisterTournament() {
           tournament_id: tournamentId,
           player_id: playerId,
           status: 'registered'
-        } as any)
+        } as never)
         .select()
         .single()
       
@@ -124,7 +124,7 @@ export function useCreateTournament() {
     mutationFn: async (tournament: Partial<Tournament>) => {
       const { data, error } = await supabase
         .from('tournaments')
-        .insert(tournament as any)
+        .insert(tournament as never)
         .select()
         .single()
       

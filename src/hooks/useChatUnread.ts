@@ -98,8 +98,8 @@ export function useChatUnreadRealtime(userId?: string) {
             supabase.from('teams').select('name').eq('id', newMsg.team_id).single(),
           ])
 
-          const profileData = profile as any
-          const teamData = team as any
+          const profileData = profile as { full_name?: string } | null
+          const teamData = team as { name?: string } | null
           const profileName = profileData?.full_name ?? 'Nouveau message'
           const teamName = teamData?.name ?? 'Chat'
           const title = `${profileName} — ${teamName}`;

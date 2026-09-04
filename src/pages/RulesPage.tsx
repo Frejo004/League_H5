@@ -43,14 +43,14 @@ function useTeamsWithPlayers(seasonId?: string) {
       const { data: players, error: playersErr } = await supabase
         .from('players')
         .select('id, team_id, first_name, last_name, jersey_number')
-        .in('team_id', (teams ?? []).map(t => t.id))
+        .in('team_id', (teams as any ?? []).map((t: any) => t.id))
         .eq('is_active', true)
         .order('jersey_number', { ascending: true })
       if (playersErr) throw playersErr
 
-      return (teams ?? []).map(team => ({
+      return (teams as any ?? []).map((team: any) => ({
         ...team,
-        players: (players ?? []).filter(p => p.team_id === team.id),
+        players: (players as any ?? []).filter((p: any) => p.team_id === team.id),
       }))
     },
   })

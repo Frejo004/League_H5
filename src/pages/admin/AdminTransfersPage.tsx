@@ -11,7 +11,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { TransferStatusBadge } from '@/components/ui/StatusBadges'
-import { clsx } from 'clsx'
 import type { TransferStatus } from '@/types/database'
 
 export function AdminTransfersPage() {

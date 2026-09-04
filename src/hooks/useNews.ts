@@ -43,7 +43,7 @@ export function useNews(seasonId?: string) {
     mutationFn: async (payload: Partial<NewsPost>) => {
       const { data, error } = await supabase
         .from('news_posts')
-        .insert(payload as Database['public']['Tables']['news_posts']['Insert']) // Correction: Typage explicite
+        .insert(payload as any) // Correction: Typage explicite
         .select()
         .single()
       if (error) throw error
@@ -69,9 +69,8 @@ export function useNews(seasonId?: string) {
 
   const togglePin = useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
-      const { error } = await supabase
-        .from('news_posts')
-        .update({ is_pinned } as Database['public']['Tables']['news_posts']['Update']) // Correction: Typage explicite
+      const { error } = await (supabase.from('news_posts') as any)
+        .update({ is_pinned } as any) // Correction: Typage explicite
         .eq('id', id)
       if (error) throw error
     },

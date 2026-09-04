@@ -10,6 +10,22 @@ export interface MvpResult {
   team_name: string
   team_color: string
   votes: number
+  player_slug?: string | null
+}
+
+export interface MvpVoteWithPlayer {
+  id: string
+  match_id: string
+  player_id: string
+  voted_by: string
+  created_at: string
+  players?: {
+    id: string
+    first_name: string
+    last_name: string
+    team_id: string
+    teams?: { id: string; name: string; color: string } | null
+  } | null
 }
 
 // Helper pour grouper les votes par match et déterminer le(s) gagnant(s)
@@ -36,7 +52,7 @@ export function getMvpWinnersByMatch(votes: Array<{ match_id: string; player_id:
 // ── Votes for a single match ──────────────────────────────────────────────────
 
 export function useMvpVotes(matchId?: string) {
-  return useQuery({
+  return useQuery<MvpVoteWithPlayer[]>({
     queryKey: ['mvp_votes', matchId],
     enabled: !!matchId,
     queryFn: async () => {
@@ -45,7 +61,7 @@ export function useMvpVotes(matchId?: string) {
         .select('*, players(id, first_name, last_name, team_id, teams!players_team_id_fkey(id, name, color))')
         .eq('match_id', matchId!)
       if (error) throw error
-      return data ?? []
+      return (data ?? []) as unknown as MvpVoteWithPlayer[]
     },
   })
 }
@@ -219,7 +235,7 @@ export function useMvpRanking(seasonId?: string) {
         .select(`
           match_id,
           player_id,
-          players(id, first_name, last_name, team_id, user_id, avatar_url, teams!players_team_id_fkey(id, name, color))
+          players(id, first_name, last_name, slug, team_id, user_id, avatar_url, teams!players_team_id_fkey(id, name, color))
         `)
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
@@ -261,7 +277,7 @@ export function useMvpRanking(seasonId?: string) {
       // Récupérer les avatars depuis profiles pour les joueurs avec user_id
       const allPlayers = votesList
         .map(v => v.players as unknown as {
-          id: string; first_name: string; last_name: string
+          id: string; first_name: string; last_name: string; slug?: string
           team_id: string; user_id: string | null; avatar_url: string | null
           teams: { id: string; name: string; color: string } | null
         } | null)
@@ -286,6 +302,7 @@ export function useMvpRanking(seasonId?: string) {
           id: string
           first_name: string
           last_name: string
+          slug?: string
           team_id: string
           user_id: string | null
           avatar_url: string | null
@@ -296,15 +313,16 @@ export function useMvpRanking(seasonId?: string) {
         const avatar = (p.user_id ? profilesMap.get(p.user_id) : null) ?? p.avatar_url ?? null
 
         ranking.push({
-          player_id:  p.id,
-          first_name: p.first_name,
-          last_name:  p.last_name,
-          avatar_url: avatar,
-          team_id:    p.team_id,
-          team_name:  p.teams?.name  ?? '—',
-          team_color: p.teams?.color ?? '#16a34a',
-          votes:      totalVotesByPlayer.get(p.id) ?? 0,
-          mvp_titles: mvpCountByPlayer.get(p.id) ?? 0,
+          player_id:   p.id,
+          first_name:  p.first_name,
+          last_name:   p.last_name,
+          avatar_url:  avatar,
+          team_id:     p.team_id,
+          team_name:   p.teams?.name  ?? '—',
+          team_color:  p.teams?.color ?? '#16a34a',
+          votes:       totalVotesByPlayer.get(p.id) ?? 0,
+          mvp_titles:  mvpCountByPlayer.get(p.id) ?? 0,
+          player_slug: p.slug ?? null,
         })
       }
 

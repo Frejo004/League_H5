@@ -655,7 +655,6 @@ export function ChatPage() {
   const isLoading = teamsLoading || channelsLoading || dmsLoading
   const hasInitialized = useRef(false)
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (hasInitialized.current || selected) return
     if (channels.length > 0) {

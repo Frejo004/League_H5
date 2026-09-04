@@ -111,7 +111,7 @@ async function fetchPlayerProfileData(playerRaw: PlayerProfileRaw): Promise<Play
       .select('avatar_url')
       .eq('id', playerRaw.user_id)
       .single()
-    if (prof?.avatar_url) resolvedAvatarUrl = prof.avatar_url
+    if ((prof as any)?.avatar_url) resolvedAvatarUrl = (prof as any).avatar_url
   }
 
   // ── Requêtes 2+3+4 en parallèle ─────────────────────────────────────────
@@ -152,13 +152,13 @@ async function fetchPlayerProfileData(playerRaw: PlayerProfileRaw): Promise<Play
   const assists = assistsRes.data ?? []
 
   // Filtrer goals/assists sur les matchs de la saison uniquement
-  const matchIdSet = new Set(matches.map(m => m.id))
-  const seasonGoals   = goals.filter(g => matchIdSet.has(g.match_id))
-  const seasonAssists = assists.filter(a => matchIdSet.has(a.match_id))
+  const matchIdSet = new Set((matches as any []).map((m: any) => m.id))
+  const seasonGoals   = (goals as any []).filter((g: any) => matchIdSet.has(g.match_id))
+  const seasonAssists = (assists as any []).filter((a: any) => matchIdSet.has(a.match_id))
 
   // ── Agrégation des stats ─────────────────────────────────────────────────
-  const totalGoals    = seasonGoals.filter(g => !g.is_own_goal).length
-  const totalOwnGoals = seasonGoals.filter(g => g.is_own_goal).length
+  const totalGoals    = seasonGoals.filter((g: any) => !g.is_own_goal).length
+  const totalOwnGoals = seasonGoals.filter((g: any) => g.is_own_goal).length
   const totalAssists  = seasonAssists.length
   // matchesPlayed = tous les matchs terminés de l'équipe dans la saison
   // (indépendamment des contributions du joueur)
@@ -167,32 +167,32 @@ async function fetchPlayerProfileData(playerRaw: PlayerProfileRaw): Promise<Play
   // Goals/assists par match pour l'affichage
   const goalsByMatch   = new Map<string, number>()
   const assistsByMatch = new Map<string, number>()
-  for (const g of seasonGoals.filter(g => !g.is_own_goal)) {
+  for (const g of seasonGoals.filter((g: any) => !g.is_own_goal)) {
     goalsByMatch.set(g.match_id, (goalsByMatch.get(g.match_id) ?? 0) + 1)
   }
   for (const a of seasonAssists) {
-    assistsByMatch.set(a.match_id, (assistsByMatch.get(a.match_id) ?? 0) + 1)
+    assistsByMatch.set((a as any).match_id, (assistsByMatch.get((a as any).match_id) ?? 0) + 1)
   }
 
   // ── Construction des derniers matchs ─────────────────────────────────────
   const recentMatches = matches.slice(0, 10).map(m => {
-    const isHome   = m.home_team_id === playerRaw.team_id
-    const myScore  = isHome ? m.home_score! : m.away_score!
-    const oppScore = isHome ? m.away_score! : m.home_score!
+    const isHome   = (m as any).home_team_id === playerRaw.team_id
+    const myScore  = isHome ? (m as any).home_score! : (m as any).away_score!
+    const oppScore = isHome ? (m as any).away_score! : (m as any).home_score!
     const result: 'W' | 'D' | 'L' = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D'
 
     return {
-      match_id:        m.id,
-      match_slug:      m.slug,
-      matchday:        m.matchday,
-      played_at:       m.played_at,
-      home_team:       (Array.isArray(m.home_team) ? m.home_team[0] : m.home_team) as TeamRef,
-      away_team:       (Array.isArray(m.away_team) ? m.away_team[0] : m.away_team) as TeamRef,
-      home_score:      m.home_score!,
-      away_score:      m.away_score!,
+      match_id:        (m as any).id,
+      match_slug:      (m as any).slug,
+      matchday:        (m as any).matchday,
+      played_at:       (m as any).played_at,
+      home_team:       (Array.isArray((m as any).home_team) ? (m as any).home_team[0] : (m as any).home_team) as TeamRef,
+      away_team:       (Array.isArray((m as any).away_team) ? (m as any).away_team[0] : (m as any).away_team) as TeamRef,
+      home_score:      (m as any).home_score!,
+      away_score:      (m as any).away_score!,
       player_team_id:  playerRaw.team_id,
-      goals_in_match:  goalsByMatch.get(m.id) ?? 0,
-      assists_in_match: assistsByMatch.get(m.id) ?? 0,
+      goals_in_match:  goalsByMatch.get((m as any).id) ?? 0,
+      assists_in_match: assistsByMatch.get((m as any).id) ?? 0,
       result,
     }
   })

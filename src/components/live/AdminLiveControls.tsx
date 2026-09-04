@@ -339,20 +339,7 @@ export function AdminLiveControls({
       } catch (err) {
         // La suspension manuelle reste possible depuis la page admin
         toast.error(
-          'Carton rouge enregistré', 
-          <div className="flex flex-col gap-2">
-            <p>La suspension automatique a échoué — à créer manuellement</p>
-            <a 
-              href="/admin?tab=sanctions" 
-              className="text-xs font-bold text-primary-400 hover:text-primary-300 underline"
-              onClick={(e) => {
-                e.stopPropagation()
-                window.location.href = '/admin?tab=sanctions'
-              }}
-            >
-              → Ouvrir la page Sanctions
-            </a>
-          </div>
+          'Carton rouge enregistré - La suspension automatique a échoué, à créer manuellement depuis /admin?tab=sanctions'
         )
         console.error('[AdminLiveControls] Erreur création suspension auto:', err)
       }

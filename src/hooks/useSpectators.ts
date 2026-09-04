@@ -56,7 +56,7 @@ export function useRequestSpectatorAccess() {
       const { data, error } = await supabase
         .from('spectators')
         .upsert(
-          { user_id: userId, season_id: seasonId, status: 'pending' },
+          { user_id: userId, season_id: seasonId, status: 'pending' } as any,
           { onConflict: 'user_id,season_id' }
         )
         .select()
@@ -85,8 +85,7 @@ export function useUpdateSpectatorStatus() {
       reviewedBy: string
     }) => {
       // 1. Mettre à jour le statut de la demande
-      const { data, error } = await supabase
-        .from('spectators')
+      const { data, error } = await (supabase.from('spectators') as any)
         .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: reviewedBy })
         .eq('id', id)
         .select()

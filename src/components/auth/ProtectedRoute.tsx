@@ -48,6 +48,10 @@ export function ProtectedRoute() {
   if (profile.role !== 'spectator') return <Outlet />
 
   // ── Spectateur ────────────────────────────────────────────
+  // PROD-01 : le spectateur accède librement à la consultation (scores,
+  // matchs, classements). L'approbation reste requise uniquement pour les
+  // actions interactives (chat, paris, votes MVP) — gérée par les hooks
+  // `useSpectator` et la modale `PendingApprovalModal` côté composant.
 
   // 6. Attendre la saison active
   if (!seasonFetched || seasonLoading) return <PageLoader />
@@ -55,14 +59,11 @@ export function ProtectedRoute() {
   // 7. Pas de saison → modal
   if (!season) return <PendingApprovalModal />
 
-  // 8. Attendre la demande spectateur
-  if (!spectatorFetched || spectatorLoading) return <PageLoader />
+  // 8. Attendre la demande spectateur (sans bloquer la consultation)
+  //    On tolère un chargement prolongé : on ne bloque plus l'accès en lecture.
+  //    Si la demande n'existe pas encore (ou n'est pas approuvée), les
+  //    composants interactifs afficheront eux-mêmes la modale d'approbation.
 
-  // 9. Non approuvé → modal
-  if (!spectatorRequest || spectatorRequest.status !== 'approved') {
-    return <PendingApprovalModal />
-  }
-
-  // 10. Spectateur approuvé → accès
+  // 9. Spectateur → accès (lecture libre, interactions verrouillées ailleurs)
   return <Outlet />
 }

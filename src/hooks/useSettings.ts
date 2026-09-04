@@ -25,8 +25,7 @@ export function useUpsertSettings() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (values: Partial<Settings> & { season_id: string }) => {
-      const { data, error } = await supabase
-        .from('settings')
+      const { data, error } = await (supabase.from('settings') as any)
         .upsert(values, { onConflict: 'season_id' })
         .select()
         .single()

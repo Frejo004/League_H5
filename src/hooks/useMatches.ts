@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Match, MatchWithTeams, MatchDetail, Database } from '@/types/database'
+import type { MatchWithTeams, MatchDetail, Database } from '@/types/database'
 
 // Re-export pour les imports existants qui importent depuis ce fichier
 export type { MatchWithTeams } from '@/types/database'

@@ -34,7 +34,7 @@ export function useMyTeam(seasonId?: string) {
       const { data: team, error: teamErr } = await supabase
         .from('teams')
         .select('id, name, color, logo_url, captain_id, season_id')
-        .eq('id', player.team_id)
+        .eq('id', (player as any).team_id)
         .maybeSingle()
 
       if (teamErr) {
@@ -43,7 +43,7 @@ export function useMyTeam(seasonId?: string) {
       }
 
       return {
-        myTeamId: player.team_id,
+        myTeamId: (player as any).team_id,
         myTeam: team ?? null,
         myPlayer: player,
       }

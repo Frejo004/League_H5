@@ -510,7 +510,7 @@ function LineupEditor({ matchId, teamId, onClose, initialStarters, initialSubs, 
   )
 }
 
-function PlayerRow({ lineup, isStarter, isSuspended }: { lineup: MatchLineup, isStarter?: boolean, isSuspended?: boolean }) {
+function PlayerRow({ lineup, isSuspended }: { lineup: MatchLineup, isStarter?: boolean, isSuspended?: boolean }) {
   return (
     <div className={clsx(
       "group flex items-center gap-4 p-3 rounded-2xl bg-surface-muted/10 border border-surface-border/50 transition-all cursor-default",

@@ -86,16 +86,16 @@ export function useNotificationSW(userId?: string) {
           })
 
           // Sauvegarder dans Supabase
-          const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')!)))
-          const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')!)))
+          const p256dh = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('p256dh')!))))
+          const auth = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('auth')!))))
 
-          await supabase.from('push_subscriptions').upsert({
+          await (supabase.from('push_subscriptions') as any).upsert({
             user_id: userId,
             endpoint: subscription.endpoint,
             p256dh,
             auth,
             user_agent: navigator.userAgent.slice(0, 200),
-          }, { onConflict: 'user_id,endpoint' })
+          } as any, { onConflict: 'user_id,endpoint' })
         }
       }
       return result === 'granted'

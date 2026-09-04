@@ -1,7 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useTournamentWithMatches } from '@/hooks/useTournaments'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { PageHero } from '@/components/ui/PageHero'
 import { Trophy, Calendar, Users, Clock, ArrowLeft, User, CheckCircle, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,7 +10,7 @@ import clsx from 'clsx'
 export function TournamentDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: tournament, isLoading, error } = useTournamentWithMatches(slug || '')
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const registerTournament = useRegisterTournament()
 
   if (isLoading) {

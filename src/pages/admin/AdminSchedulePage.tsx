@@ -867,9 +867,8 @@ export function AdminSchedulePage() {
 
       let createdMatches: Match[] = []
       if (allMatchesToCreate.length > 0) {
-        const { data, error } = await supabase
-          .from('matches')
-          .insert(allMatchesToCreate)
+        const { data, error } = await (supabase.from('matches') as any)
+          .insert(allMatchesToCreate as any)
           .select('*')
         if (error) throw error
         createdMatches = (data ?? []) as Match[]
@@ -906,14 +905,13 @@ export function AdminSchedulePage() {
       if (cancelledMatchesToRevive.length > 0) {
         const reviveResults = await Promise.all(
           cancelledMatchesToRevive.map(match =>
-            supabase
-              .from('matches')
+            (supabase.from('matches') as any)
               .update({
                 status: 'scheduled',
                 home_score: null,
                 away_score: null,
                 played_at: null,
-              })
+              } as any)
               .eq('id', match.id)
           )
         )
@@ -935,9 +933,8 @@ export function AdminSchedulePage() {
       if (matchdayUpdates.length > 0) {
         const updateResults = await Promise.all(
           matchdayUpdates.map(update =>
-            supabase
-              .from('matches')
-              .update({ matchday: update.matchday })
+            (supabase.from('matches') as any)
+              .update({ matchday: update.matchday } as any)
               .eq('id', update.id)
           )
         )

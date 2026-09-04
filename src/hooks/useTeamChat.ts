@@ -43,14 +43,14 @@ export async function saveMentions(
       .eq('team_id', contextId)
       .eq('is_active', true)
       .not('user_id', 'is', null)
-    memberRows = (players ?? []).filter(p => p.user_id) as { user_id: string }[]
+    memberRows = (players as any ?? []).filter((p: any) => p.user_id) as { user_id: string }[]
   } else {
     // Canal global : récupérer tous les profils actifs
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id')
       .neq('id', mentionedBy)
-    memberRows = (profiles ?? []).map(p => ({ user_id: p.id }))
+    memberRows = (profiles as any ?? []).map((p: any) => ({ user_id: p.id }))
   }
 
   let targetUserIds: string[] = []
@@ -65,7 +65,7 @@ export async function saveMentions(
       .in('id', memberRows.map(m => m.user_id))
 
     for (const mention of rawMentions) {
-      const matched = (profiles ?? []).find(p =>
+      const matched = (profiles as any ?? []).find((p: any) =>
         (p.full_name ?? '').toLowerCase().includes(mention)
       )
       if (matched && matched.id !== mentionedBy) {
@@ -79,7 +79,7 @@ export async function saveMentions(
   if (targetUserIds.length === 0) return
 
   // Insérer dans chat_mentions (ignorer les doublons)
-  await supabase.from('chat_mentions').insert(
+  await (supabase.from('chat_mentions') as any).insert(
     targetUserIds.map(uid => ({
       message_id: messageId,
       mentioned_user_id: uid,
@@ -128,8 +128,7 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
     .limit(PAGE_SIZE)
 
   if (beforeId) {
-    const { data: pivot } = await supabase
-      .from('team_messages').select('created_at').eq('id', beforeId).single()
+    const { data: pivot } = await (supabase.from('team_messages') as any).select('created_at').eq('id', beforeId).single()
     if (pivot) query = query.lt('created_at', pivot.created_at)
   }
 
@@ -138,7 +137,7 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   if (!msgs || msgs.length === 0) return []
 
   const replyIds = [...new Set(
-    msgs.map(m => m.reply_to_id).filter(Boolean) as string[]
+    (msgs as any []).map((m: any) => m.reply_to_id).filter(Boolean) as string[]
   )]
   const replyMap = new Map<string, ReplyRow>()
   if (replyIds.length > 0) {
@@ -150,7 +149,7 @@ async function fetchMessages(teamId: string, beforeId?: string): Promise<TeamMes
   }
 
   return msgs
-    .map(m => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
+    .map((m: any) => ({ ...m, reply_to: m.reply_to_id ? (replyMap.get(m.reply_to_id) ?? null) : null }))
     .reverse() as unknown as TeamMessageFull[]
 }
 
@@ -280,7 +279,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
           teamId,
           pages: prev.teamId === teamId ? [page, ...prev.pages] : [page],
         }))
-        const { data } = await supabase.rpc('count_team_messages_before', {
+        const { data } = await (supabase.rpc as any)('count_team_messages_before', {
           p_team_id: teamId,
           p_before_id: page[0].id,
         })
@@ -297,10 +296,10 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   useEffect(() => {
     if (!teamId || !messagesQuery.data?.length) return
     const first = messagesQuery.data[0]
-    supabase.rpc('count_team_messages_before', {
+    ;(supabase.rpc as any)('count_team_messages_before', {
       p_team_id: teamId,
       p_before_id: first.id,
-    }).then(({ data }) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
+    }).then(({ data }: any) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
   }, [teamId, messagesQuery.data])
 
   // ── Read receipts ─────────────────────────────────────────────────────────
@@ -382,7 +381,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
             team_id: teamId,
             last_read_at: lastMsgAt,
             last_read_msg: lastMsgId,
-          }, { onConflict: 'user_id,team_id' });
+          } as any, { onConflict: 'user_id,team_id' });
       }, 2000);
     },
     [teamId, currentUserId]
@@ -396,12 +395,12 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         sender_id: senderId,
         content: content.trim(),
         reply_to_id: replyToId ?? null,
-      }).select('id').single()
+      } as any).select('id').single()
       if (error) throw error
 
       // Extraire et enregistrer les mentions @
-      if (newMsg?.id) {
-        await saveMentions(content, newMsg.id, senderId, 'team', teamId!)
+      if (newMsg && (newMsg as any)?.id) {
+        await saveMentions(content, (newMsg as any).id, senderId, 'team', teamId!)
       }
     },
     onMutate: async () => {
@@ -452,7 +451,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
           .eq('message_id', messageId).eq('user_id', userId).eq('emoji', emoji)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('team_message_reactions').insert({ message_id: messageId, user_id: userId, emoji })
+        const { error } = await supabase.from('team_message_reactions').insert({ message_id: messageId, user_id: userId, emoji } as any)
         if (error) throw error
       }
     },
@@ -482,7 +481,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
   // ── Edit message ───────────────────────────────────────────────────────────
   const editMessage = useMutation({
     mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
-      const { error } = await supabase.from('team_messages')
+      const { error } = await (supabase.from('team_messages') as any)
         .update({ content: content.trim(), edited_at: new Date().toISOString() })
         .eq('id', messageId)
       if (error) throw error
@@ -514,7 +513,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
         team_id: teamId,
         message_id: messageId,
         pinned_by: currentUserId,
-      })
+      } as any)
       if (error) throw error
     },
     onSuccess: () => qc.refetchQueries({ queryKey: PINNED_KEY(teamId ?? '') }),
@@ -632,10 +631,10 @@ export function useIsTeamMember(teamId?: string, userId?: string) {
       const { data: player } = await supabase.from('players').select('id')
         .eq('team_id', teamId!).eq('user_id', userId!).eq('is_active', true).maybeSingle()
       if (player) return true
-      const { data: team } = await supabase.from('teams').select('captain_id').eq('id', teamId!).maybeSingle()
-      if (team?.captain_id === userId) return true
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId!).maybeSingle()
-      return profile?.role === 'admin'
+      const { data: team } = await (supabase.from('teams') as any).select('captain_id').eq('id', teamId!).maybeSingle()
+      if ((team as any)?.captain_id === userId) return true
+      const { data: profile } = await (supabase.from('profiles') as any).select('role').eq('id', userId!).maybeSingle()
+      return (profile as any)?.role === 'admin'
     },
     staleTime: 60_000,
   })

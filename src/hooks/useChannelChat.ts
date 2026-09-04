@@ -133,7 +133,7 @@ export function useGlobalChannels(userId?: string, isAdmin = false, isCaptain = 
           .select('*')
           .order('created_at', { ascending: true })
         if (error) throw error
-        rows = (data ?? []).map((r: any) => ({ ...r, last_message: null, last_message_at: null }))
+        rows = ((data ?? []) as GlobalChannel[]).map(r => ({ ...r, last_message: null, last_message_at: null }))
       } else {
         rows = rpcData
       }
@@ -311,8 +311,9 @@ export function useChannelChat(channelId?: string, currentUserId?: string) {
       if (error) throw error
 
       // Enregistrer les mentions @
-      if ((newMsg as any)?.id) {
-        await saveMentions(content, (newMsg as any).id, senderId, 'channel', channelId!)
+      const newMsgTyped = newMsg as { id?: string } | null
+      if (newMsgTyped?.id) {
+        await saveMentions(content, newMsgTyped.id, senderId, 'channel', channelId!)
       }
     },
     onSuccess: () => qc.refetchQueries({ queryKey: CHANNEL_MSGS_KEY(channelId ?? '') }),

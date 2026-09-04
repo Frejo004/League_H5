@@ -42,11 +42,11 @@ export function JoinPage() {
   const [success, setSuccess]         = useState(false)
 
   // Résoudre le token — s'exécute uniquement si le token existe (tokenState = 'loading')
+  // Le token n'est purgé qu'après un claim effectif (voir handleSubmit) afin de
+  // permettre à l'utilisateur de recharger la page sans perdre son invitation.
   useEffect(() => {
     if (!token) return
     resolveInviteToken(token).then(info => {
-      // Clear token after use to prevent reuse
-      sessionStorage.removeItem('invite_token')
       if (!info || !info.is_valid) setTokenState('invalid')
       else { setPlayerInfo(info); setTokenState('valid') }
     })
@@ -80,8 +80,9 @@ export function JoinPage() {
       // le joueur n'est pas lié. On distingue les deux types d'erreur.
       try {
         await claimInvite(token, userId)
-        // Succès : rediriger vers la page de connexion
+        // Succès : purger le token et rediriger vers la page de connexion
         // Le joueur devra se connecter manuellement pour que son profil soit chargé correctement
+        sessionStorage.removeItem('invite_token')
         setSuccess(true)
       } catch (claimErr: unknown) {
         // Le compte a été créé mais le lien joueur a échoué.

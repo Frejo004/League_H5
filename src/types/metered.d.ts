@@ -32,4 +32,8 @@ declare global {
   const Metered: {
     Meeting: typeof MeteredMeeting
   }
+
+  interface Window {
+    Metered?: typeof Metered
+  }
 }

@@ -5,7 +5,6 @@ import { PageHero } from '@/components/ui/PageHero'
 import { Trophy, Calendar, Users, Clock, Plus, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import type { Tournament } from '@/types/tournament'
 import clsx from 'clsx'
 
 export function TournamentsPage() {

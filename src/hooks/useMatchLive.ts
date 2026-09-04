@@ -123,9 +123,10 @@ export function useLiveReactions(matchId?: string) {
       })
       .subscribe()
 
+    const timeouts = timeoutsRef.current
     return () => {
-      timeoutsRef.current.forEach(t => clearTimeout(t))
-      timeoutsRef.current.clear()
+      timeouts.forEach(t => clearTimeout(t))
+      timeouts.clear()
       supabase.removeChannel(ch)
     }
   }, [matchId, qc])
