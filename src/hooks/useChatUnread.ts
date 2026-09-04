@@ -98,7 +98,11 @@ export function useChatUnreadRealtime(userId?: string) {
             supabase.from('teams').select('name').eq('id', newMsg.team_id).single(),
           ])
 
-          const title = `${profile?.full_name ?? 'Nouveau message'} — ${team?.name ?? 'Chat'}`;
+          const profileData = profile as any
+          const teamData = team as any
+          const profileName = profileData?.full_name ?? 'Nouveau message'
+          const teamName = teamData?.name ?? 'Chat'
+          const title = `${profileName} — ${teamName}`;
           const body = newMsg.content.length > 80 ? newMsg.content.slice(0, 80) + '…' : newMsg.content;
           // Utiliser la fonction d'aide pushLocal pour une gestion cohérente des notifications
           pushLocal(title, body, `chat-${newMsg.team_id}`, `/team-chat/${newMsg.team_id}`); // Assumant une route de chat

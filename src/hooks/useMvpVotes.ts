@@ -87,7 +87,7 @@ export function useVoteMvp() {
       const { data, error } = await supabase
         .from('mvp_votes')
         .upsert(
-          { match_id: matchId, player_id: playerId, voted_by: votedBy },
+          { match_id: matchId, player_id: playerId, voted_by: votedBy } as unknown as never[],
           { onConflict: 'match_id,voted_by' }
         )
         .select()
@@ -138,8 +138,8 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .eq('season_id', seasonId!)
         .eq('status', 'completed')
       if (matchErr) throw matchErr
-
-      const matchIds = (matchData ?? []).map(m => m.id)
+      const matchDataList = (matchData ?? []) as any[]
+      const matchIds = matchDataList.map(m => m.id)
       if (matchIds.length === 0) return { total_mvp: 0, mvp_matches: [] }
 
       // 2. Tous les votes de ces matchs
@@ -148,11 +148,12 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .select('match_id, player_id')
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
-      if (!votes?.length) return { total_mvp: 0, mvp_matches: [] }
+      const votesList = (votes ?? []) as any[]
+      if (!votesList.length) return { total_mvp: 0, mvp_matches: [] }
 
       // 3. Pour chaque match, trouver le MVP (ou co-MVP en cas d'égalité)
       const votesByMatch = new Map<string, Map<string, number>>()
-      for (const v of votes) {
+      for (const v of votesList) {
         if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
         const mv = votesByMatch.get(v.match_id)!
         mv.set(v.player_id, (mv.get(v.player_id) ?? 0) + 1)
@@ -172,7 +173,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         }
       }
 
-      const mvpMatches = (matchData ?? [])
+      const mvpMatches = matchDataList
         .filter(m => mvpMatchIds.has(m.id))
         .map(m => ({
           match_id:       m.id,
@@ -208,8 +209,8 @@ export function useMvpRanking(seasonId?: string) {
         .eq('season_id', seasonId!)
         .eq('status', 'completed')
       if (matchErr) throw matchErr
-
-      const matchIds = (matchData ?? []).map(m => m.id)
+      const matchDataList = (matchData ?? []) as any[]
+      const matchIds = matchDataList.map(m => m.id)
       if (matchIds.length === 0) return []
 
       // 2. Tous les votes de ces matchs avec infos joueur/équipe
@@ -222,11 +223,12 @@ export function useMvpRanking(seasonId?: string) {
         `)
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
-      if (!votes?.length) return []
+      const votesList = (votes ?? []) as any[]
+      if (!votesList.length) return []
 
       // 3. Calculer pour chaque match qui est MVP (ou co-MVP)
       const votesByMatch = new Map<string, Map<string, number>>()
-      for (const v of votes) {
+      for (const v of votesList) {
         if (!votesByMatch.has(v.match_id)) votesByMatch.set(v.match_id, new Map())
         const mv = votesByMatch.get(v.match_id)!
         mv.set(v.player_id, (mv.get(v.player_id) ?? 0) + 1)
@@ -257,7 +259,7 @@ export function useMvpRanking(seasonId?: string) {
       const ranking: Array<MvpResult & { mvp_titles: number }> = []
 
       // Récupérer les avatars depuis profiles pour les joueurs avec user_id
-      const allPlayers = votes
+      const allPlayers = votesList
         .map(v => v.players as unknown as {
           id: string; first_name: string; last_name: string
           team_id: string; user_id: string | null; avatar_url: string | null
@@ -265,17 +267,18 @@ export function useMvpRanking(seasonId?: string) {
         } | null)
         .filter(Boolean)
 
-      const userIds = [...new Set(allPlayers.map(p => p!.user_id).filter(Boolean) as string[])]
+      const userIds = [...new Set(allPlayers.map(p => (p as any).user_id).filter(Boolean) as string[])]
       const profilesMap = new Map<string, string | null>()
       if (userIds.length) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, avatar_url')
           .in('id', userIds)
-        for (const pr of profiles ?? []) profilesMap.set(pr.id, pr.avatar_url)
+        // @ts-expect-error Supabase select typing inference issue
+        for (const pr of (profiles ?? [])) profilesMap.set(pr.id, pr.avatar_url)
       }
 
-      for (const v of votes) {
+      for (const v of votesList) {
         if (seen.has(v.player_id)) continue
         seen.add(v.player_id)
 

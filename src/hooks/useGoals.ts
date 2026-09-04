@@ -19,7 +19,8 @@ export function useAddGoal() {
       const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('goals')
-        .insert(dbValues)
+        // @ts-expect-error Supabase insert typing inference issue
+        .insert(dbValues as never[])
         .select()
         .single()
       if (error) throw error
@@ -64,7 +65,8 @@ export function useAddAssist() {
       const { seasonId: _seasonId, ...dbValues } = values
       const { data, error } = await supabase
         .from('assists')
-        .insert(dbValues)
+        // @ts-expect-error Supabase insert typing inference issue
+        .insert(dbValues as never[])
         .select()
         .single()
       if (error) throw error

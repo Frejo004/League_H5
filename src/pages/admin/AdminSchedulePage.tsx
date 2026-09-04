@@ -246,6 +246,7 @@ async function applyBalancedMatchdays(
     matchdayUpdates.map(update =>
       supabase
         .from('matches')
+        // @ts-expect-error Supabase update typing inference issue
         .update({ matchday: update.matchday })
         .eq('id', update.id)
     )

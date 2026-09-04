@@ -39,7 +39,7 @@ export function usePlayers(seasonId?: string) {
         return {
           ...p,
           avatar_url: (p.user_id ? profilesMap.get(p.user_id)?.avatar_url : null) ?? p.avatar_url,
-          teams: team ? { id: team.id, name: team.name, color: team.color } : null,
+          teams: team ? { id: team.id, name: team.name, color: team.color, logo_url: team.logo_url ?? null, captain_id: team.captain_id ?? null } : null,
         }
       })
     },
