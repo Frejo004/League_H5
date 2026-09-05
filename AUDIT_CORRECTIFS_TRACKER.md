@@ -21,9 +21,9 @@
 | **Phase 1** | 🔴 Must Fix (Sécurité & Bloquants) | 4 | 4 | 0 | 0 | 100% |
 | **Phase 2** | 🟠 Product Quality (Stabilité & Perf) | 4 | 4 | 0 | 0 | 100% |
 | **Phase 3** | 🟡 Polish (UI/UX & Cohérence) | 5 | 3 | 0 | 2 | 60% |
-| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 1 | 1 | 1 | 50% |
+| **Phase 4** | 🟢 Growth (Onboarding & Visibilité) | 3 | 2 | 1 | 0 | 83% |
 | **Phase 5** | 🔵 Différenciation (Fonctionnalités Clés) | 2 | 2 | 0 | 0 | 100% |
-| **TOTAL** | | **18** | **14** | **1** | **3** | **83%** |
+| **TOTAL** | | **18** | **15** | **1** | **2** | **89%** |
 
 ---
 
@@ -142,11 +142,12 @@
   - **Statut :** ✅ Terminé
   - **Correctif :** `ProtectedRoute.tsx` ne bloque plus l'accès au spectateur en attente/non approuvé ; le `Outlet` est rendu. Les composants interactifs conservent la modale `PendingApprovalModal` au point d'action (chat, paris, votes MVP).
 
-- [ ] **[OBS-01] Intégration de la télémétrie et capture d'erreurs (Sentry)**
+- [x] **[OBS-01] Intégration de la télémétrie et capture d'erreurs (Sentry)**
   - **Priorité :** P2 (Moyen)
   - **Fichiers :** [App.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/App.tsx), [ErrorBoundary.tsx](file:///c:/Users/frejus.dassi/Desktop/Frejus/League_H5/src/components/ui/ErrorBoundary.tsx)
   - **Description :** Capturer automatiquement les erreurs runtime et réseaux en production pour réagir avant que les utilisateurs ne signalent des dysfonctionnements.
-  - **Statut :** ⏳ À faire
+  - **Statut :** ✅ Terminé
+  - **Correctif :** Nouvelle couche de télémétrie dans `src/lib/telemetry.ts` — aucune dépendance npm, parle directement à l'API HTTP de Sentry. Activée uniquement si `VITE_SENTRY_DSN` est défini. Hookée dans `ErrorBoundary.componentDidCatch` (erreurs React) et dans `App.tsx` (`window.error` + `unhandledrejection`). Documentée dans `.env.exemple` (`VITE_SENTRY_DSN`, `VITE_SENTRY_ENV`, `VITE_APP_VERSION`).
 
 - [x] **[SEO-01] Titres dynamiques et balises Open Graph par page**
   - **Priorité :** P3 (Mineur)
@@ -191,6 +192,8 @@
 | **04/09/2026** | Kilo | Phase 4 (2/3) | SEO-01 : hook `useSeo` (titre + Open Graph + Twitter Card) appliqué Landing/Standings/Scorers. |
 | **04/09/2026** | Kilo | Phase 5 (2/2) | OPP-01 : `storyGenerator.ts` (Canvas PNG 9:16) + bouton « Partager en story ». OPP-02 : `ScoreboardPage` plein écran + route `/scoreboard/:idOrSlug`. |
 | **04/09/2026** | Kilo | PROD-02 | Image d'échecs remplacée sur `TournamentsPage`. |
+| **05/09/2026** | Kilo | Phase 4 (3/3) | OBS-01 : `src/lib/telemetry.ts` (Sentry HTTP direct, no-deps, opt-in via `VITE_SENTRY_DSN`) + intégration dans `ErrorBoundary` et `App.tsx` (`window.error`, `unhandledrejection`). |
+| **05/09/2026** | Kilo | CODE-02 (3/3) | ESLint 128 → 118. Retype `useMvpVotes`, `useMatchFeedback`, `useMyTeam`, `useSpectators` (interfaces locales au lieu de `any`). |
 
 ---
 

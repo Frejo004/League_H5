@@ -19,7 +19,7 @@ export function useMatchFeedback(matchId?: string) {
           *,
           players(*)
         `)
-        .eq('match_id', matchId as any)
+        .eq('match_id', matchId!)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -48,8 +48,9 @@ export function useAddMatchFeedback() {
       player_behavior?: string | null
       other_comments?: string | null
     }) => {
-      const { data, error } = await (supabase.from('match_feedback') as any)
-        .insert(feedback)
+      const { data, error } = await supabase
+        .from('match_feedback')
+        .insert(feedback as never)
         .select()
         .single()
 
@@ -76,13 +77,14 @@ export function useUpdateMatchFeedback() {
       player_behavior?: string | null
       other_comments?: string | null
     }) => {
-      const { data, error } = await (supabase.from('match_feedback') as any)
+      const { data, error } = await supabase
+        .from('match_feedback')
         .update({
           overall_experience: feedback.overall_experience,
           referee_performance: feedback.referee_performance,
           player_behavior: feedback.player_behavior,
           other_comments: feedback.other_comments,
-        })
+        } as never)
         .eq('id', feedback.id)
         .select()
         .single()

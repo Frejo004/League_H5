@@ -30,11 +30,13 @@ export function useMyTeam(seasonId?: string) {
       }
       if (!player) return { myTeamId: null, myTeam: null, myPlayer: null }
 
+      const playerRow = player as { team_id: string | null }
+
       // Récupérer l'équipe
       const { data: team, error: teamErr } = await supabase
         .from('teams')
         .select('id, name, color, logo_url, captain_id, season_id')
-        .eq('id', (player as any).team_id)
+        .eq('id', playerRow.team_id!)
         .maybeSingle()
 
       if (teamErr) {
@@ -43,7 +45,7 @@ export function useMyTeam(seasonId?: string) {
       }
 
       return {
-        myTeamId: (player as any).team_id,
+        myTeamId: playerRow.team_id,
         myTeam: team ?? null,
         myPlayer: player,
       }

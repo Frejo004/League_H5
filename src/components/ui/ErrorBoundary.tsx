@@ -1,5 +1,6 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { captureException } from '@/lib/telemetry'
 
 interface Props {
   children: ReactNode
@@ -39,6 +40,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+
+    // Télémétrie (Sentry si configuré, no-op sinon)
+    captureException(error, {
+      componentStack: info.componentStack,
+      boundary: 'ErrorBoundary',
+    })
 
     // Détection automatique des erreurs de chargement de chunks (nouveaux déploiements Vercel)
     const errorMsg = error.message.toLowerCase()

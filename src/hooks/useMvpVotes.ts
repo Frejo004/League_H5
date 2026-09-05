@@ -154,7 +154,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .eq('season_id', seasonId!)
         .eq('status', 'completed')
       if (matchErr) throw matchErr
-      const matchDataList = (matchData ?? []) as any[]
+      const matchDataList = ((matchData ?? []) as Array<{ id: string }>)
       const matchIds = matchDataList.map(m => m.id)
       if (matchIds.length === 0) return { total_mvp: 0, mvp_matches: [] }
 
@@ -164,7 +164,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .select('match_id, player_id')
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
-      const votesList = (votes ?? []) as any[]
+      const votesList = ((votes ?? []) as Array<{ match_id: string; player_id: string }>)
       if (!votesList.length) return { total_mvp: 0, mvp_matches: [] }
 
       // 3. Pour chaque match, trouver le MVP (ou co-MVP en cas d'égalité)
@@ -225,7 +225,7 @@ export function useMvpRanking(seasonId?: string) {
         .eq('season_id', seasonId!)
         .eq('status', 'completed')
       if (matchErr) throw matchErr
-      const matchDataList = (matchData ?? []) as any[]
+      const matchDataList = ((matchData ?? []) as Array<{ id: string }>)
       const matchIds = matchDataList.map(m => m.id)
       if (matchIds.length === 0) return []
 
@@ -239,7 +239,7 @@ export function useMvpRanking(seasonId?: string) {
         `)
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
-      const votesList = (votes ?? []) as any[]
+      const votesList = ((votes ?? []) as Array<{ match_id: string; player_id: string }>)
       if (!votesList.length) return []
 
       // 3. Calculer pour chaque match qui est MVP (ou co-MVP)
@@ -283,7 +283,7 @@ export function useMvpRanking(seasonId?: string) {
         } | null)
         .filter(Boolean)
 
-      const userIds = [...new Set(allPlayers.map(p => (p as any).user_id).filter(Boolean) as string[])]
+      const userIds = [...new Set(allPlayers.map(p => p.user_id).filter((id): id is string => Boolean(id)))]
       const profilesMap = new Map<string, string | null>()
       if (userIds.length) {
         const { data: profiles } = await supabase
