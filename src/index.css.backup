@@ -9,11 +9,10 @@
   
   /* ── Input Fields ── */
   .input {
-    @apply w-full rounded-xl px-4 py-3 text-base transition-all;
+    @apply w-full rounded-lg px-3.5 py-2.5 text-sm transition-all;
     background-color: var(--color-surface-raised) !important;
     border: 1px solid var(--color-surface-border) !important;
     color: var(--color-text-primary) !important;
-    line-height: 1.5 !important;
   }
 
   .input::placeholder {
@@ -39,13 +38,13 @@
 
   /* Input with icon on left */
   .input-icon-l {
-    padding-left: 3rem !important;
+    padding-left: 2.75rem !important;
   }
 
   /* Input with icons on both sides */
   .input-icon-lr {
-    padding-left: 3rem !important;
-    padding-right: 3rem !important;
+    padding-left: 2.75rem !important;
+    padding-right: 2.75rem !important;
   }
 
   /* Input success state */
@@ -60,13 +59,13 @@
 
   /* ── Labels ── */
   .label {
-    @apply block text-sm font-semibold uppercase tracking-wide mb-2.5;
+    @apply block text-xs font-semibold uppercase tracking-wider mb-2;
     color: var(--color-text-muted) !important;
   }
 
   /* ── Buttons ── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-bold rounded-xl uppercase tracking-wide transition-all cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg uppercase tracking-wide transition-all cursor-pointer;
   }
 
   .btn:disabled {

@@ -43,17 +43,17 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
+      <div className="w-full max-w-[360px] min-w-0 animate-fade-in-up">
 
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Bon retour 👋</h2>
-          <p className="text-slate-400 mt-1.5 text-sm">Connectez-vous pour accéder à votre ligue</p>
+          <h2 className="text-3xl font-bold !text-white tracking-tight leading-tight">Bon retour 👋</h2>
+          <p className="mt-2 w-full max-w-[20rem] text-slate-400 text-base leading-relaxed">Connectez-vous pour accéder à votre ligue</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="w-full space-y-6">
           {error && (
             <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
-                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in"
+                            text-red-400 text-base px-4 py-3.5 rounded-lg animate-scale-in"
               role="alert" aria-live="polite">
               <span className="shrink-0 mt-0.5">⚠️</span>
               <span>{error}</span>
@@ -61,10 +61,10 @@ export function LoginPage() {
           )}
 
           {/* Email */}
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="label">Adresse email</label>
+          <div className="space-y-2.5">
+            <label htmlFor="email" className="block text-sm font-semibold uppercase tracking-wide text-slate-400">Adresse email</label>
             <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input
                 id="email" type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -76,11 +76,11 @@ export function LoginPage() {
           </div>
 
           {/* Password */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="label">Mot de passe</label>
+              <label htmlFor="password" className="block text-sm font-semibold uppercase tracking-wide text-slate-400">Mot de passe</label>
               <Link to="/auth/reset-password"
-                className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+                className="shrink-0 text-sm text-primary-400 hover:text-primary-300 transition-colors">
                 Oublié ?
               </Link>
             </div>
@@ -91,30 +91,30 @@ export function LoginPage() {
           </div>
 
           <button type="submit" disabled={isLoading}
-            className="btn-primary w-full py-2.5 text-sm mt-1">
+            className="btn-primary w-full min-h-12 py-3.5 text-base mt-2 whitespace-nowrap">
             {isLoading
               ? <LoadingSpinner size="sm" />
-              : <><span>Se connecter</span><ArrowRight size={15} /></>
+              : <><span>Se connecter</span><ArrowRight size={18} /></>
             }
           </button>
         </form>
 
-        <div className="flex items-center gap-3 my-5">
+        <div className="flex items-center gap-3 my-8">
           <div className="flex-1 h-px bg-surface-border" />
-          <span className="text-xs text-slate-600 font-medium">ou</span>
+          <span className="shrink-0 text-sm text-slate-600 font-medium">ou</span>
           <div className="flex-1 h-px bg-surface-border" />
         </div>
 
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-base text-slate-400 leading-relaxed">
           Pas encore de compte ?{' '}
-          <Link to="/auth/signup" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors">
+          <Link to="/auth/signup" className="inline-block text-primary-400 hover:text-primary-300 font-semibold transition-colors">
             Créer un compte
           </Link>
         </p>
-        <p className="text-center text-xs text-slate-600 mt-3">
+        <p className="text-center text-sm text-slate-600 mt-5 leading-relaxed">
           Accès spectateur ? Inscrivez-vous et attendez l'approbation de l'admin.
         </p>
-        <p className="text-center text-xs text-slate-700 mt-2">
+        <p className="text-center text-sm text-slate-700 mt-4">
           <Link to="/" className="hover:text-slate-500 transition-colors">
             ← Retour à l'accueil
           </Link>

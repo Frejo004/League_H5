@@ -15,11 +15,11 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
   const logoLink = profile ? '/dashboard' : '/'
 
   return (
-    <div className="min-h-screen flex bg-linear-to-br from-slate-950 to-slate-900">
+    <div className="min-h-dvh lg:h-dvh flex flex-col lg:flex-row overflow-x-hidden lg:overflow-hidden bg-linear-to-br from-slate-950 to-slate-900">
 
       {/* ── Left hero panel (desktop) ── */}
       <div
-        className="hidden lg:flex flex-col flex-1 relative overflow-hidden"
+        className="hidden lg:flex flex-col flex-1 min-w-0 relative overflow-hidden"
         style={{
           backgroundImage: `url(${bgImage})`,
           backgroundSize: 'cover',
@@ -31,24 +31,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-slate-900/60" />
 
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-primary-400/10 blur-xl"
-              style={{
-                width: `${80 + i * 40}px`,
-                height: `${80 + i * 40}px`,
-                top: `${10 + i * 15}%`,
-                left: `${5 + i * 12}%`,
-                animation: `pulse ${3 + i}s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
-                animationDelay: `${i * 0.7}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10 flex flex-col h-full p-8 lg:p-10">
+        <div className="relative z-10 flex flex-col h-full p-8 lg:p-12 xl:p-14">
           <Link to={logoLink} className="flex items-center gap-3 group shrink-0 w-fit">
             <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0 transition-transform group-hover:scale-105 duration-200" />
             <span className="text-white font-bold text-lg tracking-wide drop-shadow-md group-hover:text-primary-300 transition-colors duration-200">
@@ -56,22 +39,22 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
             </span>
           </Link>
 
-          <div className="flex-1 flex flex-col justify-center max-w-md">
+          <div className="flex-1 flex flex-col justify-center w-full max-w-[36rem]">
             <div className="mb-6">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full whitespace-nowrap
                                bg-primary-500/20 border border-primary-500/30
                                text-primary-400 text-xs font-semibold uppercase tracking-widest mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
                 Saison en cours
               </span>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight mb-4">
+            <h1 className="w-full text-4xl lg:text-5xl font-black leading-tight tracking-tight mb-4">
               <span className="text-white drop-shadow-lg">La ligue</span><br />
               <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 to-primary-300 drop-shadow-md">
                 interne H5
               </span>
             </h1>
-            <p className="text-slate-300 text-base lg:text-lg leading-relaxed drop-shadow">
+            <p className="w-full max-w-[32rem] text-slate-300 text-base lg:text-lg leading-relaxed drop-shadow">
               Suivez les matchs, classements et statistiques de votre ligue de football à 5.
             </p>
 
@@ -101,7 +84,7 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-col w-full lg:w-[480px] xl:w-[35%] 2xl:w-[30%] shrink-0 relative">
+      <div className="flex flex-col w-full lg:w-[520px] xl:w-[560px] 2xl:w-[600px] shrink-0 relative">
         {/* ✅ Mobile background — réutilise bgImage, pas d'import séparé */}
         <div
           className="lg:hidden absolute inset-0"
@@ -117,13 +100,12 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
         <div className="hidden lg:block absolute inset-0 bg-slate-900/95 backdrop-blur-sm border-l border-slate-800/30" />
 
         <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary-500/20 to-transparent" />
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-600/8 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col flex-1 items-center justify-center p-6 sm:p-8 lg:p-10">
+        <div className="relative z-10 flex flex-col flex-1 items-center justify-center w-full px-6 py-10 sm:px-8 lg:px-14 lg:py-12">
           {children}
         </div>
 
-        <div className="relative z-10 pb-6 text-center">
+        <div className="relative z-10 px-6 pb-6 text-center">
           <p className="text-xs text-slate-500">© 2025 League H5 · Tous droits réservés</p>
         </div>
       </div>
