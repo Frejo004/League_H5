@@ -1,5 +1,6 @@
-import { Target, Ban } from 'lucide-react'
+import { Target, Ban, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useScorers } from '@/hooks/useScorers'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
@@ -19,8 +20,16 @@ export function ScorersPage() {
   useRealtimeMatches(season?.id)
   useRealtimeTeams(season?.id)
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
   const isLoading = seasonLoading || scorersLoading
   const topScorer = scorers?.[0]
+  const filteredScorers = scorers?.filter(s => s.goals > 0) || []
+  const totalPages = Math.ceil(filteredScorers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentScorers = filteredScorers.slice(startIndex, endIndex)
 
   return (
     <div className="space-y-3">
@@ -36,7 +45,7 @@ export function ScorersPage() {
         stats={topScorer ? [
           { label: 'Meilleur buteur', value: `${topScorer.first_name} ${topScorer.last_name}` },
           { label: 'Buts',            value: topScorer.goals },
-          { label: 'Classés',         value: scorers?.filter(s => s.goals > 0).length ?? 0 },
+          { label: 'Classés',         value: filteredScorers.length },
         ] : undefined}
         compact
       />
@@ -57,7 +66,7 @@ export function ScorersPage() {
             <p className="text-slate-400">Aucune saison active</p>
           </div>
         </div>
-      ) : !scorers?.filter(s => s.goals > 0).length ? (
+      ) : !filteredScorers.length ? (
         <div className="card">
           <div className="empty-state">
             <div className="empty-state-icon"><Target size={20} /></div>
@@ -76,7 +85,7 @@ export function ScorersPage() {
           </div>
 
           <div className="flex flex-col gap-1.5 sm:gap-2 stagger-fast">
-            {scorers?.filter(s => s.goals > 0).map((row, i) => (
+            {currentScorers.map((row, i) => (
               <Link
                 key={row.player_id}
                 to={`/players/${row.player_slug || row.player_id}`}
@@ -95,12 +104,12 @@ export function ScorersPage() {
                 <div className="flex justify-center relative z-10">
                   <span className={clsx(
                     'w-8 h-8 flex items-center justify-center text-sm font-black rounded shadow-lg',
-                    i === 0 ? 'bg-[#FFDF73] text-black shadow-[0_0_15px_rgba(255,223,115,0.6)]' :
-                    i === 1 ? 'bg-surface-raised text-text-primary shadow-[0_0_10px_rgba(0,0,0,0.4)]' : 
-                    i === 2 ? 'bg-amber-600 text-white shadow-[0_0_10px_rgba(217,119,6,0.4)]' : 
+                    startIndex + i === 0 ? 'bg-[#FFDF73] text-black shadow-[0_0_15px_rgba(255,223,115,0.6)]' :
+                    startIndex + i === 1 ? 'bg-surface-raised text-text-primary shadow-[0_0_10px_rgba(0,0,0,0.4)]' :
+                    startIndex + i === 2 ? 'bg-amber-600 text-white shadow-[0_0_10px_rgba(217,119,6,0.4)]' :
                     'text-text-muted tabular-nums bg-surface-raised border border-surface-border'
                   )}>
-                    {i + 1}
+                    {startIndex + i + 1}
                   </span>
                 </div>
 
@@ -161,6 +170,48 @@ export function ScorersPage() {
               </Link>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all',
+                  currentPage === 1
+                    ? 'text-text-muted cursor-not-allowed opacity-50'
+                    : 'text-text-primary hover:bg-surface-raised active:scale-95'
+                )}
+              >
+                <ChevronLeft size={18} />
+                Précédent
+              </button>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-text-primary">
+                  Page {currentPage} / {totalPages}
+                </span>
+                <span className="text-xs text-text-muted">
+                  ({startIndex + 1}-{Math.min(endIndex, filteredScorers.length)} sur {filteredScorers.length})
+                </span>
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all',
+                  currentPage === totalPages
+                    ? 'text-text-muted cursor-not-allowed opacity-50'
+                    : 'text-text-primary hover:bg-surface-raised active:scale-95'
+                )}
+              >
+                Suivant
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

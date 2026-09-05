@@ -18,6 +18,10 @@ import { useTeams } from '@/hooks/useTeams'
 import { supabase } from '@/lib/supabase'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { RoleBadge, TransferStatusBadge } from '@/components/ui/StatusBadges'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,8 +30,8 @@ function Alert({ type, children }: { type: 'error' | 'success'; children: React.
   return (
     <div className={`flex items-start gap-2.5 text-sm px-3.5 py-2.5 rounded-xl border
       ${isError
-        ? 'bg-red-500/8 border-red-500/20 text-red-400'
-        : 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400'
+        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+        : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
       }`}
     >
       {isError ? <AlertCircle size={15} className="mt-0.5 shrink-0" /> : <Check size={15} className="mt-0.5 shrink-0" />}
@@ -44,18 +48,15 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="group relative bg-white dark:bg-slate-900/60 border border-surface-border rounded-2xl overflow-hidden
-                    transition-all duration-300 hover:border-primary-500/30">
-      {/* top accent line */}
-      <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-primary-500/30 to-transparent" />
-      <div className="p-6">
-        <div className="flex items-center gap-2.5 mb-5">
-          <span className="p-1.5 rounded-lg bg-primary-500/10 text-primary-400">{icon}</span>
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide uppercase">{title}</h2>
-        </div>
+    <Card className="p-0 overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-border flex items-center gap-2.5">
+        <span className="p-1.5 rounded-lg bg-primary-500/10 text-primary-400">{icon}</span>
+        <h2 className="text-sm font-bold text-text-primary tracking-wide uppercase">{title}</h2>
+      </div>
+      <div className="p-5">
         {children}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -68,15 +69,15 @@ function FormField({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <label htmlFor={id} className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
         {label}
       </label>
       <input
         id={id} type={type} value={value} required={required}
         autoComplete={autoComplete} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
-                   text-text-primary text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600
+        className="w-full px-3.5 py-2.5 bg-surface-raised border border-surface-border rounded-xl
+                   text-text-primary text-sm placeholder:text-text-muted
                    focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50
                    transition-all"
       />
@@ -86,15 +87,9 @@ function FormField({
 
 function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; label: string; loadingLabel: string }) {
   return (
-    <button
-      type="submit" disabled={loading}
-      className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-500
-                 text-white text-sm font-semibold rounded-xl transition-all
-                 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {loading && <Loader2 size={14} className="animate-spin" />}
-      {loading ? loadingLabel : label}
-    </button>
+    <Button type="submit" disabled={loading} loading={loading ? loadingLabel : undefined} className="w-full">
+      {label}
+    </Button>
   )
 }
 
@@ -105,7 +100,7 @@ function NotificationToggle({
   onChange: (v: boolean) => void; disabled?: boolean
 }) {
   return (
-    <div className={`flex items-start justify-between gap-4 py-4 border-b border-surface-border last:border-0 ${disabled ? 'opacity-50' : ''}`}>
+    <div className={`flex items-center justify-between gap-4 py-3 border-b border-surface-border last:border-0 ${disabled ? 'opacity-50' : ''}`}>
       <div className="flex items-start gap-3">
         <div className="p-2 rounded-lg bg-primary-500/10 text-primary-400 shrink-0">
           {icon}
@@ -113,15 +108,15 @@ function NotificationToggle({
         <div className="space-y-0.5">
           <p className="text-sm font-semibold text-text-primary">{label}</p>
           {description && (
-            <p className="text-xs text-slate-500">{description}</p>
+            <p className="text-xs text-text-muted">{description}</p>
           )}
         </div>
       </div>
       <button
         onClick={() => onChange(!value)}
         disabled={disabled}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
-          value ? 'bg-primary-600' : 'bg-slate-700'
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+          value ? 'bg-primary-600' : 'bg-surface-muted'
         } ${disabled ? 'cursor-not-allowed' : ''}`}
       >
         <span
@@ -179,7 +174,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
              style={{ background: 'inherit' }} />
 
         {/* Intérieur de la carte */}
-        <div className="relative bg-slate-900 h-full rounded-2xl overflow-hidden p-5 flex flex-col bg-grid-pattern">
+        <div className="relative bg-background h-full rounded-2xl overflow-hidden p-5 flex flex-col bg-grid-pattern">
           {/* Overlay doré translucide */}
           <div className="absolute inset-0 bg-linear-to-b from-[#B8860B]/20 via-transparent to-[#B8860B]/40 pointer-events-none" />
 
@@ -197,20 +192,20 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
               {profile.team.logo_url ? (
                 <img src={profile.team.logo_url} alt="" className="w-6 h-6 object-contain mt-2 opacity-80" />
               ) : (
-                <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-black text-slate-900 mt-2 bg-[#FFDF73]">
+                <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-black text-background mt-2 bg-gold-400">
                   {profile.team.name[0]}
                 </div>
               )}
             </div>
 
             {/* Photo Joueur (Avatar temporaire) */}
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#B8860B] shadow-2xl relative z-10 bg-slate-800 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gold-500 shadow-2xl relative z-10 bg-surface-raised flex items-center justify-center">
                {profile.avatar_url ? (
                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                ) : (
-                 <span className="text-4xl font-black text-slate-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                   {profile.first_name[0]}{profile.last_name[0]}
-                 </span>
+                  <span className="text-4xl font-black text-text-muted" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    {profile.first_name[0]}{profile.last_name[0]}
+                  </span>
                )}
                <div className="absolute inset-0 bg-linear-to-tr from-[#FFDF73]/20 to-transparent mix-blend-overlay" />
             </div>
@@ -251,7 +246,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
           <div className="mt-5 text-center relative z-10">
             <Link
               to={`/players/${myPlayer.slug || myPlayer.id}`}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-bold text-slate-900 bg-[#FFDF73] hover:bg-white transition-colors uppercase tracking-widest"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-bold text-background bg-gold-400 hover:bg-white transition-colors uppercase tracking-widest"
             >
               Voir Profil Complet <ArrowRight size={10} />
             </Link>
@@ -455,15 +450,12 @@ export function ProfilePage() {
       <PlayerStatsCard userId={profile?.id} />
 
       {/* ── Hero card ── */}
-      <div className="relative bg-white dark:bg-slate-900/80 border border-surface-border rounded-2xl overflow-hidden shadow-sm">
-        {/* background stripe */}
-        <div className="absolute inset-0 bg-linear-to-br from-primary-900/20 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-primary-500/40 to-transparent" />
-
+      <Card className="p-0 overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-br from-primary-900/10 via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 flex items-center gap-5">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-slate-700
+            <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-surface-border
                             bg-linear-to-br from-primary-600 to-primary-900
                             flex items-center justify-center text-white text-2xl font-black">
               {avatarUrl && !avatarBroken
@@ -482,7 +474,7 @@ export function ProfilePage() {
               onClick={() => fileRef.current?.click()}
               disabled={avatarUploading}
               className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-primary-600 hover:bg-primary-500 shadow-lg
-                         border-2 border-slate-900 flex items-center justify-center transition-colors"
+                         border-2 border-surface flex items-center justify-center transition-colors"
               title="Changer la photo"
             >
               {avatarUploading
@@ -496,10 +488,10 @@ export function ProfilePage() {
 
           {/* Identity */}
           <div className="min-w-0 flex-1">
-            <p className="text-xl font-black text-white tracking-tight truncate">
+            <p className="text-xl font-black text-text-primary tracking-tight truncate">
               {displayName || user?.email?.split('@')[0] || '—'}
             </p>
-            <p className="text-sm text-slate-500 mt-0.5 truncate">{user?.email}</p>
+            <p className="text-sm text-text-muted mt-0.5 truncate">{user?.email}</p>
             <div className="mt-2">
               {profile?.role && <RoleBadge role={profile.role} />}
             </div>
@@ -510,7 +502,7 @@ export function ProfilePage() {
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* ── Nom affiché ── */}
       <SectionCard icon={<Pencil size={14} />} title="Nom affiché">
@@ -537,8 +529,8 @@ export function ProfilePage() {
         <form onSubmit={handleEmailChange} className="space-y-4">
           {emailError && <Alert type="error">{emailError}</Alert>}
           {emailSuccess && <Alert type="success">Email de confirmation envoyé.</Alert>}
-          <div className="text-xs text-slate-500">
-            Adresse actuelle : <span className="text-slate-300">{user?.email}</span>
+          <div className="text-xs text-text-muted">
+            Adresse actuelle : <span className="text-text-secondary">{user?.email}</span>
           </div>
           <FormField
             id="newEmail" label="Nouvelle adresse email" type="email"
@@ -555,7 +547,7 @@ export function ProfilePage() {
           {pwdError && <Alert type="error">{pwdError}</Alert>}
           {pwdSuccess && <Alert type="success">Mot de passe mis à jour.</Alert>}
           <div className="space-y-1.5">
-            <label htmlFor="newPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label htmlFor="newPwd" className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
               Nouveau mot de passe
             </label>
             <PasswordInput
@@ -566,7 +558,7 @@ export function ProfilePage() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="confirmPwd" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label htmlFor="confirmPwd" className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
               Confirmer
             </label>
             <PasswordInput
@@ -583,25 +575,25 @@ export function ProfilePage() {
       {profile?.role === 'player' && myPlayer && (
         <SectionCard icon={<Send size={14} />} title="Demande de transfert">
           {myTransfers.length > 0 && (
-            <div className="space-y-3 mb-6">
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historique des demandes</h3>
-              {myTransfers.map(transfer => (
-                <div key={transfer.id} className="p-3 bg-slate-800/50 rounded-xl border border-surface-border">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm">
-                      <p className="text-text-primary font-medium">
-                        {transfer.from_team?.name || 'Sans équipe'} → {transfer.to_team?.name}
-                      </p>
-                      {transfer.reason && <p className="text-slate-500 text-xs mt-1">{transfer.reason}</p>}
+               <div className="space-y-3 mb-6">
+                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Historique des demandes</h3>
+                {myTransfers.map(transfer => (
+                  <Card key={transfer.id} className="p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm">
+                        <p className="text-text-primary font-medium">
+                          {transfer.from_team?.name || 'Sans équipe'} → {transfer.to_team?.name}
+                        </p>
+                        {transfer.reason && <p className="text-text-muted text-xs mt-1">{transfer.reason}</p>}
+                      </div>
+                      <TransferStatusBadge status={transfer.status} />
                     </div>
-                    <TransferStatusBadge status={transfer.status} />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    {new Date(transfer.created_at).toLocaleDateString('fr-FR')}
-                  </p>
-                </div>
-              ))}
-            </div>
+                    <p className="text-xs text-text-muted mt-2">
+                      {new Date(transfer.created_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </Card>
+                ))}
+              </div>
           )}
 
           {canCreateTransfer ? (
@@ -615,14 +607,14 @@ export function ProfilePage() {
                 reason: transferReason || undefined,
               })
             }} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+               <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                   Équipe de destination
                 </label>
                 <select
                   value={selectedTeamId || ''}
                   onChange={(e) => setSelectedTeamId(e.target.value || null)}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
+                  className="w-full px-3.5 py-2.5 bg-surface-raised border border-surface-border rounded-xl
                              text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
                 >
                   <option value="">Sélectionner une équipe</option>
@@ -635,35 +627,25 @@ export function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                   Raison (optionnel)
                 </label>
                 <textarea
                   value={transferReason}
                   onChange={(e) => setTransferReason(e.target.value)}
                   rows={3}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/70 border border-surface-border rounded-xl
+                  className="w-full px-3.5 py-2.5 bg-surface-raised border border-surface-border rounded-xl
                              text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 resize-none"
                   placeholder="Expliquez pourquoi vous voulez changer d'équipe..."
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={!selectedTeamId || !canCreateTransfer || createTransfer.isPending}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-500
-                           text-white text-sm font-semibold rounded-xl transition-all
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {createTransfer.isPending ? (
-                  <><Loader2 size={14} className="animate-spin" /> Envoi…</>
-                ) : (
-                  <><Send size={14} /> Envoyer la demande</>
-                )}
-              </button>
+              <Button type="submit" disabled={!selectedTeamId || !canCreateTransfer || createTransfer.isPending} loading={createTransfer.isPending ? 'Envoi…' : undefined} className="w-full">
+                <Send size={14} /> Envoyer la demande
+              </Button>
             </form>
           ) : (
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-text-muted">
               {hasReachedLimit
                 ? 'Vous avez déjà 2 demandes de transfert en attente. Attendez qu\'elles soient traitées avant d\'en soumettre une nouvelle.'
                 : hasDuplicateTeam
@@ -752,15 +734,10 @@ export function ProfilePage() {
       </SectionCard>
 
       {/* ── Déconnexion ── */}
-      <div className="pt-4 border-t border-slate-800/50 mt-4">
-        <button
-          onClick={signOut}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
-                     bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold transition-all
-                     border border-red-500/20"
-        >
-          <span>Se déconnecter</span>
-        </button>
+      <div className="pt-4 border-t border-surface-border mt-4">
+        <Button variant="danger" onClick={signOut} className="w-full">
+          Se déconnecter
+        </Button>
       </div>
     </div>
   )

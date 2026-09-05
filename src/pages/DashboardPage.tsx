@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
-import { useTournaments } from '@/hooks/useTournaments'
 import { useMatches, type MatchWithTeams } from '@/hooks/useMatches'
 import { useTeams } from '@/hooks/useTeams'
 import { useScorers, type ScorerRow } from '@/hooks/useScorers'
@@ -21,7 +20,6 @@ import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { usePlayerDiscipline } from '@/hooks/useDisciplinaryStats'
 import { useMyActiveSuspension, useSuspensions } from '@/hooks/useDisciplinaryStats'
 import { useSpectators } from '@/hooks/useSpectators'
-import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonKpiGrid, SkeletonCard, SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
@@ -140,11 +138,11 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
 }) {
   const animatedValue = useCountUp(value)
   return (
-    <div className="relative overflow-hidden rounded-2xl p-4 group transition-all duration-500 hover:-translate-y-1.5 glass-morphism">
-      <div className="absolute -top-10 -right-10 w-24 h-24 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
+    <div className="relative overflow-hidden rounded-2xl p-4 group transition-all duration-200 hover:-translate-y-1 card-hover">
+      <div className="absolute -top-8 -right-8 w-20 h-20 blur-2xl opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none"
         style={{ backgroundColor: color }} />
-      <div className="flex items-start justify-between mb-4">
-        <div className="p-2.5 rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+      <div className="flex items-start justify-between mb-3">
+        <div className="p-2 rounded-lg transition-transform duration-200 group-hover:scale-110"
           style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
           <Icon size={16} style={{ color }} />
         </div>
@@ -154,9 +152,8 @@ function KpiCard({ label, value, icon: Icon, color, trend }: {
           </span>
         )}
       </div>
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary drop-shadow-sm">{animatedValue}</p>
+      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary">{animatedValue}</p>
       <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-text-muted group-hover:text-text-secondary transition-colors">{label}</p>
-      <div className="absolute inset-0 border border-transparent group-hover:border-black/5 dark:group-hover:border-white/10 rounded-2xl transition-all duration-500" />
     </div>
   )
 }
@@ -836,11 +833,7 @@ export function DashboardPage() {
   const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
   const { isCaptain, isAdmin, profile, role } = useAuth()
   const { sendNotification } = useNotificationSW(profile?.id)
-  const { data: tournaments } = useTournaments()
   
-  // State pour gérer la bannière tournois d'échecs
-  const [showChessBanner, setShowChessBanner] = useState(true)
-
   const handleTestNotification = () => {
     sendNotification(
       'Test League H5 🏆',
@@ -973,14 +966,6 @@ export function DashboardPage() {
   // Rendu du tableau de bord en fonction du rôle
   return (
     <div className="space-y-4">
-      {/* Bannière info tournois d'échecs */}
-      {showChessBanner && (
-        <ChessTournamentBanner 
-          tournaments={tournaments || []} 
-          onDismiss={() => setShowChessBanner(false)} 
-        />
-      )}
-      
       {isAdmin ? (
         <AdminDashboardContent
           liveMatches={liveMatches}
@@ -1087,15 +1072,13 @@ function AdminDashboardContent({
 }: AdminDashboardProps) {
   return (
     <div className="space-y-4">
-      {/* Matchs en direct (priorité haute pour admin) */}
+      {/* Matchs en direct */}
       {liveMatches.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
-          <div className="absolute inset-0 pointer-events-none dark:block hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
           <div className="flex items-center gap-2 mb-3">
             <Radio size={14} className="text-red-400 animate-pulse" />
-            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Matchs en direct</span>
+            <span className="text-sm font-black uppercase tracking-wider">En direct</span>
             <LiveBadge size="sm" />
           </div>
           <div className="space-y-2">
@@ -1114,66 +1097,28 @@ function AdminDashboardContent({
         />
       )}
 
-      {/* Raccourcis Admin (priorité haute) */}
+      {/* Raccourcis Admin */}
       <AdminQuickActions
         completedCount={completedMatches.length}
         teamsCount={teams?.length ?? 0}
         pendingSpectatorsCount={pendingSpectatorsCount}
       />
 
-      {/* Widget suspensions publiques — visible par tous */}
-      <ActiveSuspensionsWidget seasonId={season.id} isAdmin />
-
-      {/* Hero saison */}
-      <PageHero
-        imageUrl="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80&auto=format&fit=crop"
-        pattern="pitch"
-        accentColor="#2563eb"
-        title={season.name}
-        subtitle="Gestion de la ligue · Saison en cours"
-        icon={<Trophy size={20} className="text-white" />}
-        badge={
-          <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/25 px-2.5 py-1 rounded-full">
-            <span className="live-dot" />
-            En cours
-          </span>
-        }
-        compact
-      />
-
-      {/* KPIs Admin */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Matchs joués" value={completedMatches.length}                        icon={Calendar} color="#3b82f6" />
-        <KpiCard label="Équipes"      value={teams?.length ?? 0}                             icon={Users}    color="#8b5cf6" />
-        <KpiCard label="À venir"      value={upcomingMatches.length}                         icon={Calendar} color="#2563eb" />
-        <KpiCard label="Spectateurs"  value={spectators?.length ?? 0}                        icon={Users}    color="#10b981" />
-      </div>
-
-      {/* Grille principale Admin */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Prochains matchs */}
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
-          <SectionHeader title="Tous les prochains matchs" href="/matches" />
-          {upcomingMatches.length === 0 ? (
-            <div className="empty-state py-8">
-              <div className="empty-state-icon"><Calendar size={18} /></div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
-            </div>
-          ) : (
-            <div className="stagger-fast">
-              {upcomingMatches.slice(0, 5).map(match => (
-                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar Admin */}
-        <div className="space-y-3">
-          {topScorer && <TopScorerCard scorer={topScorer} />}
-          {topTeam   && <LeaderCard   team={topTeam} />}
-          <MiniLeaderboard seasonId={season.id} />
-        </div>
+      {/* Prochains matchs */}
+      <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+        <SectionHeader title="Prochains matchs" href="/matches" />
+        {upcomingMatches.length === 0 ? (
+          <div className="empty-state py-6">
+            <div className="empty-state-icon"><Calendar size={18} /></div>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
+          </div>
+        ) : (
+          <div className="stagger-fast">
+            {upcomingMatches.slice(0, 4).map(match => (
+              <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Derniers résultats */}
@@ -1199,13 +1144,11 @@ function CaptainDashboardContent({
     <div className="space-y-4">
       {/* Matchs en direct */}
       {liveMatches.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
-          <div className="absolute inset-0 pointer-events-none dark:block hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
           <div className="flex items-center gap-2 mb-3">
             <Radio size={14} className="text-red-400 animate-pulse" />
-            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">En direct</span>
+            <span className="text-sm font-black uppercase tracking-wider">En direct</span>
             <LiveBadge size="sm" />
           </div>
           <div className="space-y-2">
@@ -1229,149 +1172,12 @@ function CaptainDashboardContent({
         <SuspensionBanner userId={profile.id} seasonId={season.id} />
       )}
 
-      {/* Widget suspensions publiques — visible par tous */}
-      <ActiveSuspensionsWidget seasonId={season.id} />
-
-      {/* Raccourcis Capitaine (priorité haute) */}
+      {/* Raccourcis Capitaine */}
       {myTeam && (
         <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
       )}
 
-      {/* Mes matchs (section dédiée - priorité haute) */}
-      {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
-            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Matchs de mon équipe</span>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {/* Mes prochains matchs */}
-            {myUpcomingMatches.length > 0 && (
-              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
-                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">À venir</span>
-                  {myTeam && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
-                      {myTeam.name}
-                    </span>
-                  )}
-                </div>
-                <div className="stagger-fast">
-                  {myNextMatch?.scheduled_at && (
-                    <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
-                  )}
-                  {myUpcomingMatches.slice(0, 3).map(match => (
-                    <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Mes derniers résultats */}
-            {myRecentMatches.length > 0 && (
-              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
-                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Derniers résultats</span>
-                  {myTeam && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
-                      {myTeam.name}
-                    </span>
-                  )}
-                </div>
-                <div className="stagger-fast">
-                  {myRecentMatches.slice(0, 3).map(match => (
-                    <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Stats Capitaine */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {hasTeam && myPlayer && season && (
-          <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
-        )}
-        {hasTeam && myTeamId && season && (
-          <MyTeamCard teamId={myTeamId} seasonId={season.id} />
-        )}
-      </div>
-
-      {/* Grille principale Capitaine */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Tous les prochains matchs */}
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
-          <SectionHeader title="Tous les prochains matchs" href="/matches" />
-          {upcomingMatches.length === 0 ? (
-            <div className="empty-state py-8">
-              <div className="empty-state-icon"><Calendar size={18} /></div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
-            </div>
-          ) : (
-            <div className="stagger-fast">
-              {upcomingMatches.slice(0, 4).map(match => (
-                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar Capitaine */}
-        <div className="space-y-3">
-          {topScorer && <TopScorerCard scorer={topScorer} />}
-          {topTeam   && <LeaderCard   team={topTeam} />}
-          <MiniLeaderboard seasonId={season.id} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Tableau de bord JOUEUR (déplacé en dehors)
-function PlayerDashboardContent({
-  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, upcomingMatches, topScorer, topTeam, recentMatches
-}: PlayerDashboardProps) {
-  return (
-    <div className="space-y-4">
-      {/* Matchs en direct */}
-      {liveMatches.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4 bg-red-500/5 dark:bg-transparent">
-          <div className="absolute inset-0 pointer-events-none dark:block hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(15,20,32,0.95) 100%)' }} />
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
-          <div className="flex items-center gap-2 mb-3">
-            <Radio size={14} className="text-red-400 animate-pulse" />
-            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">En direct</span>
-            <LiveBadge size="sm" />
-          </div>
-          <div className="space-y-2">
-            {liveMatches.map(match => <LiveMatchBannerItem key={match.id} match={match} />)}
-          </div>
-        </div>
-      )}
-
-      {/* Carte de bienvenue Joueur */}
-      {profile && (
-        <WelcomeCard
-          profile={profile}
-          myPlayer={myPlayer}
-          myTeam={myTeam}
-          role={role ?? 'spectator'}
-        />
-      )}
-
-      {/* Bannière suspension active (joueur concerné) */}
-      {profile?.id && season?.id && (
-        <SuspensionBanner userId={profile.id} seasonId={season.id} />
-      )}
-
-      {/* Widget suspensions publiques — visible par tous */}
-      <ActiveSuspensionsWidget seasonId={season.id} />
-
-      {/* Mes matchs (section dédiée - priorité haute) */}
+      {/* Mes matchs */}
       {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
@@ -1406,7 +1212,7 @@ function PlayerDashboardContent({
             {myRecentMatches.length > 0 && (
               <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
                 <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Derniers résultats</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Résultats</span>
                   {myTeam && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
                       {myTeam.name}
@@ -1424,7 +1230,109 @@ function PlayerDashboardContent({
         </div>
       )}
 
-      {/* Mes stats personnelles (priorité haute) */}
+      {/* Stats Capitaine */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {hasTeam && myPlayer && season && (
+          <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
+        )}
+        {hasTeam && myTeamId && season && (
+          <MyTeamCard teamId={myTeamId} seasonId={season.id} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Tableau de bord JOUEUR (déplacé en dehors)
+function PlayerDashboardContent({
+  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, upcomingMatches, topScorer, topTeam, recentMatches
+}: PlayerDashboardProps) {
+  return (
+    <div className="space-y-4">
+      {/* Matchs en direct */}
+      {liveMatches.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 p-4">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500 animate-pulse" />
+          <div className="flex items-center gap-2 mb-3">
+            <Radio size={14} className="text-red-400 animate-pulse" />
+            <span className="text-sm font-black uppercase tracking-wider">En direct</span>
+            <LiveBadge size="sm" />
+          </div>
+          <div className="space-y-2">
+            {liveMatches.map(match => <LiveMatchBannerItem key={match.id} match={match} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Carte de bienvenue Joueur */}
+      {profile && (
+        <WelcomeCard
+          profile={profile}
+          myPlayer={myPlayer}
+          myTeam={myTeam}
+          role={role ?? 'spectator'}
+        />
+      )}
+
+      {/* Bannière suspension active */}
+      {profile?.id && season?.id && (
+        <SuspensionBanner userId={profile.id} seasonId={season.id} />
+      )}
+
+      {/* Mes matchs */}
+      {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
+            <span className="text-xs font-black uppercase tracking-widest text-text-muted">Mes matchs</span>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Mes prochains matchs */}
+            {myUpcomingMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">À venir</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myNextMatch?.scheduled_at && (
+                    <NextMatchCountdown match={myNextMatch} teamId={myTeamId} isCaptain={isCaptain} />
+                  )}
+                  {myUpcomingMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mes derniers résultats */}
+            {myRecentMatches.length > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Résultats</span>
+                  {myTeam && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${myTeam.color}15`, color: myTeam.color, border: `1px solid ${myTeam.color}30` }}>
+                      {myTeam.name}
+                    </span>
+                  )}
+                </div>
+                <div className="stagger-fast">
+                  {myRecentMatches.slice(0, 3).map(match => (
+                    <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mes stats personnelles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {hasTeam && myPlayer && season && (
           <MyStatsCard playerId={myPlayer.id} seasonId={season.id} />
@@ -1434,44 +1342,22 @@ function PlayerDashboardContent({
         )}
       </div>
 
-      {/* Grille principale Joueur */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Prochains matchs globaux */}
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card lg:col-span-2">
-          <SectionHeader title="Prochains matchs de la ligue" href="/matches" />
-          {upcomingMatches.length === 0 ? (
-            <div className="empty-state py-8">
-              <div className="empty-state-icon"><Calendar size={18} /></div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
-            </div>
-          ) : (
-            <div className="stagger-fast">
-              {upcomingMatches.slice(0, 4).map(match => (
-                <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar Joueur */}
-        <div className="space-y-3">
-          {topScorer && <TopScorerCard scorer={topScorer} />}
-          {topTeam   && <LeaderCard   team={topTeam} />}
-          <MiniLeaderboard seasonId={season.id} />
-        </div>
-      </div>
-
-      {/* Derniers résultats globaux */}
-      {recentMatches.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
-          <SectionHeader title="Derniers résultats de la ligue" href="/matches" />
+      {/* Prochains matchs de la ligue */}
+      <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+        <SectionHeader title="Prochains matchs de la ligue" href="/matches" />
+        {upcomingMatches.length === 0 ? (
+          <div className="empty-state py-6">
+            <div className="empty-state-icon"><Calendar size={18} /></div>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Aucun match programmé</p>
+          </div>
+        ) : (
           <div className="stagger-fast">
-            {recentMatches.map(match => (
-              <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+            {upcomingMatches.slice(0, 4).map(match => (
+              <MiniMatchCard key={match.id} match={match} variant="upcoming" myTeamId={myTeamId} />
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

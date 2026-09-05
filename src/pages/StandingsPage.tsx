@@ -10,6 +10,8 @@ import { useMyTeam } from '@/hooks/useMyTeam'
 import { useSeo } from '@/hooks/useSeo'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonStandingsTable } from '@/components/ui/SkeletonLoader'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { exportCSV } from '@/hooks/useExport'
 import { FormBadge } from '@/components/ui/SharedBadges'
 import { clsx } from 'clsx'
@@ -349,16 +351,17 @@ export function StandingsPage() {
       {isLoading ? (
         <SkeletonStandingsTable rows={6} />
       ) : !season ? (
-        <div className="card"><div className="empty-state">
-          <div className="empty-state-icon"><Trophy size={20} /></div>
-          <p className="text-slate-400">Aucune saison active</p>
-        </div></div>
+        <div className="card">
+          <EmptyState icon={<Trophy size={20} />} title="Aucune saison active" />
+        </div>
       ) : !standings?.length ? (
-        <div className="card"><div className="empty-state">
-          <div className="empty-state-icon"><Trophy size={20} /></div>
-          <p className="text-slate-300 font-medium">Classement indisponible</p>
-          <p className="text-slate-500 text-sm">Disponible après les premiers matchs.</p>
-        </div></div>
+        <div className="card">
+          <EmptyState
+            icon={<Trophy size={20} />}
+            title="Classement indisponible"
+            description="Disponible après les premiers matchs."
+          />
+        </div>
       ) : (
         <div className="space-y-3">
 

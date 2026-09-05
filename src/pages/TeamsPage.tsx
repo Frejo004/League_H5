@@ -6,6 +6,7 @@ import { useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRect, SkeletonLine } from '@/components/ui/SkeletonLoader'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { clsx } from 'clsx'
 import { motion } from 'framer-motion'
 
@@ -75,17 +76,11 @@ export function TeamsPage() {
         </div>
       ) : !season ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><Users size={20} /></div>
-            <p className="text-slate-400">Aucune saison active</p>
-          </div>
+          <EmptyState icon={<Users size={20} />} title="Aucune saison active" />
         </div>
       ) : !teams?.length ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><Users size={20} /></div>
-            <p className="text-slate-300 font-medium">Aucune équipe enregistrée</p>
-          </div>
+          <EmptyState icon={<Users size={20} />} title="Aucune équipe enregistrée" />
         </div>
       ) : (
         <motion.div

@@ -411,10 +411,10 @@ export function LandingPage() {
           </div>
 
           <h1 
-            className="text-7xl md:text-[120px] font-black leading-[0.85] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-8 text-text-primary"
+            className="text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-6 text-text-primary"
           >
             HIGH FIVE <br />
-            <span className="text-transparent" style={{ WebkitTextStroke: '2px #C8F135' }}>LIGUE</span>
+            <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #C8F135' }}>LIGUE</span>
           </h1>
 
           <p className="text-lg md:text-xl text-text-muted max-w-2xl mx-auto mb-12 leading-relaxed">

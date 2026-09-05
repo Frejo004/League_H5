@@ -7,6 +7,8 @@ import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { clsx } from 'clsx'
 
 function formatTime(dateStr: string) {
@@ -209,17 +211,11 @@ export function MatchesPage() {
         </div> 
       ) : !season ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><Calendar size={20} /></div>
-            <p className="text-slate-400">Aucune saison active</p>
-          </div>
+          <EmptyState icon={<Calendar size={20} />} title="Aucune saison active" />
         </div>
       ) : !matches?.length ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><Calendar size={20} /></div> 
-            <p className="text-slate-300 font-medium">Aucun match programmé</p>
-          </div>
+          <EmptyState icon={<Calendar size={20} />} title="Aucun match programmé" />
         </div>
       ) : (
         <div className="rounded-2xl border border-surface-border overflow-hidden bg-surface-card">

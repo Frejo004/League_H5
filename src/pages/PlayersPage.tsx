@@ -9,6 +9,7 @@ import { usePlayerMvp } from '@/hooks/useMvpVotes'
 import { usePlayerDiscipline, useActiveSuspendedPlayerIds } from '@/hooks/useDisciplinaryStats'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonRow, SkeletonLine } from '@/components/ui/SkeletonLoader'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { clsx } from 'clsx'
 import type { PlayerPosition, PlayerWithTeam, TeamWithCaptain } from '@/types/database'
 
@@ -376,27 +377,24 @@ export function PlayersPage() {
         </div>
       ) : !season ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><User size={20} /></div>
-            <p className="text-text-muted">Aucune saison active</p>
-          </div>
+          <EmptyState icon={<User size={20} />} title="Aucune saison active" />
         </div>
       ) : !filtered.length ? (
         <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon"><User size={20} /></div>
-            <p className="text-text-muted">
-              {players?.length ? 'Aucun résultat.' : 'Aucun joueur enregistré.'}
-            </p>
-            {hasFilters && (
-              <button
-                onClick={resetFilters}
-                className="btn-secondary text-xs mt-2"
-              >
-                Effacer les filtres
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={<User size={20} />}
+            title={players?.length ? 'Aucun résultat.' : 'Aucun joueur enregistré.'}
+            action={
+              hasFilters ? (
+                <button
+                  onClick={resetFilters}
+                  className="btn-secondary text-xs mt-2"
+                >
+                  Effacer les filtres
+                </button>
+              ) : undefined
+            }
+          />
         </div>
       ) : (
         <div className="card p-0 overflow-hidden border border-surface-border/50">

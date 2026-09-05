@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
-type RpcFn = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
-const rpc = supabase.rpc as unknown as RpcFn
-
 interface PlayerWithAvatarSlug {
   id: string
   user_id: string | null
@@ -36,7 +33,7 @@ export function useScorers(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 1000 * 60 * 10, // 10 min — ne change qu'après une mise à jour de match
     queryFn: async () => {
-      const { data, error } = await rpc('get_scorers', {
+      const { data, error } = await (supabase.rpc as any)('get_scorers', {
         p_season_id: seasonId!,
       })
       if (error) throw error

@@ -25,6 +25,10 @@ import { pushLocal, useRealtimeTactics } from '@/hooks/useRealtime'
 import { PlayerRow } from '@/components/captain/PlayerRow'
 import { PlayerStatsDrawer } from '@/components/captain/PlayerStatsDrawer'
 import { TransferStatusBadge } from '@/components/ui/StatusBadges'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { Team, Transfer as TransferType } from '@/types/database'
 
 // Type definitions for our broadcast data
@@ -77,11 +81,14 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
 
   if (pending.length === 0 && linked.length === 0) {
     return (
-      <div className="card">
-        <div className="empty-state py-6">
-          <p className="text-slate-500 text-sm">Aucun joueur dans cette équipe.</p>
-        </div>
-      </div>
+      <Card className="p-0 overflow-hidden">
+        <EmptyState
+          icon={<Users />}
+          title="Aucun joueur dans cette équipe"
+          description="Invitez des joueurs pour commencer à construire votre équipe."
+          className="py-6"
+        />
+      </Card>
     )
   }
 
@@ -100,24 +107,24 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
       <div className="space-y-6">
         {/* Info — capitaine seulement */}
         {!readonly && (
-          <div className="glass-morphism p-4 rounded-2xl border border-white/5 bg-primary-500/5">
-            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+          <Card className="p-4 bg-primary-500/5 border-primary-500/20">
+            <p className="text-xs text-text-secondary leading-relaxed font-medium">
               <span className="text-primary-400 font-black">TIP :</span> Cliquez sur un joueur pour voir ses statistiques détaillées. Utilisez l'icône <Pencil size={10} className="inline mx-1" /> pour mettre à jour les numéros de maillot et les positions.
             </p>
-          </div>
+          </Card>
         )}
 
         {/* Joueurs sans compte */}
         {pending.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-surface-border to-transparent" />
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">
                 En attente ({pending.length})
               </p>
-              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-surface-border to-transparent" />
             </div>
-            <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            <Card className="rounded-3xl overflow-hidden">
               {pending.map((p, i) => (
                 <PlayerRow
                   key={p.id}
@@ -128,7 +135,7 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
                   readonly={readonly}
                 />
               ))}
-            </div>
+            </Card>
           </div>
         )}
 
@@ -136,13 +143,13 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
         {linked.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
-              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-surface-border to-transparent" />
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">
                 Comptes liés ({linked.length})
               </p>
-              <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
+              <div className="h-px flex-1 bg-linear-to-r from-transparent via-surface-border to-transparent" />
             </div>
-            <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            <Card className="rounded-3xl overflow-hidden">
               {linked.map((p, i) => (
                 <PlayerRow
                   key={p.id}
@@ -153,7 +160,7 @@ function TabJoueurs({ teamId, teamColor, seasonId, readonly = false }: { teamId:
                   readonly={readonly}
                 />
               ))}
-            </div>
+            </Card>
           </div>
         )}
       </div>
@@ -275,8 +282,8 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
       </div>
 
       {/* Filtres & Liste */}
-      <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
-        <div className="flex p-1 bg-black/20 border-b border-white/5">
+      <div className="glass-morphism rounded-3xl overflow-hidden border border-surface-border">
+        <div className="flex p-1 bg-black/20 border-b border-surface-border">
           {(['all', 'upcoming', 'past'] as const).map(f => (
             <button
               key={f}
@@ -297,19 +304,22 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-              <Calendar size={20} className="text-slate-600" />
-            </div>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match trouvé</p>
-            <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">Modifiez vos filtres ou revenez plus tard.</p>
-          </div>
+          <Card className="p-0 overflow-hidden">
+            <EmptyState
+              icon={<Calendar />}
+              title="Aucun match trouvé"
+              description="Modifiez vos filtres ou revenez plus tard."
+              className="py-12"
+            />
+          </Card>
         ) : (
-          <div className="divide-y divide-white/3">
-            {filtered.map(m => (
-              <MatchRow key={m.id} match={m} teamId={teamId} />
-            ))}
-          </div>
+          <Card className="p-0 overflow-hidden">
+            <div className="divide-y divide-surface-border">
+              {filtered.map(m => (
+                <MatchRow key={m.id} match={m} teamId={teamId} />
+              ))}
+            </div>
+          </Card>
         )}
       </div>
     </div>
@@ -417,13 +427,14 @@ function LineupHistoryDrawer({
           {isLoading ? (
             <div className="flex justify-center py-12"><LoadingSpinner /></div>
           ) : teamLineup.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <ClipboardList size={32} className="text-slate-700 mb-3" />
-              <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucune composition</p>
-              <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">
-                Aucune compo n'a été soumise pour ce match.
-              </p>
-            </div>
+            <Card className="p-0 overflow-hidden">
+              <EmptyState
+                icon={<ClipboardList />}
+                title="Aucune composition"
+                description="Aucune compo n'a été soumise pour ce match."
+                className="py-12"
+              />
+            </Card>
           ) : (
             <>
               {/* Formation + pitch */}
@@ -623,11 +634,14 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
   if (!nextMatch) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-6 text-center glass-morphism rounded-4xl border border-white/5">
-        <Calendar size={40} className="text-slate-700 mb-4" />
-        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Aucun match programmé</p>
-        <p className="text-slate-600 text-[10px] mt-1 uppercase tracking-wider font-bold">La tactique sera disponible dès qu'un match sera planifié.</p>
-      </div>
+      <Card className="p-0 overflow-hidden">
+        <EmptyState
+          icon={<Calendar />}
+          title="Aucun match programmé"
+          description="La tactique sera disponible dès qu'un match sera planifié."
+          className="py-16"
+        />
+      </Card>
     )
   }
 
@@ -692,7 +706,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
       if (isAdding && !isAlreadyIn) {
         const p = players?.find(p => p.id === playerId)
         broadcastUpdate('player_selected', {
-          playerId: p?.user_id,
+          playerId: p?.user_id ?? undefined,
           playerName: `${p?.first_name} ${p?.last_name}`
         })
       }
@@ -859,7 +873,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
             </h4>
           </div>
 
-          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+          <div className="glass-morphism rounded-3xl overflow-hidden border border-surface-border">
             {pastMatches.map((m, i) => {
               const isHome = m.home_team_id === teamId
               const opp = isHome ? m.away_team : m.home_team
@@ -874,10 +888,10 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                 <button
                   key={m.id}
                   onClick={() => setSelectedHistoryMatch(m)}
-                  className={clsx(
-                    'w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-white/5 transition-colors',
-                    i < pastMatches.length - 1 && 'border-b border-white/4'
-                  )}
+                     className={clsx(
+                       'w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-surface-raised transition-colors',
+                       i < pastMatches.length - 1 && 'border-b border-surface-border'
+                     )}
                 >
                   {/* Résultat */}
                   <div className="shrink-0">
@@ -896,7 +910,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                       <p className="text-sm font-black text-slate-200 uppercase tracking-tight truncate">
                         {isHome ? 'vs' : '@'} {opp.name}
                       </p>
-                      <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                       <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
                         J{m.matchday}
                         {m.played_at && (
                           <> · {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(m.played_at))}</>
@@ -917,15 +931,16 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
                   {/* Icône compo */}
                   <div className="shrink-0 flex items-center gap-1">
-                    <ClipboardList size={13} className="text-slate-600" />
-                    <ChevronRight size={13} className="text-slate-700" />
+                     <ClipboardList size={13} className="text-text-muted" />
+                     <ChevronRight size={13} className="text-text-muted" />
                   </div>
                 </button>
               )
             })}
           </div>
-        </div>
+         </div>
       )}
+
     </div>
   )
 }
@@ -944,22 +959,22 @@ function TabTransferts({ teamId }: { teamId: string }) {
   return (
     <div className="space-y-6">
       {/* Outgoing Transfers (from our team) */}
-      {outgoingTransfers.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-2">
-            <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
-            <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">
-              DEMANDES SORTANTES ({outgoingTransfers.length})
-            </p>
-            <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
-          </div>
-          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            {outgoingTransfers.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
+                  <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">
+                    DEMANDES SORTANTES ({outgoingTransfers.length})
+                  </p>
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-red-500/30 to-transparent" />
+                </div>
+                <Card className="rounded-3xl overflow-hidden">
             {outgoingTransfers.map((transfer, i) => (
               <div
                 key={transfer.id}
                 className={clsx(
                   'p-4 flex flex-col gap-3',
-                  i < outgoingTransfers.length - 1 && 'border-b border-white/3'
+                  i < outgoingTransfers.length - 1 && 'border-b border-surface-border'
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -985,45 +1000,46 @@ function TabTransferts({ teamId }: { teamId: string }) {
 
                 {transfer.status === 'player_requested' && (
                   <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => rejectTransfer.mutate(transfer.id)}
-                      disabled={rejectTransfer.isPending}
-                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                    >
-                      Refuser
-                    </button>
-                    <button
-                      onClick={() => approveAsHomeCaptain.mutate(transfer.id)}
-                      disabled={approveAsHomeCaptain.isPending}
-                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                    >
-                      Approuver
-                    </button>
+                     <button
+                       onClick={() => rejectTransfer.mutate(transfer.id)}
+                       disabled={rejectTransfer.isPending}
+                       className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                     >
+                       Refuser
+                     </button>
+                     <Button
+                       size="sm"
+                       onClick={() => approveAsHomeCaptain.mutate(transfer.id)}
+                       disabled={approveAsHomeCaptain.isPending}
+                       loading={approveAsHomeCaptain.isPending ? 'Approbation…' : undefined}
+                     >
+                       Approuver
+                     </Button>
                   </div>
                 )}
               </div>
             ))}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Incoming Transfers (to our team) */}
-      {incomingTransfers.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-2">
-            <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
-            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
-              DEMANDES ENTRANTES ({incomingTransfers.length})
-            </p>
-            <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
-          </div>
-          <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
+            {incomingTransfers.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
+                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
+                    DEMANDES ENTRANTES ({incomingTransfers.length})
+                  </p>
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-500/30 to-transparent" />
+                </div>
+                <Card className="rounded-3xl overflow-hidden">
             {incomingTransfers.map((transfer, i) => (
               <div
                 key={transfer.id}
                 className={clsx(
                   'p-4 flex flex-col gap-3',
-                  i < incomingTransfers.length - 1 && 'border-b border-white/3'
+                  i < incomingTransfers.length - 1 && 'border-b border-surface-border'
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -1049,33 +1065,37 @@ function TabTransferts({ teamId }: { teamId: string }) {
 
                 {transfer.status === 'admin_approved' && (
                   <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => rejectTransfer.mutate(transfer.id)}
-                      disabled={rejectTransfer.isPending}
-                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                    >
-                      Refuser
-                    </button>
-                    <button
-                      onClick={() => approveAsAwayCaptain.mutate(transfer.id)}
-                      disabled={approveAsAwayCaptain.isPending}
-                      className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 transition-colors"
-                    >
-                      Finaliser le transfert
-                    </button>
+                     <button
+                       onClick={() => rejectTransfer.mutate(transfer.id)}
+                       disabled={rejectTransfer.isPending}
+                       className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                     >
+                       Refuser
+                     </button>
+                     <Button
+                       size="sm"
+                       onClick={() => approveAsAwayCaptain.mutate(transfer.id)}
+                       disabled={approveAsAwayCaptain.isPending}
+                       loading={approveAsAwayCaptain.isPending ? 'Finalisation…' : undefined}
+                     >
+                       Finaliser le transfert
+                     </Button>
                   </div>
                 )}
               </div>
             ))}
-          </div>
+          </Card>
         </div>
       )}
 
       {outgoingTransfers.length === 0 && incomingTransfers.length === 0 && (
-        <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
-          <Send size={40} className="mx-auto mb-4 text-slate-700" />
-          <p className="text-slate-400 font-black uppercase tracking-widest">Aucune demande de transfert</p>
-        </div>
+        <Card className="p-0 overflow-hidden">
+          <EmptyState
+            icon={<Send size={20} />}
+            title="Aucune demande de transfert"
+            className="py-10"
+          />
+        </Card>
       )}
     </div>
   )
@@ -1092,11 +1112,14 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
 
   if (teamScorers.length === 0) {
     return (
-      <div className="glass-morphism rounded-3xl p-10 text-center border border-white/5 bg-grid-pattern">
-        <Target size={40} className="mx-auto mb-4 text-slate-700" />
-        <p className="text-slate-400 font-black uppercase tracking-widest">Aucune statistique</p>
-        <p className="text-slate-600 text-xs mt-2 font-bold uppercase tracking-widest">Disponible après les premiers matchs.</p>
-      </div>
+      <Card className="p-0 overflow-hidden">
+        <EmptyState
+          icon={<Target size={20} />}
+          title="Aucune statistique"
+          description="Disponible après les premiers matchs."
+          className="py-10"
+        />
+      </Card>
     )
   }
 
@@ -1107,32 +1130,32 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
     <div className="space-y-6">
       {/* Totaux équipe premium */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+        <Card className="p-5 relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-3xl font-black text-orange-400 tabular-nums">{totalGoals}</p>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Buts marqués</p>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mt-1">Buts marqués</p>
           </div>
           <Target size={60} className="absolute -bottom-4 -right-4 text-orange-500/5 group-hover:text-orange-500/10 transition-colors" />
-        </div>
-        <div className="glass-morphism p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+        </Card>
+        <Card className="p-5 relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-3xl font-black text-blue-400 tabular-nums">{totalAssists}</p>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Passes décisives</p>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mt-1">Passes décisives</p>
           </div>
           <Zap size={60} className="absolute -bottom-4 -right-4 text-blue-500/5 group-hover:text-blue-500/10 transition-colors" />
-        </div>
+        </Card>
       </div>
 
       {/* Tableau buteurs premium */}
-      <div className="glass-morphism rounded-3xl overflow-hidden border border-white/5">
-        <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 px-6 py-4 bg-white/5 border-b border-white/5">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">#</span>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Joueur</span>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Buts</span>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Passes</span>
+      <Card className="rounded-3xl overflow-hidden">
+        <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-2 px-6 py-4 bg-surface-raised border-b border-surface-border">
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">#</span>
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Joueur</span>
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">Buts</span>
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">Passes</span>
         </div>
 
-        <div className="divide-y divide-white/3">
+        <div className="divide-y divide-surface-border">
           {teamScorers.map((row, i) => (
             <div
               key={row.player_id}
@@ -1140,7 +1163,7 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
             >
               <span className={clsx(
                 'text-xs font-black tabular-nums text-center',
-                i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-700' : 'text-slate-600'
+                i === 0 ? 'text-amber-400' : i === 1 ? 'text-text-secondary' : i === 2 ? 'text-amber-700' : 'text-text-muted'
               )}>
                 {i + 1}
               </span>
@@ -1152,7 +1175,7 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
                 >
                   {row.first_name[0]}{row.last_name[0]}
                 </div>
-                <p className="text-sm font-black text-slate-200 uppercase tracking-tight truncate group-hover:text-white">
+                <p className="text-sm font-black text-text-secondary uppercase tracking-tight truncate group-hover:text-white">
                   {row.first_name} {row.last_name}
                 </p>
               </div>
@@ -1164,13 +1187,13 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
                 {row.goals}
               </span>
 
-              <span className="text-sm font-bold text-slate-500 tabular-nums text-center group-hover:text-blue-400 transition-colors">
+              <span className="text-sm font-bold text-text-muted tabular-nums text-center group-hover:text-primary-400 transition-colors">
                 {row.assists || '—'}
               </span>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -1203,7 +1226,7 @@ export function TeamView({
       className="space-y-6"
     >
       {/* Tab bar premium */}
-      <div className="flex p-1 bg-black/40 backdrop-blur-md rounded-2xl border border-white/5">
+      <div className="flex p-1 bg-black/40 backdrop-blur-md rounded-2xl border border-surface-border">
         {TABS.filter(t => !readonly || t.id !== 'tactique').map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -1216,7 +1239,7 @@ export function TeamView({
             {activeTab === id && (
               <motion.div
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-white/5 border border-white/10 rounded-xl shadow-lg"
+                className="absolute inset-0 bg-surface-raised border border-surface-border rounded-xl"
               />
             )}
             <Icon size={16} className="relative z-10" />
@@ -1358,28 +1381,27 @@ export function CaptainPage() {
       </div>
 
       {!season || teamLoading ? (
-        <div className="card">
+        <Card className="p-0 overflow-hidden">
           <div className="empty-state py-6">
             {teamLoading
               ? <LoadingSpinner />
-              : <p className="text-slate-400 text-sm">Aucune saison active.</p>
+              : <p className="text-text-secondary text-sm">Aucune saison active.</p>
             }
           </div>
-        </div>
+        </Card>
       ) : !myTeamTyped ? (
-        <div className="card">
-          <div className="empty-state py-8">
-            <Crown size={28} className="text-slate-600 mb-2" />
-            <p className="text-slate-300 font-medium">Aucune équipe assignée</p>
-            <p className="text-slate-500 text-sm mt-1">
-              L'administrateur doit vous assigner comme capitaine d'une équipe.
-            </p>
-          </div>
-        </div>
+        <Card className="p-0 overflow-hidden">
+          <EmptyState
+            icon={<Crown size={20} />}
+            title="Aucune équipe assignée"
+            description="L'administrateur doit vous assigner comme capitaine d'une équipe."
+            className="py-8"
+          />
+        </Card>
       ) : (
         <>
           {/* Premium Team Hero */}
-          <div className="relative overflow-hidden rounded-4xl glass-morphism border border-white/10 shadow-2xl mb-6">
+          <Card className="relative overflow-hidden rounded-4xl border-primary-500/20 shadow-glow mb-6">
             {/* Background Mesh/Glow */}
             <div
               className="absolute inset-0 opacity-20 blur-3xl -z-10"
@@ -1405,13 +1427,13 @@ export function CaptainPage() {
                 </div>
 
                 {/* Hidden Input & Button trigger */}
-                <button
-                  onClick={() => logoRef.current?.click()}
-                  disabled={logoUploading}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
-                               border-4 border-[#161B22] flex items-center justify-center transition-all shadow-xl
-                               hover:scale-110 active:scale-95 disabled:opacity-50"
-                >
+                 <button
+                   onClick={() => logoRef.current?.click()}
+                   disabled={logoUploading}
+                   className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
+                                border-4 border-surface flex items-center justify-center transition-all shadow-xl
+                                hover:scale-110 active:scale-95 disabled:opacity-50"
+                 >
                   {logoUploading ? <LoadingSpinner size="sm" /> : <Pencil size={12} className="text-white" />}
                 </button>
                 <input
@@ -1425,15 +1447,15 @@ export function CaptainPage() {
 
               {/* Info Section */}
               <div className="flex-1 text-center md:text-left space-y-2">
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1.5">
-                    <Crown size={10} />
-                    Capitaine
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    {season.name}
-                  </span>
-                </div>
+                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
+                   <Badge variant="info" dot>
+                     <Crown size={10} />
+                     Capitaine
+                   </Badge>
+                   <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-text-muted">
+                     {season.name}
+                   </span>
+                 </div>
 
                 {editingName ? (
                   <div className="space-y-2">
@@ -1446,10 +1468,10 @@ export function CaptainPage() {
                                      text-white text-2xl font-black focus:outline-none shadow-inner"
                       maxLength={40}
                     />
-                    <div className="flex gap-2">
-                      <button onClick={saveTeamName} className="px-4 py-1.5 rounded-lg bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-500">Sauver</button>
-                      <button onClick={cancelEditName} className="px-4 py-1.5 rounded-lg bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10">Annuler</button>
-                    </div>
+                     <div className="flex gap-2">
+                       <Button size="sm" onClick={saveTeamName} loading={updateTeam.isPending ? 'Sauvegarde…' : undefined}>Sauver</Button>
+                       <Button size="sm" variant="secondary" onClick={cancelEditName}>Annuler</Button>
+                     </div>
                     {nameError && <p className="text-[10px] text-red-400 mt-1">{nameError}</p>}
                   </div>
                 ) : (
@@ -1470,29 +1492,29 @@ export function CaptainPage() {
 
               {/* Quick Stats Summary */}
               {myTeamTyped && standings && (
-                <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-surface-raised border border-surface-border">
                   <div className="text-center">
                     <p className="text-2xl font-black text-white">
                       #{standings.findIndex(s => s.team_id === myTeamTyped.id) + 1 || '—'}
                     </p>
-                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Rang</p>
+                    <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Rang</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-black text-white">
                       {standings.find(s => s.team_id === myTeamTyped.id)?.points ?? 0}
                     </p>
-                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Points</p>
+                    <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Points</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-black text-white">
                       {standings.find(s => s.team_id === myTeamTyped.id)?.played ?? 0}
                     </p>
-                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Matchs</p>
+                    <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Matchs</p>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Onglets */}
           <TeamView

@@ -13,6 +13,7 @@ import { AdminNewsPage } from './admin/AdminNewsPage'
 import { AdminTransfersPage } from './admin/AdminTransfersPage'
 import { AdminPollsPage } from './admin/AdminPollsPage'
 import { useSpectators } from '@/hooks/useSpectators'
+import { Badge } from '@/components/ui/Badge'
 import { clsx } from 'clsx'
 
 const TABS = [
@@ -73,9 +74,9 @@ export function AdminPage() {
               <Icon size={15} />
               {label}
               {isPending && (
-                <span className="ml-0.5 min-w-4.5 h-4.5 px-1 rounded-full bg-yellow-500 text-black text-[10px] font-black flex items-center justify-center">
+                <Badge variant="danger" dot>
                   {pendingCount}
-                </span>
+                </Badge>
               )}
             </button>
           )
