@@ -154,7 +154,7 @@ export function usePlayerMvp(playerId?: string, seasonId?: string) {
         .eq('season_id', seasonId!)
         .eq('status', 'completed')
       if (matchErr) throw matchErr
-      const matchDataList = ((matchData ?? []) as Array<{ id: string }>)
+      const matchDataList = ((matchData ?? []) as Array<{ id: string; slug?: string; matchday?: number; played_at?: string; home_score?: number | null; away_score?: number | null; home_team?: { name: string } | null; away_team?: { name: string } | null }>)
       const matchIds = matchDataList.map(m => m.id)
       if (matchIds.length === 0) return { total_mvp: 0, mvp_matches: [] }
 
@@ -239,7 +239,7 @@ export function useMvpRanking(seasonId?: string) {
         `)
         .in('match_id', matchIds)
       if (votesErr) throw votesErr
-      const votesList = ((votes ?? []) as Array<{ match_id: string; player_id: string }>)
+      const votesList = ((votes ?? []) as Array<{ match_id: string; player_id: string; players: unknown }>)
       if (!votesList.length) return []
 
       // 3. Calculer pour chaque match qui est MVP (ou co-MVP)

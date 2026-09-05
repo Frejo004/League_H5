@@ -194,6 +194,7 @@
 | **04/09/2026** | Kilo | PROD-02 | Image d'échecs remplacée sur `TournamentsPage`. |
 | **05/09/2026** | Kilo | Phase 4 (3/3) | OBS-01 : `src/lib/telemetry.ts` (Sentry HTTP direct, no-deps, opt-in via `VITE_SENTRY_DSN`) + intégration dans `ErrorBoundary` et `App.tsx` (`window.error`, `unhandledrejection`). |
 | **05/09/2026** | Kilo | CODE-02 (3/3) | ESLint 128 → 118. Retype `useMvpVotes`, `useMatchFeedback`, `useMyTeam`, `useSpectators` (interfaces locales au lieu de `any`). |
+| **05/09/2026** | Kilo | Realtime bugfix | `useSuspensions` (dans `useDisciplinaryStats.ts`) créait un nouveau channel Realtime par composant, déclenchant l'erreur « cannot add postgres_changes callbacks after subscribe() » (crash de `MatchLineups` dans `MatchDetailPage`). Nouveau hook `src/hooks/useRealtimeInvalidate.ts` avec registre module-level qui dédoublonne par `name` et refcount. |
 
 ---
 

@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMatches } from '@/hooks/useMatches'
 import { supabase } from '@/lib/supabase'
-import { useEffect } from 'react'
+import { useRealtimeInvalidate } from './useRealtimeInvalidate'
 
 // Helper pour bypasser les types générés Supabase sur les tables non reconnues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,19 +249,17 @@ export function useSuspensions(seasonId?: string) {
     },
   })
 
-  // Realtime
-  useEffect(() => {
-    if (!seasonId) return
-    const channel = supabase
-      .channel(`suspensions-realtime-${seasonId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suspensions' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['suspensions', seasonId] })
-        queryClient.invalidateQueries({ queryKey: ['my-active-suspension'] })
-        queryClient.invalidateQueries({ queryKey: ['suspended-player-ids'] })
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [seasonId, queryClient])
+  // Realtime — dédoublonné via useRealtimeInvalidate (cf. useRealtimeInvalidate.ts)
+  useRealtimeInvalidate({
+    name: `suspensions-realtime-${seasonId ?? 'none'}`,
+    table: 'suspensions',
+    queryKeys: [
+      ['suspensions', seasonId],
+      ['my-active-suspension'],
+      ['suspended-player-ids'],
+    ],
+    enabled: !!seasonId,
+  })
 
   const addSuspension = useMutation({
     mutationFn: async (payload: Partial<Suspension>) => {
