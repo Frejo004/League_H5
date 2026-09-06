@@ -63,13 +63,17 @@ export function useCameraDevices() {
   // Appelé manuellement quand l'utilisateur ouvre le panneau de sélection
   const requestPermissionAndRefresh = useCallback(async () => {
     try {
-      // Demande minimale juste pour déclencher la permission
+      const permStatus = await navigator.permissions.query({ name: 'camera' as PermissionName })
+      if (permStatus.state === 'denied') {
+        console.warn('[useCameraDevices] camera permission denied')
+        return
+      }
       const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       tempStream.getTracks().forEach(t => t.stop())
       setHasPermission(true)
       await enumerate()
     } catch (err) {
-      console.warn('[useCameraDevices] permission denied', err);
+      console.warn('[useCameraDevices] permission denied', err instanceof Error ? err.message : 'unknown')
       // TODO: Intégrer avec `useAppToast` pour afficher un message convivial à l'utilisateur
     }
   }, [enumerate])

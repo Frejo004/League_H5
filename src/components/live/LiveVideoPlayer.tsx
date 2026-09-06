@@ -167,7 +167,7 @@ export function LiveVideoPlayer({
     if (!stream) { video.srcObject = null; return }
     if (video.srcObject === stream) return
     video.srcObject = stream
-    video.play().catch(err => { if (err.name !== 'AbortError') console.warn('play error:', err) })
+    video.play().catch(err => { if (err.name !== 'AbortError') console.warn('play error:', err instanceof Error ? err.message : 'unknown') })
   }, [stream, isLive])
 
   // ── Effet 1 : Chargement de la SOURCE DVR + démarrage lecture ───────────────
@@ -198,7 +198,7 @@ export function LiveVideoPlayer({
     // - 'loadeddata' : premier frame décodé (Safari, iOS)
     const tryPlay = () => {
       video.play().catch(err => {
-        if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+        if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err instanceof Error ? err.message : 'unknown')
       })
       // Fin de la transition cross-fade après un court délai
       setTimeout(() => setDvrTransitioning(false), 280)
@@ -231,7 +231,7 @@ export function LiveVideoPlayer({
       if (video.paused) {
         const tryPlay = () => {
           video.play().catch(err => {
-            if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err)
+            if (err.name !== 'AbortError') console.warn('📡 [DVR] play error:', err instanceof Error ? err.message : 'unknown')
           })
         }
         if (video.readyState >= 2) {

@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Toujours mettre isLoading à false après avoir chargé le profil
       setIsLoading(false)
     } catch (err) {
-      console.error('[AuthContext] Error fetching profile:', err)
+      console.error('[AuthContext] Error fetching profile:', err instanceof Error ? err.message : 'unknown error')
       // Même en cas d'erreur, débloquer le chargement
       setIsLoading(false)
     } finally {

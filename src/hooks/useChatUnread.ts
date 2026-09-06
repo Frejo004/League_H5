@@ -114,7 +114,7 @@ export function useChatUnreadRealtime(userId?: string) {
       )
       .subscribe((status) => {
         if (status !== 'CLOSED') {
-          console.log(`📡 Realtime (${channelName}):`, status)
+          console.log(`📡 Realtime (${channelName}): ${String(status)}`)
         }
       })
 

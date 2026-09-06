@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack)
+    console.error('[ErrorBoundary]', error.message, info.componentStack)
 
     // Télémétrie (Sentry si configuré, no-op sinon)
     captureException(error, {

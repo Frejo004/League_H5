@@ -90,7 +90,7 @@ export function BroadcastOverlay({
     if (videoEl.srcObject === stream) return
     videoEl.srcObject = stream
     videoEl.play().catch(err => {
-      if (err.name !== 'AbortError') console.warn('[BroadcastOverlay] play error', err)
+      if (err.name !== 'AbortError') console.warn('[BroadcastOverlay] play error', err instanceof Error ? err.message : 'unknown')
     })
   }, [stream])
 
