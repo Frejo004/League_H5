@@ -53,11 +53,11 @@ export function PasswordInput({
   return (
     <div className="space-y-3">
       <div className="relative">
-        {/* Icône cadenas GAUCHE */}
         <Lock
-          size={17}
+          size={16}
           strokeWidth={2}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          className="absolute top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+          style={{ left: '0.75rem' }}
         />
 
         <input
@@ -80,11 +80,12 @@ export function PasswordInput({
         <button
           type="button"
           onClick={() => setVisible(v => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-white/5"
+          className="absolute top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 rounded"
+          style={{ right: '0.625rem' }}
           tabIndex={-1}
           aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
         >
-          {visible ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
+          {visible ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
         </button>
       </div>
 

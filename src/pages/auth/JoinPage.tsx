@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Mail, ArrowRight } from 'lucide-react'
+import { Mail, ArrowRight, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { resolveInviteToken, claimInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner'
@@ -8,31 +8,33 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import type { InvitePlayerInfo } from '@/hooks/usePlayerInvites'
 
+const iconStyle = {
+  position: 'absolute' as const,
+  left: '0.75rem',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: '#475569',
+  pointerEvents: 'none' as const,
+  zIndex: 1,
+}
+
 export function JoinPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  // Handle token from URL: store in sessionStorage and clean URL
   useEffect(() => {
     let token = searchParams.get('token')
     const inviteParam = searchParams.get('invite')
-
-    if (inviteParam) {
-      token = inviteParam
-    }
-
+    if (inviteParam) token = inviteParam
     if (token) {
       sessionStorage.setItem('invite_token', token)
-      // Remove token from URL to avoid leakage in history/referrer
       navigate(window.location.pathname, { replace: true })
     }
   }, [searchParams, navigate])
 
-  // Get token from sessionStorage (if any)
   const token = sessionStorage.getItem('invite_token') ?? ''
 
   const [playerInfo, setPlayerInfo]   = useState<InvitePlayerInfo | null>(null)
-  // Lazy initializer: si pas de token, on passe directement à 'invalid' sans useEffect
   const [tokenState, setTokenState]   = useState<'loading' | 'valid' | 'invalid'>(() => token ? 'loading' : 'invalid')
   const [email, setEmail]             = useState('')
   const [password, setPassword]       = useState('')
@@ -41,9 +43,6 @@ export function JoinPage() {
   const [isLoading, setIsLoading]     = useState(false)
   const [success, setSuccess]         = useState(false)
 
-  // Résoudre le token — s'exécute uniquement si le token existe (tokenState = 'loading')
-  // Le token n'est purgé qu'après un claim effectif (voir handleSubmit) afin de
-  // permettre à l'utilisateur de recharger la page sans perdre son invitation.
   useEffect(() => {
     if (!token) return
     resolveInviteToken(token).then(info => {
@@ -59,40 +58,20 @@ export function JoinPage() {
     if (password.length < 8)          { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
     setIsLoading(true)
     try {
-      // Étape 1 : créer le compte Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
         email, password,
         options: { data: { full_name: `${playerInfo!.first_name} ${playerInfo!.last_name}` } },
       })
       if (signUpError) throw signUpError
-
       const userId = data.user?.id
-      if (!userId) {
-        // Supabase a créé le compte mais retourne null si confirmation email activée.
-        // Dans ce cas, le claim se fera via le lien de confirmation (flow email).
-        // On affiche le succès et on indique de vérifier l'email.
-        setSuccess(true)
-        return
-      }
-
-      // Étape 2 : lier le compte au joueur via le token d'invitation
-      // Cette étape est critique — si elle échoue, le compte existe mais
-      // le joueur n'est pas lié. On distingue les deux types d'erreur.
+      if (!userId) { setSuccess(true); return }
       try {
         await claimInvite(token, userId)
-        // Succès : purger le token et rediriger vers la page de connexion
-        // Le joueur devra se connecter manuellement pour que son profil soit chargé correctement
         sessionStorage.removeItem('invite_token')
         setSuccess(true)
       } catch (claimErr: unknown) {
-        // Le compte a été créé mais le lien joueur a échoué.
-        // L'utilisateur peut se connecter, mais son profil sera en mode spectateur
-        // jusqu'à ce qu'un admin corrige manuellement.
         const msg = claimErr instanceof Error ? claimErr.message : 'Erreur inconnue'
-        setError(
-          `Compte créé, mais le lien avec votre profil joueur a échoué (${msg}). ` +
-          `Connectez-vous et contactez votre administrateur en indiquant votre email.`
-        )
+        setError(`Compte créé, mais le lien avec votre profil joueur a échoué (${msg}). Connectez-vous et contactez votre administrateur.`)
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'inscription")
@@ -106,18 +85,14 @@ export function JoinPage() {
   if (tokenState === 'invalid') {
     return (
       <AuthLayout>
-        <div className="w-full text-center animate-scale-in">
-          <div className="w-24 h-24 rounded-3xl bg-red-500/15 border border-red-500/30
-                          flex items-center justify-center mx-auto mb-8">
-            <span className="text-5xl">🔗</span>
-          </div>
-          <h2 className="text-4xl xl:text-5xl font-black text-white mb-4 leading-tight">Lien invalide</h2>
-          <p className="text-slate-300 text-lg xl:text-xl mb-10 leading-relaxed font-medium">
-            Ce lien d'invitation est invalide, expiré, ou a déjà été utilisé.
-            Demandez un nouveau lien à votre admin ou capitaine.
+        <div style={{ width: '100%', textAlign: 'center' }} className="animate-scale-in">
+          <div style={{ width: '4rem', height: '4rem', borderRadius: '1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.75rem' }}>🔗</div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem' }}>Lien invalide</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            Ce lien d'invitation est invalide, expiré, ou a déjà été utilisé. Demandez un nouveau lien à votre admin ou capitaine.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-secondary w-full">
-            <span>Aller à la connexion</span>
+          <button onClick={() => navigate('/auth/login')} className="btn-secondary" style={{ width: '100%' }}>
+            Aller à la connexion
           </button>
         </div>
       </AuthLayout>
@@ -127,19 +102,15 @@ export function JoinPage() {
   if (success) {
     return (
       <AuthLayout>
-        <div className="w-full text-center animate-scale-in">
-          <div className="w-24 h-24 rounded-3xl bg-green-500/15 border border-green-500/30
-                          flex items-center justify-center mx-auto mb-8">
-            <span className="text-5xl">✅</span>
-          </div>
-          <h2 className="text-4xl xl:text-5xl font-black text-white mb-4 leading-tight">Compte joueur créé !</h2>
-          <p className="text-slate-300 text-lg xl:text-xl mb-10 leading-relaxed font-medium">
-            Votre compte joueur a été créé avec succès.
-            Connectez-vous maintenant pour accéder à votre ligue.
+        <div style={{ width: '100%', textAlign: 'center' }} className="animate-scale-in">
+          <div style={{ width: '4rem', height: '4rem', borderRadius: '1rem', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.75rem' }}>✅</div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem' }}>Compte joueur créé !</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            Votre compte joueur a été créé avec succès. Connectez-vous maintenant pour accéder à votre ligue.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full">
+          <button onClick={() => navigate('/auth/login')} className="btn-primary" style={{ width: '100%' }}>
             <span>Se connecter</span>
-            <ArrowRight size={20} strokeWidth={2.5} />
+            <ArrowRight size={16} strokeWidth={2.5} />
           </button>
         </div>
       </AuthLayout>
@@ -148,101 +119,86 @@ export function JoinPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full animate-fade-in-up">
+      <div className="animate-fade-in-up" style={{ width: '100%' }}>
 
-        {/* Header */}
-        <div className="mb-10">
-          <h2 className="text-4xl xl:text-5xl font-black text-white tracking-tight mb-3 leading-tight">Créer votre compte joueur</h2>
-          <p className="text-slate-300 text-lg xl:text-xl leading-relaxed font-medium">League H5 — Ligue interne</p>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '0.4rem' }}>
+            Créer votre compte joueur
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>League H5 — Ligue interne</p>
         </div>
 
-        {/* Player banner */}
-        <div className="flex items-center gap-5 bg-primary-600/12 border border-primary-600/30
-                        rounded-2xl px-5 py-5 mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary-600/35 flex items-center justify-center
-                          text-white text-2xl font-black shrink-0">
+        {/* Bannière joueur */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '0.75rem', padding: '0.875rem', marginBottom: '1.25rem' }}>
+          <div style={{ width: '2.75rem', height: '2.75rem', borderRadius: '0.625rem', background: 'rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#93c5fd', fontWeight: 900, fontSize: '0.875rem', flexShrink: 0 }}>
             {playerInfo!.first_name[0]}{playerInfo!.last_name[0]}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-white font-black text-lg truncate">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9375rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {playerInfo!.first_name} {playerInfo!.last_name}
             </p>
-            <p className="text-base text-primary-300 font-bold mt-0.5">{playerInfo!.team_name}</p>
+            <p style={{ color: '#60a5fa', fontSize: '0.8125rem', fontWeight: 600, marginTop: '0.125rem' }}>{playerInfo!.team_name}</p>
           </div>
-          <span className="badge bg-primary-600/25 text-primary-300 border border-primary-600/40 shrink-0 text-base font-bold px-3.5 py-1.5">
+          <span style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#93c5fd', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.625rem', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
             Joueur
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-7">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {error && (
-            <div className="flex items-start gap-3.5 bg-red-500/12 border border-red-500/30
-                            text-red-300 text-base px-5 py-4 rounded-2xl animate-scale-in"
-              role="alert" aria-live="polite">
-              <span className="shrink-0 mt-0.5 text-xl">⚠️</span>
-              <span className="leading-relaxed font-medium">{error}</span>
+            <div className="animate-scale-in" role="alert" aria-live="polite"
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', padding: '0.75rem', color: '#fca5a5' }}>
+              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: '0.1rem', color: '#f87171' }} />
+              <span style={{ fontSize: '0.8125rem', lineHeight: 1.5 }}>{error}</span>
             </div>
           )}
 
           {/* Nom — lecture seule */}
-          <div className="space-y-2.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label className="label">Nom complet</label>
-            <div className="input bg-surface-raised text-slate-300 cursor-not-allowed
-                            flex items-center justify-between select-none font-medium"
-                 style={{ height: 'auto', minHeight: '3.25rem' }}>
-              <span className="font-bold">{playerInfo!.first_name} {playerInfo!.last_name}</span>
-              <span className="text-sm text-slate-400 ml-4 shrink-0 font-bold">🔒 Défini par l'admin</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-surface-raised)', border: '1px solid var(--color-surface-border)', borderRadius: '0.625rem', padding: '0 0.875rem', height: '2.875rem', cursor: 'not-allowed' }}>
+              <span style={{ color: '#94a3b8', fontSize: '0.9375rem', fontWeight: 600 }}>{playerInfo!.first_name} {playerInfo!.last_name}</span>
+              <span style={{ color: '#475569', fontSize: '0.75rem', flexShrink: 0, marginLeft: '0.5rem' }}>🔒 Admin</span>
             </div>
           </div>
 
           {/* Email */}
-          <div className="space-y-2.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label htmlFor="email" className="label">Adresse email</label>
-            <div className="relative">
-              <Mail size={20} strokeWidth={2} className="absolute left-[1.05rem] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input id="email" type="email" value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input input-icon-l" placeholder="vous@exemple.com"
-                required autoComplete="email" />
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} strokeWidth={2} style={iconStyle} />
+              <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                className="input input-icon-l" placeholder="vous@exemple.com" required autoComplete="email" />
             </div>
           </div>
 
           {/* Mot de passe */}
-          <div className="space-y-2.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label htmlFor="password" className="label">Mot de passe</label>
-            <PasswordInput
-              id="password" value={password} onChange={setPassword}
-              placeholder="Minimum 8 caractères"
-              autoComplete="new-password" required
-              showStrength
-            />
+            <PasswordInput id="password" value={password} onChange={setPassword}
+              placeholder="Minimum 8 caractères" autoComplete="new-password" required showStrength />
           </div>
 
           {/* Confirmation */}
-          <div className="space-y-2.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
-            <PasswordInput
-              id="confirmPassword" value={confirmPassword} onChange={setConfirm}
-              autoComplete="new-password" required
-              showMatch={password}
-            />
+            <PasswordInput id="confirmPassword" value={confirmPassword} onChange={setConfirm}
+              autoComplete="new-password" required showMatch={password} />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full mt-2">
+          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', marginTop: '0.25rem' }}>
             {isLoading
               ? <><LoadingSpinner size="sm" /><span>Création...</span></>
-              : <><span>Créer mon compte</span><ArrowRight size={20} strokeWidth={2.5} /></>
+              : <><span>Créer mon compte</span><ArrowRight size={16} strokeWidth={2.5} /></>
             }
           </button>
         </form>
 
-        <p className="text-center text-lg text-slate-300 mt-8 pt-6 border-t border-surface-border font-medium">
-          Déjà un compte ?{' '}
-          <button onClick={() => navigate('/auth/login')}
-            className="text-primary-400 hover:text-primary-300 font-black transition-colors">
-            Se connecter
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem', marginTop: '1.5rem', textAlign: 'center' }}>
+          <button onClick={() => navigate('/auth/login')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', fontSize: '0.8125rem', fontWeight: 600 }}>
+            Déjà un compte ? <span style={{ color: '#60a5fa' }}>Se connecter</span>
           </button>
-        </p>
+        </div>
       </div>
     </AuthLayout>
   )
