@@ -324,23 +324,45 @@ html[data-theme='light'] {
 }
 
 /* ═══════════════════════════════════════════
-   AUTH LAYOUT
+   AUTH LAYOUT — no-scroll full-viewport
    ═══════════════════════════════════════════ */
+
+html:has(.auth-root),
+body:has(.auth-root) {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
 .auth-root {
   display: flex !important;
   flex-direction: column !important;
-  min-height: 100vh !important;
+  height: 100svh !important;
+  max-height: 100svh !important;
   width: 100% !important;
+  overflow: hidden !important;
   background: linear-gradient(135deg, #020617 0%, #0f172a 100%) !important;
 }
-.auth-left  { display: none !important; }
+.auth-left { display: none !important; }
 .auth-right {
   flex: 1 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
-  min-height: 100vh !important;
+  height: 100% !important;
+  min-height: 0 !important;
   position: relative !important;
   width: 100% !important;
+  overflow: hidden !important;
+}
+.auth-right-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: clamp(1.25rem, 4vw, 2.5rem) !important;
+  min-height: 0 !important;
 }
 .auth-form-inner {
   width: 100% !important;
@@ -360,7 +382,7 @@ html[data-theme='light'] {
     max-width: 45% !important;
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
-    min-height: 100vh !important;
+    height: 100svh !important;
   }
   .auth-right {
     width: 55% !important;
@@ -368,7 +390,7 @@ html[data-theme='light'] {
     max-width: 55% !important;
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
-    min-height: 100vh !important;
+    height: 100svh !important;
   }
 }
 
