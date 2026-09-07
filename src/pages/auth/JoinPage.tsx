@@ -106,18 +106,18 @@ export function JoinPage() {
   if (tokenState === 'invalid') {
     return (
       <AuthLayout>
-        <div className="w-full max-w-sm text-center animate-scale-in">
-          <div className="w-14 h-14 rounded-xl bg-red-500/15 border border-red-500/25
-                          flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🔗</span>
+        <div className="w-full text-center animate-scale-in">
+          <div className="w-24 h-24 rounded-3xl bg-red-500/15 border border-red-500/30
+                          flex items-center justify-center mx-auto mb-8">
+            <span className="text-5xl">🔗</span>
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">Lien invalide</h2>
-          <p className="text-slate-400 text-sm mb-5 leading-relaxed">
+          <h2 className="text-4xl xl:text-5xl font-black text-white mb-4 leading-tight">Lien invalide</h2>
+          <p className="text-slate-300 text-lg xl:text-xl mb-10 leading-relaxed font-medium">
             Ce lien d'invitation est invalide, expiré, ou a déjà été utilisé.
             Demandez un nouveau lien à votre admin ou capitaine.
           </p>
           <button onClick={() => navigate('/auth/login')} className="btn-secondary w-full">
-            Aller à la connexion
+            <span>Aller à la connexion</span>
           </button>
         </div>
       </AuthLayout>
@@ -127,18 +127,19 @@ export function JoinPage() {
   if (success) {
     return (
       <AuthLayout>
-        <div className="w-full max-w-sm text-center animate-scale-in">
-          <div className="w-14 h-14 rounded-xl bg-green-500/15 border border-green-500/25
-                          flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">✅</span>
+        <div className="w-full text-center animate-scale-in">
+          <div className="w-24 h-24 rounded-3xl bg-green-500/15 border border-green-500/30
+                          flex items-center justify-center mx-auto mb-8">
+            <span className="text-5xl">✅</span>
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">Compte joueur créé !</h2>
-          <p className="text-slate-400 text-sm mb-5">
+          <h2 className="text-4xl xl:text-5xl font-black text-white mb-4 leading-tight">Compte joueur créé !</h2>
+          <p className="text-slate-300 text-lg xl:text-xl mb-10 leading-relaxed font-medium">
             Votre compte joueur a été créé avec succès.
             Connectez-vous maintenant pour accéder à votre ligue.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5 flex items-center justify-center gap-2">
-            Se connecter <ArrowRight size={15} />
+          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full">
+            <span>Se connecter</span>
+            <ArrowRight size={20} strokeWidth={2.5} />
           </button>
         </div>
       </AuthLayout>
@@ -147,56 +148,58 @@ export function JoinPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
+      <div className="w-full animate-fade-in-up">
 
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Créer votre compte joueur</h2>
-          <p className="text-slate-400 mt-1.5 text-sm">League H5 — Ligue interne</p>
+        <div className="mb-10">
+          <h2 className="text-4xl xl:text-5xl font-black text-white tracking-tight mb-3 leading-tight">Créer votre compte joueur</h2>
+          <p className="text-slate-300 text-lg xl:text-xl leading-relaxed font-medium">League H5 — Ligue interne</p>
         </div>
 
         {/* Player banner */}
-        <div className="flex items-center gap-3 bg-primary-600/10 border border-primary-600/25
-                        rounded-lg px-3.5 py-3 mb-5">
-          <div className="w-9 h-9 rounded-full bg-primary-600/30 flex items-center justify-center
-                          text-white text-sm font-bold shrink-0">
+        <div className="flex items-center gap-5 bg-primary-600/12 border border-primary-600/30
+                        rounded-2xl px-5 py-5 mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-primary-600/35 flex items-center justify-center
+                          text-white text-2xl font-black shrink-0">
             {playerInfo!.first_name[0]}{playerInfo!.last_name[0]}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white font-semibold text-sm truncate">
+            <p className="text-white font-black text-lg truncate">
               {playerInfo!.first_name} {playerInfo!.last_name}
             </p>
-            <p className="text-xs text-primary-400">{playerInfo!.team_name}</p>
+            <p className="text-base text-primary-300 font-bold mt-0.5">{playerInfo!.team_name}</p>
           </div>
-          <span className="badge bg-primary-600/20 text-primary-400 border border-primary-600/30 shrink-0">
+          <span className="badge bg-primary-600/25 text-primary-300 border border-primary-600/40 shrink-0 text-base font-bold px-3.5 py-1.5">
             Joueur
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-7">
           {error && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
-                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in">
-              <span className="shrink-0 mt-0.5">⚠️</span>
-              <span>{error}</span>
+            <div className="flex items-start gap-3.5 bg-red-500/12 border border-red-500/30
+                            text-red-300 text-base px-5 py-4 rounded-2xl animate-scale-in"
+              role="alert" aria-live="polite">
+              <span className="shrink-0 mt-0.5 text-xl">⚠️</span>
+              <span className="leading-relaxed font-medium">{error}</span>
             </div>
           )}
 
           {/* Nom — lecture seule */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label className="label">Nom complet</label>
-            <div className="input bg-surface-raised text-slate-400 cursor-not-allowed
-                            flex items-center justify-between select-none">
-              <span>{playerInfo!.first_name} {playerInfo!.last_name}</span>
-              <span className="text-xs text-slate-600 ml-2 shrink-0">🔒 Défini par l'admin</span>
+            <div className="input bg-surface-raised text-slate-300 cursor-not-allowed
+                            flex items-center justify-between select-none font-medium"
+                 style={{ height: 'auto', minHeight: '3.25rem' }}>
+              <span className="font-bold">{playerInfo!.first_name} {playerInfo!.last_name}</span>
+              <span className="text-sm text-slate-400 ml-4 shrink-0 font-bold">🔒 Défini par l'admin</span>
             </div>
           </div>
 
           {/* Email */}
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="label">Email</label>
+          <div className="space-y-2.5">
+            <label htmlFor="email" className="label">Adresse email</label>
             <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <Mail size={20} strokeWidth={2} className="absolute left-[1.05rem] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input id="email" type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="input input-icon-l" placeholder="vous@exemple.com"
@@ -205,7 +208,7 @@ export function JoinPage() {
           </div>
 
           {/* Mot de passe */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="password" className="label">Mot de passe</label>
             <PasswordInput
               id="password" value={password} onChange={setPassword}
@@ -216,7 +219,7 @@ export function JoinPage() {
           </div>
 
           {/* Confirmation */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
             <PasswordInput
               id="confirmPassword" value={confirmPassword} onChange={setConfirm}
@@ -225,18 +228,18 @@ export function JoinPage() {
             />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 text-sm mt-1">
+          <button type="submit" disabled={isLoading} className="btn-primary w-full mt-2">
             {isLoading
               ? <><LoadingSpinner size="sm" /><span>Création...</span></>
-              : <><span>Créer mon compte</span><ArrowRight size={15} /></>
+              : <><span>Créer mon compte</span><ArrowRight size={20} strokeWidth={2.5} /></>
             }
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-500 mt-5">
+        <p className="text-center text-lg text-slate-300 mt-8 pt-6 border-t border-surface-border font-medium">
           Déjà un compte ?{' '}
           <button onClick={() => navigate('/auth/login')}
-            className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+            className="text-primary-400 hover:text-primary-300 font-black transition-colors">
             Se connecter
           </button>
         </p>

@@ -41,18 +41,19 @@ export function SignupPage() {
   if (success) {
     return (
       <AuthLayout>
-        <div className="w-full max-w-sm text-center animate-scale-in">
-          <div className="w-16 h-16 rounded-full bg-green-500/15 border border-green-500/30
-                          flex items-center justify-center mx-auto mb-5">
-            <Check size={28} className="text-green-400" />
+        <div className="w-full text-center animate-scale-in">
+          <div className="w-24 h-24 rounded-3xl bg-green-500/15 border border-green-500/30
+                          flex items-center justify-center mx-auto mb-8">
+            <Check size={44} className="text-green-400" strokeWidth={2.5} />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Inscription réussie !</h2>
-          <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+          <h2 className="text-4xl xl:text-5xl font-black text-white mb-4 leading-tight">Inscription réussie !</h2>
+          <p className="text-slate-300 text-lg xl:text-xl mb-10 leading-relaxed font-medium">
             Vérifiez votre email pour confirmer votre compte, puis connectez-vous.
             L'administrateur devra approuver votre accès.
           </p>
-          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full py-2.5">
-            Aller à la connexion <ArrowRight size={15} />
+          <button onClick={() => navigate('/auth/login')} className="btn-primary w-full">
+            <span>Aller à la connexion</span>
+            <ArrowRight size={20} strokeWidth={2.5} />
           </button>
         </div>
       </AuthLayout>
@@ -61,27 +62,32 @@ export function SignupPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
+      <div className="w-full animate-fade-in-up">
 
-        <div className="mb-7">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Créer un compte</h2>
-          <p className="text-slate-400 mt-1.5 text-sm">Rejoignez votre ligue dès maintenant</p>
+        <div className="mb-10">
+          <h2 className="text-4xl xl:text-5xl font-black text-white tracking-tight mb-3 leading-tight">
+            Créer un compte
+          </h2>
+          <p className="text-slate-300 text-lg xl:text-xl leading-relaxed font-medium">
+            Rejoignez votre ligue dès maintenant
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-7">
           {error && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
-                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in">
-              <span className="shrink-0 mt-0.5">⚠️</span>
-              <span>{error}</span>
+            <div className="flex items-start gap-3.5 bg-red-500/12 border border-red-500/30
+                            text-red-300 text-base px-5 py-4 rounded-2xl animate-scale-in"
+              role="alert" aria-live="polite">
+              <span className="shrink-0 mt-0.5 text-xl">⚠️</span>
+              <span className="leading-relaxed font-medium">{error}</span>
             </div>
           )}
 
           {/* Nom */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="fullName" className="label">Nom complet</label>
             <div className="relative">
-              <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <User size={20} strokeWidth={2} className="absolute left-[1.05rem] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input id="fullName" type="text" value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 className="input input-icon-l" placeholder="Jean Dupont"
@@ -90,10 +96,10 @@ export function SignupPage() {
           </div>
 
           {/* Email */}
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="label">Email</label>
+          <div className="space-y-2.5">
+            <label htmlFor="email" className="label">Adresse email</label>
             <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <Mail size={20} strokeWidth={2} className="absolute left-[1.05rem] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input id="email" type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="input input-icon-l" placeholder="vous@exemple.com"
@@ -102,7 +108,7 @@ export function SignupPage() {
           </div>
 
           {/* Mot de passe */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="password" className="label">Mot de passe</label>
             <PasswordInput
               id="password" value={password} onChange={setPassword}
@@ -113,7 +119,7 @@ export function SignupPage() {
           </div>
 
           {/* Confirmation */}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
             <PasswordInput
               id="confirmPassword" value={confirmPassword} onChange={setConfirm}
@@ -122,23 +128,24 @@ export function SignupPage() {
             />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 text-sm mt-1">
+          <button type="submit" disabled={isLoading} className="btn-primary w-full mt-2">
             {isLoading
               ? <LoadingSpinner size="sm" />
-              : <><span>Créer mon compte</span><ArrowRight size={15} /></>
+              : <><span>Créer mon compte</span><ArrowRight size={20} strokeWidth={2.5} /></>
             }
           </button>
         </form>
 
-        <div className="flex items-center gap-3 my-5">
+        {/* Séparateur "ou" */}
+        <div className="flex items-center gap-5 my-10">
           <div className="flex-1 h-px bg-surface-border" />
-          <span className="text-xs text-slate-600 font-medium">ou</span>
+          <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">ou</span>
           <div className="flex-1 h-px bg-surface-border" />
         </div>
 
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-lg text-slate-300 font-medium">
           Déjà un compte ?{' '}
-          <Link to="/auth/login" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors">
+          <Link to="/auth/login" className="text-primary-400 hover:text-primary-300 font-black transition-colors">
             Se connecter
           </Link>
         </p>

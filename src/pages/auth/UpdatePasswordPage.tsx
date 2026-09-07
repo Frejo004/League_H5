@@ -32,23 +32,28 @@ export function UpdatePasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
+      <div className="w-full animate-fade-in-up">
 
-        <div className="mb-7">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Nouveau mot de passe</h2>
-          <p className="text-slate-400 mt-1.5 text-sm">Choisissez un mot de passe sécurisé</p>
+        <div className="mb-10">
+          <h2 className="text-4xl xl:text-5xl font-black text-white tracking-tight mb-3 leading-tight">
+            Nouveau mot de passe
+          </h2>
+          <p className="text-slate-300 text-lg xl:text-xl leading-relaxed font-medium">
+            Choisissez un mot de passe sécurisé
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-7">
           {error && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
-                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in">
-              <span className="shrink-0 mt-0.5">⚠️</span>
-              <span>{error}</span>
+            <div className="flex items-start gap-3.5 bg-red-500/12 border border-red-500/30
+                            text-red-300 text-base px-5 py-4 rounded-2xl animate-scale-in"
+              role="alert" aria-live="polite">
+              <span className="shrink-0 mt-0.5 text-xl">⚠️</span>
+              <span className="leading-relaxed font-medium">{error}</span>
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             <label htmlFor="password" className="label">Nouveau mot de passe</label>
             <PasswordInput
               id="password" value={password} onChange={setPassword}
@@ -58,8 +63,8 @@ export function UpdatePasswordPage() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="confirmPassword" className="label">Confirmer</label>
+          <div className="space-y-2.5">
+            <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
             <PasswordInput
               id="confirmPassword" value={confirmPassword} onChange={setConfirm}
               autoComplete="new-password" required
@@ -67,10 +72,10 @@ export function UpdatePasswordPage() {
             />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 text-sm mt-1">
+          <button type="submit" disabled={isLoading} className="btn-primary w-full mt-2">
             {isLoading
               ? <LoadingSpinner size="sm" />
-              : <><span>Mettre à jour</span><ArrowRight size={15} /></>
+              : <><span>Mettre à jour</span><ArrowRight size={20} strokeWidth={2.5} /></>
             }
           </button>
         </form>
