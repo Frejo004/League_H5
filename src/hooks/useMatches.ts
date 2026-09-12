@@ -61,11 +61,12 @@ export function useMatch(matchId?: string) {
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
-    // Rafraîchissement automatique toutes les 5s quand le match est live
-    // pour s'assurer que live_started_at, live_period, is_paused sont toujours à jour
+    // Filet de sécurité si Realtime rate un événement (useRealtimeMatch invalide déjà
+    // cette query sur chaque changement de la table matches) — pas besoin d'un
+    // intervalle agressif, Realtime gère la mise à jour quasi instantanée en temps normal.
     refetchInterval: (query) => {
       const data = query.state.data as MatchDetail | null | undefined
-      return data?.status === 'live' ? 5000 : false
+      return data?.status === 'live' ? 20_000 : false
     },
   })
 }
