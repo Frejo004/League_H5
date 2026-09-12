@@ -99,7 +99,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
 
           <div className="flex-1 min-w-0 z-10">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFDF73] to-white uppercase tracking-widest"
+              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFDF73] to-slate-900 dark:to-white uppercase tracking-widest"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {profile.first_name} {profile.last_name}
               </h2>
@@ -136,7 +136,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
       {/* ── Stats saison (KPIs Premium) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Matchs',          value: profile.matches_played, icon: Calendar, color: 'text-slate-300',  highlight: false },
+          { label: 'Matchs',          value: profile.matches_played, icon: Calendar, color: 'text-slate-500 dark:text-slate-300',  highlight: false },
           { label: 'Buts',            value: profile.goals,          icon: Target,   color: 'text-[#FFDF73]', highlight: false },
           { label: 'Passes déc.',     value: profile.assists,        icon: Zap,      color: 'text-emerald-400', highlight: false },
           { label: 'Homme du match',  value: mvpData?.total_mvp ?? 0, icon: Star,    color: 'text-amber-500', highlight: (mvpData?.total_mvp ?? 0) > 0 },
@@ -149,7 +149,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
             )}
           >
             <Icon size={18} className={clsx('mb-1 opacity-80', color)} />
-            <p className={clsx('text-3xl font-black tabular-nums leading-none', highlight ? 'text-[#FFDF73] text-glow-sm' : 'text-white')}
+            <p className={clsx('text-3xl font-black tabular-nums leading-none', highlight ? 'text-[#FFDF73] text-glow-sm' : 'text-text-primary')}
                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {value}
             </p>
@@ -298,7 +298,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
             >
               <Star size={13} className="text-amber-400 fill-amber-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">
+                <p className="text-sm font-semibold text-text-primary truncate">
                   {m.home_team_name} <span className="text-slate-500 font-normal">vs</span> {m.away_team_name}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -308,7 +308,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
                   )}
                 </p>
               </div>
-              <span className="text-sm font-bold text-white tabular-nums shrink-0">
+              <span className="text-sm font-bold text-text-primary tabular-nums shrink-0">
                 {m.home_score} – {m.away_score}
               </span>
             </Link>
@@ -321,10 +321,10 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
         to={`/players/${profile.slug || playerId}`}
         className="flex items-center justify-between px-4 py-3 card hover:bg-surface-raised transition-colors group"
       >
-        <span className="text-sm text-slate-400 group-hover:text-white transition-colors">
+        <span className="text-sm text-slate-400 group-hover:text-text-primary transition-colors">
           Voir mon profil public
         </span>
-        <ArrowRight size={14} className="text-slate-600 group-hover:text-white transition-colors" />
+        <ArrowRight size={14} className="text-slate-600 group-hover:text-text-primary transition-colors" />
       </Link>
     </div>
   )

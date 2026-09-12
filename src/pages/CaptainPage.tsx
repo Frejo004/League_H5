@@ -202,11 +202,11 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
           {oppTeam.name[0]}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-black text-slate-200 uppercase tracking-tight group-hover:text-white transition-colors">
+          <p className="text-sm font-black text-text-secondary uppercase tracking-tight group-hover:text-text-primary transition-colors">
             {isHome ? 'vs' : '@'} {oppTeam.name}
           </p>
-          <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
-            <span className="bg-white/5 px-1.5 py-0.5 rounded text-slate-400">J{match.matchday}</span>
+          <div className="flex items-center gap-2 text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
+            <span className="bg-white/5 px-1.5 py-0.5 rounded text-text-secondary">J{match.matchday}</span>
             {match.venue && (
               <span className="flex items-center gap-1">
                 <MapPin size={10} className="text-slate-600" />
@@ -223,7 +223,7 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
           <div className="flex flex-col items-end">
             <span className={clsx(
               'text-lg font-black tabular-nums tracking-tighter',
-              result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-slate-300'
+              result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-text-secondary'
             )}>
               {myScore} – {oppScore}
             </span>
@@ -232,8 +232,8 @@ function MatchRow({ match, teamId }: { match: MatchWithTeams; teamId: string }) 
           <span className="text-[10px] text-red-500 font-black uppercase tracking-widest bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">Annulé</span>
         ) : match.scheduled_at ? (
           <div className="space-y-0.5">
-            <p className="text-sm font-black text-white tabular-nums">{formatTime(match.scheduled_at)}</p>
-            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{formatDate(match.scheduled_at)}</p>
+            <p className="text-sm font-black text-text-primary tabular-nums">{formatTime(match.scheduled_at)}</p>
+            <p className="text-[9px] text-text-muted font-black uppercase tracking-widest">{formatDate(match.scheduled_at)}</p>
           </div>
         ) : (
           <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest">À venir</span>
@@ -267,14 +267,14 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
       {/* Résumé rapide premium */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Joués', value: played, color: 'text-white', icon: Check },
+          { label: 'Joués', value: played, color: 'text-text-primary', icon: Check },
           { label: 'À venir', value: upcoming, color: 'text-blue-400', icon: Calendar },
-          { label: 'Total', value: teamMatches.length, color: 'text-slate-500', icon: TrendingUp },
+          { label: 'Total', value: teamMatches.length, color: 'text-text-muted', icon: TrendingUp },
         ].map(s => (
           <div key={s.label} className="glass-morphism p-4 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="relative z-10">
               <p className={clsx('text-2xl font-black tabular-nums', s.color)}>{s.value}</p>
-              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">{s.label}</p>
+              <p className="text-[9px] text-text-muted font-black uppercase tracking-widest mt-1">{s.label}</p>
             </div>
             <s.icon size={40} className="absolute -bottom-2 -right-2 text-white/3 group-hover:text-white/10 transition-colors" />
           </div>
@@ -290,7 +290,7 @@ function TabMatchs({ teamId, seasonId }: { teamId: string; seasonId: string }) {
               onClick={() => setFilter(f)}
               className={clsx(
                 'relative flex-1 py-2.5 rounded-xl transition-all duration-300 text-[10px] font-black uppercase tracking-widest',
-                filter === f ? 'text-white' : 'text-slate-500 hover:text-slate-400'
+                filter === f ? 'text-text-primary' : 'text-text-muted hover:text-text-secondary'
               )}
             >
               {filter === f && (
@@ -393,7 +393,7 @@ function LineupHistoryDrawer({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[9px] font-black text-primary-500 uppercase tracking-widest">J{match.matchday}</span>
-              <p className="text-sm font-black text-white truncate">
+              <p className="text-sm font-black text-text-primary truncate">
                 {isHome ? 'vs' : '@'} {opp.name}
               </p>
               {result && (
@@ -401,13 +401,13 @@ function LineupHistoryDrawer({
                   'text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider',
                   result === 'W' ? 'bg-green-500/20 text-green-400' :
                     result === 'L' ? 'bg-red-500/20 text-red-400' :
-                      'bg-slate-500/20 text-slate-400'
+                      'bg-slate-500/20 text-text-secondary'
                 )}>
                   {myScore}–{oppScore}
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[10px] text-text-muted mt-0.5">
               {match.played_at
                 ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }).format(new Date(match.played_at))
                 : '—'}
@@ -415,7 +415,7 @@ function LineupHistoryDrawer({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors shrink-0"
             aria-label="Fermer"
           >
             <XIcon size={16} />
@@ -440,10 +440,10 @@ function LineupHistoryDrawer({
               {/* Formation + pitch */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">
                     Formation · {formation}
                   </p>
-                  <span className="text-[10px] font-black text-slate-400 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
+                  <span className="text-[10px] font-black text-text-secondary bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
                     {starters.length} titulaires · {subs.length} remplaçants
                   </span>
                 </div>
@@ -466,7 +466,7 @@ function LineupHistoryDrawer({
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                   >
                     <UserCheck size={12} className="text-primary-400" />
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                    <p className="text-xs font-black text-text-secondary uppercase tracking-wider">
                       Titulaires ({starters.length})
                     </p>
                   </div>
@@ -484,11 +484,11 @@ function LineupHistoryDrawer({
                       >
                         {l.jersey_number ?? '—'}
                       </div>
-                      <p className="text-sm text-white font-medium flex-1 truncate">
+                      <p className="text-sm text-text-primary font-medium flex-1 truncate">
                         {l.player ? `${l.player.first_name} ${l.player.last_name}` : '—'}
                       </p>
                       {l.position && (
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider shrink-0">
+                        <span className="text-[9px] font-black text-text-muted uppercase tracking-wider shrink-0">
                           {l.position.includes(':') ? l.position.split(':')[1] : l.position}
                         </span>
                       )}
@@ -508,7 +508,7 @@ function LineupHistoryDrawer({
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                   >
                     <Users size={12} className="text-blue-400" />
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                    <p className="text-xs font-black text-text-secondary uppercase tracking-wider">
                       Remplaçants ({subs.length})
                     </p>
                   </div>
@@ -526,7 +526,7 @@ function LineupHistoryDrawer({
                       >
                         {l.jersey_number ?? '—'}
                       </div>
-                      <p className="text-sm text-slate-400 font-medium flex-1 truncate">
+                      <p className="text-sm text-text-secondary font-medium flex-1 truncate">
                         {l.player ? `${l.player.first_name} ${l.player.last_name}` : '—'}
                       </p>
                     </div>
@@ -538,7 +538,7 @@ function LineupHistoryDrawer({
               <Link
                 to={`/matches/${match.slug || match.id}`}
                 onClick={onClose}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/3 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/3 border border-white/5 text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-primary hover:bg-white/5 transition-all"
               >
                 <ChevronRight size={13} />
                 Voir le match complet
@@ -731,12 +731,12 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-white/2 border border-white/5">
         <div className="text-center md:text-left">
           <p className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Prochain Match</p>
-          <h3 className="text-base font-black text-white uppercase tracking-tight">
-            {nextMatch.home_team.name} <span className="text-slate-500 mx-1">vs</span> {nextMatch.away_team.name}
+          <h3 className="text-base font-black text-text-primary uppercase tracking-tight">
+            {nextMatch.home_team.name} <span className="text-text-muted mx-1">vs</span> {nextMatch.away_team.name}
           </h3>
         </div>
         <div className="text-center md:text-right">
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+          <p className="text-[10px] text-text-secondary font-black uppercase tracking-widest">
             {formatDate(nextMatch.scheduled_at!)} · {formatTime(nextMatch.scheduled_at!)}
           </p>
         </div>
@@ -747,7 +747,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
           {/* Sélecteur de Tactique */}
           <div className="space-y-4">
             <div className="px-2">
-              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Layout size={12} className="text-primary-500" />
                 1. Choisir la Tactique
               </h4>
@@ -764,7 +764,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                       "relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300",
                       currentFormation === key
                         ? "bg-primary-600 border-primary-500 text-white shadow-[0_0_20px_rgba(200,241,53,0.2)]"
-                        : "glass-morphism border-white/5 text-slate-500 hover:bg-white/5",
+                        : "glass-morphism border-white/5 text-text-muted hover:bg-white/5",
                       readonly && "cursor-default"
                     )}
                   >
@@ -782,11 +782,11 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
           {/* Fiche de Match (Sélection Joueurs) */}
           <div className="space-y-4">
             <div className="px-2 flex items-center justify-between">
-              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                 <UserCheck size={12} className="text-primary-500" />
                 2. Fiche de Match (5 Majeur)
               </h4>
-              <span className="text-[10px] font-black text-slate-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+              <span className="text-[10px] font-black text-text-secondary bg-white/5 px-2 py-1 rounded-lg border border-white/5">
                 {teamLineup.filter(l => l.is_starter).length} / 5 titulaires
               </span>
             </div>
@@ -818,7 +818,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                         {player.jersey_number ?? '—'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={clsx("text-xs font-bold truncate", (isStarter || isSub) ? "text-white" : "text-slate-400")}>
+                        <p className={clsx("text-xs font-bold truncate", (isStarter || isSub) ? "text-text-primary" : "text-text-secondary")}>
                           {player.first_name} {player.last_name}
                         </p>
                       </div>
@@ -836,7 +836,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
         {/* Aperçu Pitch */}
         <div className="space-y-4">
-          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">
+          <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest px-2">
             Aperçu Tactique
           </h4>
           <div className="relative w-full mx-auto lg:mx-0">
@@ -855,7 +855,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
 
           <Link
             to={`/matches/${nextMatch.slug || nextMatch.id}`}
-            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-primary hover:bg-white/5 transition-all"
           >
             <ChevronRight size={14} />
             Détails du match complet
@@ -867,8 +867,8 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
       {pastMatches.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
-            <History size={13} className="text-slate-500" />
-            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            <History size={13} className="text-text-muted" />
+            <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest">
               Historique des compositions ({pastMatches.length})
             </h4>
           </div>
@@ -907,7 +907,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                       {opp.name[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-slate-200 uppercase tracking-tight truncate">
+                      <p className="text-sm font-black text-text-secondary uppercase tracking-tight truncate">
                         {isHome ? 'vs' : '@'} {opp.name}
                       </p>
                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
@@ -923,7 +923,7 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
                   {myScore !== null && oppScore !== null && (
                     <span className={clsx(
                       'text-sm font-black tabular-nums shrink-0',
-                      result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-slate-300'
+                      result === 'W' ? 'text-green-400' : result === 'L' ? 'text-red-400' : 'text-text-secondary'
                     )}>
                       {myScore}–{oppScore}
                     </span>
@@ -984,14 +984,14 @@ function TabTransferts({ teamId }: { teamId: string }) {
                       {transfer.player?.first_name?.[0]}{transfer.player?.last_name?.[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-white uppercase tracking-tight truncate">
+                      <p className="text-sm font-black text-text-primary uppercase tracking-tight truncate">
                         {transfer.player?.first_name} {transfer.player?.last_name}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-text-muted mt-0.5">
                         {transfer.from_team?.name} → {transfer.to_team?.name}
                       </p>
                       {transfer.reason && (
-                        <p className="text-xs text-slate-400 mt-1 italic">"{transfer.reason}"</p>
+                        <p className="text-xs text-text-secondary mt-1 italic">"{transfer.reason}"</p>
                       )}
                     </div>
                   </div>
@@ -1049,14 +1049,14 @@ function TabTransferts({ teamId }: { teamId: string }) {
                       {transfer.player?.first_name?.[0]}{transfer.player?.last_name?.[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-white uppercase tracking-tight truncate">
+                      <p className="text-sm font-black text-text-primary uppercase tracking-tight truncate">
                         {transfer.player?.first_name} {transfer.player?.last_name}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-text-muted mt-0.5">
                         {transfer.from_team?.name} → {transfer.to_team?.name}
                       </p>
                       {transfer.reason && (
-                        <p className="text-xs text-slate-400 mt-1 italic">"{transfer.reason}"</p>
+                        <p className="text-xs text-text-secondary mt-1 italic">"{transfer.reason}"</p>
                       )}
                     </div>
                   </div>
@@ -1175,14 +1175,14 @@ function TabStats({ teamId, seasonId }: { teamId: string; seasonId: string }) {
                 >
                   {row.first_name[0]}{row.last_name[0]}
                 </div>
-                <p className="text-sm font-black text-text-secondary uppercase tracking-tight truncate group-hover:text-white">
+                <p className="text-sm font-black text-text-secondary uppercase tracking-tight truncate group-hover:text-text-primary">
                   {row.first_name} {row.last_name}
                 </p>
               </div>
 
               <span className={clsx(
                 'text-lg font-black tabular-nums text-center tracking-tighter',
-                i === 0 ? 'text-orange-400' : 'text-white'
+                i === 0 ? 'text-orange-400' : 'text-text-primary'
               )}>
                 {row.goals}
               </span>
@@ -1233,7 +1233,7 @@ export function TeamView({
             onClick={() => setActiveTab(id)}
             className={clsx(
               'relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all duration-300',
-              activeTab === id ? 'text-white' : 'text-slate-500 hover:text-slate-400'
+              activeTab === id ? 'text-text-primary' : 'text-text-muted hover:text-text-secondary'
             )}
           >
             {activeTab === id && (
@@ -1430,6 +1430,7 @@ export function CaptainPage() {
                  <button
                    onClick={() => logoRef.current?.click()}
                    disabled={logoUploading}
+                   aria-label="Modifier le logo de l'équipe"
                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-500
                                 border-4 border-surface flex items-center justify-center transition-all shadow-xl
                                 hover:scale-110 active:scale-95 disabled:opacity-50"
@@ -1465,7 +1466,7 @@ export function CaptainPage() {
                       onChange={e => setTeamName(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') saveTeamName(); if (e.key === 'Escape') cancelEditName() }}
                       className="w-full max-w-md px-4 py-3 rounded-2xl bg-black/40 border border-primary-500
-                                     text-white text-2xl font-black focus:outline-none shadow-inner"
+                                     text-text-primary text-2xl font-black focus:outline-none shadow-inner"
                       maxLength={40}
                     />
                      <div className="flex gap-2">
@@ -1476,12 +1477,13 @@ export function CaptainPage() {
                   </div>
                 ) : (
                   <div className="group flex items-center justify-center md:justify-start gap-3">
-                    <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter truncate">
+                    <h1 className="text-3xl md:text-5xl font-black text-text-primary tracking-tighter truncate">
                       {myTeamTyped.name}
                     </h1>
                     <button
                       onClick={startEditName}
-                      className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
+                      aria-label="Modifier le nom de l'équipe"
+                      className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <Pencil size={18} />
                     </button>
@@ -1494,19 +1496,19 @@ export function CaptainPage() {
               {myTeamTyped && standings && (
                 <div className="hidden lg:flex gap-8 px-8 py-4 rounded-3xl bg-surface-raised border border-surface-border">
                   <div className="text-center">
-                    <p className="text-2xl font-black text-white">
+                    <p className="text-2xl font-black text-text-primary">
                       #{standings.findIndex(s => s.team_id === myTeamTyped.id) + 1 || '—'}
                     </p>
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Rang</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-black text-white">
+                    <p className="text-2xl font-black text-text-primary">
                       {standings.find(s => s.team_id === myTeamTyped.id)?.points ?? 0}
                     </p>
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Points</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-black text-white">
+                    <p className="text-2xl font-black text-text-primary">
                       {standings.find(s => s.team_id === myTeamTyped.id)?.played ?? 0}
                     </p>
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.2em]">Matchs</p>

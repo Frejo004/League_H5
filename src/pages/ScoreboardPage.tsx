@@ -15,7 +15,7 @@ export function ScoreboardPage() {
   const { idOrSlug } = useParams<{ idOrSlug: string }>()
   const { data: match, isLoading } = useMatchBySlug(idOrSlug ?? '')
 
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
@@ -40,7 +40,6 @@ export function ScoreboardPage() {
   const home = match.home_team
   const away = match.away_team
   const isLive = match.status === 'live'
-  const minuteLabel = ''
   const statusLabel = isLive
     ? 'EN DIRECT'
     : match.status === 'completed'

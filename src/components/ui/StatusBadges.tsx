@@ -11,13 +11,13 @@ interface RoleBadgeProps {
 
 export function RoleBadge({ role, withIcon = true, className }: RoleBadgeProps) {
   const config: Record<string, { label: string; color: string }> = {
-    admin: { label: 'Admin', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    captain: { label: 'Capitaine', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    player: { label: 'Joueur', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    spectator: { label: 'Spectateur', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+    admin: { label: 'Admin', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+    captain: { label: 'Capitaine', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30' },
+    player: { label: 'Joueur', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
+    spectator: { label: 'Spectateur', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' },
   }
-  
-  const cfg = config[role] ?? { label: role, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
+
+  const cfg = config[role] ?? { label: role, color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' }
   
   return (
     <span className={clsx(
@@ -40,22 +40,22 @@ interface TransferStatusBadgeProps {
 
 export function TransferStatusBadge({ status, variant = 'default', className }: TransferStatusBadgeProps) {
   const config: Record<string, { label: string; color: string }> = {
-    pending: { label: 'En attente', color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
-    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
-    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-400 border-primary-500/30' },
-    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
-    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+    pending: { label: 'En attente', color: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30' },
+    player_requested: { label: 'Demande envoyée', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30' },
+    home_captain_approved: { label: 'Approuvé par capitaine', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
+    admin_approved: { label: 'Approuvé par admin', color: 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30' },
+    approved: { label: 'Approuvé', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
+    completed: { label: 'Terminé', color: 'bg-primary-500/15 text-primary-700 dark:text-primary-400 border-primary-500/30' },
+    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30' },
+    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' },
   }
-  
-  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
-  
+
+  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' }
+
   return (
     <span className={clsx(
       'inline-flex items-center px-2.5 py-0.5 rounded-full border',
-      variant === 'compact' 
+      variant === 'compact'
         ? 'text-[10px] font-bold uppercase tracking-wide'
         : 'text-xs font-semibold',
       cfg.color,
@@ -74,13 +74,13 @@ interface MatchStatusBadgeProps {
 
 export function MatchStatusBadge({ status, className }: MatchStatusBadgeProps) {
   const config: Record<string, { label: string; color: string }> = {
-    scheduled: { label: 'Programmé', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-    live: { label: 'En direct', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
-    completed: { label: 'Terminé', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
-    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+    scheduled: { label: 'Programmé', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30' },
+    live: { label: 'En direct', color: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30' },
+    completed: { label: 'Terminé', color: 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30' },
+    cancelled: { label: 'Annulé', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' },
   }
-  
-  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
+
+  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' }
   
   return (
     <span className={clsx(
@@ -101,12 +101,12 @@ interface SpectatorStatusBadgeProps {
 
 export function SpectatorStatusBadge({ status, className }: SpectatorStatusBadgeProps) {
   const config: Record<string, { label: string; color: string }> = {
-    pending: { label: 'En attente', color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
-    approved: { label: 'Approuvé', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
-    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    pending: { label: 'En attente', color: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30' },
+    approved: { label: 'Approuvé', color: 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30' },
+    rejected: { label: 'Refusé', color: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30' },
   }
-  
-  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30' }
+
+  const cfg = config[status] ?? { label: status, color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30' }
   
   return (
     <span className={clsx(

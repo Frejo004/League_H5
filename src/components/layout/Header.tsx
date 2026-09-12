@@ -3,7 +3,7 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare, BarChart2,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare, BarChart2, Gamepad2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -47,6 +47,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/tournaments', label: 'Tournois', icon: Gamepad2 },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/admin', label: 'Admin', icon: Settings },
@@ -61,6 +62,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/tournaments', label: 'Tournois', icon: Gamepad2 },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
@@ -76,6 +78,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/stats', label: 'Stats', icon: Star },
     { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/tournaments', label: 'Tournois', icon: Gamepad2 },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
     { to: '/my-stats', label: 'Mes Stats', icon: Target },
@@ -90,6 +93,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { to: '/players', label: 'Joueurs', icon: User },
     // { to: '/polls', label: 'Pronostics', icon: BarChart2 },
     { to: '/palmares', label: 'Palmarès', icon: Star },
+    { to: '/tournaments', label: 'Tournois', icon: Gamepad2 },
     { to: '/rules', label: 'Règlement', icon: BookOpen },
     { to: '/feedback', label: 'Avis', icon: MessageSquare },
   ],
@@ -272,6 +276,7 @@ export default function Header() {
     '/playoffs':   'Phase Finale',
     '/feedback':   'Avis sur les matchs',
     '/polls':      'Pronostics',
+    '/tournaments': 'Tournois',
   }
   const pageTitle = Object.entries(PAGE_TITLES)
     .filter(([k]) => k !== '/dashboard')
@@ -476,7 +481,7 @@ export default function Header() {
               <div ref={notifRef} className="relative">
                 <button
                   onClick={() => setNotifOpen(v => !v)}
-                  className="relative p-1.5 rounded-lg transition-colors"
+                  className="relative min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-colors"
                   style={{ color: notifOpen ? 'var(--header-text)' : 'var(--header-nav-off)' }}
                   aria-label="Notifications"
                 >
@@ -508,7 +513,7 @@ export default function Header() {
               {profile && (
                 <NavLink
                   to="/chat"
-                  className="relative p-1.5 rounded-lg transition-colors"
+                  className="relative min-w-11 min-h-11 flex items-center justify-center rounded-lg transition-colors"
                   style={({ isActive }) => ({ color: isActive ? 'var(--header-text)' : 'var(--header-nav-off)' })}
                   aria-label="Messages"
                 >
@@ -528,7 +533,7 @@ export default function Header() {
               <Avatar profile={profile} role={effectiveRole} />
               <button
                 onClick={() => setMobileOpen(true)}
-                className="p-1 rounded-lg"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-lg"
                 style={{ color: 'var(--header-nav-off)' }}
                 aria-label="Ouvrir le menu"
               >
