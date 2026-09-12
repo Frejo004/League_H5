@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
-import type { Database } from '@/types/database'
 export interface NewsPost {
   id: string
   season_id: string

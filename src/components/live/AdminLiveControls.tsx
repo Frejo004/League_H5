@@ -2,7 +2,7 @@
  * AdminLiveControls — Panneau de contrôle admin pour piloter un match live
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import * as FramerMotion from 'framer-motion'
 const { motion, AnimatePresence } = FramerMotion

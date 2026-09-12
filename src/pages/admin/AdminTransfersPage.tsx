@@ -11,7 +11,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { TransferStatusBadge } from '@/components/ui/StatusBadges'
-import type { TransferStatus } from '@/types/database'
 
 export function AdminTransfersPage() {
   const { data: season } = useActiveSeason()

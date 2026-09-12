@@ -12,7 +12,7 @@ export function ProtectedRoute() {
   const isSpectator = profile?.role === 'spectator'
 
   const { data: season, isLoading: seasonLoading, isFetched: seasonFetched } = useActiveSeason()
-  const { data: spectatorRequest, isLoading: spectatorLoading, isFetched: spectatorFetched } =
+  const { data: spectatorRequest, isFetched: spectatorFetched } =
     useMySpectatorRequest(
       isSpectator ? profile!.id : undefined,
       isSpectator && season?.id ? season.id : undefined,

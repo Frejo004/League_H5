@@ -20,8 +20,6 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { RoleBadge, TransferStatusBadge } from '@/components/ui/StatusBadges'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { SectionHeader } from '@/components/ui/SectionHeader'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

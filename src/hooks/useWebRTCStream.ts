@@ -49,7 +49,7 @@ export function useWebRTCBroadcaster(matchId: string, options?: {
     try {
       // 1. Récupérer la config de la room via l'Edge Function
       const { data, error } = await supabase.functions.invoke('get-metered-config', {
-        body: { matchId }
+        body: { matchId, role: 'broadcaster' }
       })
       if (error) {
         // Extraire le message détaillé depuis le body de la réponse 500
