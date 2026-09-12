@@ -44,7 +44,7 @@ export function useCreateSeason() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (values: { name: string; start_date?: string; end_date?: string }) => {
-      const { data, error } = await (supabase.from('seasons') as any).insert(values).select().single()
+      const { data, error } = await supabase.from('seasons').insert(values as never).select().single()
       if (error) throw error
       return data as Season
     },
@@ -56,8 +56,8 @@ export function useUpdateSeason() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, ...values }: Omit<Partial<Season>, 'created_at'> & { id: string }) => {
-      const { data, error } = await (supabase.from('seasons') as any)
-        .update(values)
+      const { data, error } = await supabase.from('seasons')
+        .update(values as never)
         .eq('id', id)
         .select()
         .single()

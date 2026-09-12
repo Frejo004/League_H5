@@ -867,8 +867,10 @@ export function AdminSchedulePage() {
 
       let createdMatches: Match[] = []
       if (allMatchesToCreate.length > 0) {
-        const { data, error } = await (supabase.from('matches') as any)
-          .insert(allMatchesToCreate as any)
+        const { data, error } = await supabase
+          .from('matches')
+          // @ts-expect-error Supabase insert typing inference issue
+          .insert(allMatchesToCreate)
           .select('*')
         if (error) throw error
         createdMatches = (data ?? []) as Match[]
@@ -905,13 +907,15 @@ export function AdminSchedulePage() {
       if (cancelledMatchesToRevive.length > 0) {
         const reviveResults = await Promise.all(
           cancelledMatchesToRevive.map(match =>
-            (supabase.from('matches') as any)
+            supabase
+              .from('matches')
+              // @ts-expect-error Supabase update typing inference issue
               .update({
                 status: 'scheduled',
                 home_score: null,
                 away_score: null,
                 played_at: null,
-              } as any)
+              })
               .eq('id', match.id)
           )
         )
@@ -933,8 +937,10 @@ export function AdminSchedulePage() {
       if (matchdayUpdates.length > 0) {
         const updateResults = await Promise.all(
           matchdayUpdates.map(update =>
-            (supabase.from('matches') as any)
-              .update({ matchday: update.matchday } as any)
+            supabase
+              .from('matches')
+              // @ts-expect-error Supabase update typing inference issue
+              .update({ matchday: update.matchday })
               .eq('id', update.id)
           )
         )

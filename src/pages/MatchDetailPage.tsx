@@ -1183,7 +1183,8 @@ export function MatchDetailPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {eligibleMvpPlayers.map(p => {
                     const voteCount = voteMap.get(p.id) ?? 0
-                    const isMyVote = myVote ? (myVote as any).player_id === p.id : false
+                    const myVoteRow = myVote as { player_id: string } | null | undefined
+                    const isMyVote = myVoteRow ? myVoteRow.player_id === p.id : false
                     const isTop = topMvpIds.includes(p.id) && voteCount > 0
                     const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
                     return (

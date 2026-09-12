@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/database'
 
 export interface NewsPost {
   id: string
@@ -42,7 +43,7 @@ export function useNews(seasonId?: string) {
     mutationFn: async (payload: Partial<NewsPost>) => {
       const { data, error } = await supabase
         .from('news_posts')
-        .insert(payload as any) // Correction: Typage explicite
+        .insert(payload as Database['public']['Tables']['news_posts']['Insert'] as never)
         .select()
         .single()
       if (error) throw error
@@ -68,8 +69,8 @@ export function useNews(seasonId?: string) {
 
   const togglePin = useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
-      const { error } = await (supabase.from('news_posts') as any)
-        .update({ is_pinned } as any) // Correction: Typage explicite
+      const { error } = await supabase.from('news_posts')
+        .update({ is_pinned } as never)
         .eq('id', id)
       if (error) throw error
     },

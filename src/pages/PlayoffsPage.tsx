@@ -14,11 +14,35 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
-import type { MatchStatus } from '@/types/database'
+import type { Database, MatchStatus } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
+
+type MatchesInsert = Database['public']['Tables']['matches']['Insert']
+type MatchesUpdate = Database['public']['Tables']['matches']['Update']
+
+interface NextMatchSlot {
+  id: string
+  home_team_id: string | null
+  away_team_id: string | null
+}
+
+// Workaround : comme pour les jointures dans useTransfers.ts, l'inférence de
+// type de supabase-js s'effondre sur `never` pour insert/update sur
+// 'matches' dans ce fichier (profondeur d'instanciation du type Database).
+// On type manuellement les opérations d'écriture via un wrapper `unknown`
+// plutôt que `any`.
+interface WritableMatchesTable {
+  insert: (rows: MatchesInsert[]) => PromiseLike<{ error: { message: string } | null }>
+  update: (row: MatchesUpdate) => {
+    eq: (column: string, value: string) => PromiseLike<{ error: { message: string } | null }>
+  }
+}
+function matchesTable(): WritableMatchesTable {
+  return supabase.from('matches') as unknown as WritableMatchesTable
+}
 
 interface PlayoffMatch {
   id: string
@@ -64,7 +88,8 @@ function usePlayoffMatches(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 30_000,
     queryFn: async (): Promise<PlayoffMatch[]> => {
-      const { data, error } = await (supabase.from('matches') as any)
+      const { data, error } = await supabase
+        .from('matches')
         .select(`
           id, slug, season_id, home_team_id, away_team_id,
           home_score, away_score, status, matchday, scheduled_at,
@@ -119,7 +144,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         })
       }
-      const { error: e1 } = await (supabase.from('matches') as any).insert(firstRoundMatches)
+      const { error: e1 } = await matchesTable().insert(firstRoundMatches)
       if (e1) throw e1
 
       // Créer les matchs des rounds suivants (sans équipes — à remplir après)
@@ -135,7 +160,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         }))
         if (roundMatches.length > 0) {
-          const { error: e2 } = await (supabase.from('matches') as any).insert(roundMatches)
+          const { error: e2 } = await matchesTable().insert(roundMatches)
           if (e2) throw e2
         }
       }
@@ -170,13 +195,15 @@ function useAdvanceWinner(seasonId?: string) {
           : match.away_team_id
 
       // Trouver le prochain match à remplir
-      const { data: nextMatches } = await (supabase.from('matches') as any)
+      const { data } = await supabase
+        .from('matches')
         .select('id, home_team_id, away_team_id')
         .eq('season_id', seasonId!)
         .eq('matchday', nextRoundMatchday)
         .order('created_at', { ascending: true })
 
-      if (!nextMatches?.length) return
+      const nextMatches = (data ?? []) as unknown as NextMatchSlot[]
+      if (!nextMatches.length) return
       const targetMatch = nextMatches[Math.floor(slotIndex / 2)]
       if (!targetMatch) return
 
@@ -184,7 +211,7 @@ function useAdvanceWinner(seasonId?: string) {
         ? { home_team_id: winnerId }
         : { away_team_id: winnerId }
 
-      await (supabase.from('matches') as any).update(update).eq('id', targetMatch.id)
+      await matchesTable().update(update).eq('id', targetMatch.id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['playoff-matches', seasonId] })

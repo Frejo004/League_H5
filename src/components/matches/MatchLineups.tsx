@@ -547,7 +547,24 @@ function PlayerRow({ lineup, isSuspended }: { lineup: MatchLineup, isStarter?: b
   )
 }
 
-export function PitchView({ players, teamColor, formation, suspendedPlayerIds = [] }: any) {
+interface PitchViewPlayer {
+  player_id: string
+  player?: {
+    avatar_url?: string | null
+    jersey_number?: number | null
+    last_name?: string
+  } | null
+}
+
+interface PitchViewProps {
+  players: PitchViewPlayer[]
+  teamColor: string
+  formation: string
+  suspendedPlayerIds?: string[]
+  className?: string
+}
+
+export function PitchView({ players, teamColor, formation, suspendedPlayerIds = [] }: PitchViewProps) {
   const coords = FORMATIONS[formation]?.coords || FORMATIONS['2-1-1'].coords
   return (
     <div className="relative aspect-[16/10] w-full max-w-2xl mx-auto bg-[#1a4d2e] rounded-3xl overflow-hidden border-2 border-surface-border shadow-2xl">

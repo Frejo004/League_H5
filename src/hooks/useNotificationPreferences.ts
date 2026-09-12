@@ -3,8 +3,13 @@ import { supabase } from '@/lib/supabase'
 import type { UserNotificationPreferences } from '@/types/database'
 import { useAuth } from './useAuth'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseError = { code?: string; status?: number; message?: string } & any
+type SupabaseError = { code?: string; status?: number; message?: string }
+
+// Colonnes booléennes basculables individuellement (exclut id / user_id / timestamps)
+type NotificationPreferenceBooleanKey = Exclude<
+  keyof UserNotificationPreferences,
+  'id' | 'user_id' | 'created_at' | 'updated_at'
+>
 
 export function useNotificationPreferences() {
   const { user } = useAuth()
@@ -15,9 +20,9 @@ export function useNotificationPreferences() {
     enabled: !!user?.id,
     retry: false,
     queryFn: async (): Promise<UserNotificationPreferences | null> => {
-      const { data, error } = await (supabase.from('user_notification_preferences') as any)
+      const { data, error } = await supabase.from('user_notification_preferences')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user?.id ?? '')
         .maybeSingle()
 
       // Table doesn't exist yet (404) or row not found — return null gracefully
@@ -31,10 +36,9 @@ export function useNotificationPreferences() {
 
   const updatePreferences = useMutation({
     mutationFn: async (updates: Partial<UserNotificationPreferences>) => {
-      const { data, error } = await (supabase.from('user_notification_preferences') as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update(updates as any)
-        .eq('user_id', user?.id)
+      const { data, error } = await supabase.from('user_notification_preferences')
+        .update(updates as never)
+        .eq('user_id', user?.id ?? '')
         .select()
         .single()
 
@@ -47,11 +51,11 @@ export function useNotificationPreferences() {
   })
 
   const togglePreference = useMutation({
-    mutationFn: async ({ key, value }: { key: keyof UserNotificationPreferences; value: boolean }) => {
-      const { data, error } = await (supabase.from('user_notification_preferences') as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ [key]: value } as any)
-        .eq('user_id', user?.id)
+    mutationFn: async ({ key, value }: { key: NotificationPreferenceBooleanKey; value: boolean }) => {
+      const patch: Partial<Record<NotificationPreferenceBooleanKey, boolean>> = { [key]: value }
+      const { data, error } = await supabase.from('user_notification_preferences')
+        .update(patch as never)
+        .eq('user_id', user?.id ?? '')
         .select()
         .single()
 

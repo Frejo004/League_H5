@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { NewsFeed } from '@/hooks/NewsFeed'
 import { useTournaments } from '@/hooks/useTournaments'
+import type { Tournament, TournamentParticipant } from '@/types/tournament'
 
 const ACCENT = '#C8F135'
 
@@ -57,7 +58,7 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
 }
 
 // ── Chess Tournament Card ───────────────────────────────────────────────────────
-function ChessTournamentCard({ tournament }: { tournament: any }) {
+function ChessTournamentCard({ tournament }: { tournament: Tournament & { participants?: TournamentParticipant[] } }) {
   return (
     <div className="relative overflow-hidden p-6 rounded-4xl bg-gradient-to-br from-purple-500/10 to-purple-900/10 border border-purple-500/30 group hover:border-purple-500/50 transition-all duration-500 hover:-translate-y-2">
       <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-500" />

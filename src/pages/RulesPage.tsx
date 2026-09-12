@@ -27,30 +27,51 @@ interface TeamWithPlayers {
   players: Array<{ id: string; first_name: string; last_name: string; jersey_number: number | null }>
 }
 
+interface RulesTeamRow {
+  id: string
+  name: string
+  color: string
+  logo_url: string | null
+}
+
+interface RulesPlayerRow {
+  id: string
+  team_id: string
+  first_name: string
+  last_name: string
+  jersey_number: number | null
+}
+
 function useTeamsWithPlayers(seasonId?: string) {
   return useQuery({
     queryKey: ['rules-teams', seasonId],
     enabled: !!seasonId,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<TeamWithPlayers[]> => {
-      const { data: teams, error: teamsErr } = await supabase
+      const { data: teamsData, error: teamsErr } = await supabase
         .from('teams')
         .select('id, name, color, logo_url')
         .eq('season_id', seasonId!)
         .order('name', { ascending: true })
       if (teamsErr) throw teamsErr
 
-      const { data: players, error: playersErr } = await supabase
+      // Cast nécessaire : l'inférence Supabase pour ces requêtes peut se dégrader
+      // en 'never' selon les autres requêtes typées dans le programme (bug connu supabase-js).
+      const teams = (teamsData ?? []) as unknown as RulesTeamRow[]
+
+      const { data: playersData, error: playersErr } = await supabase
         .from('players')
         .select('id, team_id, first_name, last_name, jersey_number')
-        .in('team_id', (teams as any ?? []).map((t: any) => t.id))
+        .in('team_id', teams.map((t) => t.id))
         .eq('is_active', true)
         .order('jersey_number', { ascending: true })
       if (playersErr) throw playersErr
 
-      return (teams as any ?? []).map((team: any) => ({
+      const players = (playersData ?? []) as unknown as RulesPlayerRow[]
+
+      return teams.map((team) => ({
         ...team,
-        players: (players as any ?? []).filter((p: any) => p.team_id === team.id),
+        players: players.filter((p) => p.team_id === team.id),
       }))
     },
   })

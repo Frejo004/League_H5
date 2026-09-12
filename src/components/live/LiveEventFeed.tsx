@@ -4,7 +4,7 @@
  */
 import { useState, useMemo } from 'react'
 import { clsx } from 'clsx'
-import type { MatchEvent } from '@/types/database'
+import type { MatchEvent, MatchEventType } from '@/types/database'
 
 const EVENT_ICONS: Record<string, string> = {
   goal: '⚽',
@@ -226,9 +226,9 @@ export function LiveEventFeed({
             <div className="w-3 h-4.5 bg-red-500 rounded-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] rotate-12" />
           ) : event.type === 'substitution' ? (
             <span className="text-emerald-500 text-sm font-black">⇄</span>
-          ) : (event as any).type === 'goal' && (event as any).is_penalty ? (
+          ) : (event as { type: MatchEventType; is_penalty?: boolean }).type === 'goal' && (event as { is_penalty?: boolean }).is_penalty ? (
             <span className="text-yellow-500 text-sm font-black">PK</span>
-          ) : (event as any).type === 'own_goal' && (event as any).is_penalty ? (
+          ) : (event as { type: MatchEventType; is_penalty?: boolean }).type === 'own_goal' && (event as { is_penalty?: boolean }).is_penalty ? (
             <span className="text-yellow-500 text-sm font-black">PK</span>
           ) : ['shot', 'shot_on_target', 'foul', 'corner'].includes(event.type) ? (
             <span className="text-base">{EVENT_ICONS[event.type]}</span>
