@@ -19,6 +19,11 @@ export default defineConfig({
       // Le SW n'utilise pas de dynamic imports, on désactive le code splitting.
       injectManifest: {
         rollupFormat: 'iife',
+        // Ne pas précacher les pages réservées admin/capitaine : la grande
+        // majorité des visiteurs (spectateurs, joueurs) ne les visitent
+        // jamais. Elles restent chargées à la demande (React.lazy) et mises
+        // en cache à l'exécution au premier accès plutôt qu'à l'installation.
+        globIgnores: ['**/assets/AdminPage-*.js', '**/assets/CaptainPage-*.js'],
       },
       manifest: {
         name: 'League H5',
@@ -75,6 +80,19 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@supabase')) return 'supabase-vendor'
+          if (id.includes('framer-motion')) return 'motion-vendor'
+          if (id.includes('react-router')) return 'router-vendor'
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) return 'react-vendor'
+        },
+      },
     },
   },
 })

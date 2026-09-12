@@ -575,12 +575,24 @@ export function TabTactique({ teamId, teamColor, seasonId, readonly = false }: {
   // Realtime
   useRealtimeTactics(teamId, nextMatch?.id)
 
-  // Broadcast tactical updates to other players
-  const broadcastUpdate = useCallback((type: BroadcastType, data: Omit<BroadcastData, 'type' | 'teamId' | 'captainName'>) => {
-    if (!nextMatch) return
-    // Unification du canal tactique au niveau du match
+  // Broadcast tactical updates to other players — un seul canal souscrit,
+  // réutilisé pour tous les envois (au lieu d'en créer un nouveau, jamais
+  // nettoyé, à chaque appel).
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  useEffect(() => {
+    if (!nextMatch?.id) return
     const channel = supabase.channel(`tactics-match-${nextMatch.id}`)
-    channel.send({
+    channel.subscribe()
+    broadcastChannelRef.current = channel
+    return () => {
+      supabase.removeChannel(channel)
+      broadcastChannelRef.current = null
+    }
+  }, [nextMatch?.id])
+
+  const broadcastUpdate = useCallback((type: BroadcastType, data: Omit<BroadcastData, 'type' | 'teamId' | 'captainName'>) => {
+    if (!nextMatch || !broadcastChannelRef.current) return
+    broadcastChannelRef.current.send({
       type: 'broadcast',
       event: 'tactical_update',
       payload: { type, ...data, teamId, captainName: profile?.full_name ?? 'Le Capitaine' } satisfies BroadcastData

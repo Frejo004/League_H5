@@ -25,10 +25,13 @@ export const TOTAL_DURATION  = HALF_DURATION * 2 + BREAK_DURATION  // 45 min
 // useMatchEvents — flux d'événements d'un match
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Le rafraîchissement temps réel de cette query est géré par useRealtimeMatch()
+// (src/hooks/useRealtime.ts), qui invalide déjà ['match-events', matchId] sur les
+// changements de la table match_events — les deux hooks sont toujours montés
+// ensemble sur MatchDetailPage/PublicMatchDetailPage. Un canal Realtime dédié ici
+// ferait doublon (deux abonnements websocket pour la même invalidation).
 export function useMatchEvents(matchId?: string) {
-  const qc = useQueryClient()
-
-  const query = useQuery({
+  return useQuery({
     queryKey: ['match-events', matchId],
     enabled: !!matchId,
     queryFn: async (): Promise<MatchEvent[]> => {
@@ -47,26 +50,6 @@ export function useMatchEvents(matchId?: string) {
     },
     staleTime: 0,
   })
-
-  // Realtime
-  useEffect(() => {
-    if (!matchId) return
-    const name = `match-events-${matchId}`
-    const ch = supabase.channel(name)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'match_events',
-        filter: `match_id=eq.${matchId}`,
-      }, () => qc.invalidateQueries({ queryKey: ['match-events', matchId] }))
-      .subscribe((status) => {
-        if (status !== 'CLOSED') {
-          console.log(`📡 Realtime (${name}):`, status)
-        }
-      })
-
-    return () => { supabase.removeChannel(ch) }
-  }, [matchId, qc])
-
-  return query
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
