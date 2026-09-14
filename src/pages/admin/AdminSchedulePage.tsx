@@ -3,7 +3,7 @@ import { Zap, Pencil, Check, X, Calendar, Search, User, ShieldCheck, Video } fro
 import { useQueryClient } from '@tanstack/react-query'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
-import { useMatches, useUpdateMatch, type MatchWithTeams } from '@/hooks/useMatches'
+import { useMatches, useUpdateMatch, useCancelMatchCleanup, type MatchWithTeams } from '@/hooks/useMatches'
 import { usePlayers } from '@/hooks/usePlayers'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -268,6 +268,7 @@ function toBeninInputString(dateStr: string | null | undefined): string {
 // ── Date editor pour un match ─────────────────────────────────────────────────
 function MatchDateEditor({ match }: { match: MatchWithTeams }) {
   const updateMatch = useUpdateMatch()
+  const cancelCleanup = useCancelMatchCleanup()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(
@@ -330,28 +331,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
     const shouldRebalanceMatchdays = deleteInfos || status !== match.status
 
     if (deleteInfos) {
-      // 1. Supprimer les polls du match en premier (cascade → predictions, bet_slip_selections)
-      const resPolls = await supabase.from('polls').delete().eq('match_id', match.id)
-      if (resPolls.error) console.error('Error deleting polls:', resPolls.error)
-
-      // 2. Supprimer les bet_slips qui n'ont plus aucune sélection (orphelins après cascade)
-      const resOrphanSlips = await supabase.rpc('delete_empty_bet_slips')
-      if (resOrphanSlips.error) console.error('Error deleting orphan bet_slips:', resOrphanSlips.error)
-
-      // 3. Supprimer le reste des données liées au match
-      const [resGoals, resAssists, resEvents, resVotes, resFeedback] = await Promise.all([
-        supabase.from('goals').delete().eq('match_id', match.id),
-        supabase.from('assists').delete().eq('match_id', match.id),
-        supabase.from('match_events').delete().eq('match_id', match.id),
-        supabase.from('mvp_votes').delete().eq('match_id', match.id),
-        supabase.from('match_feedback').delete().eq('match_id', match.id),
-      ])
-
-      if (resGoals.error) console.error('Error deleting goals:', resGoals.error)
-      if (resAssists.error) console.error('Error deleting assists:', resAssists.error)
-      if (resEvents.error) console.error('Error deleting events:', resEvents.error)
-      if (resVotes.error) console.error('Error deleting votes:', resVotes.error)
-      if (resFeedback.error) console.error('Error deleting feedback:', resFeedback.error)
+      await cancelCleanup.mutateAsync(match.id)
 
       await updateMatch.mutateAsync({
         id: match.id,
