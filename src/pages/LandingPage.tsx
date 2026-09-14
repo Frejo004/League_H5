@@ -4,7 +4,7 @@ import {
   MessageCircle, Radio, Star, Zap,
   Shield, ChevronRight, Crown
 } from 'lucide-react'
-import bgImage from '@/assets/leagueH5-bg_bg.jpg'
+import bgImage from '@/assets/leagueH5-bg_bg.webp'
 
 import { useLandingStats } from '@/hooks/useLandingStats'
 import { useCountUp } from '@/hooks/useCountUp'
@@ -256,7 +256,7 @@ export function LandingPage() {
       <section className="relative min-h-screen flex flex-col justify-center items-center pt-20 overflow-hidden">
         {/* Background avec overlay dynamique */}
         <div className="absolute inset-0 z-0">
-          <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" />
+          <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" fetchPriority="high" />
           <div className="absolute inset-0 bg-linear-to-b from-surface via-transparent to-surface" />
           <div className="absolute inset-0 bg-linear-to-r from-surface via-transparent to-surface" />
         </div>

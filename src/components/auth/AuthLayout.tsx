@@ -1,7 +1,7 @@
 import { ReactNode, CSSProperties, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import bgImage from '@/assets/leagueH5-bg_login.jpg'
+import bgImage from '@/assets/leagueH5-bg_login.webp'
 
 interface AuthLayoutProps {
   children: ReactNode
