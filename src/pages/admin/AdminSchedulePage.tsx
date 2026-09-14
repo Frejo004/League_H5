@@ -400,7 +400,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
       <div className="flex items-center gap-3 px-4 py-3 relative z-10">
         {/* Home */}
         <div className="flex items-center justify-end gap-2.5 flex-1 min-w-0">
-          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
+          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-text-primary" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{home.name}</span>
           <span className="w-1.5 h-6 rounded-full shrink-0 shadow-sm opacity-80" style={{ backgroundColor: home.color }} />
         </div>
 
@@ -433,7 +433,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
         {/* Away */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <span className="w-1.5 h-6 rounded-full shrink-0 shadow-sm opacity-80" style={{ backgroundColor: away.color }} />
-          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
+          <span className="text-sm font-black text-text-primary uppercase tracking-wide truncate transition-colors group-hover/match:text-text-primary" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{away.name}</span>
         </div>
 
         {/* Delegation Badges */}
@@ -628,7 +628,7 @@ function MatchDateEditor({ match }: { match: MatchWithTeams }) {
               </button>
               <button 
                 onClick={() => setShowCancelModal(false)}
-                className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-text-primary transition-colors"
               >
                 Retour à l'édition
               </button>
@@ -996,7 +996,7 @@ export function AdminSchedulePage() {
               </button>
               <button
                 onClick={() => setShowGenConfirm(false)}
-                className="mt-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                className="mt-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-text-primary transition-colors"
               >
                 Annuler
               </button>
