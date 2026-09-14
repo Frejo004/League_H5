@@ -206,10 +206,12 @@ export function useNotifications() {
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
 
-  // Realtime : détecter quand un sondage lié à un match est résolu
+  // Realtime : un seul canal pour les 5 écoutes propres à l'utilisateur connecté
+  // (sondage résolu, sélection tactique, approbation spectateur, suspension
+  // ajoutée/levée) — au lieu de 4 canaux séparés, même pattern que useRealtimeMatch.
   useEffect(() => {
     if (!user?.id) return
-    const ch = supabase.channel(`polls-resolved-${user.id}`)
+    const channel = supabase.channel(`notifications-${user.id}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'polls',
       }, async (payload) => {
@@ -243,17 +245,9 @@ export function useNotifications() {
         qc.invalidateQueries({ queryKey: ['leaderboard'] })
         qc.invalidateQueries({ queryKey: ['user-prediction'] })
       })
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [user?.id, qc])
-
-  // Realtime : détecter quand le joueur est ajouté à une compo
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase.channel(`player-tactics-${user.id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
         table: 'match_lineups'
       }, (payload) => {
         const record = payload.new as { player_id: string; is_starter: boolean }
@@ -262,17 +256,9 @@ export function useNotifications() {
           pushLocal('📋 Nouvelle compo !', 'Tu as été sélectionné comme titulaire.', 'tactic-update', '/my-team?tab=tactique')
         }
       })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id, qc])
-
-  // Realtime : Détecter quand ma demande de spectateur est approuvée
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase.channel(`my-spectator-approval-${user.id}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'spectators',
         filter: `user_id=eq.${user.id}`
       }, (payload) => {
@@ -282,58 +268,6 @@ export function useNotifications() {
           pushLocal('🎟️ Accès approuvé !', 'Ta demande a été acceptée, tu peux maintenant suivre la ligue.', 'spectator-approved', '/')
         }
       })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id, qc])
-
-  // Sync readIds → localStorage à chaque changement
-  useEffect(() => { saveReadIds(readIds) }, [readIds])
-
-  // Realtime : Invalider les requêtes quand un nouveau spectateur demande l'accès
-  useEffect(() => {
-    if (!isAdmin) return
-
-    const channel = supabase
-      .channel('admin-notifications-spectators')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'spectators' }, async (payload) => {
-        qc.invalidateQueries({ queryKey: ['notifications_spectators'] })
-        qc.invalidateQueries({ queryKey: ['spectators'] })
-
-        // TODO: Si une demande de spectateur est approuvée, envoyer une notification à l'utilisateur concerné.
-        // Cela nécessiterait un canal Realtime séparé ou un mécanisme de notification push ciblé. (payload.new as Spectator).user_id
-        // if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'approved') { /* ... */ }
-
-        // Si c'est une nouvelle demande, on envoie une notification push locale
-        if (payload.eventType === 'INSERT') {
-          const newReq = payload.new as Spectator
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', newReq.user_id)
-            .single()
-
-          const profile = profileData as unknown as { full_name: string | null; email: string } | null
-          const name = profile?.full_name ?? profile?.email ?? 'Un nouvel utilisateur'
-          pushLocal(
-            'Demande d\'accès',
-            `${name} souhaite rejoindre la ligue`,
-            `spectator-${newReq.id}`,
-            '/admin?tab=spectators'
-          )
-        }
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [isAdmin, qc])
-
-  // Realtime : Détecter quand une suspension est ajoutée/levée pour le joueur connecté
-  useEffect(() => {
-    if (!user?.id) return
-
-    // On écoute toutes les suspensions — on filtre côté client sur le player lié à cet user
-    const channel = supabase
-      .channel(`suspension-player-${user.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'suspensions' }, async (payload) => {
         const suspension = payload.new as {
           id: string; player_id: string; reason: string; matches_count: number; is_active: boolean
@@ -380,9 +314,49 @@ export function useNotifications() {
         )
       })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [user?.id, qc])
+
+  // Sync readIds → localStorage à chaque changement
+  useEffect(() => { saveReadIds(readIds) }, [readIds])
+
+  // Realtime : Invalider les requêtes quand un nouveau spectateur demande l'accès
+  useEffect(() => {
+    if (!isAdmin) return
+
+    const channel = supabase
+      .channel('admin-notifications-spectators')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spectators' }, async (payload) => {
+        qc.invalidateQueries({ queryKey: ['notifications_spectators'] })
+        qc.invalidateQueries({ queryKey: ['spectators'] })
+
+        // TODO: Si une demande de spectateur est approuvée, envoyer une notification à l'utilisateur concerné.
+        // Cela nécessiterait un canal Realtime séparé ou un mécanisme de notification push ciblé. (payload.new as Spectator).user_id
+        // if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'approved') { /* ... */ }
+
+        // Si c'est une nouvelle demande, on envoie une notification push locale
+        if (payload.eventType === 'INSERT') {
+          const newReq = payload.new as Spectator
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', newReq.user_id)
+            .single()
+
+          const profile = profileData as unknown as { full_name: string | null; email: string } | null
+          const name = profile?.full_name ?? profile?.email ?? 'Un nouvel utilisateur'
+          pushLocal(
+            'Demande d\'accès',
+            `${name} souhaite rejoindre la ligue`,
+            `spectator-${newReq.id}`,
+            '/admin?tab=spectators'
+          )
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [isAdmin, qc])
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {
