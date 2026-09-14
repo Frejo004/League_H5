@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { usePlayers } from '@/hooks/usePlayers'
-import { TeamView } from '@/pages/CaptainPage'
+import { TeamView } from '@/components/captain/TeamView'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function MyTeamPage() {
