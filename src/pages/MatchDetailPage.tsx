@@ -444,6 +444,71 @@ export function MatchDetailPage() {
     })) as GoalWithPlayer[]
   }, [match?.status, match?.goals, liveEvents])
 
+  // Doit être avant tout early return (règles des hooks) — voir displayGoals ci-dessus
+  const assistMap = useMemo(() => new Map(
+    ((match?.assists as AssistWithPlayer[] | undefined) ?? [])
+      .map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
+  ), [match?.assists])
+
+  const sortedGoals = useMemo(
+    () => [...displayGoals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0)),
+    [displayGoals]
+  )
+
+  // MVP
+  const voteMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const v of votes ?? []) {
+      // Un vote n'est comptabilisé que si le joueur fait partie de la feuille de match (lineups)
+      // et qu'il appartient bien à l'une des deux équipes du match
+      const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
+      const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
+      const belongsToMatchTeams = belongsToHome || belongsToAway
+
+      if (belongsToMatchTeams) {
+        const isPlayerInMatch = lineups && lineups.length > 0
+          ? lineups.some(l => l.player_id === v.player_id)
+          : allMatchPlayers.some(p => p.id === v.player_id)
+
+        if (isPlayerInMatch) {
+          map.set(v.player_id, (map.get(v.player_id) ?? 0) + 1)
+        }
+      }
+    }
+    return map
+  }, [votes, homePlayers, awayPlayers, lineups, allMatchPlayers])
+
+  const { topMvpIds, totalVotes, maxVotes } = useMemo(() => {
+    const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
+    return {
+      topMvpIds: voteMap.size > 0
+        ? [...voteMap.entries()].filter(([, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
+        : [],
+      totalVotes: [...voteMap.values()].reduce((a, b) => a + b, 0),
+      maxVotes,
+    }
+  }, [voteMap])
+
+  // Joueurs MVP (les plus votés, gère les ex-aequo)
+  const mvpPlayers = useMemo(
+    () => topMvpIds.map(pid => allMatchPlayers.find(p => p.id === pid)).filter(Boolean) as typeof allMatchPlayers,
+    [topMvpIds, allMatchPlayers]
+  )
+
+  // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
+  // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
+  // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
+  const liveScore = useMemo(() => liveEvents.reduce((acc, event: MatchEvent) => {
+    if (event.type === 'goal' || event.type === 'own_goal') {
+      const isHomeGoal = event.type === 'own_goal'
+        ? event.team_id === match?.away_team_id
+        : event.team_id === match?.home_team_id
+      if (isHomeGoal) acc.home++
+      else acc.away++
+    }
+    return acc
+  }, { home: 0, away: 0 }), [liveEvents, match?.away_team_id, match?.home_team_id])
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -466,7 +531,6 @@ export function MatchDetailPage() {
 
   const home = match.home_team as TeamRef
   const away = match.away_team as TeamRef
-  const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
 
@@ -517,55 +581,6 @@ export function MatchDetailPage() {
       setIsGeneratingStory(false)
     }
   }
-
-  const assistMap = new Map(
-    assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
-  )
-
-  // Sort goals by minute
-  const sortedGoals = [...displayGoals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-
-  // MVP
-  const voteMap = new Map<string, number>()
-  for (const v of votes ?? []) {
-    // Un vote n'est comptabilisé que si le joueur fait partie de la feuille de match (lineups)
-    // et qu'il appartient bien à l'une des deux équipes du match
-    const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
-    const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
-    const belongsToMatchTeams = belongsToHome || belongsToAway
-
-    if (belongsToMatchTeams) {
-      const isPlayerInMatch = lineups && lineups.length > 0
-        ? lineups.some(l => l.player_id === v.player_id)
-        : allMatchPlayers.some(p => p.id === v.player_id)
-
-      if (isPlayerInMatch) {
-        voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
-      }
-    }
-  }
-  const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
-  const topMvpIds = voteMap.size > 0
-    ? [...voteMap.entries()].filter(([, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
-    : []
-
-  // Joueurs MVP (les plus votés, gère les ex-aequo)
-  const mvpPlayers = topMvpIds.map(id => allMatchPlayers.find(p => p.id === id)).filter(Boolean) as typeof allMatchPlayers
-  const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
-
-  // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
-  // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
-  // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
-  const liveScore = liveEvents.reduce((acc, event: MatchEvent) => {
-    if (event.type === 'goal' || event.type === 'own_goal') {
-      const isHomeGoal = event.type === 'own_goal'
-        ? event.team_id === match.away_team_id
-        : event.team_id === match.home_team_id
-      if (isHomeGoal) acc.home++
-      else acc.away++
-    }
-    return acc
-  }, { home: 0, away: 0 })
 
   const displayHomeScore = isLive ? liveScore.home : (match.home_score ?? 0)
   const displayAwayScore = isLive ? liveScore.away : (match.away_score ?? 0)
