@@ -282,8 +282,8 @@ function TeamBlock({ name, color, logoUrl, won, align }:
           : name[0]}
       </div>
       <span style={{
-        fontSize: 'clamp(0.85rem, 2.2vw, 1rem)', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        fontSize: 'clamp(0.85rem, 2.2vw, 1rem)', fontWeight: 700, lineHeight: 1.3,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         textAlign: align === 'right' ? 'right' : 'left',
         color: won ? 'var(--t1)' : 'var(--t2)', transition: 'color .3s',
         fontFamily: "'DM Sans',sans-serif"

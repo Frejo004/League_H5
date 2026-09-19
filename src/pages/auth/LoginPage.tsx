@@ -124,17 +124,8 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              width: '100%', height: '3rem', marginTop: '0.25rem',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              border: '1px solid rgba(96,165,250,0.4)',
-              borderRadius: '0.625rem', color: '#fff',
-              fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.1)',
-              transition: 'all 0.2s ease',
-              opacity: isLoading ? 0.7 : 1,
-            }}
+            className="btn-primary"
+            style={{ width: '100%', marginTop: '0.25rem' }}
           >
             {isLoading
               ? <LoadingSpinner size="sm" />

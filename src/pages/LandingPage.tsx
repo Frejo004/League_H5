@@ -1,9 +1,6 @@
 import { Link, Navigate } from 'react-router-dom'
-import {
-  Trophy, Calendar, BarChart2,
-  MessageCircle, Radio, Star, Zap,
-  Shield, ChevronRight, Crown
-} from 'lucide-react'
+import { Trophy, Calendar, BarChart2, MessageCircle, Radio, Star, Zap, Shield, ChevronRight, Crown } from 'lucide-react'
+import { PublicLayout } from '@/components/layout/PublicLayout'
 import bgImage from '@/assets/leagueH5-bg_bg.webp'
 
 import { useLandingStats } from '@/hooks/useLandingStats'
@@ -237,7 +234,8 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1420] text-slate-50 selection:bg-[#C8F135] selection:text-[#0f1420] dark [--color-surface:#0f1420] [--color-surface-card:#161c2d] [--color-surface-raised:#1e2640] [--color-surface-border:#252f4a] [--color-surface-muted:#2d3a5a] [--color-text-primary:#f8fafc] [--color-text-secondary:#94a3b8] [--color-text-muted:#64748b]">
+    <PublicLayout hideFooter>
+      <div className="w-full flex-1 flex flex-col min-h-screen bg-[#0f1420] text-slate-50 selection:bg-[#C8F135] selection:text-[#0f1420] dark [--color-surface:#0f1420] [--color-surface-card:#161c2d] [--color-surface-raised:#1e2640] [--color-surface-border:#252f4a] [--color-surface-muted:#2d3a5a] [--color-text-primary:#f8fafc] [--color-text-secondary:#94a3b8] [--color-text-muted:#64748b]">
 
       {/* ── Navigation ── */}
       {/* <header className="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-surface/60 border-b border-surface-border">
@@ -264,7 +262,7 @@ export function LandingPage() {
       </header> */}
 
       {/* ── Hero Section ── */}
-      <section className="relative min-h-screen flex flex-col justify-center items-center pt-20 overflow-hidden">
+      <section className="relative w-full min-h-screen flex flex-col justify-center pt-20 overflow-hidden">
         {/* Background avec overlay dynamique */}
         <div className="absolute inset-0 z-0">
           <img src={bgImage} className="w-full h-full object-cover opacity-30 scale-105 animate-slow-zoom" alt="" fetchPriority="high" />
@@ -429,7 +427,10 @@ export function LandingPage() {
             <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #C8F135' }}>LIGUE</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-300 w-full max-w-2xl mx-auto mb-12 leading-relaxed whitespace-normal break-words">
+          <p 
+            className="text-lg md:text-xl text-slate-300 mb-12 leading-relaxed"
+            style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}
+          >
             L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-text-primary font-bold">stats en direct</span>,
             messagerie intégrée et gestion de club simplifiée.
           </p>
@@ -559,5 +560,6 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
+    </PublicLayout>
   )
 }

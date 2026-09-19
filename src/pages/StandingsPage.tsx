@@ -274,7 +274,7 @@ function PodiumCard({ row, rank, teamSlug }: { row: StandingRow; rank: 1 | 2 | 3
   return (
     <Link to={`/teams/${teamSlug || row.team_id}`}
       className={clsx(
-        "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-2 group overflow-hidden",
+        "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-2 group overflow-hidden bg-surface-card",
         c.border
       )}>
       {/* Background radial glow */}

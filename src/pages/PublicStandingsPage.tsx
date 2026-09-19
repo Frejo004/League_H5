@@ -19,7 +19,7 @@ function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
 
   return (
     <div className={clsx(
-        "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 group overflow-hidden",
+        "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 group overflow-hidden bg-surface-card",
         c.border
       )}>
       <div className="absolute inset-0 opacity-40 pointer-events-none"
@@ -81,7 +81,7 @@ export function PublicStandingsPage() {
               <span className="text-[10px] font-black text-[#C8F135] uppercase tracking-[0.2em]">Classement Officiel</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-black text-[var(--t1)] uppercase italic tracking-tighter leading-none font-['Barlow_Condensed']">
-              Tableau de <span className="text-transparent" style={{ WebkitTextStroke: '1px var(--t1)' }}>Saison</span>
+              Tableau de <span className="text-[#C8F135]">Classement</span>
             </h1>
             <p className="text-xs text-[var(--tm)] font-bold uppercase tracking-widest mt-2">
               Performance en temps réel des clubs engagés

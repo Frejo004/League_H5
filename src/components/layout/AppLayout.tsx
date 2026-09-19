@@ -124,8 +124,8 @@ export function AppLayout() {
   // Raccourcis clavier globaux
   const { showHelp, setShowHelp } = useKeyboardShortcuts()
 
-  const bgColor = isLight ? '#f8fafc' : '#0D1117'
-  const gradientBase = isLight ? '#f1f5f9' : '#080C12'
+  const bgColor = 'var(--color-surface)'
+  const gradientBase = 'var(--color-surface-raised)'
 
   // Mémoriser les calculs de gradient pour éviter les recalculs inutiles
   const gradientStyle = useMemo(() => ({
@@ -146,8 +146,7 @@ export function AppLayout() {
 
   return (
     <div
-      className="flex flex-col min-h-screen"
-      style={{ backgroundColor: bgColor, transition: 'background-color 0.3s ease' }}
+      className="flex flex-col min-h-screen bg-surface transition-colors duration-300"
     >
       {/* Header full-width */}
       <Header />

@@ -31,7 +31,7 @@ export function PublicLayout({ children, hideFooter = false }: PublicLayoutProps
   ]
 
   return (
-    <div className={`min-h-[100dvh] flex flex-col selection:bg-[#C8F135] selection:text-[#0D1117] transition-colors duration-300`} style={{ background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>
+    <div className={`w-full min-h-[100dvh] flex flex-col selection:bg-[#C8F135] selection:text-[#0D1117] transition-colors duration-300`} style={{ background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>
       {/* ── PUBLIC HEADER ─────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300 pt-[env(safe-area-inset-top)]" style={{ borderColor: 'var(--header-border)', backgroundColor: dark ? 'rgba(13,17,23,0.8)' : 'rgba(248,250,252,0.8)' }}>
         <div className="max-w-5xl mx-auto px-4 flex items-center h-16 justify-between gap-4">
@@ -117,7 +117,7 @@ export function PublicLayout({ children, hideFooter = false }: PublicLayoutProps
       </header>
 
       {/* ── MAIN ─────────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-h-0 pb-[calc(env(safe-area-inset-bottom)+64px)] md:pb-[env(safe-area-inset-bottom)]">
+      <main className="flex-1 w-full flex flex-col min-h-0 pb-[calc(env(safe-area-inset-bottom)+64px)] md:pb-[env(safe-area-inset-bottom)]">
         {children}
       </main>
 

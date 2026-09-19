@@ -154,7 +154,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
               style={{ borderLeft: `3px solid ${match.home_team.color}` }}>
               {match.home_team.logo_url ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.home_team.name[0]}
             </div>
-            <span className={clsx('text-sm uppercase tracking-wide truncate transition-colors',
+            <span className={clsx('text-sm uppercase tracking-wide transition-colors line-clamp-1',
               variant === 'result' ? (homeWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
               style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.home_team.name}
@@ -191,7 +191,7 @@ function MiniMatchCard({ match, variant, myTeamId }: {
               style={{ borderRight: `3px solid ${match.away_team.color}` }}>
               {match.away_team.logo_url ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.away_team.name[0]}
             </div>
-            <span className={clsx('text-sm uppercase tracking-wide truncate text-right transition-colors',
+            <span className={clsx('text-sm uppercase tracking-wide transition-colors line-clamp-1',
               variant === 'result' ? (awayWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
               style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {match.away_team.name}
