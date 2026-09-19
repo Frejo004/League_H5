@@ -3,8 +3,7 @@ import { Link2, Copy, Check, RefreshCw, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlayerInvite, useCreateInvite, useRevokeInvite } from '@/hooks/usePlayerInvites'
 import { LoadingSpinner } from './LoadingSpinner'
-
-import { slugify } from '@/lib/slugify'
+import type { PlayerInvite } from '@/types/database'
 
 interface InviteButtonProps {
   playerId: string
@@ -16,7 +15,7 @@ interface InviteButtonProps {
 export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonProps) {
   const { user } = useAuth()
   const { data: invite, isLoading } = usePlayerInvite(playerId)
-  const inviteData = invite as any
+  const inviteData = invite as PlayerInvite | null | undefined
   const createInvite = useCreateInvite()
   const revokeInvite = useRevokeInvite()
   const [copied, setCopied] = useState(false)
@@ -31,10 +30,8 @@ export function InviteButton({ playerId, playerName, hasAccount }: InviteButtonP
     )
   }
 
-  const playerSlug = slugify(playerName)
-
   const inviteUrl = inviteData?.token
-    ? `${window.location.origin}/auth/join?invite=${playerSlug}`
+    ? `${window.location.origin}/auth/join?token=${inviteData.token}`
     : null
 
   // Affichage masqué (pas besoin de masquer car c'est déjà propre)

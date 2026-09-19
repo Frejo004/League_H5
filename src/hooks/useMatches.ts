@@ -61,11 +61,12 @@ export function useMatch(matchId?: string) {
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
-    // Rafraîchissement automatique toutes les 5s quand le match est live
-    // pour s'assurer que live_started_at, live_period, is_paused sont toujours à jour
+    // Filet de sécurité si Realtime rate un événement (useRealtimeMatch invalide déjà
+    // cette query sur chaque changement de la table matches) — pas besoin d'un
+    // intervalle agressif, Realtime gère la mise à jour quasi instantanée en temps normal.
     refetchInterval: (query) => {
       const data = query.state.data as MatchDetail | null | undefined
-      return data?.status === 'live' ? 5000 : false
+      return data?.status === 'live' ? 20_000 : false
     },
   })
 }
@@ -153,6 +154,41 @@ export function useDeleteMatch() {
     onSuccess: (_data, { seasonId }) => {
       qc.invalidateQueries({ queryKey: ['matches', seasonId] })
       qc.invalidateQueries({ queryKey: ['standings', seasonId] })
+    },
+  })
+}
+
+/**
+ * Supprime toutes les données liées à un match (polls, bet_slips orphelins,
+ * buts, passes, événements, votes MVP, avis) avant de l'annuler — utilisé
+ * par l'admin quand il annule un match avec nettoyage des données associées.
+ * N'annule pas le match lui-même : à combiner avec useUpdateMatch côté appelant.
+ */
+export function useCancelMatchCleanup() {
+  return useMutation({
+    mutationFn: async (matchId: string) => {
+      // 1. Supprimer les polls du match en premier (cascade → predictions, bet_slip_selections)
+      const resPolls = await supabase.from('polls').delete().eq('match_id', matchId)
+      if (resPolls.error) console.error('Error deleting polls:', resPolls.error)
+
+      // 2. Supprimer les bet_slips qui n'ont plus aucune sélection (orphelins après cascade)
+      const resOrphanSlips = await supabase.rpc('delete_empty_bet_slips')
+      if (resOrphanSlips.error) console.error('Error deleting orphan bet_slips:', resOrphanSlips.error)
+
+      // 3. Supprimer le reste des données liées au match
+      const [resGoals, resAssists, resEvents, resVotes, resFeedback] = await Promise.all([
+        supabase.from('goals').delete().eq('match_id', matchId),
+        supabase.from('assists').delete().eq('match_id', matchId),
+        supabase.from('match_events').delete().eq('match_id', matchId),
+        supabase.from('mvp_votes').delete().eq('match_id', matchId),
+        supabase.from('match_feedback').delete().eq('match_id', matchId),
+      ])
+
+      if (resGoals.error) console.error('Error deleting goals:', resGoals.error)
+      if (resAssists.error) console.error('Error deleting assists:', resAssists.error)
+      if (resEvents.error) console.error('Error deleting events:', resEvents.error)
+      if (resVotes.error) console.error('Error deleting votes:', resVotes.error)
+      if (resFeedback.error) console.error('Error deleting feedback:', resFeedback.error)
     },
   })
 }

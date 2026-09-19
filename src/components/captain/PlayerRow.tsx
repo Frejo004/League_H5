@@ -83,7 +83,7 @@ export function PlayerRow({
           onClick={() => onViewStats(player)}
           className="flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
         >
-          <p className="text-sm font-medium text-white truncate">
+          <p className="text-sm font-medium text-text-primary truncate">
             {player.first_name} {player.last_name}
           </p>
           {!editing && (
@@ -112,7 +112,7 @@ export function PlayerRow({
               {!readonly && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-surface-raised transition-colors"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-text-primary hover:bg-surface-raised transition-colors"
                   title="Modifier"
                   aria-label="Modifier le joueur"
                 >
@@ -167,7 +167,7 @@ export function PlayerRow({
               onChange={e => setJersey(e.target.value)}
               placeholder="—"
               className="w-16 px-2 py-1.5 rounded-lg bg-surface-raised border border-surface-border
-                         text-white text-sm text-center focus:outline-none focus:border-primary-500
+                         text-text-primary text-sm text-center focus:outline-none focus:border-primary-500
                          [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none
                          [&::-webkit-inner-spin-button]:appearance-none"
             />
@@ -180,7 +180,7 @@ export function PlayerRow({
               value={position}
               onChange={e => setPosition(e.target.value as PlayerPosition | '')}
               className="w-full px-2 py-1.5 rounded-lg bg-surface-raised border border-surface-border
-                         text-white text-sm focus:outline-none focus:border-primary-500"
+                         text-text-primary text-sm focus:outline-none focus:border-primary-500"
             >
               <option value="">— Non définie —</option>
               {Object.entries(POSITION_LABELS).map(([value, label]) => (

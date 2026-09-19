@@ -125,7 +125,7 @@ function NewDmModal({
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Rechercher un joueur…"
-            className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-text-primary placeholder-slate-600 focus:outline-none"
             aria-label="Rechercher un joueur"
             role="combobox"
             aria-expanded={filtered.length > 0}
@@ -169,7 +169,7 @@ function NewDmModal({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{p.full_name ?? 'Joueur'}</p>
+                  <p className="text-sm font-semibold text-text-primary truncate">{p.full_name ?? 'Joueur'}</p>
                   <p className="text-[10px] text-slate-600 capitalize">{p.role}</p>
                 </div>
               </button>
@@ -350,10 +350,10 @@ function Sidebar({
       {/* ── Header ── */}
       <div className="px-4 pt-5 pb-3 shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-black text-white tracking-tight">Discussions</h1>
+          <h1 className="text-xl font-black text-text-primary tracking-tight">Discussions</h1>
           <button
             onClick={onNewDm}
-            className="p-2 rounded-xl hover:bg-white/8 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl hover:bg-white/8 text-slate-400 hover:text-text-primary transition-colors"
             title="Nouveau message direct"
             aria-label="Nouveau message"
           >
@@ -372,7 +372,7 @@ function Sidebar({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher ou démarrer une discussion"
-            className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none min-w-0"
+            className="flex-1 bg-transparent text-sm text-text-primary placeholder-slate-500 focus:outline-none min-w-0"
           />
           {search && (
             <button onClick={() => setSearch('')} className="text-slate-500 hover:text-slate-300 transition-colors shrink-0">
@@ -393,7 +393,7 @@ function Sidebar({
                 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all whitespace-nowrap',
                 filter === f.id
                   ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/30'
-                  : 'bg-white/[0.07] text-slate-400 hover:bg-white/12 hover:text-white',
+                  : 'bg-white/[0.07] text-slate-400 hover:bg-white/12 hover:text-text-primary',
               )}
             >
               {f.label}
@@ -453,7 +453,7 @@ function Sidebar({
                   <div className="flex items-baseline justify-between gap-2 mb-0.5">
                     <p className={clsx(
                       'text-sm truncate',
-                      item.unread > 0 ? 'font-bold text-white' : sel ? 'font-semibold text-white' : 'font-medium text-slate-200',
+                      item.unread > 0 ? 'font-bold text-text-primary' : sel ? 'font-semibold text-text-primary' : 'font-medium text-slate-200',
                     )}>
                       {item.name}
                     </p>
@@ -718,7 +718,7 @@ export function ChatPage() {
           <div className="w-16 h-16 rounded-2xl bg-primary-600/10 border border-primary-600/20 flex items-center justify-center">
             <MessageCircle size={28} className="text-primary-400" />
           </div>
-          <p className="text-white font-bold text-base">Sélectionnez une conversation</p>
+          <p className="text-text-primary font-bold text-base">Sélectionnez une conversation</p>
           <p className="text-slate-500 text-sm">Choisissez un canal ou un groupe dans la liste.</p>
         </div>
       )
@@ -780,11 +780,11 @@ export function ChatPage() {
           <div className="flex items-center gap-3 px-3 py-2.5 border-b border-surface-border shrink-0">
             <button
               onClick={() => setMobileShowChat(false)}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-text-primary transition-colors"
             >
               <ArrowLeft size={18} />
             </button>
-            <span className="font-bold text-white text-sm truncate">{mobileTitle}</span>
+            <span className="font-bold text-text-primary text-sm truncate">{mobileTitle}</span>
           </div>
           <div className="flex-1 overflow-hidden">
             {mobileShowChat && renderChat()}

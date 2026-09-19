@@ -310,7 +310,7 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
     rpc('count_team_messages_before', {
       p_team_id: teamId,
       p_before_id: first.id,
-    }).then(({ data }: any) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
+    }).then(({ data }) => setOlderCountState({ teamId, count: Number(data ?? 0) }))
   }, [teamId, messagesQuery.data])
 
   // ── Read receipts ─────────────────────────────────────────────────────────
@@ -410,8 +410,9 @@ export function useTeamChat(teamId?: string, currentUserId?: string) {
       if (error) throw error
 
       // Extraire et enregistrer les mentions @
-      if (newMsg && (newMsg as any)?.id) {
-        await saveMentions(content, (newMsg as any).id, senderId, 'team', teamId!)
+      const newMsgRow = newMsg as { id: string } | null
+      if (newMsgRow?.id) {
+        await saveMentions(content, newMsgRow.id, senderId, 'team', teamId!)
       }
     },
     onMutate: async () => {

@@ -56,7 +56,7 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines = 3): number {
   const words = text.split(' ')
   let line = ''
-  let lines: string[] = []
+  const lines: string[] = []
   for (const word of words) {
     const test = line ? `${line} ${word}` : word
     if (ctx.measureText(test).width > maxWidth && line) {

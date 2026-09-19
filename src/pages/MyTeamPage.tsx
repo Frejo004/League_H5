@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
 import { useTeams } from '@/hooks/useTeams'
 import { usePlayers } from '@/hooks/usePlayers'
-import { TeamView } from '@/pages/CaptainPage'
+import { TeamView } from '@/components/captain/TeamView'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export function MyTeamPage() {
@@ -60,7 +60,7 @@ export function MyTeamPage() {
               {myTeam.name[0]}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-white">{myTeam.name}</p>
+              <p className="font-semibold text-text-primary">{myTeam.name}</p>
               <p className="text-xs text-slate-500">{season.name}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">

@@ -299,25 +299,27 @@ export function usePolls() {
         .order('last_name', { ascending: true })
 
       if (pErr) throw pErr
-      if (!players?.length) throw new Error('Aucun joueur trouvé pour ce match')
+
+      interface PlayerForPollRow { id: string; first_name: string; last_name: string; team_id: string }
+      const playersList = (players ?? []) as unknown as PlayerForPollRow[]
+      if (!playersList.length) throw new Error('Aucun joueur trouvé pour ce match')
 
       const noGoalLabel = 'Aucun but'
       const noAssistLabel = 'Aucune passe'
 
-      const polls: (typeof supabase extends { from: (t: string) => { insert: (v: infer I) => unknown } } ? never : never)[] = []
+      type PlayerPollInsert = PollInsert & { poll_meta: { option_player_ids: (string | null)[] } }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const insertPolls: any[] = types.map(type => {
+      const insertPolls: PlayerPollInsert[] = types.map(type => {
         const config = POLL_TYPE_CONFIG[type]
         const isAssist = type === 'anytime_assister'
 
         // Options = noms des joueurs + option "Aucun but/passe" en dernier
-        const playerOptions = players.map((p: any) => `${p.first_name} ${p.last_name}`)
+        const playerOptions = playersList.map((p) => `${p.first_name} ${p.last_name}`)
         const lastOption = isAssist ? noAssistLabel : noGoalLabel
         const options = [...playerOptions, lastOption]
 
         // Métadonnées : player_id pour chaque option (null pour la dernière)
-        const option_player_ids = [...players.map((p: any) => p.id), null]
+        const option_player_ids = [...playersList.map((p) => p.id), null]
 
         return {
           season_id: season.id,
@@ -331,9 +333,6 @@ export function usePolls() {
           poll_meta: { option_player_ids },
         }
       })
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _ = polls
 
       const { error } = await supabase.from('polls').insert(insertPolls as never)
       if (error) throw error

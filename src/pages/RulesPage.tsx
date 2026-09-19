@@ -27,30 +27,51 @@ interface TeamWithPlayers {
   players: Array<{ id: string; first_name: string; last_name: string; jersey_number: number | null }>
 }
 
+interface RulesTeamRow {
+  id: string
+  name: string
+  color: string
+  logo_url: string | null
+}
+
+interface RulesPlayerRow {
+  id: string
+  team_id: string
+  first_name: string
+  last_name: string
+  jersey_number: number | null
+}
+
 function useTeamsWithPlayers(seasonId?: string) {
   return useQuery({
     queryKey: ['rules-teams', seasonId],
     enabled: !!seasonId,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<TeamWithPlayers[]> => {
-      const { data: teams, error: teamsErr } = await supabase
+      const { data: teamsData, error: teamsErr } = await supabase
         .from('teams')
         .select('id, name, color, logo_url')
         .eq('season_id', seasonId!)
         .order('name', { ascending: true })
       if (teamsErr) throw teamsErr
 
-      const { data: players, error: playersErr } = await supabase
+      // Cast nécessaire : l'inférence Supabase pour ces requêtes peut se dégrader
+      // en 'never' selon les autres requêtes typées dans le programme (bug connu supabase-js).
+      const teams = (teamsData ?? []) as unknown as RulesTeamRow[]
+
+      const { data: playersData, error: playersErr } = await supabase
         .from('players')
         .select('id, team_id, first_name, last_name, jersey_number')
-        .in('team_id', (teams as any ?? []).map((t: any) => t.id))
+        .in('team_id', teams.map((t) => t.id))
         .eq('is_active', true)
         .order('jersey_number', { ascending: true })
       if (playersErr) throw playersErr
 
-      return (teams as any ?? []).map((team: any) => ({
+      const players = (playersData ?? []) as unknown as RulesPlayerRow[]
+
+      return teams.map((team) => ({
         ...team,
-        players: (players as any ?? []).filter((p: any) => p.team_id === team.id),
+        players: players.filter((p) => p.team_id === team.id),
       }))
     },
   })
@@ -329,7 +350,7 @@ export function RulesPage() {
                 <div className="flex-1 h-px bg-white/[0.06]" />
                 <div className="flex items-center gap-2 px-4">
                   <Users size={14} className="text-amber-400" />
-                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Équipes participantes</h2>
+                  <h2 className="text-sm font-black text-text-primary uppercase tracking-widest">Équipes participantes</h2>
                   {teams.length > 0 && (
                     <span className="text-[10px] font-bold text-amber-500/60 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                       {teams.length}
@@ -368,7 +389,7 @@ export function RulesPage() {
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-primary-600/10 border border-primary-600/20">
                     <Clock size={18} className="text-primary-400 shrink-0" />
                     <div>
-                      <p className="text-sm font-black text-white">2 périodes de 20 minutes</p>
+                      <p className="text-sm font-black text-text-primary">2 périodes de 20 minutes</p>
                       <p className="text-xs text-slate-400">5 minutes de pause</p>
                     </div>
                   </div>
@@ -385,7 +406,7 @@ export function RulesPage() {
                     <div key={result} className="flex items-center justify-between p-2.5 rounded-xl border border-white/[0.06]">
                       <div className="flex items-center gap-2.5">
                         <div className={clsx('w-3 h-3 rounded-sm shrink-0', bg)} />
-                        <span className="text-sm font-semibold text-white">{result}</span>
+                        <span className="text-sm font-semibold text-text-primary">{result}</span>
                       </div>
                       <span className="text-sm font-black" style={{ color }}>{points}</span>
                     </div>
@@ -440,7 +461,7 @@ export function RulesPage() {
               </div>
               
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <h4 className="text-xs font-bold text-white mb-2">Si 4 joueurs seulement :</h4>
+                <h4 className="text-xs font-bold text-text-primary mb-2">Si 4 joueurs seulement :</h4>
                 <ul className="space-y-1.5">
                   {[
                     'Demander un mercenaire avec accord de l\'équipe adverse',
@@ -471,7 +492,7 @@ export function RulesPage() {
                 </div>
                 
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <h4 className="text-xs font-bold text-white mb-1.5">Exceptions :</h4>
+                  <h4 className="text-xs font-bold text-text-primary mb-1.5">Exceptions :</h4>
                   <ul className="space-y-1 text-xs">
                     {[
                       'Notification préalable capitaine',
@@ -549,7 +570,7 @@ export function RulesPage() {
 
                 <div className="space-y-6">
                   <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-black text-text-primary uppercase tracking-wider mb-2 flex items-center gap-2">
                       <UserCheck size={16} className="text-blue-400" />
                       Rôle et attitude
                     </h3>
@@ -674,7 +695,7 @@ export function RulesPage() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-xs text-slate-300 font-medium">{s.infraction}</td>
-                      <td className="py-4 px-4 text-xs font-black text-white">{s.immediate}</td>
+                      <td className="py-4 px-4 text-xs font-black text-text-primary">{s.immediate}</td>
                       <td className="py-4 px-4 text-xs font-bold text-red-400/80 italic">{s.supp}</td>
                     </tr>
                   ))}
@@ -685,19 +706,19 @@ export function RulesPage() {
               <div className="flex gap-3">
                 <div className="w-1.5 h-full rounded-full bg-red-500 shrink-0" />
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  <span className="text-white font-bold uppercase">2 Jaunes = Expulsion.</span> Un joueur qui reçoit 2 cartons jaunes dans le même match est expulsé (équivalent rouge).
+                  <span className="text-text-primary font-bold uppercase">2 Jaunes = Expulsion.</span> Un joueur qui reçoit 2 cartons jaunes dans le même match est expulsé (équivalent rouge).
                 </p>
               </div>
               <div className="flex gap-3">
                 <div className="w-1.5 h-full rounded-full bg-red-500 shrink-0" />
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  <span className="text-white font-bold uppercase">Effet Suspension.</span> Le joueur suspendu ne peut ni jouer ni arbitrer pendant toute la durée.
+                  <span className="text-text-primary font-bold uppercase">Effet Suspension.</span> Le joueur suspendu ne peut ni jouer ni arbitrer pendant toute la durée.
                 </p>
               </div>
               <div className="flex gap-3">
                 <div className="w-1.5 h-full rounded-full bg-red-500 shrink-0" />
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  <span className="text-white font-bold uppercase">Capitaine Responsable.</span> Il répond du comportement et de la tenue de tous ses joueurs.
+                  <span className="text-text-primary font-bold uppercase">Capitaine Responsable.</span> Il répond du comportement et de la tenue de tous ses joueurs.
                 </p>
               </div>
             </div>
@@ -710,17 +731,17 @@ export function RulesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl bg-black/40 border border-white/5 shadow-inner">
-                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest mb-3">Principe de Rotation</h4>
+                  <h4 className="text-[11px] font-black text-text-primary uppercase tracking-widest mb-3">Principe de Rotation</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Pour chaque match, les deux équipes qui ne jouent pas doivent fournir <span className="text-blue-400 font-bold">1 arbitre chacune</span>.
                   </p>
                   <div className="mt-4 flex items-center gap-4 text-[10px] font-bold text-slate-500">
                     <div className="flex-1 p-2 rounded-lg bg-white/5 border border-white/5 text-center">
-                      Match <span className="text-white">A vs B</span>
+                      Match <span className="text-text-primary">A vs B</span>
                     </div>
                     <ArrowRight size={14} />
                     <div className="flex-1 p-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-center text-blue-400">
-                      Arbitres <span className="text-white">C & D</span>
+                      Arbitres <span className="text-text-primary">C & D</span>
                     </div>
                   </div>
                 </div>
@@ -745,7 +766,7 @@ export function RulesPage() {
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-4">
                     <Handshake size={24} className="text-blue-400" />
                   </div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-wider mb-2">Fair-Play Avant Tout</h4>
+                  <h4 className="text-sm font-black text-text-primary uppercase tracking-wider mb-2">Fair-Play Avant Tout</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     La réussite du tournoi repose sur votre collaboration et votre respect mutuel.
                     Merci pour votre disponibilité !

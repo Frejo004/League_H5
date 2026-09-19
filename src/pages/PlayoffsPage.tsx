@@ -14,11 +14,35 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { clsx } from 'clsx'
-import type { MatchStatus } from '@/types/database'
+import type { Database, MatchStatus } from '@/types/database'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
+
+type MatchesInsert = Database['public']['Tables']['matches']['Insert']
+type MatchesUpdate = Database['public']['Tables']['matches']['Update']
+
+interface NextMatchSlot {
+  id: string
+  home_team_id: string | null
+  away_team_id: string | null
+}
+
+// Workaround : comme pour les jointures dans useTransfers.ts, l'inférence de
+// type de supabase-js s'effondre sur `never` pour insert/update sur
+// 'matches' dans ce fichier (profondeur d'instanciation du type Database).
+// On type manuellement les opérations d'écriture via un wrapper `unknown`
+// plutôt que `any`.
+interface WritableMatchesTable {
+  insert: (rows: MatchesInsert[]) => PromiseLike<{ error: { message: string } | null }>
+  update: (row: MatchesUpdate) => {
+    eq: (column: string, value: string) => PromiseLike<{ error: { message: string } | null }>
+  }
+}
+function matchesTable(): WritableMatchesTable {
+  return supabase.from('matches') as unknown as WritableMatchesTable
+}
 
 interface PlayoffMatch {
   id: string
@@ -64,7 +88,8 @@ function usePlayoffMatches(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 30_000,
     queryFn: async (): Promise<PlayoffMatch[]> => {
-      const { data, error } = await (supabase.from('matches') as any)
+      const { data, error } = await supabase
+        .from('matches')
         .select(`
           id, slug, season_id, home_team_id, away_team_id,
           home_score, away_score, status, matchday, scheduled_at,
@@ -119,7 +144,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         })
       }
-      const { error: e1 } = await (supabase.from('matches') as any).insert(firstRoundMatches)
+      const { error: e1 } = await matchesTable().insert(firstRoundMatches)
       if (e1) throw e1
 
       // Créer les matchs des rounds suivants (sans équipes — à remplir après)
@@ -135,7 +160,7 @@ function useGeneratePlayoffs(seasonId?: string) {
           away_score: null,
         }))
         if (roundMatches.length > 0) {
-          const { error: e2 } = await (supabase.from('matches') as any).insert(roundMatches)
+          const { error: e2 } = await matchesTable().insert(roundMatches)
           if (e2) throw e2
         }
       }
@@ -170,13 +195,15 @@ function useAdvanceWinner(seasonId?: string) {
           : match.away_team_id
 
       // Trouver le prochain match à remplir
-      const { data: nextMatches } = await (supabase.from('matches') as any)
+      const { data } = await supabase
+        .from('matches')
         .select('id, home_team_id, away_team_id')
         .eq('season_id', seasonId!)
         .eq('matchday', nextRoundMatchday)
         .order('created_at', { ascending: true })
 
-      if (!nextMatches?.length) return
+      const nextMatches = (data ?? []) as unknown as NextMatchSlot[]
+      if (!nextMatches.length) return
       const targetMatch = nextMatches[Math.floor(slotIndex / 2)]
       if (!targetMatch) return
 
@@ -184,7 +211,7 @@ function useAdvanceWinner(seasonId?: string) {
         ? { home_team_id: winnerId }
         : { away_team_id: winnerId }
 
-      await (supabase.from('matches') as any).update(update).eq('id', targetMatch.id)
+      await matchesTable().update(update).eq('id', targetMatch.id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['playoff-matches', seasonId] })
@@ -275,7 +302,7 @@ function PlayoffMatchCard({
           {(isCompleted || isLive) && (
             <Link
               to={`/matches/${match.slug || match.id}`}
-              className="text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-wider transition-colors"
+              className="text-[9px] font-black text-slate-500 hover:text-text-primary uppercase tracking-wider transition-colors"
             >
               Détails →
             </Link>
@@ -313,7 +340,7 @@ function TeamRow({
       {/* Nom */}
       <span className={clsx(
         'flex-1 text-sm font-bold truncate',
-        isTBD ? 'text-slate-600 italic' : isWinner ? 'text-white' : 'text-slate-400',
+        isTBD ? 'text-slate-600 italic' : isWinner ? 'text-text-primary' : 'text-slate-400',
       )}>
         {team ? team.name : 'À déterminer'}
       </span>
@@ -322,7 +349,7 @@ function TeamRow({
       {score !== null && score !== undefined && (
         <span className={clsx(
           'text-lg font-black tabular-nums w-6 text-center',
-          isWinner ? 'text-white' : 'text-slate-500',
+          isWinner ? 'text-text-primary' : 'text-slate-500',
         )} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
           {score}
         </span>
@@ -373,7 +400,7 @@ export function PlayoffsPage() {
         <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center">
           <Lock size={24} className="text-slate-500" />
         </div>
-        <h2 className="text-xl font-black text-white uppercase tracking-wider">Phase finale désactivée</h2>
+        <h2 className="text-xl font-black text-text-primary uppercase tracking-wider">Phase finale désactivée</h2>
         <p className="text-slate-500 text-sm max-w-xs">
           Les playoffs ne sont pas activés pour cette saison.
           {isAdmin && ' Activez-les dans les paramètres admin.'}
@@ -445,7 +472,7 @@ export function PlayoffsPage() {
               <Trophy size={22} className="text-amber-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white uppercase tracking-wider"
+              <h1 className="text-2xl font-black text-text-primary uppercase tracking-wider"
                 style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Phase Finale
               </h1>
@@ -485,7 +512,7 @@ export function PlayoffsPage() {
               <div key={team.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-white/8 bg-white/[0.02]">
                 <span className="text-[10px] font-black text-slate-600 w-4 shrink-0">#{i + 1}</span>
                 <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: team.color }} />
-                <span className="text-xs font-bold text-white truncate">{team.name}</span>
+                <span className="text-xs font-bold text-text-primary truncate">{team.name}</span>
               </div>
             ))}
           </div>
@@ -518,7 +545,7 @@ export function PlayoffsPage() {
                   <div className="flex-1 h-px bg-white/8" />
                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
                     {round.label === 'Finale' && <Trophy size={12} className="text-amber-400" />}
-                    <span className="text-xs font-black text-white uppercase tracking-widest">{round.label}</span>
+                    <span className="text-xs font-black text-text-primary uppercase tracking-widest">{round.label}</span>
                     <span className="text-[10px] text-slate-600 font-bold">
                       {round.matches.filter(m => m.status === 'completed').length}/{round.matches.length}
                     </span>
@@ -566,7 +593,7 @@ export function PlayoffsPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">🏆 Champion</p>
-                        <p className="text-2xl font-black text-white uppercase tracking-wider"
+                        <p className="text-2xl font-black text-text-primary uppercase tracking-wider"
                           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           {winner.name}
                         </p>

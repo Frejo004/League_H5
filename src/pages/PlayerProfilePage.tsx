@@ -73,7 +73,7 @@ function PlayerFormChart({ matches }: {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <TrendingUp size={13} className="text-slate-400" />
-          <p className="text-xs font-black text-white uppercase tracking-widest">Contributions par journée</p>
+          <p className="text-xs font-black text-text-primary uppercase tracking-widest">Contributions par journée</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
@@ -89,7 +89,7 @@ function PlayerFormChart({ matches }: {
 
       {/* Tooltip hover */}
       {hovered && (
-        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5 border border-white/8 text-xs animate-fade-in">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-raised border border-surface-border text-xs animate-fade-in">
           <span className="font-black text-slate-400 uppercase tracking-wider">J{hovered.matchday}</span>
           <span className={clsx(
             'text-[10px] font-black px-1.5 py-0.5 rounded uppercase',
@@ -122,12 +122,12 @@ function PlayerFormChart({ matches }: {
               <line
                 x1={PAD.left} y1={yScale(tick)}
                 x2={W - PAD.right} y2={yScale(tick)}
-                stroke="rgba(255,255,255,0.06)" strokeWidth="1"
+                stroke="var(--color-surface-border)" strokeWidth="1"
               />
               <text
                 x={PAD.left - 4} y={yScale(tick) + 3}
                 textAnchor="end"
-                fill="rgba(255,255,255,0.2)"
+                fill="var(--color-text-muted)"
                 fontSize="7"
                 fontFamily="monospace"
               >
@@ -241,7 +241,7 @@ function PlayerFormChart({ matches }: {
             <line
               x1={xScale(hoveredIdx)} y1={PAD.top}
               x2={xScale(hoveredIdx)} y2={PAD.top + cH}
-              stroke="rgba(255,255,255,0.15)"
+              stroke="var(--color-text-muted)"
               strokeWidth="1"
               strokeDasharray="3,3"
             />
@@ -254,7 +254,7 @@ function PlayerFormChart({ matches }: {
               x={xScale(i)}
               y={H - 6}
               textAnchor="middle"
-              fill={hoveredIdx === i ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)'}
+              fill={hoveredIdx === i ? 'var(--color-text-secondary)' : 'var(--color-text-muted)'}
               fontSize="7"
               fontFamily="monospace"
               fontWeight={hoveredIdx === i ? 'bold' : 'normal'}
@@ -432,7 +432,7 @@ export function PlayerProfilePage() {
             label === 'Homme du match' && (mvpData?.total_mvp ?? 0) > 0 && 'border-amber-500/30 bg-amber-500/5'
           )}>
             <Icon size={16} className={clsx('mx-auto mb-1.5', color)} />
-            <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
+            <p className="text-2xl font-bold text-text-primary tabular-nums">{value}</p>
             <p className="text-xs text-slate-500 mt-0.5">{label}</p>
           </div>
         ))}
@@ -555,7 +555,7 @@ export function PlayerProfilePage() {
 
               {/* Infos match */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">
+                <p className="text-sm font-semibold text-text-primary truncate">
                   {m.home_team_name} <span className="text-slate-500 font-normal">vs</span> {m.away_team_name}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -567,7 +567,7 @@ export function PlayerProfilePage() {
               </div>
 
               {/* Score */}
-              <span className="text-sm font-bold text-white tabular-nums shrink-0">
+              <span className="text-sm font-bold text-text-primary tabular-nums shrink-0">
                 {m.home_score} – {m.away_score}
               </span>
             </Link>

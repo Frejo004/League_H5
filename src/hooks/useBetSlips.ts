@@ -107,12 +107,12 @@ export function useBetSlips() {
         poll_id: i.poll_id,
         option_index: i.option_index,
       }))
-      const { data, error } = await (supabase as any).rpc('submit_bet_slip', {
+      const { data, error } = await supabase.rpc('submit_bet_slip', {
         p_user_id: user.id,
         p_season_id: season.id,
         p_type: type,
         p_selections: selections,
-      })
+      } as never)
 
       if (error) throw error
       return data as string // slip_id

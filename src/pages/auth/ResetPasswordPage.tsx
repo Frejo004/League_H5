@@ -1,17 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Mail, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { AuthLayout } from '@/components/auth/AuthLayout'
-import { useAuth } from '@/hooks/useAuth'
 
 export function ResetPasswordPage() {
-  const { profile } = useAuth()
-  const logoLink = profile ? '/dashboard' : '/'
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [email, setEmail]       = useState('')
+  const [error, setError]       = useState<string | null>(null)
+  const [success, setSuccess]   = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
@@ -34,17 +31,17 @@ export function ResetPasswordPage() {
   if (success) {
     return (
       <AuthLayout>
-        <div className="w-full max-w-sm text-center animate-scale-in">
-          <div className="w-20 h-20 rounded-full bg-blue-500/20 border-2 border-blue-500/40
-                          flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">📧</span>
+        <div style={{ width: '100%', textAlign: 'center' }} className="animate-scale-in">
+          <div style={{ width: '4rem', height: '4rem', borderRadius: '1rem', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.75rem' }}>
+            📧
           </div>
-          <h2 className="text-2xl font-black text-white mb-3">Email envoyé !</h2>
-          <p className="text-slate-400 mb-8 leading-relaxed">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f8fafc', marginBottom: '0.75rem' }}>Email envoyé !</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
             Vérifiez votre boîte mail. Vous recevrez un lien pour réinitialiser votre mot de passe.
           </p>
-          <Link to="/auth/login" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-            Retour à la connexion
+          <Link to="/auth/login" className="btn-primary" style={{ width: '100%', display: 'flex' }}>
+            <ArrowLeft size={16} strokeWidth={2.5} />
+            <span>Retour à la connexion</span>
           </Link>
         </div>
       </AuthLayout>
@@ -53,38 +50,43 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
-        <div className="mb-8">
-          <Link to={logoLink} className="lg:hidden flex items-center gap-3 mb-8 group shrink-0 w-fit">
-            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0 transition-transform group-hover:scale-105 duration-200" />
-            <span className="text-white font-bold text-lg group-hover:text-primary-300 transition-colors duration-200">League H5</span>
-          </Link>
-          <h2 className="text-3xl font-black text-white tracking-tight">Mot de passe oublié</h2>
-          <p className="text-slate-400 mt-2">Entrez votre email pour recevoir un lien de réinitialisation</p>
+      <div className="animate-fade-in-up" style={{ width: '100%' }}>
+
+        <div style={{ marginBottom: '1.75rem' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '0.4rem' }}>
+            Mot de passe oublié
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            Entrez votre email pour recevoir un lien de réinitialisation
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {error && (
-            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/25 text-red-400 text-sm px-4 py-3 rounded-xl">
-              <span className="mt-0.5">⚠️</span><span>{error}</span>
+            <div className="animate-scale-in" role="alert" aria-live="polite"
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', padding: '0.75rem', color: '#fca5a5' }}>
+              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: '0.1rem', color: '#f87171' }} />
+              <span style={{ fontSize: '0.8125rem', lineHeight: 1.5 }}>{error}</span>
             </div>
           )}
-          <div className="space-y-1.5">
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label htmlFor="email" className="label">Adresse email</label>
-            <div className="relative">
-              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} strokeWidth={2} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none', zIndex: 1 }} />
               <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
                 className="input input-icon-l" placeholder="vous@exemple.com" required autoComplete="email" />
             </div>
           </div>
-          <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 text-base">
-            {isLoading ? <LoadingSpinner size="sm" /> : <><span>Envoyer le lien</span><ArrowRight size={16} /></>}
+
+          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', marginTop: '0.25rem' }}>
+            {isLoading ? <LoadingSpinner size="sm" /> : <><span>Envoyer le lien</span><ArrowRight size={16} strokeWidth={2.5} /></>}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <Link to="/auth/login" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">
-            <ArrowLeft size={14} />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem', marginTop: '1.5rem', textAlign: 'center' }}>
+          <Link to="/auth/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: '#475569', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none' }}>
+            <ArrowLeft size={14} strokeWidth={2.5} />
             Retour à la connexion
           </Link>
         </div>

@@ -68,18 +68,18 @@ function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
       <div
-        className="relative w-full sm:max-w-lg max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl bg-surface border border-white/10"
+        className="relative w-full sm:max-w-lg max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl bg-surface border border-surface-border"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border shrink-0">
           <div className="flex items-center gap-2">
             <GitCompare size={16} className="text-primary-400" />
-            <span className="text-sm font-black text-white uppercase tracking-widest">Comparaison</span>
+            <span className="text-sm font-black text-text-primary uppercase tracking-widest">Comparaison</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-500 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
             aria-label="Fermer"
           >
             ✕
@@ -138,7 +138,7 @@ function CompareModal({ playerAId, playerBId, seasonId, onClose }: {
               </div>
 
               {/* Liens profils */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/8">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-surface-border">
                 <Link
                   to={`/players/${a.slug || a.id}`}
                   onClick={onClose}

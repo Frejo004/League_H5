@@ -238,7 +238,7 @@ function MembersPanel({
       {/* Header du panneau */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
         <div>
-          <h3 className="text-sm font-bold text-white">Membres</h3>
+          <h3 className="text-sm font-bold text-text-primary">Membres</h3>
           <p className="text-[10px] text-slate-500 mt-0.5">
             <span className="text-emerald-400 font-semibold">{onlineCount}</span>
             {' '}en ligne · {members.length} au total
@@ -295,7 +295,7 @@ function MembersPanel({
                 <div className="flex items-center gap-1.5">
                   <p className={clsx(
                     'text-sm truncate',
-                    isOnline ? 'text-white font-semibold' : 'text-slate-400',
+                    isOnline ? 'text-text-primary font-semibold' : 'text-slate-400',
                   )}>
                     {name}
                     {isMe && <span className="text-[10px] text-slate-600 font-normal ml-1">(vous)</span>}
@@ -395,7 +395,7 @@ function MessageSearch({
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Rechercher dans les messages…"
-          className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none"
+          className="flex-1 bg-transparent text-sm text-text-primary placeholder-slate-600 focus:outline-none"
         />
         {query && (
           <span className="text-[10px] text-slate-600 shrink-0">
@@ -499,7 +499,7 @@ function ConfirmModal({ message, confirmLabel = 'Confirmer', onConfirm, onCancel
         <div className="flex border-t border-white/[0.06]">
           <button
             onClick={onCancel}
-            className="flex-1 py-3 text-sm text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors border-r border-white/[0.06]"
+            className="flex-1 py-3 text-sm text-slate-400 hover:text-text-primary hover:bg-white/[0.04] transition-colors border-r border-white/[0.06]"
           >
             Annuler
           </button>
@@ -541,7 +541,7 @@ function EmojiPicker({ onSelect, onClose }: { onSelect: (e: string) => void; onC
       className="absolute bottom-full mb-2 left-0 z-50 bg-chat-panel border border-white/10 rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col max-h-[400px]"
     >
       <div className="px-4 py-3 border-b border-white/5 shrink-0">
-        <h3 className="text-xs font-black text-white uppercase tracking-wider">Émojis</h3>
+        <h3 className="text-xs font-black text-text-primary uppercase tracking-wider">Émojis</h3>
       </div>
       <div className="flex-1 overflow-y-auto p-3" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
         {EMOJI_GROUPS.map(g => (
@@ -611,7 +611,7 @@ function MentionDropdown({
             >
               <div className="w-7 h-7 rounded-full bg-primary-600/40 flex items-center justify-center text-xs font-bold text-primary-300 shrink-0">@</div>
               <div>
-                <div className="text-sm font-semibold text-white">everyone</div>
+                <div className="text-sm font-semibold text-text-primary">everyone</div>
                 <div className="text-[10px] text-slate-500">Notifier tout le monde</div>
               </div>
             </button>
@@ -769,7 +769,7 @@ function LinkPreview({ url }: { url: string }) {
         <ExternalLink size={14} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-300 truncate group-hover:text-white transition-colors">{hostname}</p>
+        <p className="text-xs font-medium text-slate-300 truncate group-hover:text-text-primary transition-colors">{hostname}</p>
         <p className="text-[10px] text-slate-600 truncate">{url.length > 40 ? url.slice(0, 40) + '…' : url}</p>
       </div>
     </a>
@@ -1376,7 +1376,7 @@ export function GenericChat({
 
           {/* Titre + sous-titre */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold text-white leading-tight truncate">{headerTitle}</h2>
+            <h2 className="text-sm font-bold text-text-primary leading-tight truncate">{headerTitle}</h2>
             <p className="text-[11px] mt-0.5 truncate flex items-center gap-1.5">
               {/* Présence DM */}
               {headerSubtitle === 'En ligne' && (
@@ -1553,7 +1553,7 @@ export function GenericChat({
                   <button
                     onClick={onLoadOlder}
                     disabled={isLoadingOlder}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs text-slate-400 hover:text-text-primary bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoadingOlder ? (
                       <div className="w-3 h-3 border border-slate-500 border-t-slate-300 rounded-full animate-spin" />
@@ -1625,7 +1625,7 @@ export function GenericChat({
             <div className="sticky bottom-3 z-20 flex justify-center pointer-events-none">
               <button
                 onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setNewMsgCount(0) }}
-                className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full bg-chat-action-bar/90 border border-white/10 shadow-lg text-slate-400 hover:text-white hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
+                className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-full bg-chat-action-bar/90 border border-white/10 shadow-lg text-slate-400 hover:text-text-primary hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
                 style={{ animation: 'msgSlideIn 0.15s ease-out both' }}
               >
                 {newMsgCount > 0 && (
@@ -1721,7 +1721,7 @@ export function GenericChat({
                 }}
                 placeholder="Écrire un message…"
                 rows={1}
-                className="flex-1 resize-none bg-transparent text-sm text-white placeholder-slate-600 focus:outline-none py-1.5 max-h-28 overflow-y-auto"
+                className="flex-1 resize-none bg-transparent text-sm text-text-primary placeholder-slate-600 focus:outline-none py-1.5 max-h-28 overflow-y-auto"
                 style={{ lineHeight: '1.5', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
                 onInput={e => {
                   const el = e.currentTarget

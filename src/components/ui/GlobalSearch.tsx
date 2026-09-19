@@ -63,9 +63,9 @@ export function GlobalSearch() {
         type: 'player' as const,
       })),
     ...(teams ?? [])
-      .filter((t: any) => t.name.toLowerCase().includes(query.toLowerCase()))
+      .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 3)
-      .map((t: any) => ({
+      .map((t) => ({
         id: t.id,
         label: t.name,
         sub: 'Équipe',

@@ -13,9 +13,30 @@
 import { useEffect, useCallback, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/database'
 
 const HEARTBEAT_INTERVAL = 30_000  // 30s
 const ONLINE_THRESHOLD   = 45_000  // 45s — doit être > HEARTBEAT_INTERVAL
+
+type UserPresenceInsert = Database['public']['Tables']['user_presence']['Insert']
+interface OnlinePresenceRow {
+  user_id: string
+  last_seen: string
+}
+
+// Workaround : comme pour les jointures dans useTransfers.ts, l'inférence de
+// type de supabase-js s'effondre sur `never` pour ces opérations dans ce
+// fichier (profondeur d'instanciation du type Database). On type
+// manuellement l'upsert via un wrapper `unknown` plutôt que `any`.
+interface WritableUserPresenceTable {
+  upsert: (
+    row: UserPresenceInsert,
+    opts: { onConflict: string }
+  ) => PromiseLike<{ error: { message: string } | null }>
+}
+function userPresenceTable(): WritableUserPresenceTable {
+  return supabase.from('user_presence') as unknown as WritableUserPresenceTable
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useMyPresence — à monter une seule fois dans AppLayout
@@ -25,9 +46,9 @@ export function useMyPresence(userId?: string) {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const publish = useCallback(async (uid: string) => {
-    await (supabase.from('user_presence') as any).upsert(
-      { user_id: uid, online_at: new Date().toISOString() } as any,
-      { onConflict: 'user_id' } as any
+    await userPresenceTable().upsert(
+      { user_id: uid, online_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
     )
   }, [])
 
@@ -98,11 +119,12 @@ export function useOnlineUsers(userIds: string[]) {
 
       if (error) return new Set()
 
+      const rows = (data ?? []) as unknown as OnlinePresenceRow[]
       const threshold = Date.now() - ONLINE_THRESHOLD
       const online = new Set<string>()
-      for (const row of data as any ?? []) {
-        if (new Date((row as any).last_seen).getTime() > threshold) {
-          online.add((row as any).user_id)
+      for (const row of rows) {
+        if (new Date(row.last_seen).getTime() > threshold) {
+          online.add(row.user_id)
         }
       }
       return online

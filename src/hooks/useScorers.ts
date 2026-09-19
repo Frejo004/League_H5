@@ -33,9 +33,9 @@ export function useScorers(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 1000 * 60 * 10, // 10 min — ne change qu'après une mise à jour de match
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_scorers', {
+      const { data, error } = await supabase.rpc('get_scorers', {
         p_season_id: seasonId!,
-      })
+      } as never)
       if (error) throw error
       const rows = (data ?? []) as Omit<ScorerRow, 'avatar_url'>[]
       if (!rows.length) return [] as ScorerRow[]

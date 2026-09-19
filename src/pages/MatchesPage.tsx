@@ -7,7 +7,6 @@ import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { PageHero } from '@/components/ui/PageHero'
 import { SkeletonMatchCard } from '@/components/ui/SkeletonLoader'
 import { LiveBadge } from '@/components/live/LiveBadge'
-import { SectionHeader } from '@/components/ui/SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { clsx } from 'clsx'
 

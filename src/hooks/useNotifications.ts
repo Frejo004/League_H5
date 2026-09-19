@@ -113,7 +113,10 @@ function useMyVotedMatches(userId?: string, matchIds?: string[]) {
         .eq('voted_by', userId!)
         .in('match_id', matchIds!)
       if (error) throw error
-      return new Set((data as any ?? []).map((v: any) => v.match_id))
+      // Cast nécessaire : l'inférence Supabase pour cette table peut se dégrader
+      // en 'never' selon les autres requêtes typées dans le programme (bug connu supabase-js).
+      const votes = (data ?? []) as unknown as { match_id: string }[]
+      return new Set(votes.map((v) => v.match_id))
     },
   })
 }
@@ -156,14 +159,15 @@ function useMyNextLineup(userId?: string, matchId?: string) {
     staleTime: 1000 * 60 * 5,
     queryFn: async () => {
       // Trouve le player_id de l'user
-      const { data: p } = await supabase.from('players').select('id').eq('user_id', userId!).maybeSingle()
+      const { data: pData } = await supabase.from('players').select('id').eq('user_id', userId!).maybeSingle()
+      const p = pData as unknown as { id: string } | null
       if (!p) return null
 
       const { data, error } = await supabase
         .from('match_lineups')
         .select('is_starter, team_id, matches(home_team_id, away_team:teams!away_team_id(name), home_team:teams!home_team_id(name))')
         .eq('match_id', matchId!)
-        .eq('player_id', (p as any).id)
+        .eq('player_id', p.id)
         .maybeSingle()
       if (error) throw error
       return data as unknown as MyNextLineupData | null
@@ -202,10 +206,12 @@ export function useNotifications() {
   // IDs lus — initialisés depuis localStorage
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds)
 
-  // Realtime : détecter quand un sondage lié à un match est résolu
+  // Realtime : un seul canal pour les 5 écoutes propres à l'utilisateur connecté
+  // (sondage résolu, sélection tactique, approbation spectateur, suspension
+  // ajoutée/levée) — au lieu de 4 canaux séparés, même pattern que useRealtimeMatch.
   useEffect(() => {
     if (!user?.id) return
-    const ch = supabase.channel(`polls-resolved-${user.id}`)
+    const channel = supabase.channel(`notifications-${user.id}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'polls',
       }, async (payload) => {
@@ -213,20 +219,23 @@ export function useNotifications() {
         if (updated.status !== 'completed' || updated.correct_option_index == null) return
 
         // Vérifier si l'utilisateur a voté sur ce sondage
-        const { data: prediction } = await supabase
+        const { data: predictionData } = await supabase
           .from('predictions')
           .select('option_index, is_correct, points_earned')
           .eq('poll_id', updated.id)
           .eq('user_id', user.id)
           .maybeSingle()
 
+        const prediction = predictionData as unknown as
+          | { option_index: number; is_correct: boolean | null; points_earned: number }
+          | null
         if (!prediction) return
 
-        const won = (prediction as any).is_correct === true
+        const won = prediction.is_correct === true
         pushLocal(
           won ? '🎉 Bon pronostic !' : '❌ Pronostic raté',
           won
-            ? `+${(prediction as any).points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
+            ? `+${prediction.points_earned} pts — ${updated.options[updated.correct_option_index]} était la bonne réponse`
             : `Réponse correcte : ${updated.options[updated.correct_option_index]}`,
           `poll-resolved-${updated.id}`,
           updated.match_id ? `/matches/${updated.match_id}` : '/polls'
@@ -236,17 +245,9 @@ export function useNotifications() {
         qc.invalidateQueries({ queryKey: ['leaderboard'] })
         qc.invalidateQueries({ queryKey: ['user-prediction'] })
       })
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [user?.id, qc])
-
-  // Realtime : détecter quand le joueur est ajouté à une compo
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase.channel(`player-tactics-${user.id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
         table: 'match_lineups'
       }, (payload) => {
         const record = payload.new as { player_id: string; is_starter: boolean }
@@ -255,17 +256,9 @@ export function useNotifications() {
           pushLocal('📋 Nouvelle compo !', 'Tu as été sélectionné comme titulaire.', 'tactic-update', '/my-team?tab=tactique')
         }
       })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id, qc])
-
-  // Realtime : Détecter quand ma demande de spectateur est approuvée
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase.channel(`my-spectator-approval-${user.id}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'spectators',
         filter: `user_id=eq.${user.id}`
       }, (payload) => {
@@ -274,6 +267,51 @@ export function useNotifications() {
           qc.invalidateQueries({ queryKey: ['spectators', 'me', user.id] })
           pushLocal('🎟️ Accès approuvé !', 'Ta demande a été acceptée, tu peux maintenant suivre la ligue.', 'spectator-approved', '/')
         }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'suspensions' }, async (payload) => {
+        const suspension = payload.new as {
+          id: string; player_id: string; reason: string; matches_count: number; is_active: boolean
+        }
+        // Vérifier si cette suspension concerne le joueur lié à cet utilisateur
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('id, first_name, last_name')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const player = playerData as unknown as { id: string; first_name: string; last_name: string } | null
+        if (!player || player.id !== suspension.player_id) return
+
+        qc.invalidateQueries({ queryKey: ['suspensions'] })
+        pushLocal(
+          '🚫 Sanction disciplinaire',
+          `Tu es suspendu pour ${suspension.matches_count} match${suspension.matches_count > 1 ? 's' : ''} — Motif : ${suspension.reason}`,
+          `suspension-added-${suspension.id}`,
+          '/dashboard'
+        )
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'suspensions' }, async (payload) => {
+        const updated = payload.new as { id: string; player_id: string; is_active: boolean; reason: string }
+        const old = payload.old as { is_active: boolean }
+        // Levée de sanction : is_active passe de true à false
+        if (old.is_active === false || updated.is_active !== false) return
+
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const player = playerData as unknown as { id: string } | null
+        if (!player || player.id !== updated.player_id) return
+
+        qc.invalidateQueries({ queryKey: ['suspensions'] })
+        pushLocal(
+          '✅ Sanction levée',
+          'Ta suspension a été levée. Tu peux à nouveau participer aux matchs.',
+          `suspension-lifted-${updated.id}`,
+          '/dashboard'
+        )
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -299,13 +337,14 @@ export function useNotifications() {
         // Si c'est une nouvelle demande, on envoie une notification push locale
         if (payload.eventType === 'INSERT') {
           const newReq = payload.new as Spectator
-          const { data: profile } = await supabase
+          const { data: profileData } = await supabase
             .from('profiles')
             .select('full_name, email')
             .eq('id', newReq.user_id)
             .single()
-          
-          const name = (profile as any)?.full_name ?? (profile as any)?.email ?? 'Un nouvel utilisateur'
+
+          const profile = profileData as unknown as { full_name: string | null; email: string } | null
+          const name = profile?.full_name ?? profile?.email ?? 'Un nouvel utilisateur'
           pushLocal(
             'Demande d\'accès',
             `${name} souhaite rejoindre la ligue`,
@@ -318,61 +357,6 @@ export function useNotifications() {
 
     return () => { supabase.removeChannel(channel) }
   }, [isAdmin, qc])
-
-  // Realtime : Détecter quand une suspension est ajoutée/levée pour le joueur connecté
-  useEffect(() => {
-    if (!user?.id) return
-
-    // On écoute toutes les suspensions — on filtre côté client sur le player lié à cet user
-    const channel = supabase
-      .channel(`suspension-player-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'suspensions' }, async (payload) => {
-        const suspension = payload.new as {
-          id: string; player_id: string; reason: string; matches_count: number; is_active: boolean
-        }
-        // Vérifier si cette suspension concerne le joueur lié à cet utilisateur
-        const { data: player } = await supabase
-          .from('players')
-          .select('id, first_name, last_name')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        if (!player || (player as any).id !== suspension.player_id) return
-
-        qc.invalidateQueries({ queryKey: ['suspensions'] })
-        pushLocal(
-          '🚫 Sanction disciplinaire',
-          `Tu es suspendu pour ${suspension.matches_count} match${suspension.matches_count > 1 ? 's' : ''} — Motif : ${suspension.reason}`,
-          `suspension-added-${suspension.id}`,
-          '/dashboard'
-        )
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'suspensions' }, async (payload) => {
-        const updated = payload.new as { id: string; player_id: string; is_active: boolean; reason: string }
-        const old = payload.old as { is_active: boolean }
-        // Levée de sanction : is_active passe de true à false
-        if (old.is_active === false || updated.is_active !== false) return
-
-        const { data: player } = await supabase
-          .from('players')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        if (!player || (player as any).id !== updated.player_id) return
-
-        qc.invalidateQueries({ queryKey: ['suspensions'] })
-        pushLocal(
-          '✅ Sanction levée',
-          'Ta suspension a été levée. Tu peux à nouveau participer aux matchs.',
-          `suspension-lifted-${updated.id}`,
-          '/dashboard'
-        )
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id, qc])
 
   // Matchs terminés récents (< 72h) pour le vote MVP
   const recentCompletedIds = useMemo(() => {

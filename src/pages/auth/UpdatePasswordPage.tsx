@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { PasswordInput } from '@/components/ui/PasswordInput'
@@ -32,46 +32,40 @@ export function UpdatePasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-fade-in-up">
+      <div className="animate-fade-in-up" style={{ width: '100%' }}>
 
-        <div className="mb-7">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Nouveau mot de passe</h2>
-          <p className="text-slate-400 mt-1.5 text-sm">Choisissez un mot de passe sécurisé</p>
+        <div style={{ marginBottom: '1.75rem' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '0.4rem' }}>
+            Nouveau mot de passe
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            Choisissez un mot de passe sécurisé
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {error && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25
-                            text-red-400 text-sm px-3.5 py-3 rounded-lg animate-scale-in">
-              <span className="shrink-0 mt-0.5">⚠️</span>
-              <span>{error}</span>
+            <div className="animate-scale-in" role="alert" aria-live="polite"
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', padding: '0.75rem', color: '#fca5a5' }}>
+              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: '0.1rem', color: '#f87171' }} />
+              <span style={{ fontSize: '0.8125rem', lineHeight: 1.5 }}>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label htmlFor="password" className="label">Nouveau mot de passe</label>
-            <PasswordInput
-              id="password" value={password} onChange={setPassword}
-              placeholder="Minimum 8 caractères"
-              autoComplete="new-password" required
-              showStrength
-            />
+            <PasswordInput id="password" value={password} onChange={setPassword}
+              placeholder="Minimum 8 caractères" autoComplete="new-password" required showStrength />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="confirmPassword" className="label">Confirmer</label>
-            <PasswordInput
-              id="confirmPassword" value={confirmPassword} onChange={setConfirm}
-              autoComplete="new-password" required
-              showMatch={password}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <label htmlFor="confirmPassword" className="label">Confirmer le mot de passe</label>
+            <PasswordInput id="confirmPassword" value={confirmPassword} onChange={setConfirm}
+              autoComplete="new-password" required showMatch={password} />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 text-sm mt-1">
-            {isLoading
-              ? <LoadingSpinner size="sm" />
-              : <><span>Mettre à jour</span><ArrowRight size={15} /></>
-            }
+          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', marginTop: '0.25rem' }}>
+            {isLoading ? <LoadingSpinner size="sm" /> : <><span>Mettre à jour</span><ArrowRight size={16} strokeWidth={2.5} /></>}
           </button>
         </form>
       </div>

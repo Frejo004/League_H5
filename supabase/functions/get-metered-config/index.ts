@@ -12,8 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { matchId } = await req.json()
+    const { matchId, role } = await req.json()
     if (!matchId) throw new Error('matchId is required')
+    // 'broadcaster' = démarrer/gérer le live (réservé admin/reporter vidéo désigné).
+    // Tout autre appelant (viewer, presence-tracker) veut seulement rejoindre un
+    // live déjà démarré — n'importe quel utilisateur authentifié peut le faire.
+    const isBroadcastRequest = role === 'broadcaster'
 
     // 1. Authentification de l'utilisateur via le token Supabase
     const authHeader = req.headers.get('Authorization')
@@ -60,7 +64,7 @@ serve(async (req) => {
       }
     }
 
-    if (!isAdmin && !isVideoReporter) {
+    if (isBroadcastRequest && !isAdmin && !isVideoReporter) {
       return new Response(
         JSON.stringify({ error: 'Permission refusée pour diffuser ce match' }),
         { status: 403, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
@@ -86,6 +90,15 @@ serve(async (req) => {
 
     if (getRes.status === 401 || getRes.status === 403) {
       throw new Error('METERED_SECRET_KEY invalide ou non autorisé (HTTP ' + getRes.status + ')')
+    }
+
+    if (!getRes.ok && !isBroadcastRequest) {
+      // La room n'existe pas encore : le direct n'a pas démarré. Un viewer ne
+      // doit pas en créer une lui-même — seul le broadcaster provisionne la room.
+      return new Response(
+        JSON.stringify({ error: "Le direct n'a pas encore commencé." }),
+        { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      )
     }
 
     if (!getRes.ok) {

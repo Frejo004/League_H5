@@ -20,17 +20,14 @@ import { AdminLiveControls } from '@/components/live/AdminLiveControls'
 import { LiveReactionBar } from '@/components/live/LiveReactionBar'
 import { MatchLineups } from '@/components/matches/MatchLineups'
 import { GoalCelebration } from '@/components/live/GoalCelebration'
+import { MatchStatsView, type MatchStatsData } from '@/components/matches/MatchStatsView'
+import { GoalEvent } from '@/components/matches/GoalEvent'
 import { getRouteParamType } from '@/lib/routeHelpers'
 import { useMatchLineups } from '@/hooks/useLineups'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { GoalWithPlayer, AssistWithPlayer, TeamRef, MatchEvent } from '@/types/database'
-
-interface MatchStatsData {
-  home: { shots: number; shotsOnTarget: number; fouls: number; corners: number };
-  away: { shots: number; shotsOnTarget: number; fouls: number; corners: number };
-}
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return 'Date inconnue'
@@ -45,143 +42,6 @@ function formatTime(dateStr: string | null) {
   return new Intl.DateTimeFormat('fr-FR', {
     hour: '2-digit', minute: '2-digit',
   }).format(new Date(dateStr))
-}
-
-// ── Match Stats Dashboard ───────────────────────────────────────────────────
-function MatchStatsView({ home, away, stats }: { home: TeamRef, away: TeamRef, stats: MatchStatsData }) {
-  const rows = [
-    { label: 'Tirs Totaux', home: stats.home.shots, away: stats.away.shots },
-    { label: 'Tirs Cadrés', home: stats.home.shotsOnTarget, away: stats.away.shotsOnTarget },
-    { label: 'Corners', home: stats.home.corners, away: stats.away.corners },
-    { label: 'Fautes', home: stats.home.fouls, away: stats.away.fouls },
-  ]
-
-  return (
-    <div className="card border-surface-border/50 bg-surface-card/40 backdrop-blur-xl">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xs font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-          <BarChart2 size={16} className="text-[#C8F135]" />
-          Statistiques du Match
-        </h3>
-        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Temps Réel</span>
-      </div>
-
-      <div className="space-y-6">
-        {rows.map((row, i) => {
-          const total = row.home + row.away
-          const homePct = total === 0 ? 50 : (row.home / total) * 100
-          const awayPct = total === 0 ? 50 : (row.away / total) * 100
-
-          return (
-            <div key={i} className="space-y-2">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-lg font-black text-text-primary tabular-nums">{row.home}</span>
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">{row.label}</span>
-                <span className="text-lg font-black text-text-primary tabular-nums">{row.away}</span>
-              </div>
-              <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-surface-muted gap-0.5">
-                <div
-                  className="h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--color-rgb),0.5)]"
-                  style={{
-                    width: `${homePct}%`,
-                    backgroundColor: home.color,
-                    opacity: row.home === 0 && row.away === 0 ? 0.2 : 1
-                  }}
-                />
-                <div
-                  className="h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--color-rgb),0.5)]"
-                  style={{
-                    width: `${awayPct}%`,
-                    backgroundColor: away.color,
-                    opacity: row.home === 0 && row.away === 0 ? 0.2 : 1
-                  }}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Timeline event — style Sofascore ─────────────────────────────────────────
-function GoalEvent({
-  side,
-  playerName,
-  assistName,
-  minute,
-  teamColor,
-}: {
-  side: 'home' | 'away' | 'own'
-  playerName: string
-  assistName?: string | null
-  minute?: number | null
-  teamColor: string
-}) {
-  if (side === 'own') {
-    return (
-      <div className="flex items-center justify-center gap-3 py-2.5 border-b border-surface-border/40 last:border-b-0">
-        <span className="text-xs text-text-muted font-mono w-8 text-right shrink-0">
-          {minute ? `${minute}'` : ''}
-        </span>
-        <span className="text-sm">⚽</span>
-        <span className="text-xs text-text-primary font-bold">
-          {playerName} (CSC)
-        </span>
-      </div>
-    )
-  }
-
-  const isHome = side === 'home'
-
-  return (
-    <div className={clsx(
-      'flex items-start gap-0 py-2.5 border-b border-surface-border/40 last:border-b-0',
-    )}>
-      {/* Home side */}
-      <div className={clsx('flex-1 flex items-start', isHome ? 'justify-end pr-2' : '')}>
-        {isHome && (
-          <div className="text-right">
-            <p className="text-sm font-semibold text-text-primary leading-tight">{playerName}</p>
-            {assistName && (
-              <p className="text-xs text-text-muted mt-0.5">
-                Passe déc. <span className="text-text-secondary">{assistName}</span>
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Center — icon + minute */}
-      <div className="flex flex-col items-center gap-0.5 shrink-0 w-16">
-        <div className="flex items-center gap-1">
-          <span
-            className="w-2 h-2 rounded-sm shrink-0"
-            style={{ backgroundColor: teamColor }}
-          />
-          <span className="text-sm leading-none">⚽</span>
-        </div>
-        {minute && (
-          <span className="text-[10px] text-text-muted font-mono">{minute}'</span>
-        )}
-      </div>
-
-      {/* Away side */}
-      <div className={clsx('flex-1 flex items-start', !isHome ? 'pl-2' : 'justify-end')}>
-        {!isHome && (
-          <div>
-            <p className="text-sm font-semibold text-text-primary leading-tight">{playerName}</p>
-            {assistName && (
-              <p className="text-xs text-text-muted mt-0.5">
-                Passe déc. <span className="text-text-secondary">{assistName}</span>
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -444,6 +304,71 @@ export function MatchDetailPage() {
     })) as GoalWithPlayer[]
   }, [match?.status, match?.goals, liveEvents])
 
+  // Doit être avant tout early return (règles des hooks) — voir displayGoals ci-dessus
+  const assistMap = useMemo(() => new Map(
+    ((match?.assists as AssistWithPlayer[] | undefined) ?? [])
+      .map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
+  ), [match?.assists])
+
+  const sortedGoals = useMemo(
+    () => [...displayGoals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0)),
+    [displayGoals]
+  )
+
+  // MVP
+  const voteMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const v of votes ?? []) {
+      // Un vote n'est comptabilisé que si le joueur fait partie de la feuille de match (lineups)
+      // et qu'il appartient bien à l'une des deux équipes du match
+      const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
+      const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
+      const belongsToMatchTeams = belongsToHome || belongsToAway
+
+      if (belongsToMatchTeams) {
+        const isPlayerInMatch = lineups && lineups.length > 0
+          ? lineups.some(l => l.player_id === v.player_id)
+          : allMatchPlayers.some(p => p.id === v.player_id)
+
+        if (isPlayerInMatch) {
+          map.set(v.player_id, (map.get(v.player_id) ?? 0) + 1)
+        }
+      }
+    }
+    return map
+  }, [votes, homePlayers, awayPlayers, lineups, allMatchPlayers])
+
+  const { topMvpIds, totalVotes, maxVotes } = useMemo(() => {
+    const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
+    return {
+      topMvpIds: voteMap.size > 0
+        ? [...voteMap.entries()].filter(([, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
+        : [],
+      totalVotes: [...voteMap.values()].reduce((a, b) => a + b, 0),
+      maxVotes,
+    }
+  }, [voteMap])
+
+  // Joueurs MVP (les plus votés, gère les ex-aequo)
+  const mvpPlayers = useMemo(
+    () => topMvpIds.map(pid => allMatchPlayers.find(p => p.id === pid)).filter(Boolean) as typeof allMatchPlayers,
+    [topMvpIds, allMatchPlayers]
+  )
+
+  // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
+  // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
+  // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
+  const liveScore = useMemo(() => liveEvents.reduce((acc, event: MatchEvent) => {
+    if (event.type === 'goal' || event.type === 'own_goal') {
+      const isHomeGoal = event.type === 'own_goal'
+        ? event.team_id === match?.away_team_id
+        : event.team_id === match?.home_team_id
+      if (isHomeGoal) acc.home++
+      else acc.away++
+    }
+    return acc
+  }, { home: 0, away: 0 }), [liveEvents, match?.away_team_id, match?.home_team_id])
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -466,7 +391,6 @@ export function MatchDetailPage() {
 
   const home = match.home_team as TeamRef
   const away = match.away_team as TeamRef
-  const assists = match.assists as AssistWithPlayer[]
   const isCompleted = match.status === 'completed'
   const isLive = match.status === 'live'
 
@@ -517,55 +441,6 @@ export function MatchDetailPage() {
       setIsGeneratingStory(false)
     }
   }
-
-  const assistMap = new Map(
-    assists.map(a => [a.goal_id, a.players ? `${a.players.first_name} ${a.players.last_name}` : null])
-  )
-
-  // Sort goals by minute
-  const sortedGoals = [...displayGoals].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-
-  // MVP
-  const voteMap = new Map<string, number>()
-  for (const v of votes ?? []) {
-    // Un vote n'est comptabilisé que si le joueur fait partie de la feuille de match (lineups)
-    // et qu'il appartient bien à l'une des deux équipes du match
-    const belongsToHome = homePlayers?.some(p => p.id === v.player_id)
-    const belongsToAway = awayPlayers?.some(p => p.id === v.player_id)
-    const belongsToMatchTeams = belongsToHome || belongsToAway
-
-    if (belongsToMatchTeams) {
-      const isPlayerInMatch = lineups && lineups.length > 0
-        ? lineups.some(l => l.player_id === v.player_id)
-        : allMatchPlayers.some(p => p.id === v.player_id)
-
-      if (isPlayerInMatch) {
-        voteMap.set(v.player_id, (voteMap.get(v.player_id) ?? 0) + 1)
-      }
-    }
-  }
-  const maxVotes = voteMap.size > 0 ? Math.max(...voteMap.values()) : 0
-  const topMvpIds = voteMap.size > 0
-    ? [...voteMap.entries()].filter(([, vCount]) => vCount === maxVotes).map(([playerId]) => playerId)
-    : []
-
-  // Joueurs MVP (les plus votés, gère les ex-aequo)
-  const mvpPlayers = topMvpIds.map(id => allMatchPlayers.find(p => p.id === id)).filter(Boolean) as typeof allMatchPlayers
-  const totalVotes = [...voteMap.values()].reduce((a, b) => a + b, 0)
-
-  // Calcul du score en direct basé sur les événements (pour éviter les désync entre Header et Timeline)
-  // Pour les matchs terminés, on utilise le score officiel stocké en DB (plus fiable)
-  // Pour les matchs live, on calcule depuis les events pour avoir la synchro temps réel
-  const liveScore = liveEvents.reduce((acc, event: MatchEvent) => {
-    if (event.type === 'goal' || event.type === 'own_goal') {
-      const isHomeGoal = event.type === 'own_goal'
-        ? event.team_id === match.away_team_id
-        : event.team_id === match.home_team_id
-      if (isHomeGoal) acc.home++
-      else acc.away++
-    }
-    return acc
-  }, { home: 0, away: 0 })
 
   const displayHomeScore = isLive ? liveScore.home : (match.home_score ?? 0)
   const displayAwayScore = isLive ? liveScore.away : (match.away_score ?? 0)
@@ -1183,7 +1058,8 @@ export function MatchDetailPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {eligibleMvpPlayers.map(p => {
                     const voteCount = voteMap.get(p.id) ?? 0
-                    const isMyVote = myVote ? (myVote as any).player_id === p.id : false
+                    const myVoteRow = myVote as { player_id: string } | null | undefined
+                    const isMyVote = myVoteRow ? myVoteRow.player_id === p.id : false
                     const isTop = topMvpIds.includes(p.id) && voteCount > 0
                     const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0
                     return (

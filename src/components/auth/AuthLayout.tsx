@@ -1,8 +1,7 @@
+import { ReactNode, CSSProperties, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import type { ReactNode } from 'react'
-import bgImage from '@/assets/leagueH5-bg_login.jpg'
-// ✅ Suppression de l'import mobile inexistant
+import bgImage from '@/assets/leagueH5-bg_login.webp'
 
 interface AuthLayoutProps {
   children: ReactNode
@@ -10,111 +9,177 @@ interface AuthLayoutProps {
   stats?: Array<{ value: string; label: string }>
 }
 
-export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutProps) {
-  const { profile } = useAuth()
-  const logoLink = profile ? '/dashboard' : '/'
-
-  return (
-    <div className="min-h-dvh lg:h-dvh flex flex-col lg:flex-row overflow-x-hidden lg:overflow-hidden bg-linear-to-br from-slate-950 to-slate-900">
-
-      {/* ── Left hero panel (desktop) ── */}
-      <div
-        className="hidden lg:flex flex-col flex-1 min-w-0 relative overflow-hidden"
-        style={{
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 30%',
-          backgroundColor: '#0f172a',
-        }}
-      >
-        <div className="absolute inset-0 bg-linear-to-br from-black/70 via-black/40 to-black/20" />
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-slate-900/60" />
-
-        <div className="relative z-10 flex flex-col h-full p-8 lg:p-12 xl:p-14">
-          <Link to={logoLink} className="flex items-center gap-3 group shrink-0 w-fit">
-            <img src="/logo-h5.png" alt="League H5" className="w-10 h-10 object-contain shrink-0 transition-transform group-hover:scale-105 duration-200" />
-            <span className="text-white font-bold text-lg tracking-wide drop-shadow-md group-hover:text-primary-300 transition-colors duration-200">
-              League H5
-            </span>
-          </Link>
-
-          <div className="flex-1 flex flex-col justify-center w-full max-w-[36rem]">
-            <div className="mb-6">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full whitespace-nowrap
-                               bg-primary-500/20 border border-primary-500/30
-                               text-primary-400 text-xs font-semibold uppercase tracking-widest mb-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
-                Saison en cours
-              </span>
-            </div>
-            <h1 className="w-full text-4xl lg:text-5xl font-black leading-tight tracking-tight mb-4">
-              <span className="text-white drop-shadow-lg">La ligue</span><br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 to-primary-300 drop-shadow-md">
-                interne H5
-              </span>
-            </h1>
-            <p className="w-full max-w-[32rem] text-slate-300 text-base lg:text-lg leading-relaxed drop-shadow">
-              Suivez les matchs, classements et statistiques de votre ligue de football à 5.
-            </p>
-
-            <div className="flex items-center gap-6 mt-8">
-              {stats.map((stat, idx) => (
-                <div key={idx}>
-                  <p className="text-2xl font-black text-white drop-shadow-md">{stat.value}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 pt-6 mt-auto">
-            <p className="text-slate-400 text-sm italic drop-shadow">
-              "Le football, c'est simple. Mais jouer simplement, c'est la chose la plus difficile."
-            </p>
-            <p className="text-slate-500 text-xs mt-1 drop-shadow">— Johan Cruyff</p>
-          </div>
-        </div>
-
-        {hero && (
-          <div className="relative z-10 mt-auto mb-8">
-            {hero}
-          </div>
-        )}
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex flex-col w-full lg:w-[520px] xl:w-[560px] 2xl:w-[600px] shrink-0 relative">
-        {/* ✅ Mobile background — réutilise bgImage, pas d'import séparé */}
-        <div
-          className="lg:hidden absolute inset-0"
-          style={{
-            backgroundImage: `url(${bgImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          <div className="absolute inset-0 bg-black/70" />
-        </div>
-
-        <div className="hidden lg:block absolute inset-0 bg-slate-900/95 backdrop-blur-sm border-l border-slate-800/30" />
-
-        <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary-500/20 to-transparent" />
-
-        <div className="relative z-10 flex flex-col flex-1 items-center justify-center w-full px-6 py-10 sm:px-8 lg:px-14 lg:py-12">
-          {children}
-        </div>
-
-        <div className="relative z-10 px-6 pb-6 text-center">
-          <p className="text-xs text-slate-500">© 2025 League H5 · Tous droits réservés</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 const defaultStats = [
   { value: '5v5', label: 'Format' },
   { value: '100%', label: 'Compétitif' },
   { value: '⚡', label: 'Temps réel' },
 ]
+
+export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutProps) {
+  const { profile } = useAuth()
+  const logoLink = profile ? '/dashboard' : '/'
+
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    setIsDesktop(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  /* ── styles calculés selon breakpoint ── */
+  const rootStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: isDesktop ? 'row' : 'column',
+    width: '100%',
+    height: '100svh',
+    maxHeight: '100svh',
+    overflow: 'hidden',
+    background: 'linear-gradient(135deg,#020617 0%,#0f172a 100%)',
+  }
+
+  const rightStyle: CSSProperties = {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    flexShrink: 0,
+    flexGrow: 0,
+    width: isDesktop ? '55%' : '100%',
+    height: isDesktop ? '100svh' : '100%',
+    flex: isDesktop ? 'none' : '1 1 auto',
+    overflow: 'hidden',
+    background: isDesktop
+      ? 'linear-gradient(160deg,#0d1526 0%,#0a1020 100%)'
+      : 'transparent',
+    borderLeft: isDesktop ? '1px solid rgba(255,255,255,0.04)' : 'none',
+  }
+
+  const rightContentStyle: CSSProperties = {
+    position: 'relative',
+    zIndex: 10,
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch' as never,
+    padding: 'clamp(1.25rem,4vw,2.5rem)',
+    minHeight: 0,
+  }
+
+  return (
+    <div style={rootStyle}>
+
+      {/* ══ PANNEAU GAUCHE — desktop only ══ */}
+      {isDesktop && (
+        <div style={{
+          position: 'relative',
+          overflow: 'hidden',
+          flexShrink: 0,
+          flexGrow: 0,
+          width: '45%',
+          height: '100svh',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 25%',
+        }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,rgba(2,6,23,.88) 0%,rgba(15,23,42,.6) 50%,rgba(2,6,23,.4) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(2,6,23,.95) 0%,transparent 50%)' }} />
+          <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '450px', height: '450px', background: 'radial-gradient(circle,rgba(59,130,246,.1) 0%,transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '5%', right: '-80px', width: '350px', height: '350px', background: 'radial-gradient(circle,rgba(74,222,128,.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', padding: 'clamp(2rem,3vw,3.5rem)', overflow: 'hidden' }}>
+
+            <Link to={logoLink} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', textDecoration: 'none', marginBottom: '2.5rem', width: 'fit-content', flexShrink: 0 }}>
+              <img src="/logo-h5.png" alt="League H5" style={{ width: '2.5rem', height: '2.5rem', objectFit: 'contain' }} />
+              <span style={{ color: '#f8fafc', fontWeight: 900, fontSize: '1.2rem', letterSpacing: '.02em' }}>League H5</span>
+            </Link>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', padding: '.35rem .875rem', borderRadius: '999px', background: 'rgba(59,130,246,.15)', border: '1px solid rgba(59,130,246,.3)', color: '#93c5fd', fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 6px #60a5fa', flexShrink: 0 }} className="animate-pulse" />
+                  Saison en cours
+                </span>
+              </div>
+
+              <h1 style={{ fontWeight: 900, lineHeight: 1.05, letterSpacing: '-.025em', marginBottom: '1rem', fontSize: 'clamp(2rem,3.2vw,3.5rem)' }}>
+                <span style={{ color: '#f8fafc', display: 'block' }}>La ligue</span>
+                <span style={{ display: 'block', marginTop: '.1em', background: 'linear-gradient(100deg,#60a5fa 0%,#a5b4fc 50%,#4ade80 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  interne H5
+                </span>
+              </h1>
+
+              <p style={{ color: '#94a3b8', lineHeight: 1.65, fontWeight: 400, marginBottom: '2rem', fontSize: 'clamp(.875rem,1.05vw,1rem)', maxWidth: '34ch' }}>
+                Suivez les matchs, classements et statistiques de votre ligue de football à 5.
+              </p>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem 2.5rem' }}>
+                {stats.map((stat, idx) => (
+                  <div key={idx}>
+                    <p style={{ fontWeight: 900, color: '#f8fafc', fontSize: 'clamp(1.5rem,2.2vw,2.25rem)', lineHeight: 1 }}>{stat.value}</p>
+                    <p style={{ color: '#64748b', fontWeight: 600, fontSize: '.7rem', marginTop: '.25rem', textTransform: 'uppercase', letterSpacing: '.08em' }}>{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '1.25rem', marginTop: 'auto', flexShrink: 0 }}>
+              <p style={{ color: '#64748b', fontSize: '.78rem', fontStyle: 'italic', lineHeight: 1.6 }}>
+                "Le football, c'est simple. Mais jouer simplement, c'est la chose la plus difficile."
+              </p>
+              <p style={{ color: '#475569', fontSize: '.72rem', marginTop: '.35rem', fontWeight: 700 }}>— Johan Cruyff</p>
+            </div>
+          </div>
+
+          {hero && <div style={{ position: 'relative', zIndex: 10, marginTop: 'auto', marginBottom: '2rem', padding: '0 2rem', flexShrink: 0 }}>{hero}</div>}
+        </div>
+      )}
+
+      {/* ══ PANNEAU DROIT ══ */}
+      <div style={rightStyle}>
+
+        {/* Fond mobile — image + overlay */}
+        {!isDesktop && (
+          <>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0 }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(2,6,23,.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', zIndex: 1 }} />
+          </>
+        )}
+
+        {/* Déco */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg,transparent,rgba(59,130,246,.5),transparent)', zIndex: 2 }} />
+
+        {/* Contenu scrollable */}
+        <div style={rightContentStyle}>
+
+          {/* Logo mobile */}
+          {!isDesktop && (
+            <Link to={logoLink} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', textDecoration: 'none', marginBottom: '2rem', flexShrink: 0 }}>
+              <img src="/logo-h5.png" alt="League H5" style={{ width: '2.25rem', height: '2.25rem', objectFit: 'contain' }} />
+              <span style={{ color: '#f8fafc', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '.02em' }}>League H5</span>
+            </Link>
+          )}
+
+          {/* Formulaire */}
+          <div style={{ width: '100%', maxWidth: '460px' }}>
+            {children}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ position: 'relative', zIndex: 10, padding: '.75rem 1.5rem', textAlign: 'center', flexShrink: 0 }}>
+          <p style={{ color: '#1e293b', fontSize: '.7rem', fontWeight: 500 }}>© 2025 League H5 · Tous droits réservés</p>
+        </div>
+      </div>
+
+    </div>
+  )
+}

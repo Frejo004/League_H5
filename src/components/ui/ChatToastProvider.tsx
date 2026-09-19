@@ -241,7 +241,7 @@ export function ChatToastProvider() {
   useEffect(() => {
     if (!user?.id) return
     let cancelled = false
-    const channels: ReturnType<typeof supabase.channel>[] = []
+    let toastChannel: ReturnType<typeof supabase.channel> | null = null
 
     async function setup() {
       const [teams, globalChannels] = await Promise.all([
@@ -255,9 +255,10 @@ export function ChatToastProvider() {
       const channelIds = new Set(globalChannels.map(c => c.id))
       const channelMap = new Map(globalChannels.map(c => [c.id, c]))
 
-      // ── Canal 1 : team_messages ──────────────────────────────────────────
-      const teamCh = supabase
-        .channel(`toast-teams-${user!.id}`)
+      // Un seul canal, trois écouteurs (team_messages / channel_messages / dm_messages)
+      // au lieu de trois canaux séparés — même pattern que useRealtimeMatch.
+      toastChannel = supabase
+        .channel(`toast-${user!.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'team_messages' }, async payload => {
           const msg = payload.new as { id: string; team_id: string; sender_id: string; content: string }
           if (msg.sender_id === user!.id) return
@@ -283,12 +284,6 @@ export function ChatToastProvider() {
             createdAt: Date.now(),
           })
         })
-        .subscribe()
-      channels.push(teamCh)
-
-      // ── Canal 2 : channel_messages ───────────────────────────────────────
-      const channelCh = supabase
-        .channel(`toast-channels-${user!.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'channel_messages' }, async payload => {
           const msg = payload.new as { id: string; channel_id: string; sender_id: string; content: string }
           if (msg.sender_id === user!.id) return
@@ -314,12 +309,6 @@ export function ChatToastProvider() {
             createdAt: Date.now(),
           })
         })
-        .subscribe()
-      channels.push(channelCh)
-
-      // ── Canal 3 : dm_messages ────────────────────────────────────────────
-      const dmCh = supabase
-        .channel(`toast-dms-${user!.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, async payload => {
           const msg = payload.new as { id: string; conversation_id: string; sender_id: string; content: string }
           if (msg.sender_id === user!.id) return
@@ -354,13 +343,12 @@ export function ChatToastProvider() {
           })
         })
         .subscribe()
-      channels.push(dmCh)
     }
 
     setup()
     return () => {
       cancelled = true
-      channels.forEach(ch => supabase.removeChannel(ch))
+      if (toastChannel) supabase.removeChannel(toastChannel)
     }
   }, [user?.id, addToast])
 

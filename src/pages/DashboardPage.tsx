@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
-  Calendar, Trophy, Target, Users, ArrowRight, TrendingUp, Flame,
+  Calendar, Trophy, Target, Users, ArrowRight, Flame,
   Radio, Clock, CheckCircle2, AlertCircle, ChevronRight,
-  Crown, Settings, Zap, Star, BarChart2, Shield, Ban, X,
+  Crown, Settings, Zap, Star, BarChart2, Shield, Ban,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -13,7 +13,6 @@ import { useStandings, type StandingRow } from '@/hooks/useStandings'
 import { useRealtimeMatches, useRealtimeTeams } from '@/hooks/useRealtime'
 import { useMyTeam } from '@/hooks/useMyTeam'
 import { useMatchLineups } from '@/hooks/useLineups'
-import { useCountUp } from '@/hooks/useCountUp'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePlayerMvp } from '@/hooks/useMvpVotes'
@@ -128,32 +127,6 @@ function NextMatchCountdown({ match, teamId, isCaptain }: {
           <LineupStatusBadge matchId={match.id} teamId={teamId} isCaptain={!!isCaptain} />
         </div>
       )}
-    </div>
-  )
-}
-
-// ── KPI Card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, icon: Icon, color, trend }: {
-  label: string; value: number; icon: typeof Calendar; color: string; trend?: string
-}) {
-  const animatedValue = useCountUp(value)
-  return (
-    <div className="relative overflow-hidden rounded-2xl p-4 group transition-all duration-200 hover:-translate-y-1 card-hover">
-      <div className="absolute -top-8 -right-8 w-20 h-20 blur-2xl opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none"
-        style={{ backgroundColor: color }} />
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg transition-transform duration-200 group-hover:scale-110"
-          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
-          <Icon size={16} style={{ color }} />
-        </div>
-        {trend && (
-          <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-green-400/20">
-            <TrendingUp size={9} /> {trend}
-          </span>
-        )}
-      </div>
-      <p className="text-3xl font-black tabular-nums leading-none tracking-tight text-text-primary">{animatedValue}</p>
-      <p className="text-[11px] mt-2 font-bold uppercase tracking-wider text-text-muted group-hover:text-text-secondary transition-colors">{label}</p>
     </div>
   )
 }
@@ -708,47 +681,6 @@ function SuspensionBanner({ userId, seasonId }: { userId: string; seasonId: stri
   )
 }
 
-// ── Bannière info tournois d'échecs ─────────────────────────────────────────────
-function ChessTournamentBanner({ tournaments, onDismiss }: { tournaments: any[]; onDismiss: () => void }) {
-  const activeTournament = tournaments.find(t => t.status === 'in_progress' || t.status === 'registration_open')
-  
-  if (!activeTournament) return null
-  
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-purple-900/10 p-4 mb-6">
-      <button 
-        onClick={onDismiss}
-        className="absolute top-2 right-2 p-1 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
-      >
-        <X size={16} />
-      </button>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-          <Trophy size={20} className="text-purple-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Tournoi d'échecs</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              activeTournament.status === 'in_progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
-            }`}>
-              {activeTournament.status === 'in_progress' ? 'En cours' : 'Inscriptions ouvertes'}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-text-primary truncate">{activeTournament.name}</p>
-          <p className="text-xs text-text-muted">{activeTournament.participants?.length || 0} participants</p>
-        </div>
-        <Link 
-          to={`/tournaments/${activeTournament.slug}`}
-          className="shrink-0 px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-colors"
-        >
-          Voir
-        </Link>
-      </div>
-    </div>
-  )
-}
-
 // ── Widget suspensions publiques (visible par tous) ──────────────────────────
 function ActiveSuspensionsWidget({ seasonId, isAdmin = false }: { seasonId: string; isAdmin?: boolean }) {
   const { data: suspensions = [], isLoading } = useSuspensions(seasonId)
@@ -1068,7 +1000,7 @@ interface PlayerDashboardProps extends CaptainDashboardProps {
 
 // Tableau de bord ADMIN (déplacé en dehors)
 function AdminDashboardContent({
-  liveMatches, profile, myPlayer, myTeam, role, completedMatches, teams, upcomingMatches, spectators, topScorer, topTeam, recentMatches, season, pendingSpectatorsCount, myTeamId
+  liveMatches, profile, myPlayer, myTeam, role, completedMatches, teams, upcomingMatches, topScorer, topTeam, recentMatches, season, pendingSpectatorsCount, myTeamId
 }: AdminDashboardProps) {
   return (
     <div className="space-y-4">
@@ -1104,6 +1036,20 @@ function AdminDashboardContent({
         pendingSpectatorsCount={pendingSpectatorsCount}
       />
 
+      {/* Meilleur buteur / Leader du classement */}
+      {(topScorer || topTeam) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam && <LeaderCard team={topTeam} />}
+        </div>
+      )}
+
+      {/* Suspensions en cours */}
+      <ActiveSuspensionsWidget seasonId={season.id} isAdmin />
+
+      {/* Top pronostiqueurs */}
+      <MiniLeaderboard seasonId={season.id} />
+
       {/* Prochains matchs */}
       <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
         <SectionHeader title="Prochains matchs" href="/matches" />
@@ -1138,7 +1084,7 @@ function AdminDashboardContent({
 
 // Tableau de bord CAPITAINE (déplacé en dehors)
 function CaptainDashboardContent({
-  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, upcomingMatches, topScorer, topTeam
+  liveMatches, profile, myPlayer, myTeam, role, myTeamId, hasTeam, myUpcomingMatches, myRecentMatches, myNextMatch, isCaptain, season, topScorer, topTeam
 }: CaptainDashboardProps) {
   return (
     <div className="space-y-4">
@@ -1177,6 +1123,20 @@ function CaptainDashboardContent({
         <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
       )}
 
+      {/* Meilleur buteur / Leader du classement */}
+      {(topScorer || topTeam) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam && <LeaderCard team={topTeam} />}
+        </div>
+      )}
+
+      {/* Suspensions en cours */}
+      <ActiveSuspensionsWidget seasonId={season.id} />
+
+      {/* Top pronostiqueurs */}
+      <MiniLeaderboard seasonId={season.id} />
+
       {/* Mes matchs */}
       {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
         <div className="space-y-3">
@@ -1184,7 +1144,7 @@ function CaptainDashboardContent({
             <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
             <span className="text-xs font-black uppercase tracking-widest text-text-muted">Mes matchs</span>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Mes prochains matchs */}
             {myUpcomingMatches.length > 0 && (
@@ -1279,6 +1239,20 @@ function PlayerDashboardContent({
         <SuspensionBanner userId={profile.id} seasonId={season.id} />
       )}
 
+      {/* Meilleur buteur / Leader du classement */}
+      {(topScorer || topTeam) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {topScorer && <TopScorerCard scorer={topScorer} />}
+          {topTeam && <LeaderCard team={topTeam} />}
+        </div>
+      )}
+
+      {/* Suspensions en cours */}
+      <ActiveSuspensionsWidget seasonId={season.id} />
+
+      {/* Top pronostiqueurs */}
+      <MiniLeaderboard seasonId={season.id} />
+
       {/* Mes matchs */}
       {hasTeam && (myUpcomingMatches.length > 0 || myRecentMatches.length > 0) && (
         <div className="space-y-3">
@@ -1286,7 +1260,7 @@ function PlayerDashboardContent({
             <Calendar size={14} className={myTeam ? "" : "text-text-muted"} style={myTeam ? { color: myTeam.color } : undefined} />
             <span className="text-xs font-black uppercase tracking-widest text-text-muted">Mes matchs</span>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Mes prochains matchs */}
             {myUpcomingMatches.length > 0 && (
@@ -1358,6 +1332,18 @@ function PlayerDashboardContent({
           </div>
         )}
       </div>
+
+      {/* Derniers résultats de la ligue */}
+      {recentMatches.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
+          <SectionHeader title="Derniers résultats de la ligue" href="/matches" />
+          <div className="stagger-fast">
+            {recentMatches.map(match => (
+              <MiniMatchCard key={match.id} match={match} variant="result" myTeamId={myTeamId} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

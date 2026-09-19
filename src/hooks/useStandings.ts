@@ -24,12 +24,13 @@ export function useStandings(seasonId?: string) {
     enabled: !!seasonId,
     staleTime: 1000 * 60 * 10, // 10 min — ne change qu'après une mise à jour de match
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_standings', {
+      const { data, error } = await supabase.rpc('get_standings', {
         p_season_id: seasonId!,
-      })
+      } as never)
       if (error) throw error
 
-      return ((data as any) ?? []).map((row: any) => ({
+      type StandingsRpcRow = Omit<StandingRow, 'form' | 'position_change'> & { form: string }
+      return ((data ?? []) as unknown as StandingsRpcRow[]).map((row) => ({
         ...row,
         team_logo: row.team_logo ?? null,
         // Parse 'W,D,L,W,W' → ['W','D','L','W','W']
