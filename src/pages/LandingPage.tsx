@@ -183,6 +183,17 @@ export function LandingPage() {
   const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
   const { data: tournaments } = useTournaments()
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoadingTimedOut(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
+
+  const showLoading = isLoading && !loadingTimedOut
+  const safeStats = loadingTimedOut && !stats
+    ? { teams: 0, players: 0, seasonName: 'Saison en cours' }
+    : stats
 
   const { data: liveMatches } = useQuery({
     queryKey: ['live-matches-landing'],
@@ -402,11 +413,11 @@ export function LandingPage() {
           </div>
         )}
 
-        <div className="relative z-10 text-center px-4 max-w-5xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/3 border border-white/10 mb-8 backdrop-blur-md">
+        <div className="relative z-10 text-center px-4 w-full max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-[#C8F135] animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted/80">
-              {isLoading ? 'SYNC...' : `${stats?.seasonName ?? 'Saison'} LIVE`}
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
+              {showLoading ? 'SYNCHRONISATION…' : `${safeStats?.seasonName ?? 'Saison en cours'}`}
             </span>
           </div>
 
@@ -417,12 +428,12 @@ export function LandingPage() {
             <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #C8F135' }}>LIGUE</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-300 w-full max-w-2xl mx-auto mb-12 leading-relaxed whitespace-normal break-words">
             L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-text-primary font-bold">stats en direct</span>,
             messagerie intégrée et gestion de club simplifiée.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="relative z-30 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/public/matches"
               className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-[#C8F135] text-[#0D1117] font-black uppercase italic tracking-tighter hover:scale-105 transition-all shadow-[0_0_30px_rgba(200,241,53,0.3)]"
@@ -432,7 +443,7 @@ export function LandingPage() {
             </Link>
             <Link
               to="/auth/login"
-              className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white/5 border border-white/10 font-black uppercase italic tracking-tighter hover:bg-white/10 transition-all backdrop-blur-md"
+              className="relative z-30 w-full sm:w-auto px-10 py-5 rounded-2xl bg-white/5 border border-white/10 text-text-primary font-black uppercase italic tracking-tighter hover:bg-white/10 transition-all backdrop-blur-md"
             >
               Rejoindre l'élite
             </Link>
@@ -441,10 +452,10 @@ export function LandingPage() {
       </section>
 
       {/* ── Stats Section ── */}
-      <section className="relative z-20 px-6 mt-6 sm:-mt-20 mb-24">
+      <section className="relative z-20 px-6 mt-4 sm:mt-0 sm:-translate-y-8 mb-16">
         <div className="max-w-5xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatPill value={stats?.teams ?? 0} label="Clubs engagés" isLoading={isLoading} />
-          <StatPill value={stats?.players ? `${stats.players}+` : '0+'} label="Athlètes" isLoading={isLoading} />
+          <StatPill value={safeStats?.teams ?? 0} label="Clubs engagés" isLoading={showLoading} />
+          <StatPill value={safeStats?.players ? `${safeStats.players}+` : '0+'} label="Athlètes" isLoading={showLoading} />
           <StatPill value="2×20'" label="Format Élite" />
           <StatPill value="LIVE" label="Streaming" />
         </div>
@@ -452,14 +463,14 @@ export function LandingPage() {
 
       {/* ── Chess Tournaments Section ── */}
       {tournaments && tournaments.length > 0 && (
-        <section className="relative z-20 px-6 mb-24">
+        <section className="relative z-20 px-6 mb-16">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
               <div>
                 <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
                   Tournois <span style={{ color: '#A855F7' }}>d'échecs</span>
                 </h2>
-                <p className="text-slate-500 mt-2 font-medium">Rejoignez les compétitions d'échecs HIGHFIVE.</p>
+                <p className="text-slate-400 mt-2 font-medium">Rejoignez les compétitions d'échecs HIGHFIVE.</p>
               </div>
               <Link 
                 to="/tournaments"
@@ -479,14 +490,14 @@ export function LandingPage() {
       )}
 
       {/* ── News Feed Section ── */}
-      <section className="relative z-20 px-6 py-24">
+      <section className="relative z-20 px-6 py-8 md:py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
             <div>
               <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
                 Dernières <span style={{ color: ACCENT }}>Actualités</span>
               </h2>
-              <p className="text-slate-500 mt-2 font-medium">Restez informé de la vie de la ligue.</p>
+              <p className="text-slate-300 mt-2 font-medium">Restez informé de la vie de la ligue.</p>
             </div>
           </div>
           <NewsFeed />
@@ -494,14 +505,14 @@ export function LandingPage() {
       </section>
 
       {/* ── Features Grid ── */}
-      <section className="px-6 py-24 relative overflow-hidden">
+      <section className="px-6 py-16 relative overflow-hidden">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
               <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
                 L'écosystème <span style={{ color: ACCENT }}>H5</span>
               </h2>
-              <p className="text-slate-500 mt-2 font-medium">Une infrastructure digitale complète pour vos tournois.</p>
+              <p className="text-slate-400 mt-2 font-medium">Une infrastructure digitale complète pour vos tournois.</p>
             </div>
             <div className="h-0.5 flex-1 bg-linear-to-r from-[#C8F135]/50 to-transparent mx-8 hidden md:block mb-4" />
           </div>
@@ -520,13 +531,13 @@ export function LandingPage() {
       </section>
 
       {/* ── Values Ticker ── */}
-      <section className="py-20 bg-linear-to-b from-[#0D1117] to-[#161B22] border-y border-white/5">
+      <section className="py-10 md:py-16 bg-linear-to-b from-[#0D1117] to-[#161B22] border-y border-white/5">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-wrap justify-center gap-x-12 gap-y-8">
+          <div className="flex flex-wrap justify-center gap-x-8 md:gap-x-12 gap-y-6 md:gap-y-8">
             {['Respect', 'Fair-play', 'Discipline', 'Passion'].map((v) => (
               <div key={v} className="flex items-center gap-4">
                 <div className="w-2 h-2 rounded-full bg-[#C8F135]" />
-                <span className="text-3xl md:text-5xl font-black text-white/20 uppercase italic font-['Barlow_Condensed'] hover:text-white/60 transition-colors cursor-default">
+                <span className="text-2xl md:text-4xl font-black text-slate-400 uppercase italic font-['Barlow_Condensed'] hover:text-slate-200 transition-colors cursor-default">
                   {v}
                 </span>
               </div>
@@ -538,10 +549,10 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="py-12 border-t border-white/5 text-center bg-[#0D1117]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="w-12 h-12 rounded-xl bg-white/3 flex items-center justify-center mx-auto mb-6">
-            <Trophy size={24} className="text-slate-600" />
+          <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+            <Trophy size={24} className="text-slate-300" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.4em] text-slate-500">
+          <p className="text-xs font-bold uppercase tracking-[0.4em] text-slate-300">
             © 2026 League H5 · Unis pour le football
           </p>
         </div>

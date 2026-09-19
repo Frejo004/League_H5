@@ -1007,9 +1007,16 @@ body {
   transition-timing-function: ease;
 }
 
-/* Exclude animations and transforms from theme transition */
-* {
-  transition-property: background-color, border-color, color, fill, stroke !important;
+/* Exclude animations and transforms from theme transition — NEVER use !important here,
+   it breaks Tailwind's transition-all / hover:scale utilities (buttons, cards, etc.) */
+
+/* Slow zoom animation for hero background */
+@keyframes slow-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+.animate-slow-zoom {
+  animation: slow-zoom 30s ease-in-out infinite alternate;
 }
 
 /* Keep original transitions for interactive elements */
@@ -1021,7 +1028,7 @@ body {
 .match-card,
 .tooltip,
 .theme-toggle {
-  transition: all 0.2s ease !important;
+  transition: all 0.2s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════

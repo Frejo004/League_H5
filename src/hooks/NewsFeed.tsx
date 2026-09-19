@@ -17,8 +17,21 @@ export function NewsFeed() {
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
   if (!news || news.length === 0) return (
-    <div className="text-center py-12 opacity-50">
-      <p className="text-sm font-medium uppercase tracking-widest">Aucune actualité pour le moment</p>
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="relative mb-6">
+        <div className="w-20 h-20 rounded-4xl bg-surface-card border border-surface-border flex items-center justify-center">
+          <Calendar size={36} className="text-slate-600" />
+        </div>
+        <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#C8F135]/10 border-2 border-surface flex items-center justify-center">
+          <span className="text-xl">📰</span>
+        </div>
+      </div>
+      <h3 className="text-xl font-black text-text-primary mb-2 font-['Barlow_Condensed'] uppercase tracking-tight">
+        Aucune actualité pour le moment
+      </h3>
+      <p className="text-sm text-slate-500 max-w-md text-center leading-relaxed">
+        Les dernières nouvelles de la ligue apparaîtront ici. Restez connecté pour ne rien manquer !
+      </p>
     </div>
   )
 

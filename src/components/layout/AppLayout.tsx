@@ -153,18 +153,18 @@ export function AppLayout() {
       <Header />
 
       {/* Zone de contenu avec background de page */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1">
 
         {/* Gradient accent */}
         <div
-          className="pointer-events-none absolute inset-0 z-0 transition-all duration-700"
+          className="pointer-events-none absolute inset-0 z-0 transition-all duration-700 overflow-hidden"
           style={gradientStyle}
         />
 
         {/* Pattern SVG */}
         {bg.pattern !== 'none' && (
           <div
-            className="pointer-events-none absolute inset-0 z-0"
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
             style={{
               backgroundImage: patternUrl,
               backgroundRepeat: 'repeat',
@@ -172,14 +172,15 @@ export function AppLayout() {
           />
         )}
 
-        <main
-          key={location.pathname}
-          className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6 animate-fade-in"
-          style={{ animationDuration: '200ms', animationFillMode: 'both' }}
-        >
-          <ErrorBoundary key={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
+        <main className="relative z-10 p-3 lg:p-6 pb-20 lg:pb-6">
+          <div
+            key={location.pathname}
+            style={{ animation: 'fadeIn 200ms ease both' }}
+          >
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
 

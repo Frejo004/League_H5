@@ -3,6 +3,7 @@
  * Démarrer, mi-temps, terminer, ajouter buts/cartons/commentaires
  */
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import * as FramerMotion from 'framer-motion'
 const { motion, AnimatePresence } = FramerMotion
 import { Play, Pause, Square, Plus, Trash2, AlertTriangle, Camera, Mic, TrendingUp, CheckCircle2, Search, User, ShieldCheck, Video, X as XIcon, Zap } from 'lucide-react'
@@ -895,8 +896,8 @@ export function AdminLiveControls({
     )}
 
     {/* Modal Formulaire d'événement */}
-    {showEventForm && isLive && canManageEvents && (
-      <div className="fixed inset-0 z-200 flex items-center justify-center p-4">
+    {showEventForm && isLive && canManageEvents && createPortal(
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div 
           className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
@@ -904,7 +905,7 @@ export function AdminLiveControls({
         />
         
         {/* Modal Content */}
-        <div className="relative w-full max-w-lg rounded-4xl p-6 space-y-6 bg-surface-card border border-surface-border shadow-2xl animate-in zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="relative w-full max-w-lg min-w-0 rounded-4xl p-6 space-y-6 bg-surface-card border border-surface-border shadow-2xl animate-in zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between border-b border-surface-border pb-4">
             <p className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_currentColor]"></span>
@@ -1072,7 +1073,8 @@ export function AdminLiveControls({
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )}
 
     {/* Gestion des derniers événements (Correction) */}
@@ -1140,7 +1142,7 @@ export function AdminLiveControls({
     )}
 
     {/* Modal de confirmation suppression */}
-    {deleteTarget && (
+    {deleteTarget && createPortal(
       <DeleteConfirmModal
         event={deleteTarget}
         isPending={deleteEvent.isPending}
@@ -1150,7 +1152,8 @@ export function AdminLiveControls({
           })
         }}
         onCancel={() => setDeleteTarget(null)}
-      />
+      />,
+      document.body
     )}
 
     {/* Notifications système (erreurs caméra, etc.) */}
@@ -1225,8 +1228,8 @@ export function AdminLiveControls({
 
     {/* Modal de Sélection de Joueur pour la Délégation */}
     <AnimatePresence>
-      {selectingType && (
-        <div className="fixed inset-0 z-300 flex items-center justify-center p-4">
+      {selectingType && createPortal(
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1340,7 +1343,8 @@ export function AdminLiveControls({
               </div>
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.body
       )}
     </AnimatePresence>
   </div>
