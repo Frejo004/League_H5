@@ -62,28 +62,21 @@ export function ChatPanel({ userId, onClose, mobile = false }: ChatPanelProps) {
     <div
       ref={panelRef}
       className={clsx(
-        'z-50 flex flex-col animate-scale-in',
+        'z-50 flex flex-col animate-scale-in bg-surface border border-surface-border shadow-2xl rounded-2xl',
         mobile
-          ? 'w-full h-full rounded-2xl'
+          ? 'w-full h-full'
           : 'absolute right-0 top-full mt-2 origin-top-right'
       )}
-      style={{
-        ...(mobile ? {} : {
-          width: selectedTeam ? 420 : 320,
-          height: selectedTeam ? 600 : 'auto',
-          maxHeight: '85vh',
-          transition: 'width 0.25s ease, height 0.25s ease',
-        }),
-        backgroundColor: '#161B22',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 16,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+      style={mobile ? {} : {
+        width: selectedTeam ? 420 : 320,
+        height: selectedTeam ? 600 : 'auto',
+        maxHeight: '85vh',
+        transition: 'width 0.25s ease, height 0.25s ease',
       }}
     >
       {/* ── Header du panneau ── */}
       <div
-        className="flex items-center justify-between px-4 py-3 shrink-0"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-surface-border"
       >
         <div className="flex items-center gap-2">
           {selectedTeam ? (
@@ -179,7 +172,7 @@ export function ChatPanel({ userId, onClose, mobile = false }: ChatPanelProps) {
                       }
                     </div>
                     {team.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-[#161B22] animate-pulse" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-surface animate-pulse" />
                     )}
                   </div>
 

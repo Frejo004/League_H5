@@ -71,13 +71,11 @@ export function PlayerStatsDrawer({
 
       {/* Panel */}
       <div
-        className="relative w-full sm:max-w-lg max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden animate-fade-in-up"
-        style={{ backgroundColor: '#161B22', border: '1px solid rgba(255,255,255,0.08)' }}
+        className="relative w-full sm:max-w-lg max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden animate-fade-in-up bg-surface border border-surface-border"
       >
         {/* Header */}
         <div
-          className="flex items-center gap-3 px-4 py-3 shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+          className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-surface-border"
         >
           <div
             className="w-10 h-10 rounded-full overflow-hidden shrink-0"
