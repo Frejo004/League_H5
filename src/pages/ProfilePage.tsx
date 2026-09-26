@@ -180,7 +180,7 @@ function PlayerStatsCard({ userId }: { userId?: string }) {
           <div className="flex items-start justify-between relative z-10">
             {/* Note globale & Info */}
             <div className="flex flex-col items-center">
-              <span className="text-5xl font-black text-transparent bg-clip-text bg-linear-to-b from-[#FFDF73] to-[#B8860B]"
+              <span className="text-5xl font-black text-[#FFDF73]"
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {rating}
               </span>

@@ -42,9 +42,9 @@ export function TournamentsPage() {
       case 'registration_open': 
         return { color: 'text-green-400', bg: 'bg-green-500/15', border: 'border-green-500/30', label: 'Inscriptions ouvertes' }
       case 'in_progress': 
-        return { color: 'text-blue-400', bg: 'bg-blue-500/15', border: 'border-blue-500/30', label: 'En cours' }
+        return { color: 'text-green-400', bg: 'bg-green-500/15', border: 'border-green-500/30', label: 'En cours' }
       case 'completed': 
-        return { color: 'text-purple-400', bg: 'bg-purple-500/15', border: 'border-purple-500/30', label: 'Terminé' }
+        return { color: 'text-slate-400', bg: 'bg-slate-500/15', border: 'border-slate-500/30', label: 'Terminé' }
       case 'cancelled': 
         return { color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30', label: 'Annulé' }
       default: 
@@ -131,8 +131,8 @@ export function TournamentsPage() {
                     
                     {/* Titre */}
                     <div className="flex items-start gap-3 mb-4 pr-24">
-                      <div className="p-2.5 rounded-xl bg-purple-500/15 border border-purple-500/30 shrink-0">
-                        <Trophy size={20} className="text-purple-400" />
+                      <div className="p-2.5 rounded-xl bg-gold-500/10 border border-gold-500/20 shrink-0">
+                        <Trophy size={20} className="text-gold-400" />
                       </div>
                       <h3 className="text-lg font-black uppercase tracking-wide text-text-primary leading-tight group-hover:text-primary-400 transition-colors">
                         {tournament.name}

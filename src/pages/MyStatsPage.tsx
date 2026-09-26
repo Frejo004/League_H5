@@ -99,7 +99,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
 
           <div className="flex-1 min-w-0 z-10">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFDF73] to-slate-900 dark:to-white uppercase tracking-widest"
+              <h2 className="text-2xl font-black text-amber-800 dark:text-[#FFDF73] uppercase tracking-widest"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {profile.first_name} {profile.last_name}
               </h2>

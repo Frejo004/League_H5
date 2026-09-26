@@ -7,7 +7,7 @@
   flex-direction: column !important;
   min-height: 100vh !important;
   width: 100% !important;
-  background: linear-gradient(135deg, #020617 0%, #0f172a 100%) !important;
+  background: var(--color-surface) !important;
 }
 
 .auth-left {

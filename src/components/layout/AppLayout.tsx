@@ -22,18 +22,18 @@ interface PageBg {
 }
 
 const PAGE_BACKGROUNDS: Record<string, PageBg> = {
-  '/dashboard':  { accent: '#2563eb', glow: '#22c55e', pattern: 'pitch'   },
+  '/dashboard':  { accent: '#22c55e', glow: '#c8f135', pattern: 'pitch'   },
   '/standings':  { accent: '#f59e0b', glow: '#f59e0b', pattern: 'lines'   },
-  '/matches':    { accent: '#3b82f6', glow: '#6366f1', pattern: 'net'     },
+  '/matches':    { accent: '#22c55e', glow: '#c8f135', pattern: 'net'     },
   '/scorers':    { accent: '#f97316', glow: '#ef4444', pattern: 'hexagon' },
-  '/teams':      { accent: '#8b5cf6', glow: '#6366f1', pattern: 'dots'    },
-  '/players':    { accent: '#06b6d4', glow: '#0ea5e9', pattern: 'dots'    },
+  '/teams':      { accent: '#22c55e', glow: '#c8f135', pattern: 'dots'    },
+  '/players':    { accent: '#d9a441', glow: '#c8f135', pattern: 'dots'    },
   '/stats':      { accent: '#22c55e', glow: '#16a34a', pattern: 'lines'   },
   '/admin':      { accent: '#64748b', glow: '#475569', pattern: 'none'    },
   '/captain':    { accent: '#f59e0b', glow: '#d97706', pattern: 'hexagon' },
   '/my-stats':   { accent: '#f97316', glow: '#ef4444', pattern: 'hexagon' },
-  '/my-team':    { accent: '#3b82f6', glow: '#6366f1', pattern: 'dots'    },
-  '/profile':    { accent: '#2563eb', glow: '#7c3aed', pattern: 'dots'    },
+  '/my-team':    { accent: '#22c55e', glow: '#c8f135', pattern: 'dots'    },
+  '/profile':    { accent: '#d9a441', glow: '#c8f135', pattern: 'dots'    },
 }
 
 const PATTERNS: Record<string, string> = {

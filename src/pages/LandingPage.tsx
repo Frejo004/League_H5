@@ -29,24 +29,15 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
   color: string
 }) {
   return (
-    <div className="group relative p-6 rounded-4xl bg-surface-card/50 border border-surface-border overflow-hidden transition-all duration-500 hover:bg-surface-raised/50 hover:-translate-y-2">
-      {/* Effet de Halo au survol */}
-      <div
-        className="absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
-        style={{ background: `radial-gradient(circle at center, ${color}20 0%, transparent 70%)` }}
-      />
-
-      <div className="relative z-10">
-        <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
-          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}
-        >
-          <Icon size={22} style={{ color }} />
-        </div>
-        <h3 className="text-base font-black text-text-primary mb-2 uppercase tracking-tight font-['Barlow_Condensed']">
+    <div className="group flex gap-4 border-t border-surface-border py-5 transition-colors hover:border-primary-500">
+      <div className="shrink-0 pt-0.5">
+        <Icon size={20} style={{ color }} />
+      </div>
+      <div>
+        <h3 className="text-base font-black text-text-primary mb-1 uppercase tracking-tight font-['Barlow_Condensed']">
           {title}
         </h3>
-        <p className="text-xs text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">
+        <p className="text-sm text-text-muted leading-relaxed group-hover:text-text-secondary transition-colors">
           {desc}
         </p>
       </div>
@@ -57,20 +48,19 @@ function FeatureCard({ icon: Icon, title, desc, color }: {
 // ── Chess Tournament Card ───────────────────────────────────────────────────────
 function ChessTournamentCard({ tournament }: { tournament: Tournament & { participants?: TournamentParticipant[] } }) {
   return (
-    <div className="relative overflow-hidden p-6 rounded-4xl bg-gradient-to-br from-purple-500/10 to-purple-900/10 border border-purple-500/30 group hover:border-purple-500/50 transition-all duration-500 hover:-translate-y-2">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-500" />
+    <div className="relative overflow-hidden p-6 rounded-2xl bg-surface-card border border-surface-border group hover:border-gold-500/50 transition-colors">
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
-            <Crown size={24} className="text-purple-400" />
+          <div className="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center">
+            <Crown size={24} className="text-gold-400" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Tournoi d'échecs</span>
+            <span className="text-[10px] font-bold text-gold-400 uppercase tracking-wider">Tournoi d'échecs</span>
             <span className={`ml-2 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-              tournament.status === 'in_progress' ? 'bg-green-500/20 text-green-400' : 
-              tournament.status === 'registration_open' ? 'bg-blue-500/20 text-blue-400' : 
-              'bg-gray-500/20 text-gray-400'
+              tournament.status === 'in_progress' ? 'bg-green-500/15 text-green-400' :
+              tournament.status === 'registration_open' ? 'bg-amber-500/15 text-amber-400' :
+              'bg-slate-500/15 text-slate-400'
             }`}>
               {tournament.status === 'in_progress' ? 'En cours' : 
                tournament.status === 'registration_open' ? 'Inscriptions ouvertes' : 
@@ -85,18 +75,18 @@ function ChessTournamentCard({ tournament }: { tournament: Tournament & { partic
         
         <div className="flex items-center gap-4 mb-4 text-xs text-text-muted">
           <span className="flex items-center gap-1">
-            <Trophy size={12} className="text-purple-400" />
+            <Trophy size={12} className="text-gold-400" />
             {tournament.tournament_type}
           </span>
           <span className="flex items-center gap-1">
-            <Calendar size={12} className="text-purple-400" />
+            <Calendar size={12} className="text-gold-400" />
             {tournament.participants?.length || 0} participants
           </span>
         </div>
         
         <Link 
           to={`/tournaments/${tournament.slug}`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-all duration-300 group-hover:scale-105"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 hover:bg-amber-300 text-slate-950 text-sm font-semibold transition-colors"
         >
           Voir le tournoi <ChevronRight size={16} />
         </Link>
@@ -176,7 +166,7 @@ function KickoffCountdown({ scheduledAt }: { scheduledAt: string }) {
 export function LandingPage() {
   useSeo({
     title: 'Accueil',
-    description: 'League H5 — la ligue de football en ligne : matchs en direct, classement, stats, paris et communauté.',
+    description: 'League H5 : matchs en direct, calendrier, classement, statistiques et communauté de la ligue.',
   })
   const { profile } = useAuth()
   const { data: stats, isLoading } = useLandingStats()
@@ -421,33 +411,32 @@ export function LandingPage() {
           </div>
 
           <h1 
-            className="text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter italic uppercase font-['Barlow_Condensed'] mb-6 text-text-primary"
+            className="text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter uppercase font-['Barlow_Condensed'] mb-6 text-text-primary"
           >
             HIGH FIVE <br />
-            <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #C8F135' }}>LIGUE</span>
+                <span className="text-[#C8F135]">LIGUE</span>
           </h1>
 
           <p 
             className="text-lg md:text-xl text-slate-300 mb-12 leading-relaxed"
             style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}
           >
-            L'élite du football H5. Vivez l'expérience professionnelle avec <span className="text-text-primary font-bold">stats en direct</span>,
-            messagerie intégrée et gestion de club simplifiée.
+            Suivez la High Five Ligue : matchs en direct, calendrier, classement et statistiques des clubs.
           </p>
 
           <div className="relative z-30 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/public/matches"
-              className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-[#C8F135] text-[#0D1117] font-black uppercase italic tracking-tighter hover:scale-105 transition-all shadow-[0_0_30px_rgba(200,241,53,0.3)]"
+              className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-[#C8F135] text-[#0D1117] font-black uppercase tracking-tighter hover:scale-105 transition-all shadow-[0_0_30px_rgba(200,241,53,0.3)]"
             >
               Voir les matchs
               <ChevronRight className="transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/auth/login"
-              className="relative z-30 w-full sm:w-auto px-10 py-5 rounded-2xl bg-white/5 border border-white/10 text-text-primary font-black uppercase italic tracking-tighter hover:bg-white/10 transition-all backdrop-blur-md"
+              className="relative z-30 w-full sm:w-auto px-10 py-5 rounded-2xl bg-white/5 border border-white/10 text-text-primary font-black uppercase tracking-tighter hover:bg-white/10 transition-all backdrop-blur-md"
             >
-              Rejoindre l'élite
+              Accéder à mon espace
             </Link>
           </div>
         </div>
@@ -469,14 +458,14 @@ export function LandingPage() {
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
               <div>
-                <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
-                  Tournois <span style={{ color: '#A855F7' }}>d'échecs</span>
+                <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] uppercase tracking-tighter">
+                  Tournois <span style={{ color: '#FFDF73' }}>d'échecs</span>
                 </h2>
                 <p className="text-slate-400 mt-2 font-medium">Rejoignez les compétitions d'échecs HIGHFIVE.</p>
               </div>
               <Link 
                 to="/tournaments"
-                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                className="flex items-center gap-2 text-[#FFDF73] hover:text-white font-medium transition-colors"
               >
                 Voir tous les tournois <ChevronRight size={16} />
               </Link>
@@ -496,7 +485,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
+              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] uppercase tracking-tighter">
                 Dernières <span style={{ color: ACCENT }}>Actualités</span>
               </h2>
               <p className="text-slate-300 mt-2 font-medium">Restez informé de la vie de la ligue.</p>
@@ -511,23 +500,23 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] italic uppercase tracking-tighter">
-                L'écosystème <span style={{ color: ACCENT }}>H5</span>
+              <h2 className="text-4xl md:text-5xl font-black text-white font-['Barlow_Condensed'] uppercase tracking-tighter">
+                Outils <span style={{ color: ACCENT }}>de la ligue</span>
               </h2>
-              <p className="text-slate-400 mt-2 font-medium">Une infrastructure digitale complète pour vos tournois.</p>
+              <p className="text-slate-400 mt-2 font-medium">Calendrier, compositions, classement et statistiques pour joueurs, capitaines et arbitres.</p>
             </div>
             <div className="h-0.5 flex-1 bg-linear-to-r from-[#C8F135]/50 to-transparent mx-8 hidden md:block mb-4" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FeatureCard icon={Radio} title="Match Center" desc="Interface de live-scoring ultra-réactive pour chaque seconde du match." color="#ef4444" />
-            <FeatureCard icon={Trophy} title="Hall of Fame" desc="Classements dynamiques et historique des champions par saison." color="#f59e0b" />
-            <FeatureCard icon={BarChart2} title="Data Lab" desc="Analyses détaillées : heatmaps, efficacité devant le but et passes clés." color="#3b82f6" />
-            <FeatureCard icon={MessageCircle} title="Locker Room" desc="Canaux de communication sécurisés pour votre équipe et le staff." color="#8b5cf6" />
-            <FeatureCard icon={Calendar} title="Smart Schedule" desc="Gestion automatisée des reports et synchronisation calendrier." color="#22c55e" />
-            <FeatureCard icon={Shield} title="Fair-Play Index" desc="Suivi disciplinaire rigoureux pour maintenir l'esprit sportif." color="#06b6d4" />
-            <FeatureCard icon={Star} title="MVP Voting" desc="Le public et les capitaines élisent les meilleurs après chaque match." color="#fbbf24" />
-            <FeatureCard icon={Zap} title="Instant Replay" desc="Accès rapide aux moments forts et aux vidéos de la communauté." color="#C8F135" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12">
+            <FeatureCard icon={Radio} title="Suivi en direct" desc="Saisissez buts, cartons et remplacements pendant la rencontre." color="#ef4444" />
+            <FeatureCard icon={Trophy} title="Classement" desc="Consultez les points et l'historique des champions par saison." color="#f59e0b" />
+            <FeatureCard icon={BarChart2} title="Statistiques" desc="Comparez tirs, corners, fautes, buts et passes décisives." color="#22c55e" />
+            <FeatureCard icon={MessageCircle} title="Messagerie" desc="Échangez dans le chat de l'équipe et les canaux de la ligue." color="#d9a441" />
+            <FeatureCard icon={Calendar} title="Calendrier" desc="Créez les matchs aller-retour et gérez leurs horaires." color="#22c55e" />
+            <FeatureCard icon={Shield} title="Discipline" desc="Consultez les cartons, suspensions et sanctions de la saison." color="#64748b" />
+            <FeatureCard icon={Star} title="Vote du match" desc="Votez pour l'homme du match après la rencontre." color="#fbbf24" />
+            <FeatureCard icon={Zap} title="Vidéo du match" desc="Diffusez une rencontre et suivez le direct depuis l'application." color="#C8F135" />
           </div>
         </div>
       </section>
@@ -539,7 +528,7 @@ export function LandingPage() {
             {['Respect', 'Fair-play', 'Discipline', 'Passion'].map((v) => (
               <div key={v} className="flex items-center gap-4">
                 <div className="w-2 h-2 rounded-full bg-[#C8F135]" />
-                <span className="text-2xl md:text-4xl font-black text-slate-400 uppercase italic font-['Barlow_Condensed'] hover:text-slate-200 transition-colors cursor-default">
+                <span className="text-2xl md:text-4xl font-black text-slate-400 uppercase font-['Barlow_Condensed'] hover:text-slate-200 transition-colors cursor-default">
                   {v}
                 </span>
               </div>

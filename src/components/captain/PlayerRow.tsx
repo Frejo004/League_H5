@@ -81,7 +81,7 @@ export function PlayerRow({
         {/* Nom + meta — cliquable aussi */}
         <button
           onClick={() => onViewStats(player)}
-          className="flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+          className="flex-1 min-w-0 text-left hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
         >
           <p className="text-sm font-medium text-text-primary truncate">
             {player.first_name} {player.last_name}

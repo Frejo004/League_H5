@@ -109,13 +109,10 @@ export function PageHero({
        {/* 1. Assombrir la photo */}
        <div className="absolute inset-0 bg-black/60 transition-opacity duration-700 group-hover:opacity-50" />
        
-       {/* 2. Mesh Gradient animé pour le "wow" effect */}
-       <div className="absolute inset-0 bg-mesh opacity-20 pointer-events-none" />
-       
-       {/* 3. Gradient directionnel pour lisibilité du texte */}
+      {/* Gradient directionnel pour garder le texte lisible sur la photo */}
        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
        
-       {/* 4. Accent couleur subtil */}
+      {/* Accent couleur de la page */}
        <div
          className="absolute inset-0 opacity-30"
          style={{ background: `radial-gradient(circle at 0% 50%, ${accentColor}40 0%, transparent 70%)` }}
