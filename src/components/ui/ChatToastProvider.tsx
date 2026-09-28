@@ -335,7 +335,7 @@ export function ChatToastProvider() {
             kind: 'dm',
             contextId: msg.conversation_id,
             contextName: senderProfile.full_name,
-            contextColor: '#3b82f6',
+            contextColor: '#15803d',
             senderName: senderProfile.full_name,
             senderAvatar: senderProfile.avatar_url,
             preview: truncate(msg.content),

@@ -105,7 +105,7 @@ export function MatchLineups({ matchId, homeTeam, awayTeam, scheduledAt }: Match
   return (
     <div className="card p-0 overflow-hidden glass-morphism border border-surface-border shadow-2xl">
       {/* Tabs Équipes */}
-      <div className="flex border-b border-surface-border bg-surface-muted/30 backdrop-blur-md">
+      <div className="flex border-b border-surface-border bg-surface-raised">
         {[
           { ...homeTeam, tabId: 'home' as const },
           { id: 'both', name: 'Face à Face', color: '#C8F135', tabId: 'both' as const },

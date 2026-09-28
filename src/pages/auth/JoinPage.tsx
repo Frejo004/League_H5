@@ -125,7 +125,7 @@ export function JoinPage() {
           <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: '0.4rem' }}>
             Créer votre compte joueur
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>League H5 — Ligue interne</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>League H5, ligue interne</p>
         </div>
 
         {/* Bannière joueur */}

@@ -20,7 +20,7 @@ const TYPE_CONFIG: Record<NotifType, {
   match_upcoming:    { icon: Calendar,      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
   match_completed:   { icon: CheckCircle2,  color: 'text-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20'  },
   mvp_vote_open:     { icon: Star,          color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
-  invite_pending:    { icon: UserPlus,      color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+  invite_pending:    { icon: UserPlus,      color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
   invite_expiring:   { icon: AlertTriangle, color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
   spectator_request: { icon: Users,          color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20'  },
   spectator_approved: { icon: UserCheck,      color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },

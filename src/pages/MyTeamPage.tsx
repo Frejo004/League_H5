@@ -27,7 +27,7 @@ export function MyTeamPage() {
 
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <Users size={18} className="text-blue-400" />
+        <Users size={18} className="text-primary-400" />
         <h1 className="page-title">Mon Équipe</h1>
       </div>
 

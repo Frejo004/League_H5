@@ -224,7 +224,7 @@ export function AdminSchedulePage() {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-text-primary">
           Calendrier
-          {season && <span className="text-slate-500 font-normal text-sm ml-2">— {season.name}</span>}
+          {season && <span className="text-slate-500 font-normal text-sm ml-2">· {season.name}</span>}
         </h2>
       </div>
 

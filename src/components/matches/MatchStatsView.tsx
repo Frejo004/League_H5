@@ -15,7 +15,7 @@ export function MatchStatsView({ home, away, stats }: { home: TeamRef, away: Tea
   ]
 
   return (
-    <div className="card border-surface-border/50 bg-surface-card/40 backdrop-blur-xl">
+    <div className="card">
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-xs font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2">
           <BarChart2 size={16} className="text-[#C8F135]" />

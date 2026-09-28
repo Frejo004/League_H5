@@ -1107,7 +1107,7 @@ export function GenericChat({
   onMarkAsRead,
   headerTitle,
   headerSubtitle,
-  headerColor = '#3b82f6',
+  headerColor = '#15803d',
   headerIcon = '💬',
   headerAvatar,
   headerOnline,

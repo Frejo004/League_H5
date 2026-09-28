@@ -572,7 +572,7 @@ export function TeamDetailPage() {
                           </span>
                           <span className={clsx(
                             "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
-                            isHome ? "text-blue-400 bg-blue-400/10" : "text-purple-400 bg-purple-400/10"
+                            isHome ? "text-primary-400 bg-primary-400/10" : "text-amber-400 bg-amber-400/10"
                           )}>
                             {isHome ? 'Dom.' : 'Ext.'}
                           </span>

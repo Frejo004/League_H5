@@ -105,7 +105,7 @@ export function LoginPage() {
               </label>
               <Link
                 to="/auth/reset-password"
-                style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}
+                style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600, textDecoration: 'none' }}
               >
                 Oublié ?
               </Link>

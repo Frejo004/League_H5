@@ -307,7 +307,7 @@ export function AdminGoalsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-text-primary">
           Buts & Passes
-          {season && <span className="text-text-secondary font-normal text-sm ml-2">— {season.name}</span>}
+          {season && <span className="text-text-secondary font-normal text-sm ml-2">· {season.name}</span>}
         </h2>
         <span className="text-xs text-text-secondary">
           {completedMatches.length} match{completedMatches.length !== 1 ? 's' : ''} terminé{completedMatches.length !== 1 ? 's' : ''}

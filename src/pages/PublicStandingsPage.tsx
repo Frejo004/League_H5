@@ -43,7 +43,7 @@ function PodiumCard({ row, rank }: { row: StandingRow; rank: 1 | 2 | 3 }) {
           {row.team_name}
         </p>
         <div className="flex items-baseline justify-center gap-1 mt-1">
-          <span className="text-xl font-black text-[var(--t1)] italic font-['Barlow_Condensed']">{row.points}</span>
+          <span className="text-xl font-black text-[var(--t1)] font-['Barlow_Condensed']">{row.points}</span>
           <span className="text-[9px] font-bold text-[var(--tm)] uppercase tracking-widest">PTS</span>
         </div>
       </div>
@@ -80,7 +80,7 @@ export function PublicStandingsPage() {
               <Trophy size={12} className="text-[#C8F135]" />
               <span className="text-[10px] font-black text-[#C8F135] uppercase tracking-[0.2em]">Classement Officiel</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-[var(--t1)] uppercase italic tracking-tighter leading-none font-['Barlow_Condensed']">
+            <h1 className="text-5xl md:text-6xl font-black text-[var(--t1)] uppercase tracking-tighter leading-none font-['Barlow_Condensed']">
               Tableau de <span className="text-[#C8F135]">Classement</span>
             </h1>
             <p className="text-xs text-[var(--tm)] font-bold uppercase tracking-widest mt-2">
@@ -176,7 +176,7 @@ export function PublicStandingsPage() {
                       {row.goal_diff > 0 ? `+${row.goal_diff}` : row.goal_diff}
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span className="text-sm font-black text-[var(--t1)] font-['Barlow_Condensed'] italic">{row.points}</span>
+                      <span className="text-sm font-black text-[var(--t1)] font-['Barlow_Condensed']">{row.points}</span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1">
@@ -208,7 +208,7 @@ export function PublicStandingsPage() {
                 </div>
               </div>
             </div>
-            <p className="text-[9px] text-[var(--tm)] font-bold italic uppercase tracking-[0.2em] text-center sm:text-right">
+            <p className="text-[9px] text-[var(--tm)] font-bold uppercase tracking-[0.2em] text-center sm:text-right">
               Classement calculé selon les règlements officiels de la League H5
             </p>
           </div>

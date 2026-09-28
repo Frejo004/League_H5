@@ -240,8 +240,8 @@ export function RulesPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-left">
             <InfoBadge icon={Calendar} label="Début de la ligue" value="Mai 2026" color="#f59e0b" />
             <InfoBadge icon={Coins} label="Cotisation mensuelle" value="1 000F par joueur" color="#16a34a" />
-            <InfoBadge icon={MapPin} label="Terrain" value="2 séances mensuelles" color="#3b82f6" />
-            <InfoBadge icon={Clock} label="Durée chaque samedi" value="1h30 de jeu" color="#8b5cf6" />
+            <InfoBadge icon={MapPin} label="Terrain" value="2 séances mensuelles" color="#15803d" />
+            <InfoBadge icon={Clock} label="Durée chaque samedi" value="1h30 de jeu" color="#d9a441" />
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ export function RulesPage() {
           <div className="space-y-4">
             {/* Cotisation */}
             <div className="card border-amber-500/20 bg-amber-500/[0.03]">
-              <SectionTitle icon={Megaphone} title="Point clé — Cotisation" color="#f59e0b" />
+              <SectionTitle icon={Megaphone} title="Point clé : cotisation" color="#f59e0b" />
               <p className="text-xs text-slate-400 leading-relaxed mb-4">
                 La tenue des matchs dépend directement de la cotisation mensuelle de chaque joueur.
               </p>
@@ -384,7 +384,7 @@ export function RulesPage() {
             {/* Grille règles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="card">
-                <SectionTitle icon={Swords} title="Format des matchs" color="#3b82f6" />
+                <SectionTitle icon={Swords} title="Format des matchs" color="#15803d" />
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-primary-600/10 border border-primary-600/20">
                     <Clock size={18} className="text-primary-400 shrink-0" />
@@ -415,15 +415,15 @@ export function RulesPage() {
               </div>
 
               <div className="card">
-                <SectionTitle icon={ShieldCheck} title="Règlement" color="#8b5cf6" />
+                <SectionTitle icon={ShieldCheck} title="Règlement" color="#15803d" />
                 <div className="space-y-2.5">
                   {[
                     'Application des règles générales du football.',
                     'Remplacements illimités (type basketball).',
                   ].map((rule, i) => (
                     <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check size={9} className="text-violet-400" />
+                      <div className="w-4 h-4 rounded-full bg-primary-500/15 border border-primary-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check size={9} className="text-primary-400" />
                       </div>
                       <p className="text-xs text-slate-300 leading-relaxed">{rule}</p>
                     </div>
@@ -523,11 +523,11 @@ export function RulesPage() {
 
           {/* Cartes 4&5: Capitaines et Horaires - Side by side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="card border-purple-500/20 bg-purple-500/[0.02]">
-              <SectionTitle icon={Crown} title="4. Rôle des capitaines" color="#a78bfa" />
+            <div className="card border-amber-500/20 bg-amber-500/[0.03]">
+              <SectionTitle icon={Crown} title="4. Rôle des capitaines" color="#d9a441" />
               <div className="space-y-2">
                 <p className="text-xs text-slate-300">
-                  Présence <span className="text-purple-400 font-bold">15 min avant</span> le match
+                  Présence <span className="text-amber-400 font-bold">15 min avant</span> le match
                 </p>
                 <div className="space-y-1">
                   {[
@@ -535,8 +535,8 @@ export function RulesPage() {
                     'Faciliter l\'organisation',
                     'Assurer présence minimale'
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/5 border border-purple-500/15">
-                      <Check size={10} className="text-purple-400 shrink-0" />
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/15">
+                      <Check size={10} className="text-amber-400 shrink-0" />
                       <p className="text-xs text-slate-300">{item}</p>
                     </div>
                   ))}
@@ -544,9 +544,9 @@ export function RulesPage() {
               </div>
             </div>
 
-            <div className="card border-blue-500/20 bg-blue-500/[0.02]">
-              <SectionTitle icon={Clock} title="5. Respect des horaires" color="#3b82f6" />
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center space-y-2">
+            <div className="card border-primary-500/20 bg-primary-500/[0.02]">
+              <SectionTitle icon={Clock} title="5. Respect des horaires" color="#15803d" />
+              <div className="p-3 rounded-xl bg-primary-500/10 border border-primary-500/20 text-center space-y-2">
                 <p className="text-xs text-slate-300 font-bold">
                   ⏰ Matchs à l'heure prévue
                 </p>
@@ -565,13 +565,13 @@ export function RulesPage() {
           {/* Section 1: Consignes Arbitres */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <div className="card border-blue-500/20 bg-blue-500/[0.02]">
-                <SectionTitle icon={ShieldCheck} title="1. Consignes pour les Arbitres" color="#3b82f6" />
+              <div className="card border-primary-500/20 bg-primary-500/[0.02]">
+                <SectionTitle icon={ShieldCheck} title="1. Consignes pour les Arbitres" color="#15803d" />
 
                 <div className="space-y-6">
-                  <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+                  <div className="p-4 rounded-2xl bg-primary-500/10 border border-primary-500/20">
                     <h3 className="text-sm font-black text-text-primary uppercase tracking-wider mb-2 flex items-center gap-2">
-                      <UserCheck size={16} className="text-blue-400" />
+                      <UserCheck size={16} className="text-primary-400" />
                       Rôle et attitude
                     </h3>
                     <ul className="space-y-2">
@@ -582,7 +582,7 @@ export function RulesPage() {
                         'Collaboration : l’arbitre principal décide en cas de désaccord.'
                       ].map((text, i) => (
                         <li key={i} className="flex items-start gap-2 text-xs text-slate-300 leading-relaxed">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50 mt-1.5 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary-500/60 mt-1.5 shrink-0" />
                           {text}
                         </li>
                       ))}
@@ -592,7 +592,7 @@ export function RulesPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                       <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <BookOpen size={14} className="text-blue-400" />
+                        <BookOpen size={14} className="text-primary-400" />
                         Règles du jeu (Petits poteaux)
                       </h3>
                       <ul className="space-y-2">
@@ -605,7 +605,7 @@ export function RulesPage() {
                           'Gardien : Main interdite hors surface.'
                         ].map((text, i) => (
                           <li key={i} className="flex items-start gap-2 text-[11px] text-slate-400">
-                            <Check size={10} className="text-blue-500 mt-0.5 shrink-0" />
+                            <Check size={10} className="text-primary-500 mt-0.5 shrink-0" />
                             {text}
                           </li>
                         ))}
@@ -614,7 +614,7 @@ export function RulesPage() {
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                       <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Megaphone size={14} className="text-blue-400" />
+                        <Megaphone size={14} className="text-primary-400" />
                         Gestion du match
                       </h3>
                       <ul className="space-y-2">
@@ -627,7 +627,7 @@ export function RulesPage() {
                           'Alerte : Appeler Fréjus en cas de problème grave.'
                         ].map((text, i) => (
                           <li key={i} className="flex items-start gap-2 text-[11px] text-slate-400">
-                            <Check size={10} className="text-blue-500 mt-0.5 shrink-0" />
+                            <Check size={10} className="text-primary-500 mt-0.5 shrink-0" />
                             {text}
                           </li>
                         ))}
@@ -656,7 +656,7 @@ export function RulesPage() {
               </div>
 
               <div className="card border-primary-500/20 bg-primary-500/[0.02]">
-                <SectionTitle icon={Info} title="Aide Arbitrage" color="#3b82f6" />
+                <SectionTitle icon={Info} title="Aide Arbitrage" color="#15803d" />
                 <p className="text-[10px] text-slate-400 leading-relaxed">
                   En cas de doute sur une règle ou de litige persistant sur le terrain,
                   l'arbitre principal doit trancher immédiatement.
@@ -725,22 +725,22 @@ export function RulesPage() {
           </div>
 
           {/* Section 3: Organisation Arbitrage */}
-          <div className="card border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
-            <SectionTitle icon={LayoutGrid} title="Organisation Arbitrage" color="#3b82f6" />
+          <div className="card border-primary-500/20 bg-linear-to-br from-primary-500/5 to-transparent">
+            <SectionTitle icon={LayoutGrid} title="Organisation Arbitrage" color="#15803d" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl bg-black/40 border border-white/5 shadow-inner">
                   <h4 className="text-[11px] font-black text-text-primary uppercase tracking-widest mb-3">Principe de Rotation</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Pour chaque match, les deux équipes qui ne jouent pas doivent fournir <span className="text-blue-400 font-bold">1 arbitre chacune</span>.
+                    Pour chaque match, les deux équipes au repos fournissent <span className="text-primary-400 font-bold">un arbitre chacune</span>.
                   </p>
                   <div className="mt-4 flex items-center gap-4 text-[10px] font-bold text-slate-500">
                     <div className="flex-1 p-2 rounded-lg bg-white/5 border border-white/5 text-center">
                       Match <span className="text-text-primary">A vs B</span>
                     </div>
                     <ArrowRight size={14} />
-                    <div className="flex-1 p-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-center text-blue-400">
+                    <div className="flex-1 p-2 rounded-lg bg-primary-500/15 border border-primary-500/25 text-center text-primary-400">
                       Arbitres <span className="text-text-primary">C & D</span>
                     </div>
                   </div>
@@ -753,7 +753,7 @@ export function RulesPage() {
                     'Contact : tout souci doit être signalé à Fréjus DASSI.'
                   ].map((text, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                      <Check size={12} className="text-blue-500 shrink-0" />
+                      <Check size={12} className="text-primary-500 shrink-0" />
                       <p className="text-[11px] text-slate-400 font-medium">{text}</p>
                     </div>
                   ))}
@@ -761,10 +761,9 @@ export function RulesPage() {
               </div>
 
               <div className="relative">
-                <div className="absolute inset-0 bg-blue-500/10 blur-3xl rounded-full" />
-                <div className="relative p-6 rounded-3xl border border-white/10 bg-black/20 backdrop-blur-md text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-4">
-                    <Handshake size={24} className="text-blue-400" />
+                <div className="relative p-6 rounded-2xl border border-surface-border bg-surface-card text-center">
+                  <div className="w-12 h-12 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center mx-auto mb-4">
+                    <Handshake size={24} className="text-primary-400" />
                   </div>
                   <h4 className="text-sm font-black text-text-primary uppercase tracking-wider mb-2">Fair-Play Avant Tout</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">

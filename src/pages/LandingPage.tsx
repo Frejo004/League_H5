@@ -339,7 +339,7 @@ export function LandingPage() {
                         totalPausedSeconds={featuredMatch.total_paused_seconds}
                         status={featuredMatch.status}
                         homeColor={featuredMatch.home_team?.color || '#C8F135'}
-                        awayColor={featuredMatch.away_team?.color || '#3b82f6'}
+                        awayColor={featuredMatch.away_team?.color || '#d9a441'}
                         className="scale-90"
                       />
                     </>
@@ -367,7 +367,7 @@ export function LandingPage() {
                 <div className="flex flex-col items-center text-center w-28 md:w-36">
                   <div 
                     className="w-16 h-16 md:w-24 md:h-24 rounded-4xl flex items-center justify-center p-1.5 bg-surface-card/50 border border-surface-border transition-transform hover:scale-110 shadow-lg backdrop-blur-sm"
-                    style={{ borderBottom: `4px solid ${featuredMatch.away_team?.color || '#3b82f6'}` }}
+                    style={{ borderBottom: `4px solid ${featuredMatch.away_team?.color || '#d9a441'}` }}
                   >
                     {featuredMatch.away_team?.logo_url ? (
                       <img src={featuredMatch.away_team.logo_url} alt="" className="w-full h-full object-contain" />

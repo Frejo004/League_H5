@@ -151,7 +151,7 @@ export function LiveVideoPlayer({
     setActiveGoalBanner({
       playerName: newGoal.player ? `${newGoal.player.first_name} ${newGoal.player.last_name}` : 'Équipe',
       teamName:  isHome ? (homeTeam?.name || 'DOMICILE') : (awayTeam?.name || 'EXTÉRIEUR'),
-      teamColor: isHome ? (homeTeam?.color || '#3b82f6') : (awayTeam?.color || '#f59e0b'),
+      teamColor: isHome ? (homeTeam?.color || '#15803d') : (awayTeam?.color || '#d9a441'),
       isOwnGoal: newGoal.type === 'own_goal',
       score: `${overlay?.homeScore ?? 0} - ${overlay?.awayScore ?? 0}`,
       minute: newGoal.minute ?? 0,
@@ -347,7 +347,7 @@ export function LiveVideoPlayer({
   const isLivePaused = !dvrEnabled && isPausedDvr
 
   if (!isLive) {
-    const homeColor = homeTeam?.color || overlay?.homeColor || '#3b82f6'
+    const homeColor = homeTeam?.color || overlay?.homeColor || '#15803d'
     const awayColor = awayTeam?.color || overlay?.awayColor || '#ef4444'
     return ( 
       <div className="mx-1 sm:mx-0 relative rounded-4xl overflow-hidden border border-surface-border shadow-2xl bg-surface-card aspect-video mt-6 flex flex-col items-center justify-center gap-4 select-none">
@@ -532,7 +532,7 @@ export function LiveVideoPlayer({
        {stream && overlay && (
          <div className="absolute top-0 inset-x-0 z-20 px-3 pt-3 flex items-center justify-between gap-2"> 
            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 max-w-[35%] shadow-lg">
-             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.homeColor ?? '#3b82f6' }} />
+             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: overlay.homeColor ?? '#15803d' }} />
              <span className="text-[10px] font-black text-white uppercase truncate tracking-wide drop-shadow">{overlay.homeName}</span>
            </div>
            <div className="flex items-center gap-2 bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/15 shadow-lg">

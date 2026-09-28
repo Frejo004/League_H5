@@ -488,7 +488,7 @@ export function MatchDetailPage() {
         <Breadcrumbs items={[{ label: 'Matchs', to: '/matches' }, { label: `${home.name} vs ${away.name}` }]} homeTo="/dashboard" />
 
         <div className="relative overflow-hidden rounded-[2.5rem] border border-surface-border/50 bg-surface-card shadow-2xl">
-          <div className="absolute inset-0 bg-linear-to-br from-blue-600/10 via-transparent to-purple-600/10" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary-500/10 via-transparent to-[#C8F135]/10" />
           <div className="relative z-10 px-6 py-12 flex flex-col items-center">
             <div className="flex items-center justify-center gap-8 sm:gap-24 w-full max-w-4xl">
               <div className="flex-1 flex flex-col items-center gap-4 group">

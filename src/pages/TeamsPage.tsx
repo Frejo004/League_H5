@@ -56,10 +56,10 @@ export function TeamsPage() {
       <PageHero
         imageUrl="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=1200&q=80&auto=format&fit=crop"
         pattern="dots"
-        accentColor="#8b5cf6"
+        accentColor="#15803d"
         title="Équipes"
         subtitle={season?.name}
-        icon={<Users size={20} className="text-violet-400" />}
+        icon={<Users size={20} className="text-primary-400" />}
         stats={teams?.length ? [
           { label: 'Équipes',  value: teams.length },
           { label: 'Joueurs',  value: teams.reduce((acc, t) => {

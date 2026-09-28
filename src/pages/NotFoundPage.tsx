@@ -19,11 +19,6 @@ export function NotFoundPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden">
       {/* Background decorations — adaptatif au thème via les tokens CSS */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse"
-             style={{ backgroundColor: 'rgba(59,130,246,0.08)' }} />
-        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 rounded-full blur-3xl"
-             style={{ backgroundColor: 'rgba(200,241,53,0.06)' }} />
-
         {/* Grid pattern */}
         <div className="absolute inset-0"
              style={{
@@ -38,12 +33,10 @@ export function NotFoundPage() {
         {/* 404 Visual */}
         <div className="space-y-4">
           <div className="relative inline-block">
-            <div className="absolute -inset-4 rounded-3xl blur-xl"
-                 style={{ background: 'radial-gradient(ellipse, rgba(59,130,246,0.15), rgba(200,241,53,0.1), transparent)' }} />
-            <div className="relative backdrop-blur-sm rounded-2xl p-6 shadow-2xl border"
+              <div className="relative rounded-2xl p-6 shadow-sm border"
                  style={{ backgroundColor: 'var(--color-surface-card)', borderColor: 'var(--color-surface-border)' }}>
               <div className="flex items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center">
                   <span className="text-3xl font-black text-white">4</span>
                 </div>
 
@@ -57,7 +50,7 @@ export function NotFoundPage() {
                   </svg>
                 </div>
 
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center">
                   <span className="text-3xl font-black text-white">4</span>
                 </div>
               </div>
@@ -78,11 +71,10 @@ export function NotFoundPage() {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/dashboard"
-            className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-semibold shadow-sm hover:bg-primary-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135]"
           >
-            <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <Home size={18} className="relative z-10" />
-            <span className="relative z-10">Retour à l'accueil</span>
+            <Home size={18} />
+            Retour à l'accueil
           </Link>
 
           <button

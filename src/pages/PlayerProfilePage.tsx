@@ -81,7 +81,7 @@ function PlayerFormChart({ matches }: {
             <span className="text-[10px] text-slate-500 font-bold">Buts</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-violet-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
             <span className="text-[10px] text-slate-500 font-bold">Passes</span>
           </div>
         </div>
@@ -102,7 +102,7 @@ function PlayerFormChart({ matches }: {
           <span className="text-orange-400 font-black">
             ⚽ {hovered.goals_in_match}
           </span>
-          <span className="text-violet-400 font-black">
+          <span className="text-amber-400 font-black">
             🅰 {hovered.assists_in_match}
           </span>
         </div>
@@ -424,7 +424,7 @@ export function PlayerProfilePage() {
         {[
           { label: 'Matchs joués', value: player.matches_played,  icon: Calendar, color: 'text-blue-400'   },
           { label: 'Buts',         value: player.goals,           icon: Target,   color: 'text-orange-400' },
-          { label: 'Passes déc.',  value: player.assists,         icon: Zap,      color: 'text-violet-400' },
+          { label: 'Passes déc.',  value: player.assists,         icon: Zap,      color: 'text-amber-400' },
           { label: 'Homme du match', value: mvpData?.total_mvp ?? 0, icon: Star,  color: 'text-amber-400'  },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className={clsx(
@@ -457,7 +457,7 @@ export function PlayerProfilePage() {
             <span className="section-title">Match</span>
             <span className="section-title w-8 text-center">Rés.</span>
             <span className="section-title w-6 text-center text-orange-400/70">⚽</span>
-            <span className="section-title w-6 text-center text-violet-400/70">🅰</span>
+                    <span className="section-title w-6 text-center text-amber-400/70">🅰</span>
           </div>
 
           {player.recent_matches.map((m, i) => {
@@ -510,7 +510,7 @@ export function PlayerProfilePage() {
                 {/* Passes */}
                 <div className="w-6 text-center">
                   {m.assists_in_match > 0 ? (
-                    <span className="text-sm font-bold text-violet-400">{m.assists_in_match}</span>
+                    <span className="text-sm font-bold text-amber-400">{m.assists_in_match}</span>
                   ) : (
                     <span className="text-xs text-slate-700">—</span>
                   )}

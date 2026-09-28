@@ -141,7 +141,7 @@ function TeamRow({
                       disabled={setCaptain.isPending} 
                       className="input text-sm py-2 flex-1 font-medium bg-surface/50 border-surface-border"
                     >
-                      <option value="">— Aucun capitaine —</option>
+                      <option value="">Aucun capitaine</option>
                       {(players ?? []).map(p => (
                         <option key={p.id} value={p.id}>
                           {p.jersey_number ? `#${p.jersey_number} ` : ''}{p.first_name} {p.last_name}
@@ -288,7 +288,7 @@ export function AdminTeamsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-text-primary">
           Équipes & Joueurs
-          {season && <span className="text-slate-500 font-normal text-sm ml-2">— {season.name}</span>}
+          {season && <span className="text-slate-500 font-normal text-sm ml-2">· {season.name}</span>}
         </h2>
         {season && (
           <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-1.5">

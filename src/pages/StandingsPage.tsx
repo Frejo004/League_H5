@@ -151,7 +151,7 @@ function FormChart({
       <div className="flex items-center gap-2">
         <TrendingUp size={16} className="text-primary-400" />
         <h3 className="text-xs font-black text-text-primary uppercase tracking-widest">Évolution du classement</h3>
-        <span className="text-[10px] text-text-muted font-bold">— Points cumulés par journée</span>
+        <span className="text-[10px] text-text-muted font-bold">Points cumulés par journée</span>
       </div>
 
       <div className="overflow-x-auto">
@@ -314,8 +314,8 @@ function PodiumCard({ row, rank, teamSlug }: { row: StandingRow; rank: 1 | 2 | 3
 export function StandingsPage() {
   const { data: season, isLoading: seasonLoading } = useActiveSeason()
   useSeo({
-    title: `Classement${season?.name ? ` — ${season.name}` : ''}`,
-    description: 'Classement actualisé de la ligue de football H5 — points, victoires, buts.',
+    title: `Classement${season?.name ? ` · ${season.name}` : ''}`,
+    description: 'Classement actualisé de la ligue de football H5 : points, victoires et buts.',
   })
   const { data: standings, isLoading: standingsLoading } = useStandings(season?.id)
   const { data: matches } = useMatches(season?.id)

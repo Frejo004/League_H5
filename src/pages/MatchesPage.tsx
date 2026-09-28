@@ -192,10 +192,10 @@ export function MatchesPage() {
       <PageHero
         imageUrl="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=1200&q=80&auto=format&fit=crop"
         pattern="net"
-        accentColor="#3b82f6"
+        accentColor="#15803d"
         title="Matchs"
         subtitle={season?.name}
-        icon={<Calendar size={20} className="text-blue-400" />}
+        icon={<Calendar size={20} className="text-primary-400" />}
         stats={matches ? [
           { label: 'Journées',  value: matchdays.length },
           { label: 'Terminés', value: matches.filter(m => m.status === 'completed').length },

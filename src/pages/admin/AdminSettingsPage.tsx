@@ -56,7 +56,7 @@ function SettingsForm({ settings, seasonId, seasonName }: {
     <div className="space-y-6">
       <h2 className="text-xl font-black text-text-primary uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
         Paramètres
-        <span className="text-[#FFDF73] text-sm ml-2 font-black">— {seasonName}</span>
+        <span className="text-[#FFDF73] text-sm ml-2 font-black">· {seasonName}</span>
       </h2>
 
       <form onSubmit={handleSave} className="space-y-6">

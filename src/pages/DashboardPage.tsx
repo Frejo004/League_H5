@@ -342,7 +342,7 @@ function WelcomeCard({ profile, myPlayer, myTeam, role }: {
     : profile.full_name ?? profile.email.split('@')[0]
 
   const roleLabel = role === 'admin' ? 'Administrateur' : role === 'captain' ? 'Capitaine' : role === 'player' ? 'Joueur' : 'Spectateur'
-  const roleColor = role === 'admin' ? '#f59e0b' : role === 'captain' ? '#8b5cf6' : role === 'player' ? '#22c55e' : '#64748b'
+  const roleColor = role === 'admin' ? '#d9a441' : role === 'captain' ? '#c8f135' : role === 'player' ? '#22c55e' : '#64748b'
   const roleIcon = role === 'admin' ? <Settings size={11} /> : role === 'captain' ? <Crown size={11} /> : role === 'player' ? <Zap size={11} /> : <Users size={11} />
 
   return (
@@ -419,7 +419,7 @@ function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: strin
   const stats = [
     { label: 'Matchs', value: profile.matches_played, icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-400/10' },
     { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400', bg: 'bg-orange-400/10' },
-    { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400', bg: 'bg-violet-400/10' },
+    { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/10' },
     { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400', bg: 'bg-amber-400/10' },
     { label: 'Cartons', value: (discipline?.yellow_cards ?? 0) + (discipline?.red_cards ?? 0), icon: Shield, color: 'text-red-400', bg: 'bg-red-400/10', sub: `${discipline?.yellow_cards ?? 0}J / ${discipline?.red_cards ?? 0}R` },
   ]
@@ -520,15 +520,15 @@ function CaptainQuickActions({ myTeam, nextMatch, myTeamId }: {
   myTeamId: string | null
 }) {
   return (
-    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 space-y-3">
+    <div className="rounded-2xl border border-primary-500/20 bg-primary-500/5 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <Crown size={13} className="text-purple-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">Espace Capitaine</span>
+        <Crown size={13} className="text-primary-400" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-primary-400">Espace Capitaine</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Link to="/captain"
-          className="flex items-center gap-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-colors group">
-          <Users size={14} className="text-purple-400 shrink-0" />
+          className="flex items-center gap-2 p-3 rounded-xl bg-primary-500/10 border border-primary-500/20 hover:bg-primary-500/20 transition-colors group">
+          <Users size={14} className="text-primary-400 shrink-0" />
           <div className="min-w-0">
             <p className="text-xs font-bold text-text-primary truncate">Mon équipe</p>
             {myTeam && <p className="text-[10px] text-text-muted truncate">{myTeam.name}</p>}
@@ -552,8 +552,8 @@ function AdminQuickActions({ completedCount, teamsCount, pendingSpectatorsCount 
   completedCount: number; teamsCount: number; pendingSpectatorsCount: number
 }) {
   const actions = [
-    { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#3b82f6' },
-    { label: 'Équipes', sub: `${teamsCount} équipes`, icon: Shield, to: '/admin/teams', color: '#8b5cf6' },
+    { label: 'Matchs', sub: `${completedCount} terminés`, icon: Calendar, to: '/admin/matches', color: '#15803d' },
+    { label: 'Équipes', sub: `${teamsCount} équipes`, icon: Shield, to: '/admin/teams', color: '#d9a441' },
     { label: 'Spectateurs', sub: `${pendingSpectatorsCount} en attente`, icon: Users, to: '/admin/spectators', color: '#10b981', alert: pendingSpectatorsCount > 0 },
     { label: 'Saisons', sub: 'Gérer', icon: Trophy, to: '/admin/seasons', color: '#f59e0b' },
   ]

@@ -19,7 +19,7 @@ interface Particle {
   rotationSpeed: number
 }
 
-const COLORS = ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+const COLORS = ['#15803d', '#22c55e', '#c8f135', '#ffdf73', '#f59e0b', '#ef4444']
 
 export function Confetti({ 
   active, 

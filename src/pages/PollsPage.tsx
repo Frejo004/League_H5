@@ -334,10 +334,10 @@ export function PollsPage() {
       <PageHero
         imageUrl="https://images.unsplash.com/photo-1461896836934-ffe607ba821?w=1200&q=80&auto=format&fit=crop"
         pattern="lines"
-        accentColor="#8b5cf6"
+        accentColor="#d9a441"
         title="Sondages & Pronostics"
         subtitle="Sélectionne tes pronostics et valide ton bulletin !"
-        icon={<BarChart2 size={20} className="text-purple-400" />}
+        icon={<BarChart2 size={20} className="text-amber-400" />}
         compact
       />
 

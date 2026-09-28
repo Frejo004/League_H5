@@ -103,7 +103,7 @@ export function AdminSanctionsPage() {
                   onChange={e => setSelectedPlayerId(e.target.value)}
                   className="input text-xs"
                 >
-                  <option value="">— Sélectionner le joueur —</option>
+                  <option value="">Sélectionner le joueur</option>
                   {filteredPlayers.map(p => (
                     <option key={p.id} value={p.id}>{p.first_name} {p.last_name} ({p.teams?.name})</option>
                   ))}

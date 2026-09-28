@@ -221,7 +221,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
             <span className="text-[9px] text-slate-600 uppercase tracking-wider">Match</span>
             <span className="text-[9px] text-slate-600 uppercase tracking-wider text-center">Rés.</span>
             <span className="text-[9px] text-orange-400/60 uppercase tracking-wider text-center">⚽</span>
-            <span className="text-[9px] text-violet-400/60 uppercase tracking-wider text-center">🅰</span>
+            <span className="text-[9px] text-amber-400/70 uppercase tracking-wider text-center">🅰</span>
           </div>
 
           {profile.recent_matches.map((m, i) => {
@@ -261,7 +261,7 @@ function PlayerStats({ playerId, seasonId }: { playerId: string; seasonId: strin
                 </div>
                 <div className="text-center">
                   {m.assists_in_match > 0
-                    ? <span className="text-sm font-bold text-violet-400">{m.assists_in_match}</span>
+                    ? <span className="text-sm font-bold text-amber-400">{m.assists_in_match}</span>
                     : <span className="text-xs text-slate-700">—</span>
                   }
                 </div>

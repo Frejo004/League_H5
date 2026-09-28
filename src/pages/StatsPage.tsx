@@ -83,9 +83,9 @@ export function StatsPage() {
           {/* ── Global KPIs ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
             {[
-              { label: 'Matchs joués',      value: completedMatches.length, icon: Zap,    color: 'from-blue-500/15 to-blue-600/5',    iconColor: 'text-blue-400',    border: 'border-blue-500/20' },
+              { label: 'Matchs joués',      value: completedMatches.length, icon: Zap,    color: 'from-primary-500/15 to-primary-600/5', iconColor: 'text-primary-400', border: 'border-primary-500/20' },
               { label: 'Buts marqués',       value: totalGoals,              icon: Target, color: 'from-orange-500/15 to-orange-600/5', iconColor: 'text-orange-400',  border: 'border-orange-500/20' },
-              { label: 'Passes décisives',   value: totalAssists,            icon: Zap,    color: 'from-violet-500/15 to-violet-600/5', iconColor: 'text-violet-400',  border: 'border-violet-500/20' },
+              { label: 'Passes décisives',   value: totalAssists,            icon: Zap,    color: 'from-amber-500/15 to-amber-600/5', iconColor: 'text-amber-400', border: 'border-amber-500/20' },
               { label: 'Buts / match',       value: avgGoalsPerMatch,        icon: BarChart2, color: 'from-primary-500/15 to-primary-600/5', iconColor: 'text-primary-400', border: 'border-primary-500/20' },
             ].map(({ label, value, icon: Icon, color, iconColor, border }) => (
               <div key={label} className={clsx('stat-card animate-fade-in-up bg-linear-to-br border', color, border)}>
@@ -166,7 +166,7 @@ export function StatsPage() {
             {/* ── Top assisters ── */}
             <div className="card space-y-3 animate-fade-in-up">
               <h2 className="section-title flex items-center gap-2">
-                <Zap size={12} className="text-violet-400" />
+                <Zap size={12} className="text-amber-400" />
                 Top passeurs
               </h2>
 
@@ -190,7 +190,7 @@ export function StatsPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-surface-border rounded-full overflow-hidden hidden sm:block">
-                          <div className="h-full bg-violet-400 rounded-full" style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }} />
+                          <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(s.assists / (topAssisters[0]?.assists || 1)) * 100}%` }} />
                         </div>
                         <span className="text-text-primary font-black text-sm w-4 text-right">{s.assists}</span>
                       </div>
@@ -332,7 +332,7 @@ export function StatsPage() {
               <div className="card space-y-3 animate-fade-in-up">
                 <h2 className="section-title flex items-center gap-2">
                   <span className="text-base">🟨</span>
-                  Cartons — Joueurs
+                  Cartons : joueurs
                 </h2>
                 {discipline.players.length === 0 ? (
                   <p className="text-text-muted text-sm py-4 text-center">Aucun carton cette saison 🎉</p>
@@ -377,7 +377,7 @@ export function StatsPage() {
               <div className="card space-y-3 animate-fade-in-up">
                 <h2 className="section-title flex items-center gap-2">
                   <Shield size={12} className="text-green-400" />
-                  Fair-play — Équipes
+                  Fair-play : équipes
                 </h2>
                 <p className="text-[10px] text-text-muted">Score : 🟨 = 1pt · 🟥 = 3pts · Moins c'est mieux</p>
                 {discipline.teams.length === 0 ? (

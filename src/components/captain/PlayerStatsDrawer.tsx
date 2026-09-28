@@ -120,7 +120,7 @@ export function PlayerStatsDrawer({
                 {[
                   { label: 'Matchs', value: profile.matches_played, icon: Calendar, color: 'text-blue-400' },
                   { label: 'Buts', value: profile.goals, icon: Target, color: 'text-orange-400' },
-                  { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-violet-400' },
+                  { label: 'Passes', value: profile.assists, icon: Zap, color: 'text-amber-400' },
                   { label: 'MVP', value: mvpData?.total_mvp ?? 0, icon: Star, color: 'text-amber-400' },
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div
@@ -205,7 +205,7 @@ export function PlayerStatsDrawer({
                     <span className="text-[9px] text-slate-600 uppercase tracking-wider">Match</span>
                     <span className="text-[9px] text-slate-600 uppercase tracking-wider text-center">Rés</span>
                     <span className="text-[9px] text-orange-400/60 uppercase tracking-wider text-center">⚽</span>
-                    <span className="text-[9px] text-violet-400/60 uppercase tracking-wider text-center">🅰</span>
+                    <span className="text-[9px] text-amber-400/70 uppercase tracking-wider text-center">🅰</span>
                   </div>
 
                   {profile.recent_matches.map((m, i) => {
@@ -246,7 +246,7 @@ export function PlayerStatsDrawer({
                         </div>
                         <div className="text-center">
                           {m.assists_in_match > 0
-                            ? <span className="text-sm font-bold text-violet-400">{m.assists_in_match}</span>
+                            ? <span className="text-sm font-bold text-amber-400">{m.assists_in_match}</span>
                             : <span className="text-xs text-slate-700">—</span>
                           }
                         </div>

@@ -135,7 +135,7 @@ export function CaptainPage() {
             {/* Background Mesh/Glow */}
             <div
               className="absolute inset-0 opacity-20 blur-3xl -z-10"
-              style={{ backgroundColor: myTeamTyped.color ?? '#8b5cf6' }}
+              style={{ backgroundColor: myTeamTyped.color ?? '#15803d' }}
             />
             <div className="absolute inset-0 bg-grid-pattern opacity-5" />
 

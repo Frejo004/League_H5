@@ -457,7 +457,7 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
           {matches.map(m => (
             <option key={m.id} value={m.id}>
               {m.home_team?.name} vs {m.away_team?.name}
-              {m.scheduled_at ? ` — ${new Date(m.scheduled_at).toLocaleDateString('fr-FR')}` : ''}
+              {m.scheduled_at ? ` · ${new Date(m.scheduled_at).toLocaleDateString('fr-FR')}` : ''}
             </option>
           ))}
         </select>
@@ -500,7 +500,7 @@ function AutoCreatePanel({ matches }: { matches: MatchWithTeams[] }) {
       <div>
         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2 block flex items-center gap-1">
           Buteur / Passeur ({selectedPlayerTypes.size} sélectionnés)
-          <span className="text-[9px] text-text-muted normal-case">— options générées depuis les joueurs du match</span>
+          <span className="text-[9px] text-text-muted normal-case">Options générées à partir des joueurs du match.</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {PLAYER_POLL_TYPES.map(({ key, label }) => (
@@ -658,7 +658,7 @@ export function AdminPollsPage() {
             Sondages & Pronostics
           </h2>
           <p className="text-xs text-text-secondary font-medium uppercase tracking-widest mt-1">
-            {polls?.length ?? 0} sondage{(polls?.length ?? 0) > 1 ? 's' : ''} — résolution automatique à la fin des matchs
+            {polls?.length ?? 0} sondage{(polls?.length ?? 0) > 1 ? 's' : ''}. Résolution automatique à la fin des matchs.
           </p>
         </div>
         <div className="flex items-center gap-2">

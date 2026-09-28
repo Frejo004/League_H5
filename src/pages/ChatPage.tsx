@@ -207,14 +207,14 @@ function ConvAvatar({
       ) : emoji ? (
         <div
           className="w-full h-full rounded-full flex items-center justify-center text-xl"
-          style={{ backgroundColor: (color ?? '#3b82f6') + '33' }}
+          style={{ backgroundColor: (color ?? '#15803d') + '33' }}
         >
           {emoji}
         </div>
       ) : (
         <div
           className="w-full h-full rounded-full flex items-center justify-center text-sm font-bold text-white"
-          style={{ backgroundColor: color ?? '#3b82f6' }}
+          style={{ backgroundColor: color ?? '#15803d' }}
         >
           {initials}
         </div>
@@ -443,7 +443,7 @@ function Sidebar({
                 <ConvAvatar
                   src={dm ? dm.other_user.avatar_url : team?.logo_url}
                   name={item.name}
-                  color={ch ? ch.color : team ? team.teamColor : '#3b82f6'}
+                  color={ch ? ch.color : team ? team.teamColor : '#15803d'}
                   emoji={ch ? ch.icon : undefined}
                   isOnline={isOnline}
                 />
@@ -615,7 +615,7 @@ function DmChatView({
       headerAvatar={other.avatar_url}
       headerSubtitle={isOnline ? 'En ligne' : 'Hors ligne'}
       headerOnline={isOnline}
-      headerColor="#3b82f6"
+      headerColor="#15803d"
       headerIcon="💬"
       embedded
       olderCount={olderCount}

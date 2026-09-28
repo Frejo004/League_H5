@@ -352,7 +352,7 @@ export function AdminLiveControls({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* ── STICKY HEADER CONTROLS ── */}
-      <div className="sticky top-0 z-50 -mx-4 px-4 py-3 bg-surface-card/95 backdrop-blur-md border-b border-surface-border shadow-xl transition-colors">
+      <div className="sticky top-0 z-50 -mx-4 px-4 py-3 bg-surface-card border-b border-surface-border shadow-xl transition-colors">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="relative flex h-2 w-2">

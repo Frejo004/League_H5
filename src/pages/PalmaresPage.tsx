@@ -85,7 +85,7 @@ function SeasonDetail({ season }: { season: Season }) {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <SeasonKpi label="Matchs joués"   value={totalMatches}  icon={Calendar} color="#3b82f6" />
+        <SeasonKpi label="Matchs joués"   value={totalMatches}  icon={Calendar} color="#15803d" />
         <SeasonKpi label="Buts marqués"   value={totalGoals}    icon={Target}   color="#f97316" />
         {topScorer && (
           <SeasonKpi
@@ -100,7 +100,7 @@ function SeasonDetail({ season }: { season: Season }) {
             label="Meilleur passeur"
             value={`${topAssister.first_name} ${topAssister.last_name} (${topAssister.assists})`}
             icon={Zap}
-            color="#8b5cf6"
+            color="#d9a441"
           />
         )}
       </div>
