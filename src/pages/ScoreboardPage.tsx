@@ -52,9 +52,9 @@ export function ScoreboardPage() {
         : 'À VENIR'
 
   return (
-    <div className="min-h-screen w-full bg-black text-white flex flex-col items-center justify-between py-10 px-6 select-none">
+    <div className="min-h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-between gap-4 px-[calc(env(safe-area-inset-left,0px)+1rem)] sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] select-none">
       {/* Barre supérieure (retour + sponsors / branding) */}
-      <div className="w-full flex items-center justify-between text-white/40 text-xs uppercase tracking-[0.3em]">
+      <div className="w-full flex items-center justify-between gap-3 text-white/40 text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em]">
         <Link to={`/matches/${idOrSlug}`} className="flex items-center gap-2 hover:text-white/80 transition-colors">
           <ArrowLeft size={16} /> Retour
         </Link>
@@ -63,13 +63,13 @@ export function ScoreboardPage() {
 
       {/* Bloc central : équipes + score */}
       <div className="flex-1 w-full flex items-center justify-center">
-        <div className="w-full max-w-7xl grid grid-cols-[minmax(0,1fr)_max-content_minmax(0,1fr)] items-center gap-3 sm:gap-8">
+        <div className="w-full max-w-7xl grid grid-cols-[minmax(0,1fr)_max-content_minmax(0,1fr)] items-center gap-2 sm:gap-8">
           {/* Home */}
           <TeamBlock name={home?.name ?? '—'} logo={home?.logo_url} color={home?.color ?? '#888'} align="end" />
 
           {/* Score + chrono */}
           <div className="flex flex-col items-center justify-center">
-            <div className="whitespace-nowrap text-[clamp(4rem,12vw,14rem)] leading-none font-black tabular-nums tracking-tight">
+            <div className="whitespace-nowrap text-[clamp(4.5rem,16vw,14rem)] leading-none font-black tabular-nums tracking-tight">
               {match.home_score ?? 0} <span className="text-white/30">–</span> {match.away_score ?? 0}
             </div>
             <div className={clsxStatus(isLive, false)}>
@@ -93,7 +93,7 @@ export function ScoreboardPage() {
 function TeamBlock({ name, logo, color, align }: { name: string; logo?: string | null; color: string; align: 'start' | 'end' }) {
   return (
     <div className={`flex min-w-0 items-center gap-2 sm:gap-6 ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      {align === 'end' && <span className="min-w-0 text-2xl sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
+      {align === 'end' && <span className="min-w-0 text-[clamp(1rem,4vw,1.5rem)] sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
       <div
         className="w-16 h-16 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl sm:rounded-3xl flex items-center justify-center shrink-0 shadow-2xl"
         style={{ backgroundColor: color }}
@@ -104,13 +104,13 @@ function TeamBlock({ name, logo, color, align }: { name: string; logo?: string |
           <span className="text-2xl sm:text-5xl font-black text-white/90">{name.slice(0, 2).toUpperCase()}</span>
         )}
       </div>
-      {align === 'start' && <span className="min-w-0 text-2xl sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
+      {align === 'start' && <span className="min-w-0 text-[clamp(1rem,4vw,1.5rem)] sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
     </div>
   )
 }
 
 function clsxStatus(isLive: boolean, isPaused: boolean): string {
-  const base = 'mt-6 px-8 py-2 rounded-full text-2xl font-black uppercase tracking-[0.3em]'
+  const base = 'mt-3 sm:mt-6 px-4 sm:px-8 py-2 rounded-full text-sm sm:text-2xl font-black uppercase tracking-[0.2em] sm:tracking-[0.3em]'
   if (isLive && !isPaused) return `${base} bg-red-600 text-white animate-pulse`
   if (isPaused) return `${base} bg-amber-500 text-black`
   return `${base} bg-white/10 text-white/80`
