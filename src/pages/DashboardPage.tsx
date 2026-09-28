@@ -24,196 +24,9 @@ import { LiveBadge } from '@/components/live/LiveBadge'
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar'
 import { useLiveClock } from '@/hooks/useMatchLive'
 import { clsx } from 'clsx'
-
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr))
-}
-
-function formatDay(dateStr: string) {
-  const d = new Date(dateStr)
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-  if (d.toDateString() === today.toDateString()) return "Aujourd'hui"
-  if (d.toDateString() === tomorrow.toDateString()) return 'Demain'
-  return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
-}
-
-// ── Statut composition pour un match ─────────────────────────────────────────
-function LineupStatusBadge({ matchId, teamId, isCaptain }: {
-  matchId: string; teamId: string; isCaptain: boolean
-}) {
-  const { data: lineups, isLoading } = useMatchLineups(matchId)
-  const hasLineup = useMemo(() => {
-    if (!lineups) return false
-    return lineups.some(l => l.team_id === teamId && l.is_starter)
-  }, [lineups, teamId])
-
-  if (isLoading) return null
-  if (hasLineup) {
-    return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20">
-        <CheckCircle2 size={11} className="text-green-400 shrink-0" />
-        <span className="text-[10px] font-black text-green-400 uppercase tracking-wider">Compo soumise</span>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
-        <AlertCircle size={11} className="text-amber-400 shrink-0" />
-        <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Compo manquante</span>
-      </div>
-      {isCaptain && (
-        <Link to="/captain" onClick={e => e.stopPropagation()}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-500/15 border border-primary-500/30 text-[10px] font-black text-primary-400 hover:bg-primary-500/25 transition-colors uppercase tracking-wider">
-          Soumettre <ChevronRight size={10} />
-        </Link>
-      )}
-    </div>
-  )
-}
-
-// ── Compte à rebours ──────────────────────────────────────────────────────────
-function useCountdown(targetDate: string | null) {
-  const [diff, setDiff] = useState<number | null>(null)
-  useEffect(() => {
-    if (!targetDate) return
-    const tick = () => setDiff(new Date(targetDate).getTime() - Date.now())
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [targetDate])
-  if (diff === null || diff <= 0) return null
-  const h = Math.floor(diff / 3_600_000)
-  const m = Math.floor((diff % 3_600_000) / 60_000)
-  const s = Math.floor((diff % 60_000) / 1_000)
-  if (h > 48) return null
-  return { h, m, s }
-}
-
-function NextMatchCountdown({ match, teamId, isCaptain }: {
-  match: MatchWithTeams; teamId?: string | null; isCaptain?: boolean
-}) {
-  const countdown = useCountdown(match.scheduled_at)
-  const isImminent = countdown ? countdown.h === 0 && countdown.m < 30 : false
-  return (
-    <div className={clsx('mx-4 mb-3 rounded-xl border overflow-hidden',
-      isImminent ? 'border-red-500/30' : 'border-primary-500/20')}>
-      {countdown && (
-        <div className={clsx('flex items-center justify-center gap-3 px-4 py-2.5',
-          isImminent ? 'bg-red-500/8' : 'bg-primary-500/5')}>
-          <Clock size={13} className={isImminent ? 'text-red-400' : 'text-primary-400'} />
-          <span className={clsx('text-[10px] font-black uppercase tracking-widest',
-            isImminent ? 'text-red-300' : 'text-primary-300')}>
-            Prochain match dans
-          </span>
-          <div className={clsx('flex items-center gap-1 font-black tabular-nums', isImminent && 'animate-pulse')}>
-            {countdown.h > 0 && (<>
-              <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.h).padStart(2, '0')}</span>
-              <span className="text-text-muted text-sm">h</span>
-            </>)}
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.m).padStart(2, '0')}</span>
-            <span className="text-text-muted text-sm">m</span>
-            <span className={clsx('text-lg', isImminent ? 'text-red-400' : 'text-text-primary')}>{String(countdown.s).padStart(2, '0')}</span>
-            <span className="text-text-muted text-sm">s</span>
-          </div>
-        </div>
-      )}
-      {teamId && (
-        <div className={clsx('flex items-center justify-between gap-2 px-4 py-2 border-t',
-          isImminent ? 'border-red-500/15 bg-red-500/4' : 'border-primary-500/10 bg-black/20')}>
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Composition</span>
-          <LineupStatusBadge matchId={match.id} teamId={teamId} isCaptain={!!isCaptain} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Mini match card ───────────────────────────────────────────────────────────
-function MiniMatchCard({ match, variant, myTeamId }: {
-  match: MatchWithTeams; variant: 'upcoming' | 'result'; myTeamId?: string | null
-}) {
-  const homeWon = match.home_score! > match.away_score!
-  const awayWon = match.away_score! > match.home_score!
-  const isMyMatch = myTeamId && (match.home_team_id === myTeamId || match.away_team_id === myTeamId)
-
-  return (
-    <Link to={`/matches/${match.slug || match.id}`}
-      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      <div className="absolute inset-0 bg-linear-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card border border-surface-border">
-        {isMyMatch && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)]" />}
-        {/* Home */}
-        <div className="flex-1 flex items-center justify-between p-3 pl-4 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
-            style={{ background: `linear-gradient(to right, ${match.home_team.color}, transparent)` }} />
-          <div className="flex items-center gap-3 relative z-10 min-w-0">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
-              style={{ borderLeft: `3px solid ${match.home_team.color}` }}>
-              {match.home_team.logo_url ? <img src={match.home_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.home_team.name[0]}
-            </div>
-            <span className={clsx('text-sm uppercase tracking-wide transition-colors line-clamp-1',
-              variant === 'result' ? (homeWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {match.home_team.name}
-            </span>
-          </div>
-          {variant === 'result' && (
-            <span className={clsx('text-3xl font-black tabular-nums leading-none ml-3 z-10',
-              homeWon ? 'text-text-primary text-glow-sm' : 'text-text-muted')}
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {match.home_score}
-            </span>
-          )}
-        </div>
-        {/* Centre */}
-        <div className="w-12 shrink-0 flex flex-col items-center justify-center relative bg-black/20 z-20"
-          style={{ clipPath: 'polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0% 100%)' }}>
-          {variant === 'result' ? (
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">FT</span>
-              <div className="w-0.5 h-4 bg-surface-border mt-1" />
-            </div>
-          ) : match.scheduled_at ? (
-            <span className="text-[11px] font-black text-primary-500 dark:text-primary-400 tracking-wider">{formatTime(match.scheduled_at)}</span>
-          ) : (
-            <span className="text-[10px] font-bold text-text-muted uppercase">VS</span>
-          )}
-        </div>
-        {/* Away */}
-        <div className="flex-1 flex items-center justify-between p-3 pr-4 relative overflow-hidden flex-row-reverse">
-          <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
-            style={{ background: `linear-gradient(to left, ${match.away_team.color}, transparent)` }} />
-          <div className="flex items-center gap-3 relative z-10 min-w-0 flex-row-reverse">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg ring-1 ring-white/10 overflow-hidden bg-surface-card"
-              style={{ borderRight: `3px solid ${match.away_team.color}` }}>
-              {match.away_team.logo_url ? <img src={match.away_team.logo_url} alt="" className="w-7 h-7 object-contain" /> : match.away_team.name[0]}
-            </div>
-            <span className={clsx('text-sm uppercase tracking-wide transition-colors line-clamp-1',
-              variant === 'result' ? (awayWon ? 'font-black text-text-primary' : 'font-semibold text-text-muted') : 'font-bold text-text-secondary group-hover:text-text-primary')}
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {match.away_team.name}
-            </span>
-          </div>
-          {variant === 'result' && (
-            <span className={clsx('text-3xl font-black tabular-nums leading-none mr-3 z-10',
-              awayWon ? 'text-text-primary text-glow-sm' : 'text-text-muted')}
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              {match.away_score}
-            </span>
-          )}
-        </div>
-      </div>
-      {variant === 'upcoming' && match.scheduled_at && (
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-card border border-surface-border px-3 py-0.5 rounded-full z-30 shadow-md">
-          <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">{formatDay(match.scheduled_at)}</span>
-        </div>
-      )}
-    </Link>
-  )
-}
+import { MiniMatchCard } from '@/components/dashboard/MiniMatchCard'
+import { LineupStatusBadge, NextMatchCountdown } from '@/components/dashboard/NextMatchCountdown'
+import { WelcomeCard } from '@/components/dashboard/WelcomeCard'
 
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ title, href }: { title: string; href: string }) {
@@ -330,75 +143,6 @@ function LiveMatchBannerItem({ match }: { match: MatchWithTeams }) {
   )
 }
 
-// ── Carte de salutation personnalisée ────────────────────────────────────────
-function WelcomeCard({ profile, myPlayer, myTeam, role }: {
-  profile: NonNullable<ReturnType<typeof useAuth>['profile']>
-  myPlayer: ReturnType<typeof useMyTeam>['myPlayer']
-  myTeam: ReturnType<typeof useMyTeam>['myTeam']
-  role: string
-}) {
-  const displayName = myPlayer
-    ? `${myPlayer.first_name} ${myPlayer.last_name}`
-    : profile.full_name ?? profile.email.split('@')[0]
-
-  const roleLabel = role === 'admin' ? 'Administrateur' : role === 'captain' ? 'Capitaine' : role === 'player' ? 'Joueur' : 'Spectateur'
-  const roleColor = role === 'admin' ? '#d9a441' : role === 'captain' ? '#c8f135' : role === 'player' ? '#22c55e' : '#64748b'
-  const roleIcon = role === 'admin' ? <Settings size={11} /> : role === 'captain' ? <Crown size={11} /> : role === 'player' ? <Zap size={11} /> : <Users size={11} />
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface-card p-4 flex items-center gap-4">
-      {/* Glow de fond */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 60% 100% at 0% 50%, ${roleColor}10 0%, transparent 70%)` }} />
-
-      {/* Avatar */}
-      <div className="relative shrink-0">
-        <PlayerAvatar
-          firstName={myPlayer?.first_name ?? (profile.full_name?.split(' ')[0] ?? 'U')}
-          lastName={myPlayer?.last_name ?? (profile.full_name?.split(' ')[1] ?? '')}
-          avatarUrl={profile.avatar_url}
-          teamColor={myTeam?.color ?? roleColor}
-          size={52}
-          shape="lg"
-        />
-        {/* Badge rôle */}
-        <div className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full border-2 border-surface-card"
-          style={{ backgroundColor: roleColor }}>
-          <span style={{ color: '#fff', display: 'flex' }}>{roleIcon}</span>
-        </div>
-      </div>
-
-      {/* Infos */}
-      <div className="flex-1 min-w-0 relative">
-        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Bienvenue</p>
-        <p className="text-base font-black text-text-primary truncate">{displayName}</p>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
-            style={{ color: roleColor, backgroundColor: `${roleColor}15`, borderColor: `${roleColor}30` }}>
-            {roleLabel}
-          </span>
-          {myTeam && (
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: myTeam.color }} />
-              <span className="text-[10px] text-text-muted font-semibold truncate">{myTeam.name}</span>
-            </div>
-          )}
-          {myPlayer?.jersey_number && (
-            <span className="text-[10px] text-text-muted font-bold">#{myPlayer.jersey_number}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Raccourci profil */}
-      <Link to="/profile"
-        className="shrink-0 p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors border border-surface-border"
-        title="Mon profil">
-        <ChevronRight size={16} />
-      </Link>
-    </div>
-  )
-}
-
 // ── Mes stats perso (joueur / capitaine) ──────────────────────────────────────
 function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: string }) {
   const { data: profile, isLoading } = usePlayerProfile(playerId)
@@ -409,7 +153,7 @@ function MyStatsCard({ playerId, seasonId }: { playerId: string; seasonId: strin
     <div className="rounded-2xl border border-surface-border bg-surface-card p-4 animate-pulse">
       <div className="h-3 w-24 bg-surface-raised rounded mb-4" />
       <div className="grid grid-cols-4 gap-2">
-        {[1,2,3,4].map(i => <div key={i} className="h-14 bg-surface-raised rounded-xl" />)}
+        {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-surface-raised rounded-xl" />)}
       </div>
     </div>
   )
@@ -477,7 +221,7 @@ function MyTeamCard({ teamId, seasonId }: { teamId: string; seasonId: string }) 
           Page d'équipe <ChevronRight size={10} />
         </Link>
       </div>
-      
+
       <div className="flex items-center gap-4 relative">
         <div className="relative">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg"
@@ -759,13 +503,13 @@ function ActiveSuspensionsWidget({ seasonId, isAdmin = false }: { seasonId: stri
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
   const { data: matches } = useMatches(season?.id)
-  const { data: teams }   = useTeams(season?.id)
+  const { data: teams } = useTeams(season?.id)
   const { data: scorers } = useScorers(season?.id)
   const { data: standings } = useStandings(season?.id)
   const { myTeamId, myTeam, myPlayer } = useMyTeam(season?.id)
   const { isCaptain, isAdmin, profile, role } = useAuth()
   const { sendNotification } = useNotificationSW(profile?.id)
-  
+
   const handleTestNotification = () => {
     sendNotification(
       'Test League H5 🏆',
@@ -798,15 +542,15 @@ export function DashboardPage() {
   }, [])
 
   // Calculer tous les tableaux avec useMemo pour éviter les mutations
-  const completedMatches = useMemo(() => 
+  const completedMatches = useMemo(() =>
     (matches ?? []).filter(m => m.status === 'completed'),
     [matches]
   )
-  const liveMatches = useMemo(() => 
+  const liveMatches = useMemo(() =>
     (matches ?? []).filter(m => m.status === 'live'),
     [matches]
   )
-  const upcomingMatches = useMemo(() => 
+  const upcomingMatches = useMemo(() =>
     (matches ?? [])
       .filter(m => m.status === 'scheduled')
       .sort((a, b) => {
@@ -815,7 +559,7 @@ export function DashboardPage() {
         const bIsMine = isMyTeamMatch(b, myTeamId)
         if (aIsMine && !bIsMine) return -1
         if (!aIsMine && bIsMine) return 1
-        
+
         // Puis trier par date
         if (a.scheduled_at && b.scheduled_at)
           return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
@@ -825,7 +569,7 @@ export function DashboardPage() {
       }),
     [matches, myTeamId, isMyTeamMatch]
   )
-  const recentMatches = useMemo(() => 
+  const recentMatches = useMemo(() =>
     [...completedMatches]
       .filter(m => m.played_at)
       .sort((a, b) => {
@@ -834,7 +578,7 @@ export function DashboardPage() {
         const bIsMine = isMyTeamMatch(b, myTeamId)
         if (aIsMine && !bIsMine) return -1
         if (!aIsMine && bIsMine) return 1
-        
+
         // Puis trier par date
         return new Date(b.played_at!).getTime() - new Date(a.played_at!).getTime()
       })
@@ -843,11 +587,11 @@ export function DashboardPage() {
   )
 
   // Mes matchs (uniquement ceux de mon équipe)
-  const myUpcomingMatches = useMemo(() => 
+  const myUpcomingMatches = useMemo(() =>
     upcomingMatches.filter(m => isMyTeamMatch(m, myTeamId)),
     [upcomingMatches, myTeamId, isMyTeamMatch]
   )
-  const myRecentMatches = useMemo(() => 
+  const myRecentMatches = useMemo(() =>
     recentMatches.filter(m => isMyTeamMatch(m, myTeamId)),
     [recentMatches, myTeamId, isMyTeamMatch]
   )
@@ -861,10 +605,10 @@ export function DashboardPage() {
   }, [upcomingMatches, myTeamId])
 
   const topScorer = scorers?.[0]
-  const topTeam   = standings?.[0]
+  const topTeam = standings?.[0]
 
   // Rôle effectif
-  const hasTeam    = !!myTeamId && !!myPlayer
+  const hasTeam = !!myTeamId && !!myPlayer
 
   if (isLoading) {
     return (
@@ -872,7 +616,7 @@ export function DashboardPage() {
         <SkeletonKpiGrid count={4} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="card p-0 overflow-hidden lg:col-span-2">
-            {[1,2,3].map(i => <SkeletonMatchCard key={i} />)}
+            {[1, 2, 3].map(i => <SkeletonMatchCard key={i} />)}
           </div>
           <div className="space-y-3">
             <SkeletonCard lines={3} />
