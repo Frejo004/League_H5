@@ -63,13 +63,13 @@ export function ScoreboardPage() {
 
       {/* Bloc central : équipes + score */}
       <div className="flex-1 w-full flex items-center justify-center">
-        <div className="w-full max-w-7xl grid grid-cols-3 items-center gap-8">
+        <div className="w-full max-w-7xl grid grid-cols-[minmax(0,1fr)_max-content_minmax(0,1fr)] items-center gap-3 sm:gap-8">
           {/* Home */}
           <TeamBlock name={home?.name ?? '—'} logo={home?.logo_url} color={home?.color ?? '#888'} align="end" />
 
           {/* Score + chrono */}
           <div className="flex flex-col items-center justify-center">
-            <div className="text-[14rem] leading-none font-black tabular-nums tracking-tight">
+            <div className="whitespace-nowrap text-[clamp(4rem,12vw,14rem)] leading-none font-black tabular-nums tracking-tight">
               {match.home_score ?? 0} <span className="text-white/30">–</span> {match.away_score ?? 0}
             </div>
             <div className={clsxStatus(isLive, false)}>
@@ -92,19 +92,19 @@ export function ScoreboardPage() {
 
 function TeamBlock({ name, logo, color, align }: { name: string; logo?: string | null; color: string; align: 'start' | 'end' }) {
   return (
-    <div className={`flex items-center gap-6 ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      {align === 'end' && <span className="text-5xl md:text-7xl font-black uppercase tracking-tight" style={{ color }}>{name}</span>}
+    <div className={`flex min-w-0 items-center gap-2 sm:gap-6 ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
+      {align === 'end' && <span className="min-w-0 text-2xl sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
       <div
-        className="w-32 h-32 md:w-40 md:h-40 rounded-3xl flex items-center justify-center shrink-0 shadow-2xl"
+        className="w-16 h-16 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl sm:rounded-3xl flex items-center justify-center shrink-0 shadow-2xl"
         style={{ backgroundColor: color }}
       >
         {logo ? (
-          <img src={logo} alt={name} className="w-20 h-20 md:w-24 md:h-24 object-contain" />
+          <img src={logo} alt={name} className="w-10 h-10 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain" />
         ) : (
-          <span className="text-5xl font-black text-white/90">{name.slice(0, 2).toUpperCase()}</span>
+          <span className="text-2xl sm:text-5xl font-black text-white/90">{name.slice(0, 2).toUpperCase()}</span>
         )}
       </div>
-      {align === 'start' && <span className="text-5xl md:text-7xl font-black uppercase tracking-tight" style={{ color }}>{name}</span>}
+      {align === 'start' && <span className="min-w-0 text-2xl sm:text-5xl md:text-7xl font-black uppercase tracking-tight [overflow-wrap:anywhere]" style={{ color }}>{name}</span>}
     </div>
   )
 }

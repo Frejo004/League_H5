@@ -442,7 +442,7 @@ export function ProfilePage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="max-w-lg space-y-4 pb-10">
+    <div className="w-full max-w-6xl mx-auto space-y-4 pb-10">
 
       {/* ── Stats joueur (si lié à un joueur) ── */}
       <PlayerStatsCard userId={profile?.id} />
@@ -502,6 +502,8 @@ export function ProfilePage() {
         </div>
       </Card>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <div className="space-y-4">
       {/* ── Nom affiché ── */}
       <SectionCard icon={<Pencil size={14} />} title="Nom affiché">
         <form onSubmit={handleNameChange} className="space-y-4">
@@ -653,7 +655,9 @@ export function ProfilePage() {
           )}
         </SectionCard>
       )}
+        </div>
 
+        <div className="space-y-4">
       {/* ── Paramètres de notifications ── */}
       <SectionCard icon={<Bell size={14} />} title="Paramètres de notifications">
         {prefsLoading ? (
@@ -736,6 +740,8 @@ export function ProfilePage() {
         <Button variant="danger" onClick={signOut} className="w-full">
           Se déconnecter
         </Button>
+      </div>
+        </div>
       </div>
     </div>
   )

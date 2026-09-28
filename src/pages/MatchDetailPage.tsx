@@ -660,26 +660,12 @@ export function MatchDetailPage() {
       )}
 
       {/* ── Broadcast Hero Banner ── */}
-      <div className="relative overflow-hidden rounded-4xl border border-surface-border/50 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] mx-1 sm:mx-0 bg-surface-card">
-
-        {/* Dynamic Mesh Background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute -left-1/4 -top-1/4 w-3/4 h-[150%] blur-[100px] opacity-20 animate-pulse-slow"
-            style={{ backgroundColor: home.color }}
-          />
-          <div
-            className="absolute -right-1/4 -bottom-1/4 w-3/4 h-[150%] blur-[100px] opacity-20 animate-pulse-slow"
-            style={{ backgroundColor: away.color }}
-          />
-          <div className="absolute inset-0 bg-linear-to-b from-surface-card/20 via-surface-card/40 to-surface-card/80 backdrop-blur-[1px]" />
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
-        </div>
+      <div className="relative overflow-hidden rounded-2xl border border-surface-border shadow-md mx-1 sm:mx-0 bg-surface-card">
 
         {/* Header Content */}
-        <div className="relative z-10 p-6 sm:p-8">
-          <div className="flex flex-col items-center mb-8 relative z-10">
-            <div className="px-4 py-1.5 rounded-full bg-surface-muted/30 border border-surface-border/50 backdrop-blur-xl mb-6 shadow-xl">
+        <div className="relative z-10 p-5 sm:p-6">
+          <div className="flex flex-col items-center mb-5 relative z-10">
+            <div className="px-4 py-1.5 rounded-full bg-surface-raised border border-surface-border mb-4">
               <span className="text-[10px] font-bold text-text-muted tabular-nums uppercase tracking-widest">
                 {match.scheduled_at
                   ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(match.scheduled_at)).replace(',', ' •')
@@ -720,7 +706,7 @@ export function MatchDetailPage() {
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest
                              text-text-muted hover:text-text-primary border border-surface-border/50 hover:border-surface-border
-                             hover:bg-surface-muted/20 transition-all backdrop-blur-md"
+                             hover:bg-surface-muted/20 transition-colors"
                 >
                   <Share2 size={12} />
                   <span className="hidden sm:inline">Partager</span>
@@ -731,9 +717,9 @@ export function MatchDetailPage() {
 
           {/* Teams & Scoreboard — Premium Boxed Format */}
           <div className="flex flex-col items-center">
-            <div className="flex items-center justify-between w-full max-w-2xl mb-6">
+            <div className="grid w-full max-w-[42rem] mx-auto grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center mb-4">
               {/* Team Home */}
-              <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
+              <div className="min-w-0 flex flex-col items-center gap-2 sm:gap-3">
                 <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-surface-muted/30 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-surface-border/50 ring-1 ring-white/5 transition-transform hover:scale-105">
                   {home.logo_url
                     ? <img src={home.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
@@ -744,13 +730,13 @@ export function MatchDetailPage() {
               </div>
 
               {/* Center Score — Boxed Style */}
-              <div className="flex flex-col items-center px-4">
+              <div className="flex flex-col items-center px-2 sm:px-4">
                 <div className="flex items-center gap-2 sm:gap-4">
                   {/* Box Home */}
                   <div className={clsx(
                     "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayHomeScore > displayAwayScore
-                      ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
+                      ? "bg-primary-600 border-primary-400/40 shadow-[0_4px_16px_rgba(21,128,61,0.22)]"
                       : "bg-surface-muted/30 border-surface-border/50 shadow-2xl"
                   )}>
                     <span className="text-3xl sm:text-7xl font-black text-text-primary tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
@@ -764,7 +750,7 @@ export function MatchDetailPage() {
                   <div className={clsx(
                     "w-12 h-14 sm:w-20 sm:h-24 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-500",
                     displayAwayScore > displayHomeScore
-                      ? "bg-blue-600 border-blue-400/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]"
+                      ? "bg-primary-600 border-primary-400/40 shadow-[0_4px_16px_rgba(21,128,61,0.22)]"
                       : "bg-surface-muted/30 border-surface-border/50 shadow-2xl"
                   )}>
                     <span className="text-3xl sm:text-7xl font-black text-text-primary tabular-nums" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
@@ -778,15 +764,15 @@ export function MatchDetailPage() {
                   {isLive && clock.phase === 2 ? (
                     /* ── Pause mi-temps ── */
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">
+                      <span className="text-[9px] font-black text-amber-400 uppercase tracking-[0.4em]">
                         Mi-temps
                       </span>
-                      <div className="px-4 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-                        <span className="text-sm font-black text-blue-300 tabular-nums tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                      <div className="px-4 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                        <span className="text-sm font-black text-amber-300 tabular-nums tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                           HT {displayHomeScore}-{displayAwayScore}
                         </span>
                       </div>
-                      <span className="text-[9px] font-bold text-blue-400/60 tabular-nums">
+                      <span className="text-[9px] font-bold text-amber-400/70 tabular-nums">
                         Pause {Math.floor((clock.breakSecondsLeft ?? 0) / 60)}:{String(Math.floor((clock.breakSecondsLeft ?? 0) % 60)).padStart(2, '0')}
                       </span>
                     </div>
@@ -832,8 +818,8 @@ export function MatchDetailPage() {
               </div>
 
               {/* Team Away */}
-              <div className="flex-1 flex flex-col items-center gap-2 sm:gap-3">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-4xl bg-surface-muted/30 flex items-center justify-center p-2.5 sm:p-3 shadow-2xl border border-surface-border/50 ring-1 ring-white/5 transition-transform hover:scale-105">
+              <div className="min-w-0 flex flex-col items-center gap-2 sm:gap-3">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-surface-raised flex items-center justify-center p-2.5 sm:p-3 shadow-sm border border-surface-border transition-transform hover:scale-105">
                   {away.logo_url
                     ? <img src={away.logo_url} alt="" className="w-full h-full object-contain drop-shadow-lg" />
                     : <span className="text-3xl sm:text-4xl font-black text-text-primary">{away.name[0]}</span>
@@ -845,7 +831,7 @@ export function MatchDetailPage() {
 
             {/* Scorers List — Professional Format */}
             {(isLive || isCompleted) && (displayGoals.length > 0) && (
-              <div className="flex w-full max-w-2xl mt-4 px-6 items-start">
+              <div className="flex w-full max-w-[42rem] mx-auto mt-4 px-6 items-start">
                 {/* Home Scorers */}
                 <div className="flex-1 flex flex-col items-end text-right space-y-1">
                   {displayGoals.filter(g => {
