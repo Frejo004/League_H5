@@ -14,6 +14,7 @@ import { useNotificationSW } from '@/hooks/useNotificationSW'
 import { AdminDashboardContent } from '@/components/dashboard/layouts/AdminDashboardContent'
 import { CaptainDashboardContent } from '@/components/dashboard/layouts/CaptainDashboardContent'
 import { PlayerDashboardContent } from '@/components/dashboard/layouts/PlayerDashboardContent'
+import { FloatingActionMenu } from '@/components/dashboard/FloatingActionMenu'
 
 export function DashboardPage() {
   const { data: season, isLoading: seasonLoading, isFetched } = useActiveSeason()
@@ -214,6 +215,21 @@ export function DashboardPage() {
           recentMatches={recentMatches}
         />
       )}
+
+      {/* Bouton d'action flottant global */}
+      <FloatingActionMenu 
+        isAdmin={isAdmin}
+        isCaptain={isCaptain}
+        adminData={{
+          completedCount: completedMatches.length,
+          teamsCount: teams?.length ?? 0,
+          pendingSpectatorsCount
+        }}
+        captainData={{
+          myTeamId,
+          nextMatch: myNextMatch
+        }}
+      />
     </div>
   )
 }

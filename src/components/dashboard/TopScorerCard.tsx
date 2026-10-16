@@ -5,11 +5,16 @@ import { useScorers } from '@/hooks/useScorers'
 // ── Top scorer card ───────────────────────────────────────────────────────────
 export function TopScorerCard({ scorer }: { scorer: NonNullable<ReturnType<typeof useScorers>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 80% 60% at 100% 0%, ${scorer.team_color}15 0%, transparent 60%)` }} />
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
+      {/* Glow / gradient background */}
+      <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-70 opacity-40"
+        style={{ background: `radial-gradient(ellipse 80% 80% at 100% 0%, ${scorer.team_color}20 0%, transparent 70%)` }} />
+      
+      {/* Filigrane Icône */}
+      <Target className="absolute -right-6 -bottom-6 w-32 h-32 text-orange-500/5 rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-500" strokeWidth={1} />
+
       <div className="flex items-center gap-1 mb-3">
-        <Flame size={11} className="text-orange-500 dark:text-orange-400" />
+        <Flame size={11} className="text-orange-500 dark:text-orange-400 animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Meilleur buteur</span>
       </div>
       <div className="flex items-center gap-3 relative">

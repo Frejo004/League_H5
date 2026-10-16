@@ -2,7 +2,6 @@ import { Radio, Calendar } from 'lucide-react'
 import { LiveBadge } from '@/components/live/LiveBadge'
 import { LiveMatchBannerItem } from '@/components/dashboard/LiveMatchBannerItem'
 import { WelcomeCard } from '@/components/dashboard/WelcomeCard'
-import { AdminQuickActions } from '@/components/dashboard/QuickActions'
 import { TopScorerCard } from '@/components/dashboard/TopScorerCard'
 import { LeaderCard } from '@/components/dashboard/LeaderCard'
 import { ActiveSuspensionsWidget } from '@/components/dashboard/ActiveSuspensionsWidget'
@@ -40,13 +39,6 @@ export function AdminDashboardContent({
           role={role ?? 'spectator'}
         />
       )}
-
-      {/* Raccourcis Admin */}
-      <AdminQuickActions
-        completedCount={completedMatches.length}
-        teamsCount={teams?.length ?? 0}
-        pendingSpectatorsCount={pendingSpectatorsCount}
-      />
 
       {/* Meilleur buteur / Leader du classement */}
       {(topScorer || topTeam) && (

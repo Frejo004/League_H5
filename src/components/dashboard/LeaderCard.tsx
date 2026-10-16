@@ -4,9 +4,14 @@ import { useStandings } from '@/hooks/useStandings'
 // ── Leader card ───────────────────────────────────────────────────────────────
 export function LeaderCard({ team }: { team: NonNullable<ReturnType<typeof useStandings>['data']>[0] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-md">
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(ellipse 60% 80% at 0% 50%, ${team.team_color}10 0%, transparent 70%)` }} />
+    <div className="relative overflow-hidden rounded-2xl border p-4 bg-surface-card border-surface-border shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
+      {/* Glow / gradient background */}
+      <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-70 opacity-40"
+        style={{ background: `radial-gradient(ellipse 80% 80% at 0% 50%, ${team.team_color}20 0%, transparent 70%)` }} />
+        
+      {/* Filigrane Icône */}
+      <Trophy className="absolute -left-6 -bottom-6 w-32 h-32 text-yellow-500/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-500" strokeWidth={1} />
+
       <div className="flex items-center gap-1 mb-3">
         <Trophy size={11} className="text-yellow-500 dark:text-yellow-400" />
         <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Leader</span>

@@ -3,7 +3,6 @@ import { LiveBadge } from '@/components/live/LiveBadge'
 import { LiveMatchBannerItem } from '@/components/dashboard/LiveMatchBannerItem'
 import { WelcomeCard } from '@/components/dashboard/WelcomeCard'
 import { SuspensionBanner } from '@/components/dashboard/SuspensionBanner'
-import { CaptainQuickActions } from '@/components/dashboard/QuickActions'
 import { TopScorerCard } from '@/components/dashboard/TopScorerCard'
 import { LeaderCard } from '@/components/dashboard/LeaderCard'
 import { ActiveSuspensionsWidget } from '@/components/dashboard/ActiveSuspensionsWidget'
@@ -47,11 +46,6 @@ export function CaptainDashboardContent({
       {/* Bannière suspension active */}
       {profile?.id && season?.id && (
         <SuspensionBanner userId={profile.id} seasonId={season.id} />
-      )}
-
-      {/* Raccourcis Capitaine */}
-      {myTeam && (
-        <CaptainQuickActions myTeam={myTeam} nextMatch={myNextMatch ?? undefined} myTeamId={myTeamId} />
       )}
 
       {/* Meilleur buteur / Leader du classement */}

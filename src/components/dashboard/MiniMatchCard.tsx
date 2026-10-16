@@ -25,10 +25,10 @@ export function MiniMatchCard({ match, variant, myTeamId }: {
 
   return (
     <Link to={`/matches/${match.slug || match.id}`}
-      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+      className="group relative flex flex-col mb-3 mx-4 mt-2 transition-all duration-300 hover:-translate-y-1.5 z-10 hover:z-20">
       <div className="absolute inset-0 bg-linear-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card border border-surface-border">
-        {isMyMatch && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)]" />}
+      <div className="relative flex overflow-hidden rounded-lg clip-angled glass-morphism bg-surface-card border border-surface-border group-hover:border-primary-500/30 shadow-sm group-hover:shadow-2xl transition-all duration-300">
+        {isMyMatch && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 shadow-[0_0_10px_rgba(37,99,235,0.8)] z-20" />}
         {/* Home */}
         <div className="flex-1 flex items-center justify-between p-3 pl-4 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"
