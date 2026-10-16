@@ -150,36 +150,50 @@ export function useTransfers(teamId?: string) {
       if (!season?.id) throw new Error('No active season')
       if (!user?.id) throw new Error('Not authenticated')
 
-      // 1. Mettre à jour le statut du transfert
-      const { data: transfer, error: transferError } = await db
-        .from('transfers')
-        .update({
-          status: 'completed',
-          away_captain_approved_by: user.id,
-          away_captain_approved_at: new Date().toISOString(),
-          decided_by: user.id,
-          decided_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single()
+      // 1. Tenter la procédure stockée atomique (transactionnelle PostgreSQL)
+      let transfer: Transfer
+      const { data: rpcData, error: rpcError } = await db.rpc('complete_transfer', {
+        p_transfer_id: id,
+      })
 
-      if (transferError) throw transferError
-      if (!transfer) throw new Error('Transfert introuvable après mise à jour.')
+      if (!rpcError && rpcData) {
+        transfer = rpcData as Transfer
+      } else {
+        if (rpcError) {
+          console.warn('[approveAsAwayCaptain] RPC complete_transfer non disponible ou en erreur, fallback client:', rpcError.message)
+        }
+        // Fallback séquentiel client
+        // 1. Mettre à jour le statut du transfert
+        const { data: updateData, error: transferError } = await db
+          .from('transfers')
+          .update({
+            status: 'completed',
+            away_captain_approved_by: user.id,
+            away_captain_approved_at: new Date().toISOString(),
+            decided_by: user.id,
+            decided_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .select()
+          .single()
 
-      const t = transfer as Transfer
+        if (transferError) throw transferError
+        if (!updateData) throw new Error('Transfert introuvable après mise à jour.')
 
-      // 2. Déplacer le joueur vers sa nouvelle équipe — erreur fatale si ça échoue
-      const { error: playerError } = await db
-        .from('players')
-        .update({ team_id: t.to_team_id })
-        .eq('id', t.player_id)
+        transfer = updateData as Transfer
 
-      if (playerError) {
-        console.error('[approveAsAwayCaptain] Échec du déplacement du joueur:', playerError)
-        throw new Error(
-          `Transfert validé mais le joueur n'a pas pu être déplacé : ${playerError.message}. Contactez un administrateur.`
-        )
+        // 2. Déplacer le joueur vers sa nouvelle équipe — erreur fatale si ça échoue
+        const { error: playerError } = await db
+          .from('players')
+          .update({ team_id: transfer.to_team_id })
+          .eq('id', transfer.player_id)
+
+        if (playerError) {
+          console.error('[approveAsAwayCaptain] Échec du déplacement du joueur:', playerError)
+          throw new Error(
+            `Transfert validé mais le joueur n'a pas pu être déplacé : ${playerError.message}. Contactez un administrateur.`
+          )
+        }
       }
 
       // 3. Créer la news automatique (non bloquante — échec ignoré silencieusement)
@@ -197,7 +211,7 @@ export function useTransfers(teamId?: string) {
         console.warn('[approveAsAwayCaptain] Impossible de créer la news automatique:', newsError)
       }
 
-      return t
+      return transfer
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transfers', season?.id] })

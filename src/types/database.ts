@@ -1588,6 +1588,19 @@ export interface Database {
         }
         Returns: undefined
       }
+      cancel_match_and_cleanup: {
+        Args: {
+          p_match_id: string
+          p_delete_data?: boolean
+        }
+        Returns: undefined
+      }
+      complete_transfer: {
+        Args: {
+          p_transfer_id: string
+        }
+        Returns: Database['public']['Tables']['transfers']['Row']
+      }
     }
     Enums: {
       user_role: UserRole

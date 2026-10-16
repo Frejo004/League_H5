@@ -18,6 +18,7 @@ import { useAppToast } from '@/hooks/useAppToast'
 import { AppToastContainer } from '@/components/ui/AppToastContainer'
 import { useCameraDevices } from '@/hooks/useCameraDevices'
 import { BroadcastOverlay } from '@/components/live/BroadcastOverlay'
+import { createRedCardSuspensionPayload } from '@/lib/discipline'
 import type { MatchEvent, TeamRef, MatchEventType } from '@/types/database'
 
 // ── Modal de confirmation suppression ────────────────────────────────────────
@@ -322,16 +323,14 @@ export function AdminLiveControls({
     // Crée automatiquement une suspension de 1 match pour le joueur concerné
     if (eventType === 'red_card' && eventPlayer && seasonId) {
       try {
-        await addSuspension.mutateAsync({
-          player_id: eventPlayer,
-          season_id: seasonId,
-          reason: `Carton rouge — J${finalMinute}'`,
-          match_id_trigger: matchId,
-          matches_count: 1,
-          matches_served: 0,
-          is_active: true,
-          is_auto_generated: true,
-        })
+        await addSuspension.mutateAsync(
+          createRedCardSuspensionPayload({
+            playerId: eventPlayer,
+            seasonId,
+            matchId,
+            minute: finalMinute,
+          })
+        )
         toast.success('Suspension automatique créée', 'Le joueur est suspendu pour 1 match')
       } catch (err) {
         // La suspension manuelle reste possible depuis la page admin

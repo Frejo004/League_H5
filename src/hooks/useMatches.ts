@@ -167,15 +167,23 @@ export function useDeleteMatch() {
 export function useCancelMatchCleanup() {
   return useMutation({
     mutationFn: async (matchId: string) => {
-      // 1. Supprimer les polls du match en premier (cascade → predictions, bet_slip_selections)
+      // 1. Tenter la procédure stockée atomique (transactionnelle côté PostgreSQL)
+      const { error: rpcError } = await (supabase as any).rpc('cancel_match_and_cleanup', {
+        p_match_id: matchId,
+        p_delete_data: true,
+      })
+
+      if (!rpcError) return
+
+      console.warn('RPC cancel_match_and_cleanup non déployée, exécution du fallback client:', rpcError.message)
+
+      // 2. Fallback séquentiel client
       const resPolls = await supabase.from('polls').delete().eq('match_id', matchId)
       if (resPolls.error) console.error('Error deleting polls:', resPolls.error)
 
-      // 2. Supprimer les bet_slips qui n'ont plus aucune sélection (orphelins après cascade)
       const resOrphanSlips = await supabase.rpc('delete_empty_bet_slips')
       if (resOrphanSlips.error) console.error('Error deleting orphan bet_slips:', resOrphanSlips.error)
 
-      // 3. Supprimer le reste des données liées au match
       const [resGoals, resAssists, resEvents, resVotes, resFeedback] = await Promise.all([
         supabase.from('goals').delete().eq('match_id', matchId),
         supabase.from('assists').delete().eq('match_id', matchId),
