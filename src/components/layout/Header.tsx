@@ -3,7 +3,7 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   Bell, MessageCircle, LayoutDashboard, Trophy, Calendar,
   Target, Users, Star, Crown,
-  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare, BarChart2, Gamepad2,
+  Settings, User, X, Menu, LogOut, BookOpen, Swords, MessageSquare, BarChart2, Gamepad2, ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useActiveSeason } from '@/hooks/useSeasons'
@@ -218,6 +218,8 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const moreRef = useRef<HTMLDivElement>(null)
 
   const { notifications, count, hasUrgent, markAllRead, markRead } = useNotifications()
   const { data: chatTeams } = useChatUnread(profile?.id)
@@ -225,12 +227,28 @@ export default function Header() {
   // Badge pronostics actifs
   const { data: allPolls } = usePolls()
   const activePollsCount = allPolls?.filter(p => p.status === 'active').length ?? 0
-  // Ferme le drawer à chaque navigation (pattern React: adjust state during render)
+
+  // Ferme le drawer et le dropdown à chaque navigation
   const [prevPathname, setPrevPathname] = useState(location.pathname)
   if (location.pathname !== prevPathname) {
     setPrevPathname(location.pathname)
     setMobileOpen(false)
+    setMoreOpen(false)
   }
+
+  // Fermer le dropdown "Plus" au clic extérieur
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setMoreOpen(false)
+      }
+    }
+    if (moreOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [moreOpen])
+
   // Bloque le scroll body quand le drawer est ouvert
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
@@ -246,6 +264,12 @@ export default function Header() {
         item.to === '/palmares' ? [item, playoffItem] : [item]
       )
     : NAV_BY_ROLE[effectiveRole]
+
+  // Découpage en navigation principale (5-6 piliers) et menu secondaire "Plus"
+  const PRIMARY_PATHS = new Set(['/dashboard', '/matches', '/standings', '/teams', '/polls', '/admin', '/captain', '/my-team'])
+  const primaryNavItems = navItems.filter(item => PRIMARY_PATHS.has(item.to))
+  const moreNavItems = navItems.filter(item => !PRIMARY_PATHS.has(item.to))
+  const isMoreActive = moreNavItems.some(item => location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to)))
 
   // Mobile bottom nav — ajoute Admin si admin, Mon Équipe si capitaine ou joueur
   const mobileNav: NavItem[] = isAdmin
@@ -299,19 +323,18 @@ export default function Header() {
           {/* Brand — gauche */}
           <Brand border="var(--header-border)" textColor="var(--header-text)" />
 
-          {/* Nav principale — flex-1, scrollable si débordement */}
+          {/* Nav principale — équilibrée avec dropdown Plus */}
           <nav
-            className="flex-1 flex items-stretch overflow-x-auto min-w-0"
-            style={{ scrollbarWidth: 'none' }}
+            className="flex-1 flex items-stretch min-w-0"
             aria-label="Navigation principale"
           >
-            {navItems.map(({ to, label }) => (
+            {primaryNavItems.map(({ to, label }) => (
               <NavLink
                 key={`${to}-${label}`}
                 to={to}
                 end={to === '/dashboard'}
                 aria-current={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'page' : undefined}
-                className="relative flex items-center px-3 text-[13px] font-semibold whitespace-nowrap
+                className="relative flex items-center px-3.5 text-[13px] font-semibold whitespace-nowrap
                            transition-colors duration-150 shrink-0
                            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135] rounded"
                 style={({ isActive }) => ({
@@ -339,6 +362,61 @@ export default function Header() {
                 )}
               </NavLink>
             ))}
+
+            {/* Menu Plus pour les pages secondaires */}
+            {moreNavItems.length > 0 && (
+              <div ref={moreRef} className="relative flex items-stretch">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(v => !v)}
+                  className="relative flex items-center gap-1 px-3 text-[13px] font-semibold whitespace-nowrap
+                             transition-colors duration-150 shrink-0
+                             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8F135] rounded cursor-pointer"
+                  style={{
+                    fontFamily: "'Barlow', sans-serif",
+                    color: (isMoreActive || moreOpen) ? 'var(--accent)' : 'var(--header-nav-off)',
+                    borderBottom: isMoreActive ? `2px solid var(--accent)` : '2px solid transparent',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isMoreActive) e.currentTarget.style.color = 'var(--header-nav-hov)'
+                  }}
+                  onMouseLeave={e => {
+                    if (!isMoreActive && !moreOpen) e.currentTarget.style.color = 'var(--header-nav-off)'
+                  }}
+                  aria-expanded={moreOpen}
+                  aria-haspopup="true"
+                >
+                  <span>Plus</span>
+                  <ChevronDown size={14} className={clsx("transition-transform duration-200", moreOpen && "rotate-180")} />
+                </button>
+
+                {moreOpen && (
+                  <div
+                    className="absolute top-full left-0 mt-1 w-52 rounded-xl shadow-2xl py-1.5 z-50 border border-surface-border bg-surface-card backdrop-blur-xl animate-scale-in"
+                  >
+                    {moreNavItems.map(({ to, label, icon: Icon }) => {
+                      const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
+                      return (
+                        <NavLink
+                          key={to}
+                          to={to}
+                          onClick={() => setMoreOpen(false)}
+                          className={clsx(
+                            "flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold transition-colors",
+                            isActive 
+                              ? "text-primary-400 bg-surface-raised font-bold" 
+                              : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+                          )}
+                        >
+                          <Icon size={14} className={isActive ? "text-primary-400" : "text-text-muted"} />
+                          <span>{label}</span>
+                        </NavLink>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* Zone droite — fixe à droite */}

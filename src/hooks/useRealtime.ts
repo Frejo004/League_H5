@@ -153,21 +153,21 @@ export function useRealtimeMatch(matchId?: string) {
     }
   }, [matchId, qc])
 }
-// ── Realtime pour la liste des matchs d'une saison ───────────────────────────
-// Utilisé globalement dans Header (via LiveTicker) — met à jour les scores
-// et le classement en temps réel.
+// ── Realtime unifié pour la saison (matchs, buts, classements, équipes) ───────
+// Consolide les écoutes sur un seul canal WebSocket par saison `season-${seasonId}`
+// au lieu d'ouvrir plusieurs canaux concurrents pour les matchs et les équipes.
 
-export function useRealtimeMatches(seasonId?: string) {
+export function useRealtimeSeason(seasonId?: string) {
   const qc = useQueryClient()
 
   useEffect(() => {
     if (!seasonId) return
 
-    const channelName = `matches-season-${seasonId}`
+    const channelName = `season-${seasonId}`
     const channel = getOrCreateChannel(channelName)
-    
+
     channel
-      // 1. Match updates (scores, status, etc.)
+      // 1. Mises à jour des matchs (scores, statut, etc.)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -206,7 +206,7 @@ export function useRealtimeMatches(seasonId?: string) {
           )
         }
       })
-      // 2. Goal updates
+      // 2. Mises à jour des buts
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -216,32 +216,7 @@ export function useRealtimeMatches(seasonId?: string) {
         qc.invalidateQueries({ queryKey: ['scorers', seasonId] })
         qc.invalidateQueries({ queryKey: ['standings', seasonId] })
       })
-      .subscribe((status) => {
-        if (status !== 'CLOSED') {
-          console.log(`📡 Realtime (${channelName}):`, status)
-        }
-      })
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [seasonId, qc])
-}
-
-// ── Realtime pour les équipes d'une saison ───────────────────────────────────
-// Utilisé dans les pages qui affichent des équipes — met à jour le nom, logo, etc.
-// en temps réel quand un admin modifie une équipe.
-
-export function useRealtimeTeams(seasonId?: string) {
-  const qc = useQueryClient()
-
-  useEffect(() => {
-    if (!seasonId) return
-
-    const channelName = `teams-season-${seasonId}`
-    const channel = getOrCreateChannel(channelName)
-
-    channel
+      // 3. Mises à jour des équipes
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -268,6 +243,16 @@ export function useRealtimeTeams(seasonId?: string) {
       supabase.removeChannel(channel)
     }
   }, [seasonId, qc])
+}
+
+/** Rétrocompatibilité : utilise useRealtimeSeason */
+export function useRealtimeMatches(seasonId?: string) {
+  useRealtimeSeason(seasonId)
+}
+
+/** Rétrocompatibilité : utilise useRealtimeSeason */
+export function useRealtimeTeams(seasonId?: string) {
+  useRealtimeSeason(seasonId)
 }
 
 // ── Realtime pour la tactique d'une équipe ────────────────────────────────────
