@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, X, Users, Calendar, Shield, Trophy, Crown } from 'lucide-react'
+import { Plus, Users, Calendar, Shield, Trophy, Crown } from 'lucide-react'
 import { clsx } from 'clsx'
 import { LineupStatusBadge } from '@/components/dashboard/NextMatchCountdown'
 import type { MatchWithTeams } from '@/hooks/useMatches'

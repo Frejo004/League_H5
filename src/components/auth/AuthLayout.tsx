@@ -20,13 +20,12 @@ export function AuthLayout({ children, hero, stats = defaultStats }: AuthLayoutP
   const logoLink = profile ? '/dashboard' : '/'
 
   const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true
   )
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)')
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    setIsDesktop(mq.matches)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [])

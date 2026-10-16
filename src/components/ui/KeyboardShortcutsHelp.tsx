@@ -18,21 +18,21 @@ export function KeyboardShortcutsHelp({ onClose }: Props) {
       <div
         className="w-full max-w-sm mx-4 rounded-2xl overflow-hidden shadow-2xl"
         style={{
-          backgroundColor: '#161B22',
-          border: '1px solid rgba(255,255,255,0.1)',
+          backgroundColor: 'var(--color-surface-card)',
+          border: '1px solid var(--color-surface-border)',
           animation: 'scaleIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border">
           <div>
-            <h2 className="text-sm font-bold text-white">Raccourcis clavier</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">Desktop uniquement</p>
+            <h2 className="text-sm font-bold text-text-primary">Raccourcis clavier</h2>
+            <p className="text-[11px] text-text-muted mt-0.5">Desktop uniquement</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/8 text-slate-500 hover:text-slate-300 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
           >
             <X size={14} />
           </button>
@@ -42,7 +42,7 @@ export function KeyboardShortcutsHelp({ onClose }: Props) {
         <div className="p-4 space-y-2">
           {SHORTCUT_HELP.map(({ keys, description }) => (
             <div key={description} className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-400">{description}</span>
+              <span className="text-sm text-text-secondary">{description}</span>
               <div className="flex items-center gap-1 shrink-0">
                 {keys.map((k, i) => (
                   <span key={i} className="flex items-center gap-1">

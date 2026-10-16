@@ -26,7 +26,7 @@ export function useNetworkStatus() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [])
+  }, [toast])
 
   return { isOnline, wasOffline }
 }

@@ -41,7 +41,7 @@ export function LineupStatusBadge({ matchId, teamId, isCaptain }: {
 }
 
 // ── Compte à rebours ──────────────────────────────────────────────────────────
-export function useCountdown(targetDate: string | null) {
+function useCountdown(targetDate: string | null) {
   const [diff, setDiff] = useState<number | null>(null)
   useEffect(() => {
     if (!targetDate) return

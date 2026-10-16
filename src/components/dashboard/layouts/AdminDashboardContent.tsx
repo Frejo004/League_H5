@@ -11,7 +11,7 @@ import { MiniMatchCard } from '@/components/dashboard/MiniMatchCard'
 import type { AdminDashboardProps } from './types'
 
 export function AdminDashboardContent({
-  liveMatches, profile, myPlayer, myTeam, role, completedMatches, teams, upcomingMatches, topScorer, topTeam, recentMatches, season, pendingSpectatorsCount, myTeamId
+  liveMatches, profile, myPlayer, myTeam, role, upcomingMatches, topScorer, topTeam, recentMatches, season, myTeamId
 }: AdminDashboardProps) {
   return (
     <div className="space-y-4">

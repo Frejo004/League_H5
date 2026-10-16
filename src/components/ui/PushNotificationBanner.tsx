@@ -49,14 +49,14 @@ export function PushNotificationBanner() {
       <div
         className="relative rounded-2xl p-4 shadow-2xl"
         style={{
-          backgroundColor: '#161B22',
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+          backgroundColor: 'var(--color-surface-card)',
+          border: '1px solid var(--color-surface-border)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
         }}
       >
         <button
           onClick={dismiss}
-          className="absolute top-3 right-3 p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors"
+          className="absolute top-3 right-3 p-1 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
         >
           <X size={13} />
         </button>
@@ -69,10 +69,10 @@ export function PushNotificationBanner() {
             }
           </div>
           <div>
-            <p className="text-sm font-bold text-white">
+            <p className="text-sm font-bold text-text-primary">
               {success ? 'Notifications activées !' : 'Activer les notifications'}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+            <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
               {success
                 ? 'Vous recevrez des alertes pour les matchs et résultats.'
                 : 'Soyez alerté des matchs, résultats et votes MVP en temps réel.'

@@ -238,15 +238,17 @@ export function ChatToastProvider() {
     setToasts(prev => [toast, ...prev].slice(0, MAX_TOASTS))
   }, [])
 
+  const currentUserId = user?.id
+
   useEffect(() => {
-    if (!user?.id) return
+    if (!currentUserId) return
     let cancelled = false
     let toastChannel: ReturnType<typeof supabase.channel> | null = null
 
     async function setup() {
       const [teams, globalChannels] = await Promise.all([
-        fetchUserTeams(user!.id),
-        fetchVisibleChannels(user!.id),
+        fetchUserTeams(currentUserId),
+        fetchVisibleChannels(currentUserId),
       ])
       if (cancelled) return
 
@@ -258,10 +260,10 @@ export function ChatToastProvider() {
       // Un seul canal, trois écouteurs (team_messages / channel_messages / dm_messages)
       // au lieu de trois canaux séparés — même pattern que useRealtimeMatch.
       toastChannel = supabase
-        .channel(`toast-${user!.id}`)
+        .channel(`toast-${currentUserId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'team_messages' }, async payload => {
           const msg = payload.new as { id: string; team_id: string; sender_id: string; content: string }
-          if (msg.sender_id === user!.id) return
+          if (msg.sender_id === currentUserId) return
           if (!teamIds.has(msg.team_id)) return
           if (locationRef.current === '/chat') return
 
@@ -286,7 +288,7 @@ export function ChatToastProvider() {
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'channel_messages' }, async payload => {
           const msg = payload.new as { id: string; channel_id: string; sender_id: string; content: string }
-          if (msg.sender_id === user!.id) return
+          if (msg.sender_id === currentUserId) return
           if (!channelIds.has(msg.channel_id)) return
           if (locationRef.current === '/chat') return
 
@@ -311,7 +313,7 @@ export function ChatToastProvider() {
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, async payload => {
           const msg = payload.new as { id: string; conversation_id: string; sender_id: string; content: string }
-          if (msg.sender_id === user!.id) return
+          if (msg.sender_id === currentUserId) return
           if (locationRef.current === '/chat') return
 
           // Vérifier que l'user fait partie de cette conversation
@@ -323,7 +325,7 @@ export function ChatToastProvider() {
           if (!conv) return
           type DmConversation = { user_a: string; user_b: string }
           const conversation = conv as DmConversation
-          if (conversation.user_a !== user!.id && conversation.user_b !== user!.id) return
+          if (conversation.user_a !== currentUserId && conversation.user_b !== currentUserId) return
 
           const { data: sender } = await supabase
             .from('profiles').select('full_name, avatar_url').eq('id', msg.sender_id).maybeSingle()
@@ -350,7 +352,7 @@ export function ChatToastProvider() {
       cancelled = true
       if (toastChannel) supabase.removeChannel(toastChannel)
     }
-  }, [user?.id, addToast])
+  }, [currentUserId, addToast])
 
   const handleDismiss = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))

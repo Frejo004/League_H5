@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { PlayerOrCaptainGuard } from '@/components/auth/PlayerOrCaptainGuard'
 import { CaptainGuard } from '@/components/auth/CaptainGuard'
+import { AdminGuard } from '@/components/auth/AdminGuard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 // Helper pour les imports nommés avec gestion intelligente des erreurs de déploiement (chunk load errors)
@@ -108,7 +109,6 @@ export const router = createBrowserRouter([
               { path: '/players',                 element: <PlayersPage /> },
               { path: '/players/:idOrSlug',       element: <PlayerProfilePage /> },
               { path: '/stats',                   element: <StatsPage /> },
-              { path: '/admin',                   element: <AdminPage /> },
               { path: '/my-stats',                element: <MyStatsPage /> },
               { path: '/my-team',                 element: <MyTeamPage /> },
               { path: '/palmares',                element: <PalmaresPage /> },
@@ -119,6 +119,19 @@ export const router = createBrowserRouter([
               { path: '/tournaments',             element: <TournamentsPage /> },
               { path: '/tournaments/:slug',       element: <TournamentDetailPage /> },
               { path: '/polls',                element: <PollsPage /> },
+            ],
+          },
+        ],
+      },
+
+      // ── /admin — uniquement administrateurs ───────────────────────────────
+      {
+        element: <AdminGuard />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [
+              { path: '/admin', element: <AdminPage /> },
             ],
           },
         ],

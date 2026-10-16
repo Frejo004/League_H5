@@ -9,7 +9,7 @@
  *   toast.error('Impossible d\'accéder à la caméra.')
  *   // Dans le JSX : <ToastContainer />
  */
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 
 export type AppToastKind = 'error' | 'warning' | 'success' | 'info'
 
@@ -38,12 +38,12 @@ export function useAppToast(autoDismissMs = 5000) {
     timersRef.current.set(id, timer)
   }, [autoDismissMs, dismiss])
 
-  const toast = {
+  const toast = useMemo(() => ({
     error:   (msg: string, detail?: string) => show('error',   msg, detail),
     warning: (msg: string, detail?: string) => show('warning', msg, detail),
     success: (msg: string, detail?: string) => show('success', msg, detail),
     info:    (msg: string, detail?: string) => show('info',    msg, detail),
-  }
+  }), [show])
 
   return { toast, toasts, dismiss }
 }

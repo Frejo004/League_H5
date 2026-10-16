@@ -80,9 +80,9 @@ export function PWAInstallPrompt() {
       <div
         className="relative rounded-2xl p-4 shadow-2xl"
         style={{
-          backgroundColor: '#161B22',
+          backgroundColor: 'var(--color-surface-card)',
           border: '1px solid rgba(200,241,53,0.3)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,241,53,0.1)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(200,241,53,0.1)',
         }}
       >
         {/* Barre verte en haut */}
@@ -90,7 +90,7 @@ export function PWAInstallPrompt() {
 
         <button
           onClick={dismiss}
-          className="absolute top-3 right-3 p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors"
+          className="absolute top-3 right-3 p-1 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
           aria-label="Fermer"
         >
           <X size={14} />
@@ -103,8 +103,8 @@ export function PWAInstallPrompt() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">Installer League H5</p>
-            <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+            <p className="text-sm font-bold text-text-primary">Installer League H5</p>
+            <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
               {isIos
                 ? 'Accès rapide depuis votre écran d\'accueil'
                 : 'Installez l\'app pour un accès rapide'}
